@@ -1,8 +1,6 @@
 'use client'
 export const dynamic = 'force-dynamic'
-import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -14,45 +12,41 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const router = useRouter()
 
-const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault()
-  setLoading(true)
-  setError('')
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
-  if (error) {
-    setError('Неверный email или пароль: ' + error.message)
-    setLoading(false)
-    return
+    if (error) {
+      setError('Неверный email или пароль: ' + error.message)
+      setLoading(false)
+      return
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .single()
+
+    if (profileError || !profile) {
+      router.push('/admin')
+      return
+    }
+
+    if (profile.role === 'admin') {
+      router.push('/admin')
+    } else if (profile.role === 'teacher') {
+      router.push('/teacher')
+    } else {
+      router.push('/student')
+    }
   }
-
-  console.log('User logged in:', data.user.id)
-
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', data.user.id)
-    .single()
-
-  console.log('Profile:', profile, 'Error:', profileError)
-
-  if (profileError || !profile) {
-    router.push('/admin')
-    return
-  }
-
-  if (profile.role === 'admin') {
-    router.push('/admin')
-  } else if (profile.role === 'teacher') {
-    router.push('/teacher')
-  } else {
-    router.push('/student')
-  }
-}
 
   return (
     <div className="min-h-screen flex items-center justify-center" style={{background:'var(--bg)'}}>
