@@ -1,18 +1,5 @@
 @import "tailwindcss";
 
-:root {
-  --bg: #0B0C10;
-  --surface: #13151C;
-  --border: #22263A;
-  --text: #E4E6F0;
-  --muted: #636880;
-  --math: #4B8EF5;
-  --kyr: #D45FCC;
-  --read: #34C97B;
-  --game: #FF6B6B;
-  --test: #7B61FF;
-}
-
 * {
   box-sizing: border-box;
   margin: 0;
@@ -20,20 +7,27 @@
 }
 
 body {
-  background: var(--bg);
-  color: var(--text);
   font-family: 'Inter', sans-serif;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0D1E4A; }
+::-webkit-scrollbar-thumb { background: #1B3FA0; border-radius: 99px; }
 
-::-webkit-scrollbar-track {
-  background: var(--surface);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 99px;
+@media (max-width: 768px) {
+  .hero-grid { flex-direction: column !important; }
+  .hero-images { display: none !important; }
+  .nav-links { display: none !important; }
+  .courses-grid { grid-template-columns: 1fr !important; }
+  .results-grid { grid-template-columns: 1fr 1fr !important; }
+  .subjects-grid { grid-template-columns: 1fr 1fr !important; }
+  .pains-grid { grid-template-columns: 1fr !important; }
+  .timer-grid { gap: 8px !important; }
+  .timer-box { padding: 16px 20px !important; min-width: 70px !important; }
+  .timer-num { font-size: 32px !important; }
+  .faq-layout { flex-direction: column !important; gap: 24px !important; }
+  .section-pad { padding: 48px 20px !important; }
+  .nav-pad { padding: 0 20px !important; }
+  .reviews-grid { grid-template-columns: 1fr !important; }
+  .hero-title { font-size: 36px !important; letter-spacing: -1px !important; }
 }
