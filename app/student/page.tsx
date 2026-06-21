@@ -1,5 +1,6 @@
- 'use client'
+'use client'
 export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -14,294 +15,270 @@ export default function StudentPage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  useEffect(() => {
-    checkAuth()
-  }, [])
+  useEffect(() => { checkAuth() }, [])
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/'); return }
-
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-
+    const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     if (prof?.role !== 'student') { router.push('/'); return }
     setProfile(prof)
     fetchData(user.id)
   }
 
   const fetchData = async (uid: string) => {
-    // Находим группу ученика
-    const { data: gs } = await supabase
-      .from('group_students')
-      .select('group_id, groups(course_id, name)')
-      .eq('student_id', uid)
-      .single()
-
+    const { data: gs } = await supabase.from('group_students').select('group_id, groups(course_id, name)').eq('student_id', uid).single()
     if (gs) {
       const courseId = (gs.groups as any)?.course_id
-
-      // Занятия
-      const { data: lsns } = await supabase
-        .from('lessons')
-        .select('*')
-        .eq('course_id', courseId)
-        .order('lesson_number')
+      const { data: lsns } = await supabase.from('lessons').select('*').eq('course_id', courseId).order('lesson_number')
       setLessons(lsns || [])
-
-      // Посещаемость
-      const { data: att } = await supabase
-        .from('attendance')
-        .select('*, lessons(title, lesson_number)')
-        .eq('student_id', uid)
+      const { data: att } = await supabase.from('attendance').select('*, lessons(title, lesson_number)').eq('student_id', uid)
       setAttendance(att || [])
-
-      // Результаты тестов
-      const { data: res } = await supabase
-        .from('test_results')
-        .select('*, lessons(title)')
-        .eq('student_id', uid)
-        .order('created_at', { ascending: false })
+      const { data: res } = await supabase.from('test_results').select('*, lessons(title)').eq('student_id', uid).order('created_at', { ascending: false })
       setResults(res || [])
-
-      // Домашки
       const lessonIds = lsns?.map((l: any) => l.id) || []
       if (lessonIds.length > 0) {
-        const { data: hws } = await supabase
-          .from('homeworks')
-          .select('*, homework_submissions(student_id)')
-          .in('lesson_id', lessonIds)
+        const { data: hws } = await supabase.from('homeworks').select('*, homework_submissions(student_id)').in('lesson_id', lessonIds)
         setHomeworks(hws || [])
       }
     }
     setLoading(false)
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
+  const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
 
   const tabs = [
-    { id: 'schedule', label: '📅 Расписание' },
-    { id: 'attendance', label: '✅ Посещаемость' },
-    { id: 'results', label: '📊 Мои результаты' },
-    { id: 'homework', label: '📝 Домашка' },
+    { id: 'schedule', label: 'Расписание', icon: '📅' },
+    { id: 'tests', label: 'Тесттер', icon: '📝' },
+    { id: 'results', label: 'Натыйжалар', icon: '📊' },
+    { id: 'homework', label: 'Үй тапшырма', icon: '📚' },
+    { id: 'attendance', label: 'Катышуу', icon: '✅' },
   ]
 
   const presentCount = attendance.filter(a => a.status === 'present').length
-  const totalCount = attendance.length
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{background:'var(--bg)'}}>
-      <div style={{color:'var(--muted)'}}>Загрузка...</div>
+    <div style={{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F8FAFF'}}>
+      <div style={{textAlign:'center'}}>
+        <img src="/images/logo.png" alt="Zhangak" style={{width:'48px', marginBottom:'16px'}} />
+        <div style={{color:'#64748B', fontSize:'14px'}}>Жүктөлүүдө...</div>
+      </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen" style={{background:'var(--bg)'}}>
-      {/* Шапка */}
-      <div className="flex items-center justify-between px-6 py-4" style={{borderBottom:'1px solid var(--border)',background:'var(--surface)'}}>
-        <div className="font-black text-lg" style={{background:'linear-gradient(90deg,#4B8EF5,#D45FCC)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
-          ЖАНГАК
+    <div style={{minHeight:'100vh', background:'#F8FAFF', fontFamily:'Inter, sans-serif'}}>
+      {/* NAVBAR */}
+      <nav style={{background:'#fff', borderBottom:'1px solid #E8ECF4', padding:'0 32px', height:'64px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, boxShadow:'0 1px 8px rgba(0,0,0,0.06)'}}>
+        <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+          <img src="/images/logo.png" alt="Zhangak" style={{width:'36px', height:'36px', objectFit:'contain'}} />
+          <span style={{fontWeight:'900', fontSize:'18px', color:'#1B4FD8'}}>Zhangak</span>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="text-sm" style={{color:'var(--muted)'}}>
-            {profile?.full_name}
+        <div style={{display:'flex', alignItems:'center', gap:'16px'}}>
+          <div style={{display:'flex', alignItems:'center', gap:'8px', background:'#F1F5F9', borderRadius:'10px', padding:'8px 14px'}}>
+            <div style={{width:'28px', height:'28px', background:'linear-gradient(135deg,#1B4FD8,#3B82F6)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:'700', fontSize:'12px'}}>
+              {profile?.full_name?.[0] || 'У'}
+            </div>
+            <span style={{fontSize:'14px', fontWeight:'600', color:'#1E293B'}}>{profile?.full_name}</span>
           </div>
-          <button onClick={handleLogout} className="text-sm px-4 py-2 rounded-lg" style={{background:'var(--bg)',color:'var(--muted)',border:'1px solid var(--border)'}}>
-            Выйти
+          <button onClick={handleLogout} style={{background:'none', border:'1px solid #E2E8F0', borderRadius:'8px', padding:'8px 16px', fontSize:'13px', color:'#64748B', cursor:'pointer', fontWeight:'500'}}>
+            Чыгуу
           </button>
         </div>
-      </div>
+      </nav>
 
-      <div className="flex">
-        {/* Меню */}
-        <div className="w-52 min-h-screen p-4 flex flex-col gap-1" style={{borderRight:'1px solid var(--border)',background:'var(--surface)'}}>
+      <div style={{maxWidth:'1100px', margin:'0 auto', padding:'32px 24px'}}>
+        {/* STATS ROW */}
+        <div style={{display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'16px', marginBottom:'28px'}}>
+          {[
+            { label:'Сабактар', value: lessons.length, icon:'📅', color:'#1B4FD8', bg:'#EFF6FF' },
+            { label:'Катышуу', value: `${presentCount}/${attendance.length}`, icon:'✅', color:'#059669', bg:'#F0FDF4' },
+            { label:'Тесттер', value: results.length, icon:'📊', color:'#7C3AED', bg:'#F5F3FF' },
+            { label:'Үй тапшырма', value: homeworks.length, icon:'📚', color:'#D97706', bg:'#FFF7ED' },
+          ].map(s => (
+            <div key={s.label} style={{background:'#fff', borderRadius:'16px', padding:'20px', border:'1px solid #E8ECF4', display:'flex', alignItems:'center', gap:'14px'}}>
+              <div style={{width:'44px', height:'44px', background:s.bg, borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', flexShrink:0}}>{s.icon}</div>
+              <div>
+                <div style={{fontWeight:'900', fontSize:'22px', color:s.color}}>{s.value}</div>
+                <div style={{fontSize:'12px', color:'#94A3B8', marginTop:'2px'}}>{s.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* TABS */}
+        <div style={{display:'flex', gap:'8px', marginBottom:'24px', background:'#fff', padding:'6px', borderRadius:'14px', border:'1px solid #E8ECF4', width:'fit-content'}}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className="text-left px-4 py-3 rounded-xl text-sm font-medium transition-all"
-              style={{
-                background: activeTab === tab.id ? 'rgba(75,142,245,0.15)' : 'transparent',
-                color: activeTab === tab.id ? '#4B8EF5' : 'var(--muted)',
-                border: activeTab === tab.id ? '1px solid rgba(75,142,245,0.3)' : '1px solid transparent'
+              style={{display:'flex', alignItems:'center', gap:'6px', padding:'10px 18px', borderRadius:'10px', border:'none', fontSize:'13px', fontWeight:'600', cursor:'pointer', transition:'all 0.2s',
+                background: activeTab === tab.id ? '#1B4FD8' : 'transparent',
+                color: activeTab === tab.id ? '#fff' : '#64748B',
               }}>
-              {tab.label}
+              <span>{tab.icon}</span> {tab.label}
             </button>
           ))}
+        </div>
 
-          {/* Статистика */}
-          <div className="mt-6 p-3 rounded-xl" style={{background:'var(--bg)',border:'1px solid var(--border)'}}>
-            <div className="text-xs mb-2" style={{color:'var(--muted)'}}>Посещаемость</div>
-            <div className="text-2xl font-black" style={{color:'#34C97B'}}>
-              {totalCount > 0 ? Math.round(presentCount/totalCount*100) : 0}%
-            </div>
-            <div className="text-xs mt-1" style={{color:'var(--muted)'}}>
-              {presentCount} из {totalCount} занятий
+        {/* SCHEDULE */}
+        {activeTab === 'schedule' && (
+          <div>
+            <h2 style={{fontSize:'20px', fontWeight:'800', color:'#1E293B', marginBottom:'20px'}}>Сабак программасы</h2>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:'16px'}}>
+              {lessons.map(l => (
+                <div key={l.id} style={{background:'#fff', borderRadius:'16px', border: l.is_test ? '2px solid #7C3AED' : '1px solid #E8ECF4', overflow:'hidden'}}>
+                  <div style={{height:'4px', background: l.is_test ? 'linear-gradient(90deg,#7C3AED,#A855F7)' : 'linear-gradient(90deg,#1B4FD8,#3B82F6)'}}></div>
+                  <div style={{padding:'18px'}}>
+                    <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px'}}>
+                      <span style={{fontSize:'11px', fontWeight:'700', color:'#94A3B8'}}>#{l.lesson_number}</span>
+                      {l.is_test && <span style={{background:'#F5F3FF', color:'#7C3AED', fontSize:'11px', fontWeight:'700', padding:'3px 10px', borderRadius:'20px'}}>Тест</span>}
+                    </div>
+                    <div style={{fontWeight:'700', fontSize:'15px', color:'#1E293B', marginBottom:'12px'}}>{l.title}</div>
+                    <div style={{display:'flex', flexDirection:'column', gap:'6px'}}>
+                      <div style={{display:'flex', alignItems:'center', gap:'8px', padding:'6px 10px', background:'#EFF6FF', borderRadius:'8px'}}>
+                        <span style={{fontSize:'12px'}}>📐</span>
+                        <span style={{fontSize:'12px', color:'#1B4FD8', fontWeight:'500'}}>{l.math_topic}</span>
+                      </div>
+                      <div style={{display:'flex', alignItems:'center', gap:'8px', padding:'6px 10px', background:'#F5F3FF', borderRadius:'8px'}}>
+                        <span style={{fontSize:'12px'}}>✍️</span>
+                        <span style={{fontSize:'12px', color:'#7C3AED', fontWeight:'500'}}>{l.kyr_topic}</span>
+                      </div>
+                      <div style={{display:'flex', alignItems:'center', gap:'8px', padding:'6px 10px', background:'#F0FDF4', borderRadius:'8px'}}>
+                        <span style={{fontSize:'12px'}}>📖</span>
+                        <span style={{fontSize:'12px', color:'#059669', fontWeight:'500'}}>{l.reading_topic}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Контент */}
-        <div className="flex-1 p-6">
-
-          {/* РАСПИСАНИЕ */}
-          {activeTab === 'schedule' && (
-            <div>
-              <h2 className="text-xl font-bold mb-6">Расписание занятий</h2>
-              <div className="grid grid-cols-3 gap-3">
-                {lessons.map(l => (
-                  <div key={l.id} className="p-4 rounded-xl"
-                    style={{
-                      background:'var(--surface)',
-                      border: l.is_test ? '1px solid rgba(123,97,255,0.4)' : '1px solid var(--border)'
-                    }}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold" style={{color:'var(--muted)'}}>№{l.lesson_number}</span>
-                      {l.is_test && (
-                        <span className="text-xs px-2 py-0.5 rounded-full" style={{background:'rgba(123,97,255,0.15)',color:'#7B61FF'}}>
-                          Тест
-                        </span>
-                      )}
-                    </div>
-                    <div className="font-medium text-sm mb-3">{l.title}</div>
-                    <div className="flex flex-col gap-1">
-                      <div className="text-xs px-2 py-1 rounded-lg" style={{background:'rgba(75,142,245,0.1)',color:'#4B8EF5'}}>
-                        📐 {l.math_topic}
-                      </div>
-                      <div className="text-xs px-2 py-1 rounded-lg" style={{background:'rgba(212,95,204,0.1)',color:'#D45FCC'}}>
-                        🔤 {l.kyr_topic}
-                      </div>
-                      <div className="text-xs px-2 py-1 rounded-lg" style={{background:'rgba(52,201,123,0.1)',color:'#34C97B'}}>
-                        📖 {l.reading_topic}
-                      </div>
-                    </div>
-                    {l.lesson_date && (
-                      <div className="text-xs mt-2" style={{color:'var(--muted)'}}>
-                        📅 {new Date(l.lesson_date).toLocaleDateString('ru')}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+        {/* TESTS */}
+        {activeTab === 'tests' && (
+          <div>
+            <h2 style={{fontSize:'20px', fontWeight:'800', color:'#1E293B', marginBottom:'20px'}}>Практикалык тесттер</h2>
+            <div style={{background:'#fff', borderRadius:'16px', border:'1px solid #E8ECF4', padding:'48px', textAlign:'center'}}>
+              <div style={{fontSize:'48px', marginBottom:'16px'}}>📝</div>
+              <div style={{fontWeight:'700', fontSize:'18px', color:'#1E293B', marginBottom:'8px'}}>Тесттер жакында</div>
+              <div style={{color:'#94A3B8', fontSize:'14px'}}>Мугалим тесттерди жүктөгөндөн кийин бул жерде пайда болот</div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ПОСЕЩАЕМОСТЬ */}
-          {activeTab === 'attendance' && (
-            <div>
-              <h2 className="text-xl font-bold mb-6">Моя посещаемость</h2>
-              <div className="grid grid-cols-3 gap-3 mb-6">
-                {[
-                  { label:'Присутствовал', value: attendance.filter(a=>a.status==='present').length, color:'#34C97B' },
-                  { label:'Опоздал', value: attendance.filter(a=>a.status==='late').length, color:'#F5A623' },
-                  { label:'Отсутствовал', value: attendance.filter(a=>a.status==='absent').length, color:'#FF6B6B' },
-                ].map(stat => (
-                  <div key={stat.label} className="p-4 rounded-xl text-center" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
-                    <div className="text-3xl font-black mb-1" style={{color:stat.color}}>{stat.value}</div>
-                    <div className="text-xs" style={{color:'var(--muted)'}}>{stat.label}</div>
-                  </div>
-                ))}
+        {/* RESULTS */}
+        {activeTab === 'results' && (
+          <div>
+            <h2 style={{fontSize:'20px', fontWeight:'800', color:'#1E293B', marginBottom:'20px'}}>Менин натыйжаларым</h2>
+            {results.length === 0 ? (
+              <div style={{background:'#fff', borderRadius:'16px', border:'1px solid #E8ECF4', padding:'48px', textAlign:'center'}}>
+                <div style={{fontSize:'48px', marginBottom:'16px'}}>📊</div>
+                <div style={{fontWeight:'700', fontSize:'18px', color:'#1E293B', marginBottom:'8px'}}>Натыйжа жок</div>
+                <div style={{color:'#94A3B8', fontSize:'14px'}}>Тесттен өткөндөн кийин натыйжалар бул жерде пайда болот</div>
               </div>
-
-              <div className="flex flex-col gap-2">
-                {attendance.map(a => (
-                  <div key={a.id} className="flex items-center justify-between p-3 rounded-xl"
-                    style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
-                    <div className="text-sm font-medium">
-                      №{a.lessons?.lesson_number} {a.lessons?.title}
+            ) : (
+              <div style={{display:'flex', flexDirection:'column', gap:'16px'}}>
+                {results.map(r => (
+                  <div key={r.id} style={{background:'#fff', borderRadius:'16px', border:'1px solid #E8ECF4', padding:'24px'}}>
+                    <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px'}}>
+                      <div style={{fontWeight:'700', fontSize:'16px', color:'#1E293B'}}>{r.lessons?.title}</div>
+                      <div style={{background:'linear-gradient(135deg,#1B4FD8,#7C3AED)', borderRadius:'12px', padding:'8px 20px'}}>
+                        <span style={{color:'#fff', fontWeight:'900', fontSize:'20px'}}>{Number(r.total_score).toFixed(1)}</span>
+                        <span style={{color:'rgba(255,255,255,0.7)', fontSize:'12px', marginLeft:'4px'}}>балл</span>
+                      </div>
                     </div>
-                    <div className="text-xs px-3 py-1 rounded-full font-bold" style={{
-                      background: a.status==='present' ? 'rgba(52,201,123,0.15)' : a.status==='late' ? 'rgba(245,166,35,0.15)' : 'rgba(255,107,107,0.15)',
-                      color: a.status==='present' ? '#34C97B' : a.status==='late' ? '#F5A623' : '#FF6B6B'
-                    }}>
-                      {a.status==='present' ? '✓ Присутствовал' : a.status==='late' ? '⏰ Опоздал' : '✗ Отсутствовал'}
-                    </div>
-                  </div>
-                ))}
-                {attendance.length === 0 && (
-                  <div className="text-center py-8" style={{color:'var(--muted)'}}>Данных пока нет</div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* РЕЗУЛЬТАТЫ */}
-          {activeTab === 'results' && (
-            <div>
-              <h2 className="text-xl font-bold mb-6">Мои результаты</h2>
-              {results.length === 0 ? (
-                <div className="text-center py-12" style={{color:'var(--muted)'}}>Результатов пока нет</div>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {results.map(r => (
-                    <div key={r.id} className="p-5 rounded-xl" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="font-bold">{r.lessons?.title}</div>
-                        <div className="text-2xl font-black" style={{color:'#7B61FF'}}>
-                          {Number(r.total_score).toFixed(1)} б
+                    <div style={{display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'12px'}}>
+                      {[
+                        { label:'Математика', value: r.math_score, mult: 1.12, color:'#1B4FD8', bg:'#EFF6FF' },
+                        { label:'Аналогия', value: r.analogy_score, mult: 2, color:'#7C3AED', bg:'#F5F3FF' },
+                        { label:'Чтение', value: r.reading_score, mult: 2, color:'#059669', bg:'#F0FDF4' },
+                        { label:'Грамматика', value: r.grammar_score, mult: 1.93, color:'#D97706', bg:'#FFF7ED' },
+                      ].map(s => (
+                        <div key={s.label} style={{background:s.bg, borderRadius:'12px', padding:'14px', textAlign:'center'}}>
+                          <div style={{fontSize:'11px', color:s.color, fontWeight:'600', marginBottom:'6px'}}>{s.label}</div>
+                          <div style={{fontWeight:'900', fontSize:'20px', color:'#1E293B'}}>{s.value}</div>
+                          <div style={{fontSize:'11px', color:'#94A3B8', marginTop:'3px'}}>×{s.mult} = {(s.value*s.mult).toFixed(1)}</div>
                         </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* HOMEWORK */}
+        {activeTab === 'homework' && (
+          <div>
+            <h2 style={{fontSize:'20px', fontWeight:'800', color:'#1E293B', marginBottom:'20px'}}>Үй тапшырмалар</h2>
+            {homeworks.length === 0 ? (
+              <div style={{background:'#fff', borderRadius:'16px', border:'1px solid #E8ECF4', padding:'48px', textAlign:'center'}}>
+                <div style={{fontSize:'48px', marginBottom:'16px'}}>📚</div>
+                <div style={{fontWeight:'700', fontSize:'18px', color:'#1E293B', marginBottom:'8px'}}>Тапшырма жок</div>
+                <div style={{color:'#94A3B8', fontSize:'14px'}}>Мугалим тапшырма берсе бул жерде пайда болот</div>
+              </div>
+            ) : (
+              <div style={{display:'flex', flexDirection:'column', gap:'12px'}}>
+                {homeworks.map(hw => {
+                  const submitted = hw.homework_submissions?.some((s: any) => s.student_id === profile?.id)
+                  return (
+                    <div key={hw.id} style={{background:'#fff', borderRadius:'16px', border:`1px solid ${submitted ? '#BBF7D0' : '#E8ECF4'}`, padding:'20px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                      <div>
+                        <div style={{fontWeight:'700', fontSize:'15px', color:'#1E293B', marginBottom:'4px'}}>{hw.title}</div>
+                        {hw.description && <div style={{fontSize:'13px', color:'#94A3B8'}}>{hw.description}</div>}
+                        {hw.due_date && <div style={{fontSize:'12px', color:'#D97706', marginTop:'6px'}}>📅 {new Date(hw.due_date).toLocaleDateString('ru')}</div>}
                       </div>
-                      <div className="grid grid-cols-4 gap-3">
-                        {[
-                          { label:'Математика', value: r.math_score, mult: 1.12, color:'#4B8EF5' },
-                          { label:'Аналогия', value: r.analogy_score, mult: 2, color:'#D45FCC' },
-                          { label:'Чтение', value: r.reading_score, mult: 2, color:'#34C97B' },
-                          { label:'Грамматика', value: r.grammar_score, mult: 1.93, color:'#F5A623' },
-                        ].map(s => (
-                          <div key={s.label} className="p-3 rounded-lg text-center" style={{background:'var(--bg)'}}>
-                            <div className="text-xs mb-1" style={{color:s.color}}>{s.label}</div>
-                            <div className="font-black text-lg" style={{color:'var(--text)'}}>{s.value}</div>
-                            <div className="text-xs mt-1" style={{color:'var(--muted)'}}>×{s.mult} = {(s.value*s.mult).toFixed(1)}</div>
-                          </div>
-                        ))}
+                      <div style={{background: submitted ? '#F0FDF4' : '#FEF2F2', color: submitted ? '#059669' : '#EF4444', padding:'6px 14px', borderRadius:'20px', fontSize:'12px', fontWeight:'700', flexShrink:0}}>
+                        {submitted ? '✓ Тапшырылды' : '⏳ Тапшырылган жок'}
                       </div>
                     </div>
-                  ))}
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ATTENDANCE */}
+        {activeTab === 'attendance' && (
+          <div>
+            <h2 style={{fontSize:'20px', fontWeight:'800', color:'#1E293B', marginBottom:'20px'}}>Катышуу</h2>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px', marginBottom:'24px'}}>
+              {[
+                { label:'Катышты', value: attendance.filter(a=>a.status==='present').length, color:'#059669', bg:'#F0FDF4' },
+                { label:'Кечигип келди', value: attendance.filter(a=>a.status==='late').length, color:'#D97706', bg:'#FFF7ED' },
+                { label:'Катышкан жок', value: attendance.filter(a=>a.status==='absent').length, color:'#EF4444', bg:'#FEF2F2' },
+              ].map(s => (
+                <div key={s.label} style={{background:'#fff', borderRadius:'16px', padding:'20px', border:'1px solid #E8ECF4', textAlign:'center'}}>
+                  <div style={{fontWeight:'900', fontSize:'32px', color:s.color, marginBottom:'6px'}}>{s.value}</div>
+                  <div style={{fontSize:'13px', color:'#94A3B8'}}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+              {attendance.map(a => (
+                <div key={a.id} style={{background:'#fff', borderRadius:'12px', border:'1px solid #E8ECF4', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                  <div style={{fontWeight:'500', fontSize:'14px', color:'#1E293B'}}>
+                    #{a.lessons?.lesson_number} {a.lessons?.title}
+                  </div>
+                  <div style={{
+                    padding:'5px 14px', borderRadius:'20px', fontSize:'12px', fontWeight:'700',
+                    background: a.status==='present' ? '#F0FDF4' : a.status==='late' ? '#FFF7ED' : '#FEF2F2',
+                    color: a.status==='present' ? '#059669' : a.status==='late' ? '#D97706' : '#EF4444'
+                  }}>
+                    {a.status==='present' ? '✓ Катышты' : a.status==='late' ? '⏰ Кечигди' : '✗ Жок болду'}
+                  </div>
+                </div>
+              ))}
+              {attendance.length === 0 && (
+                <div style={{background:'#fff', borderRadius:'16px', border:'1px solid #E8ECF4', padding:'48px', textAlign:'center', color:'#94A3B8'}}>
+                  Маалымат жок
                 </div>
               )}
             </div>
-          )}
-
-          {/* ДОМАШКА */}
-          {activeTab === 'homework' && (
-            <div>
-              <h2 className="text-xl font-bold mb-6">Домашние задания</h2>
-              {homeworks.length === 0 ? (
-                <div className="text-center py-12" style={{color:'var(--muted)'}}>Заданий пока нет</div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {homeworks.map(hw => {
-                    const submitted = hw.homework_submissions?.some((s: any) => s.student_id === profile?.id)
-                    return (
-                      <div key={hw.id} className="p-4 rounded-xl" style={{background:'var(--surface)',border:`1px solid ${submitted ? 'rgba(52,201,123,0.3)' : 'var(--border)'}`}}>
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="font-bold">{hw.title}</div>
-                          <div className="text-xs px-2 py-1 rounded-full" style={{
-                            background: submitted ? 'rgba(52,201,123,0.15)' : 'rgba(255,107,107,0.15)',
-                            color: submitted ? '#34C97B' : '#FF6B6B'
-                          }}>
-                            {submitted ? '✓ Сдано' : '⏳ Не сдано'}
-                          </div>
-                        </div>
-                        {hw.description && <div className="text-sm mb-2" style={{color:'var(--muted)'}}>{hw.description}</div>}
-                        {hw.due_date && (
-                          <div className="text-xs" style={{color:'#F5A623'}}>
-                            До: {new Date(hw.due_date).toLocaleDateString('ru')}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )
