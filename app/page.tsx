@@ -46,7 +46,7 @@ export default function LandingPage() {
       const diff = target.getTime() - now.getTime()
       if (diff <= 0) { clearInterval(interval); return }
       setTimeLeft({
-        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        days: Math.floor(diff / (1000 * 60 * 60 * 24 * 30)),
         hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
         minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
         seconds: Math.floor((diff % (1000 * 60)) / 1000),
@@ -238,7 +238,7 @@ export default function LandingPage() {
           <h2 style={{fontSize:'20px',fontWeight:'800',marginBottom:'32px',color:'rgba(255,255,255,0.9)'}}>⏰ ЖРТга чейин калды</h2>
           <div className="timer-grid" style={{display:'flex',gap:'12px',justifyContent:'center',flexWrap:'wrap',alignItems:'center'}}>
             {[
-              {n:timeLeft.days,l:'Күн'},
+              {n:timeLeft.days,l:'Ай'},
               {n:timeLeft.hours,l:'Саат'},
               {n:timeLeft.minutes,l:'Мүнөт'},
               {n:timeLeft.seconds,l:'Секунд'},
@@ -430,38 +430,28 @@ export default function LandingPage() {
       </div>
 
       {/* OFFICE — 2GIS MAP */}
-      <div id="office" className="section-pad" style={{padding:'80px 60px',background:DARK}}>
-        <div style={{maxWidth:'1200px',margin:'0 auto'}}>
-          <Animate>
-            <div style={{textAlign:'center',marginBottom:'48px'}}>
-              <h2 style={{fontSize:'32px',fontWeight:'900',letterSpacing:'-1px',marginBottom:'10px'}}>Биздин офис</h2>
-              <p style={{color:'rgba(255,255,255,0.5)',fontSize:'15px'}}>📍 Горький көчөсү, 108 · Бишкек</p>
-            </div>
-          </Animate>
-          <Animate delay={100}>
-            <div style={{borderRadius:'24px',overflow:'hidden',border:'1px solid rgba(255,255,255,0.1)',height:'400px'}}>
-              <iframe
-                src="https://2gis.kg/bishkek/search/%D0%93%D0%BE%D1%80%D1%8C%D0%BA%D0%B8%D0%B9%20108/geo/15675429472714165/42.871642%2C74.604786?m=74.604786%2C42.871642%2F16"
-                width="100%"
-                height="400"
-                style={{border:'none',display:'block'}}
-                title="Жангак офиси"
-              />
-            </div>
-            <div style={{display:'flex',gap:'24px',marginTop:'20px',flexWrap:'wrap',justifyContent:'center'}}>
-              {[
-                {icon:'📍',text:'Горький көчөсү, 108'},
-                {icon:'🕙',text:'Дүйшөмбү-Ишемби: 9:00–19:00'},
-                {icon:'📲',text:'+996 502 077 326'},
-              ].map(i=>(
-                <div key={i.text} style={{display:'flex',alignItems:'center',gap:'8px',fontSize:'14px',color:'rgba(255,255,255,0.7)'}}>
-                  <span>{i.icon}</span><span>{i.text}</span>
-                </div>
-              ))}
-            </div>
-          </Animate>
+      <div style={{borderRadius:'24px',overflow:'hidden',border:'1px solid rgba(255,255,255,0.1)'}}>
+  <div style={{background:'rgba(255,255,255,0.03)',padding:'40px',textAlign:'center'}}>
+    <div style={{fontSize:'48px',marginBottom:'16px'}}>📍</div>
+    <div style={{fontWeight:'900',fontSize:'24px',marginBottom:'8px'}}>Горький көчөсү, 108</div>
+    <div style={{color:'rgba(255,255,255,0.5)',fontSize:'15px',marginBottom:'28px'}}>Бишкек, Кыргызстан</div>
+    <div style={{display:'flex',gap:'16px',justifyContent:'center',flexWrap:'wrap',marginBottom:'28px'}}>
+      {[
+        {icon:'🕙',text:'Дүйш-Иш: 9:00–19:00'},
+        {icon:'📲',text:'+996 502 077 326'},
+        {icon:'📍',text:'Горький 108'},
+      ].map(i=>(
+        <div key={i.text} style={{display:'flex',alignItems:'center',gap:'8px',fontSize:'14px',color:'rgba(255,255,255,0.7)',background:'rgba(255,255,255,0.05)',borderRadius:'10px',padding:'10px 16px'}}>
+          <span>{i.icon}</span><span>{i.text}</span>
         </div>
-      </div>
+      ))}
+    </div>
+    <a href="https://2gis.kg/bishkek/search/Горький 108" target="_blank" rel="noopener noreferrer"
+      style={{background:BLUE,color:'#fff',borderRadius:'12px',padding:'14px 32px',fontWeight:'700',fontSize:'15px',textDecoration:'none',display:'inline-block'}}>
+      🗺 2GIS-те ачуу →
+    </a>
+  </div>
+</div>
 
       {/* FAQ */}
       <div id="faq" className="section-pad" style={{padding:'80px 60px',background:'#fff'}}>
