@@ -430,29 +430,17 @@ export default function LandingPage() {
       </div>
 
       {/* OFFICE — 2GIS MAP */}
-      <div style={{borderRadius:'24px',overflow:'hidden',border:'1px solid rgba(255,255,255,0.1)'}}>
-  <div style={{background:'rgba(255,255,255,0.03)',padding:'40px',textAlign:'center'}}>
-    <div style={{fontSize:'48px',marginBottom:'16px'}}>📍</div>
-    <div style={{fontWeight:'900',fontSize:'24px',marginBottom:'8px'}}>Горький көчөсү, 108</div>
-    <div style={{color:'rgba(255,255,255,0.5)',fontSize:'15px',marginBottom:'28px'}}>Бишкек, Кыргызстан</div>
-    <div style={{display:'flex',gap:'16px',justifyContent:'center',flexWrap:'wrap',marginBottom:'28px'}}>
-      {[
-        {icon:'🕙',text:'Дүйш-Иш: 9:00–19:00'},
-        {icon:'📲',text:'+996 502 077 326'},
-        {icon:'📍',text:'Горький 108'},
-      ].map(i=>(
-        <div key={i.text} style={{display:'flex',alignItems:'center',gap:'8px',fontSize:'14px',color:'rgba(255,255,255,0.7)',background:'rgba(255,255,255,0.05)',borderRadius:'10px',padding:'10px 16px'}}>
-          <span>{i.icon}</span><span>{i.text}</span>
-        </div>
-      ))}
-    </div>
-    <a href="https://2gis.kg/bishkek/search/Горький 108" target="_blank" rel="noopener noreferrer"
-      style={{background:BLUE,color:'#fff',borderRadius:'12px',padding:'14px 32px',fontWeight:'700',fontSize:'15px',textDecoration:'none',display:'inline-block'}}>
-      🗺 2GIS-те ачуу →
-    </a>
-  </div>
+     <div style={{borderRadius:'24px',overflow:'hidden',border:'1px solid rgba(255,255,255,0.1)'}}>
+  <iframe
+    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2924.8!2d74.604786!3d42.871642!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDLCsDUyJzE3LjkiTiA3NMKwMzYnMTcuMiJF!5e0!3m2!1sru!2skg!4v1234567890"
+    width="100%"
+    height="400"
+    style={{border:'none',display:'block'}}
+    allowFullScreen
+    loading="lazy"
+    title="Жангак офиси"
+  />
 </div>
-
       {/* FAQ */}
       <div id="faq" className="section-pad" style={{padding:'80px 60px',background:'#fff'}}>
         <div style={{maxWidth:'900px',margin:'0 auto'}}>
