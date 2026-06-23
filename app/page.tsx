@@ -430,16 +430,44 @@ export default function LandingPage() {
       </div>
 
       {/* OFFICE — 2GIS MAP */}
-     <div style={{borderRadius:'24px',overflow:'hidden',border:'1px solid rgba(255,255,255,0.1)'}}>
-  <iframe
-    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2924.8!2d74.604786!3d42.871642!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDLCsDUyJzE3LjkiTiA3NMKwMzYnMTcuMiJF!5e0!3m2!1sru!2skg!4v1234567890"
-    width="100%"
-    height="400"
-    style={{border:'none',display:'block'}}
-    allowFullScreen
-    loading="lazy"
-    title="Жангак офиси"
-  />
+  <div style={{display:'grid', gridTemplateColumns:'1fr 300px', gap:'20px', alignItems:'stretch'}}>
+  {/* КАРТА */}
+  <div style={{borderRadius:'20px', overflow:'hidden', border:'1px solid rgba(255,255,255,0.1)', minHeight:'300px'}}>
+    <iframe
+      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d749.8!2d74.6048!3d42.8716!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x389ec85d12345678%3A0x0!2z0JPQvtGA0YzQutC40Lkg0YPQu9C40YbQsCwgMTA4LCDQkdC40YjQutC10Lo!5e0!3m2!1sru!2skg!4v1234567890!5m2!1sru!2skg"
+      width="100%"
+      height="300"
+      style={{border:'none', display:'block'}}
+      allowFullScreen
+      loading="lazy"
+      title="Жангак офиси"
+    />
+  </div>
+
+  {/* ИНФО */}
+  <div style={{background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'20px', padding:'28px', display:'flex', flexDirection:'column', gap:'20px'}}>
+    <div>
+      <div style={{fontWeight:'900', fontSize:'18px', marginBottom:'6px'}}>Жангак офиси</div>
+      <div style={{color:'rgba(255,255,255,0.5)', fontSize:'13px'}}>Бишкек, Кыргызстан</div>
+    </div>
+    {[
+      {icon:'📍', label:'Дарек', value:'Горький көчөсү, 108'},
+      {icon:'🕙', label:'Иштөө убактысы', value:'Дүй–Иш: 9:00–19:00'},
+      {icon:'📲', label:'Телефон', value:'+996 502 077 326'},
+    ].map(i=>(
+      <div key={i.label} style={{display:'flex', gap:'12px', alignItems:'flex-start'}}>
+        <div style={{width:'36px', height:'36px', background:'rgba(37,99,235,0.2)', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', flexShrink:0}}>{i.icon}</div>
+        <div>
+          <div style={{fontSize:'11px', color:'rgba(255,255,255,0.4)', marginBottom:'2px'}}>{i.label}</div>
+          <div style={{fontSize:'14px', fontWeight:'600'}}>{i.value}</div>
+        </div>
+      </div>
+    ))}
+    <a href="https://go.2gis.com/VQjcS" target="_blank" rel="noopener noreferrer"
+      style={{background:BLUE, color:'#fff', borderRadius:'12px', padding:'12px 20px', fontWeight:'700', fontSize:'14px', textDecoration:'none', textAlign:'center', marginTop:'auto'}}>
+      🗺 2GIS-те ачуу →
+    </a>
+  </div>
 </div>
       {/* FAQ */}
       <div id="faq" className="section-pad" style={{padding:'80px 60px',background:'#fff'}}>
