@@ -137,7 +137,7 @@ export default function LandingPage() {
       </nav>
 
       {/* SUMMER INTENSIVE CARD */}
-      <div className="section-pad" style={{padding:'32px 60px', background:'linear-gradient(135deg,#1a1a2e,#16213e)'}}>
+      <div className="section-pad" style={{padding:'32px 60px', background:DARK}}>
         <Animate>
           <div style={{maxWidth:'1200px', margin:'0 auto', background:'linear-gradient(135deg,#F59E0B22,#EF444422)', border:'1px solid rgba(245,158,11,0.4)', borderRadius:'24px', padding:'32px 40px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'24px', flexWrap:'wrap'}}>
             <div>
@@ -519,7 +519,7 @@ export default function LandingPage() {
       </div>
 
       {/* FOOTER */}
-      <div className="nav-pad" style={{background:'rgba(0,0,0,0.4)',borderTop:'1px solid rgba(255,255,255,0.05)',padding:'28px 60px',display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'12px'}}>
+      <div className="nav-pad" style={{background:'#060E24',borderTop:'1px solid rgba(255,255,255,0.05)',padding:'28px 60px',display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'12px'}}>
         <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
           <img src="/images/logo.png" alt="Zhangak" style={{width:'30px',height:'30px',objectFit:'contain',filter:'brightness(0) invert(1)'}} />
           <span style={{fontWeight:'900',fontSize:'15px'}}>Zhangak</span>
