@@ -233,7 +233,7 @@ export default function LandingPage() {
       </div>
 
       {/* TIMER */}
-      <div className="section-pad" style={{background:BLUE,padding:'56px 60px',textAlign:'center'}}>
+      <div className="section-pad" style={{background:DARK,padding:'56px 60px',textAlign:'center'}}>
         <Animate>
           <h2 style={{fontSize:'20px',fontWeight:'800',marginBottom:'32px',color:'rgba(255,255,255,0.9)'}}>⏰ ЖРТга чейин калды</h2>
           <div className="timer-grid" style={{display:'flex',gap:'12px',justifyContent:'center',flexWrap:'wrap',alignItems:'center'}}>
@@ -499,7 +499,7 @@ export default function LandingPage() {
       </div>
 
       {/* CTA */}
-      <div className="section-pad" style={{padding:'80px 60px',background:BLUE}}>
+      <div className="section-pad" style={{padding:'80px 60px',background:DARK}}>
         <Animate>
           <div style={{maxWidth:'600px',margin:'0 auto',textAlign:'center'}}>
             <h2 style={{fontSize:'36px',fontWeight:'900',letterSpacing:'-1px',marginBottom:'14px'}}>
