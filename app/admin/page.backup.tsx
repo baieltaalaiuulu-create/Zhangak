@@ -1,6 +1,5 @@
 'use client'
 export const dynamic = 'force-dynamic'
-
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -22,28 +21,43 @@ export default function AdminPage() {
   }, [])
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/'); return }
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-    console.log('Admin check - user:', user.id, 'profile:', profile)
-    if (!profile) { console.log('No profile found, staying on admin page'); return }
-    if (profile.role !== 'admin') router.push('/')
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) { router.push('/'); return }
+  
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  
+  console.log('Admin check - user:', user.id, 'profile:', profile)
+  
+  if (!profile) {
+    console.log('No profile found, staying on admin page')
+    return
   }
-
-  const fetchData = async () => {
-    console.log('Fetching data...')
-    const { data: c, error: ce } = await supabase.from('courses').select('*').order('id')
-    console.log('Courses:', c, 'Error:', ce)
-    const { data: g } = await supabase.from('groups').select('*, courses(name), profiles(full_name)')
-    const { data: s } = await supabase.from('profiles').select('*').eq('role', 'student').order('full_name')
-    const { data: t } = await supabase.from('profiles').select('*').eq('role', 'teacher').order('full_name')
-    setCourses(c || [])
-    setGroups(g || [])
-    setStudents(s || [])
-    setTeachers(t || [])
-    setLoading(false)
+  
+  if (profile.role !== 'admin') {
+    router.push('/')
   }
+}
 
+ const fetchData = async () => {
+  console.log('Fetching data...')
+  
+  const { data: c, error: ce } = await supabase.from('courses').select('*').order('id')
+  console.log('Courses:', c, 'Error:', ce)
+  
+  const { data: g } = await supabase.from('groups').select('*, courses(name), profiles(full_name)')
+  const { data: s } = await supabase.from('profiles').select('*').eq('role', 'student').order('full_name')
+  const { data: t } = await supabase.from('profiles').select('*').eq('role', 'teacher').order('full_name')
+  
+  setCourses(c || [])
+  setGroups(g || [])
+  setStudents(s || [])
+  setTeachers(t || [])
+  setLoading(false)
+}
   const fetchLessons = async (courseId: number) => {
     setSelectedCourse(courseId)
     const { data } = await supabase.from('lessons').select('*').eq('course_id', courseId).order('lesson_number')
@@ -55,16 +69,15 @@ export default function AdminPage() {
     router.push('/')
   }
 
-  const tabs = [
-    { id: 'dashboard', label: '📊 Главная' },
-    { id: 'courses', label: '📚 Программа' },
-    { id: 'groups', label: '👥 Группы' },
-    { id: 'students', label: '🎓 Ученики' },
-    { id: 'teachers', label: '👨‍🏫 Учителя' },
-    { id: 'tests', label: '📝 Тесттер' },
-    { id: 'results', label: '📈 Результаты' },
-  ]
-
+const tabs = [
+  { id: 'dashboard', label: '📊 Главная' },
+  { id: 'courses', label: '📚 Программа' },
+  { id: 'groups', label: '👥 Группы' },
+  { id: 'students', label: '🎓 Ученики' },
+  { id: 'teachers', label: '👨‍🏫 Учителя' },
+  { id: 'tests', label: '📝 Тесттер' },
+  { id: 'results', label: '📈 Результаты' },
+]
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={{background:'var(--bg)'}}>
       <div style={{color:'var(--muted)'}}>Загрузка...</div>
@@ -73,6 +86,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen" style={{background:'var(--bg)'}}>
+      {/* Шапка */}
       <div className="flex items-center justify-between px-6 py-4" style={{borderBottom:'1px solid var(--border)', background:'var(--surface)'}}>
         <div className="font-black text-lg" style={{background:'linear-gradient(90deg,#4B8EF5,#D45FCC)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
           ЖАНГАК — Админ
@@ -83,6 +97,7 @@ export default function AdminPage() {
       </div>
 
       <div className="flex">
+        {/* Боковое меню */}
         <div className="w-52 min-h-screen p-4 flex flex-col gap-1" style={{borderRight:'1px solid var(--border)',background:'var(--surface)'}}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -97,8 +112,10 @@ export default function AdminPage() {
           ))}
         </div>
 
+        {/* Контент */}
         <div className="flex-1 p-6">
 
+          {/* ГЛАВНАЯ */}
           {activeTab === 'dashboard' && (
             <div>
               <h2 className="text-xl font-bold mb-6" style={{color:'var(--text)'}}>Обзор</h2>
@@ -132,6 +149,7 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* ПРОГРАММА */}
           {activeTab === 'courses' && (
             <div>
               <h2 className="text-xl font-bold mb-6">Учебная программа</h2>
@@ -148,6 +166,7 @@ export default function AdminPage() {
                   </button>
                 ))}
               </div>
+
               {lessons.length > 0 && (
                 <div className="rounded-xl overflow-hidden" style={{border:'1px solid var(--border)'}}>
                   <table className="w-full text-sm">
@@ -166,7 +185,7 @@ export default function AdminPage() {
                         <tr key={l.id} style={{borderBottom:'1px solid var(--border)',background: i%2===0?'var(--bg)':'var(--surface)'}}>
                           <td className="px-4 py-3 font-bold" style={{color:'var(--muted)'}}>{l.lesson_number}</td>
                           <td className="px-4 py-3 font-medium">{l.title}</td>
-                          <td className="px-4 py-3 text-xs" style={{color:'#4F8EF7'}}>{l.math_topic}</td>
+                          <td className="px-4 py-3 text-xs" style={{color:'#4B8EF5'}}>{l.math_topic}</td>
                           <td className="px-4 py-3 text-xs" style={{color:'#D45FCC'}}>{l.kyr_topic}</td>
                           <td className="px-4 py-3 text-xs" style={{color:'#34C97B'}}>{l.reading_topic}</td>
                           <td className="px-4 py-3">
@@ -181,6 +200,7 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* УЧЕНИКИ */}
           {activeTab === 'students' && (
             <div>
               <div className="flex items-center justify-between mb-6">
@@ -191,6 +211,7 @@ export default function AdminPage() {
                   <thead>
                     <tr style={{background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
                       <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Имя</th>
+                      <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Email</th>
                       <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Телефон</th>
                       <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Дата</th>
                     </tr>
@@ -199,12 +220,13 @@ export default function AdminPage() {
                     {students.map((s, i) => (
                       <tr key={s.id} style={{borderBottom:'1px solid var(--border)',background:i%2===0?'var(--bg)':'var(--surface)'}}>
                         <td className="px-4 py-3 font-medium">{s.full_name}</td>
+                        <td className="px-4 py-3" style={{color:'var(--muted)'}}>{s.email || '—'}</td>
                         <td className="px-4 py-3" style={{color:'var(--muted)'}}>{s.phone || '—'}</td>
                         <td className="px-4 py-3 text-xs" style={{color:'var(--muted)'}}>{new Date(s.created_at).toLocaleDateString('ru')}</td>
                       </tr>
                     ))}
                     {students.length === 0 && (
-                      <tr><td colSpan={3} className="px-4 py-8 text-center" style={{color:'var(--muted)'}}>Ученики не добавлены</td></tr>
+                      <tr><td colSpan={4} className="px-4 py-8 text-center" style={{color:'var(--muted)'}}>Ученики не добавлены</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -212,6 +234,7 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* УЧИТЕЛЯ */}
           {activeTab === 'teachers' && (
             <div>
               <h2 className="text-xl font-bold mb-6">Учителя ({teachers.length})</h2>
@@ -241,6 +264,7 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* ГРУППЫ */}
           {activeTab === 'groups' && (
             <div>
               <h2 className="text-xl font-bold mb-6">Группы ({groups.length})</h2>
@@ -258,14 +282,17 @@ export default function AdminPage() {
               </div>
             </div>
           )}
+          
+          
+          {/* ТЕСТТЕР */}
+{activeTab === 'tests' && (
+  <div>
+    <h2 className="text-xl font-bold mb-6">Практикалык тесттер</h2>
+    <AdminTests />
+  </div>
+)}
 
-          {activeTab === 'tests' && (
-            <div>
-              <h2 className="text-xl font-bold mb-6">Практикалык тесттер</h2>
-              <AdminTests />
-            </div>
-          )}
-
+          {/* РЕЗУЛЬТАТЫ */}
           {activeTab === 'results' && (
             <div>
               <h2 className="text-xl font-bold mb-6">Результаты тестов</h2>
@@ -322,8 +349,6 @@ function ResultsTab() {
       </table>
     </div>
   )
-}
-
 function AdminTests() {
   const [tests, setTests] = useState<any[]>([])
   const [selectedTest, setSelectedTest] = useState<any>(null)
@@ -334,7 +359,6 @@ function AdminTests() {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [qType, setQType] = useState<'text' | 'image'>('text')
-  const router = useRouter()
 
   useEffect(() => { fetchTests() }, [])
 
@@ -403,7 +427,7 @@ function AdminTests() {
 
   const deleteQuestion = async (id: number) => {
     await supabase.from('questions').delete().eq('id', id)
-    if (selectedTest) fetchQuestions(selectedTest.id)
+    fetchQuestions(selectedTest.id)
   }
 
   const BLUE = '#2563EB'
@@ -416,6 +440,7 @@ function AdminTests() {
 
   return (
     <div style={{display:'grid', gridTemplateColumns:'280px 1fr', gap:'24px', alignItems:'start'}}>
+      {/* TEST LIST */}
       <div>
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px'}}>
           <div style={{fontWeight:'700', fontSize:'14px', color:'var(--muted)'}}>Тесттер</div>
@@ -462,6 +487,7 @@ function AdminTests() {
         </div>
       </div>
 
+      {/* QUESTIONS */}
       {selectedTest ? (
         <div>
           <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px'}}>
@@ -475,9 +501,11 @@ function AdminTests() {
             </a>
           </div>
 
+          {/* ADD QUESTION FORM */}
           <div style={{background:'var(--surface)', border:'1px solid var(--border)', borderRadius:'16px', padding:'20px', marginBottom:'20px'}}>
             <div style={{fontWeight:'700', fontSize:'14px', marginBottom:'16px'}}>Жаңы суроо кошуу</div>
 
+            {/* TYPE TOGGLE */}
             <div style={{display:'flex', gap:'8px', marginBottom:'16px'}}>
               {(['text', 'image'] as const).map(type => (
                 <button key={type} onClick={() => setQType(type)}
@@ -518,7 +546,7 @@ function AdminTests() {
                     {opt}
                   </div>
                   <input
-                    value={(newQ as any)[`option_${opt.toLowerCase()}`]}
+                    value={newQ[`option_${opt.toLowerCase()}` as keyof typeof newQ]}
                     onChange={e => setNewQ(p => ({...p, [`option_${opt.toLowerCase()}`]: e.target.value}))}
                     placeholder={`${opt} варианты`}
                     style={{flex:1, padding:'6px 10px', borderRadius:'6px', border:`1px solid ${newQ.correct_answer === opt ? BLUE : 'var(--border)'}`, background:'var(--bg)', color:'var(--text)', fontSize:'12px'}} />
@@ -536,6 +564,7 @@ function AdminTests() {
             </button>
           </div>
 
+          {/* QUESTIONS LIST */}
           <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
             {questions.map((q, i) => (
               <div key={q.id} style={{background:'var(--surface)', border:'1px solid var(--border)', borderRadius:'12px', padding:'16px', display:'flex', gap:'16px', alignItems:'flex-start'}}>
