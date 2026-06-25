@@ -64,8 +64,9 @@ export default function LandingPage() {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
     if (!profile) { router.push('/admin'); return }
     if (profile.role === 'admin') router.push('/admin')
-    else if (profile.role === 'teacher') router.push('/teacher')
-    else router.push('/student')
+     else if (profile.role === 'teacher') router.push('/teacher')
+     else if (profile.role === 'manager') router.push('/manager')
+     else router.push('/student')
   }
 
   const whatsapp = 'https://wa.me/996502077326'
