@@ -1,9 +1,33 @@
 'use client'
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+
+function Animate({ children, delay = 0 }: { children: React.ReactNode, delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [inView, setInView] = useState(false)
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setInView(true) }, { threshold: 0.05 })
+    if (ref.current) obs.observe(ref.current)
+    return () => obs.disconnect()
+  }, [])
+  return (
+    <div ref={ref} style={{
+      opacity: inView ? 1 : 0,
+      transform: inView ? 'translateY(0)' : 'translateY(20px)',
+      transition: `opacity 0.5s ease ${delay}ms, transform 0.5s ease ${delay}ms`
+    }}>
+      {children}
+    </div>
+  )
+}
+
+const BLUE = '#2563EB'
+const DARK = '#0D1E4A'
+const SURFACE = '#0F1E35'
+const BORDER = 'rgba(255,255,255,0.08)'
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -16,31 +40,27 @@ export default function AdminPage() {
   const [selectedCourse, setSelectedCourse] = useState<number | null>(null)
   const router = useRouter()
 
-  useEffect(() => {
-    checkAuth()
-    fetchData()
-  }, [])
+  useEffect(() => { checkAuth(); fetchData() }, [])
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/'); return }
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-    console.log('Admin check - user:', user.id, 'profile:', profile)
-    if (!profile) { console.log('No profile found, staying on admin page'); return }
+    if (!profile) return
     if (profile.role !== 'admin') router.push('/')
   }
 
   const fetchData = async () => {
-    console.log('Fetching data...')
-    const { data: c, error: ce } = await supabase.from('courses').select('*').order('id')
-    console.log('Courses:', c, 'Error:', ce)
-    const { data: g } = await supabase.from('groups').select('*, courses(name), profiles(full_name)')
-    const { data: s } = await supabase.from('profiles').select('*').eq('role', 'student').order('full_name')
-    const { data: t } = await supabase.from('profiles').select('*').eq('role', 'teacher').order('full_name')
-    setCourses(c || [])
-    setGroups(g || [])
-    setStudents(s || [])
-    setTeachers(t || [])
+    const [c, g, s, t] = await Promise.all([
+      supabase.from('courses').select('*').order('id'),
+      supabase.from('groups').select('*, courses(name), profiles(full_name)'),
+      supabase.from('profiles').select('*').eq('role', 'student').order('full_name'),
+      supabase.from('profiles').select('*').eq('role', 'teacher').order('full_name'),
+    ])
+    setCourses(c.data || [])
+    setGroups(g.data || [])
+    setStudents(s.data || [])
+    setTeachers(t.data || [])
     setLoading(false)
   }
 
@@ -50,227 +70,293 @@ export default function AdminPage() {
     setLessons(data || [])
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
+  const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
 
   const tabs = [
-    { id: 'dashboard', label: '📊 Главная' },
-    { id: 'courses', label: '📚 Программа' },
-    { id: 'groups', label: '👥 Группы' },
-    { id: 'students', label: '🎓 Ученики' },
-    { id: 'teachers', label: '👨‍🏫 Учителя' },
-    { id: 'tests', label: '📝 Тесттер' },
-    { id: 'results', label: '📈 Результаты' },
+    { id: 'dashboard', label: 'Башкы бет', icon: '📊' },
+    { id: 'crm', label: 'CRM', icon: '🎯' },
+    { id: 'courses', label: 'Программа', icon: '📚' },
+    { id: 'groups', label: 'Группалар', icon: '👥' },
+    { id: 'students', label: 'Окуучулар', icon: '🎓' },
+    { id: 'teachers', label: 'Мугалимдер', icon: '👨‍🏫' },
+    { id: 'tests', label: 'Тесттер', icon: '📝' },
+    { id: 'results', label: 'Натыйжалар', icon: '📈' },
   ]
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{background:'var(--bg)'}}>
-      <div style={{color:'var(--muted)'}}>Загрузка...</div>
+    <div style={{minHeight:'100vh', background:DARK, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Inter, sans-serif'}}>
+      <div style={{textAlign:'center'}}>
+        <img src="/images/logo.png" alt="Zhangak" style={{width:'48px', filter:'brightness(0) invert(1)', marginBottom:'16px'}} />
+        <div style={{color:'rgba(255,255,255,0.5)', fontSize:'14px'}}>Жүктөлүүдө...</div>
+      </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen" style={{background:'var(--bg)'}}>
-      <div className="flex items-center justify-between px-6 py-4" style={{borderBottom:'1px solid var(--border)', background:'var(--surface)'}}>
-        <div className="font-black text-lg" style={{background:'linear-gradient(90deg,#4B8EF5,#D45FCC)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
-          ЖАНГАК — Админ
-        </div>
-        <button onClick={handleLogout} className="text-sm px-4 py-2 rounded-lg" style={{background:'var(--bg)',color:'var(--muted)',border:'1px solid var(--border)'}}>
-          Выйти
-        </button>
-      </div>
+    <div style={{minHeight:'100vh', background:DARK, fontFamily:'Inter, sans-serif', color:'#fff', display:'flex'}}>
 
-      <div className="flex">
-        <div className="w-52 min-h-screen p-4 flex flex-col gap-1" style={{borderRight:'1px solid var(--border)',background:'var(--surface)'}}>
+      {/* SIDEBAR */}
+      <div style={{width:'220px', minHeight:'100vh', background:SURFACE, borderRight:`1px solid ${BORDER}`, display:'flex', flexDirection:'column', position:'sticky', top:0, height:'100vh', overflowY:'auto'}}>
+        {/* LOGO */}
+        <div style={{padding:'20px 16px', borderBottom:`1px solid ${BORDER}`}}>
+          <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+            <img src="/images/logo.png" alt="Zhangak" style={{width:'32px', height:'32px', objectFit:'contain', filter:'brightness(0) invert(1)'}} />
+            <div>
+              <div style={{fontWeight:'900', fontSize:'16px', color:'#fff'}}>Zhangak</div>
+              <div style={{fontSize:'10px', color:'rgba(255,255,255,0.4)', marginTop:'1px'}}>Админ панели</div>
+            </div>
+          </div>
+        </div>
+
+        {/* NAV */}
+        <nav style={{padding:'12px 8px', flex:1}}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className="text-left px-4 py-3 rounded-xl text-sm font-medium transition-all"
               style={{
-                background: activeTab === tab.id ? 'rgba(75,142,245,0.15)' : 'transparent',
-                color: activeTab === tab.id ? '#4B8EF5' : 'var(--muted)',
-                border: activeTab === tab.id ? '1px solid rgba(75,142,245,0.3)' : '1px solid transparent'
+                width:'100%', display:'flex', alignItems:'center', gap:'10px',
+                padding:'10px 12px', borderRadius:'10px', border:'none', cursor:'pointer',
+                marginBottom:'2px', textAlign:'left', transition:'all 0.15s',
+                background: activeTab === tab.id ? 'rgba(37,99,235,0.2)' : 'transparent',
+                color: activeTab === tab.id ? '#60A5FA' : 'rgba(255,255,255,0.5)',
               }}>
-              {tab.label}
+              <span style={{fontSize:'16px'}}>{tab.icon}</span>
+              <span style={{fontSize:'13px', fontWeight: activeTab === tab.id ? '700' : '500'}}>{tab.label}</span>
+              {activeTab === tab.id && <div style={{marginLeft:'auto', width:'4px', height:'4px', borderRadius:'50%', background:'#60A5FA'}} />}
             </button>
           ))}
+        </nav>
+
+        {/* LOGOUT */}
+        <div style={{padding:'12px 8px', borderTop:`1px solid ${BORDER}`}}>
+          <button onClick={handleLogout}
+            style={{width:'100%', display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', borderRadius:'10px', border:'none', cursor:'pointer', background:'rgba(239,68,68,0.1)', color:'#FCA5A5'}}>
+            <span>🚪</span>
+            <span style={{fontSize:'13px', fontWeight:'600'}}>Чыгуу</span>
+          </button>
+        </div>
+      </div>
+
+      {/* MAIN */}
+      <div style={{flex:1, overflowY:'auto'}}>
+        {/* TOPBAR */}
+        <div style={{background:SURFACE, borderBottom:`1px solid ${BORDER}`, padding:'16px 28px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:50}}>
+          <div>
+            <div style={{fontWeight:'800', fontSize:'18px', color:'#fff'}}>
+              {tabs.find(t => t.id === activeTab)?.icon} {tabs.find(t => t.id === activeTab)?.label}
+            </div>
+          </div>
+          <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+            <div style={{background:'rgba(37,99,235,0.15)', border:'1px solid rgba(37,99,235,0.3)', borderRadius:'20px', padding:'6px 14px', fontSize:'12px', color:'#60A5FA', fontWeight:'600'}}>
+              👤 Администратор
+            </div>
+          </div>
         </div>
 
-        <div className="flex-1 p-6">
+        <div style={{padding:'28px'}}>
 
+          {/* DASHBOARD */}
           {activeTab === 'dashboard' && (
             <div>
-              <h2 className="text-xl font-bold mb-6" style={{color:'var(--text)'}}>Обзор</h2>
-              <div className="grid grid-cols-4 gap-4 mb-8">
+              <div style={{display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'16px', marginBottom:'28px'}}>
                 {[
-                  { label: 'Курсов', value: courses.length, color: '#4B8EF5' },
-                  { label: 'Групп', value: groups.length, color: '#D45FCC' },
-                  { label: 'Учеников', value: students.length, color: '#34C97B' },
-                  { label: 'Учителей', value: teachers.length, color: '#F5A623' },
-                ].map(stat => (
-                  <div key={stat.label} className="p-5 rounded-xl" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
-                    <div className="text-3xl font-black mb-1" style={{color: stat.color}}>{stat.value}</div>
-                    <div className="text-sm" style={{color:'var(--muted)'}}>{stat.label}</div>
-                  </div>
+                  { label:'Курстар', value: courses.length, icon:'📚', color:'#3B82F6', bg:'rgba(59,130,246,0.15)' },
+                  { label:'Группалар', value: groups.length, icon:'👥', color:'#8B5CF6', bg:'rgba(139,92,246,0.15)' },
+                  { label:'Окуучулар', value: students.length, icon:'🎓', color:'#10B981', bg:'rgba(16,185,129,0.15)' },
+                  { label:'Мугалимдер', value: teachers.length, icon:'👨‍🏫', color:'#F59E0B', bg:'rgba(245,158,11,0.15)' },
+                ].map((stat, i) => (
+                  <Animate key={stat.label} delay={i * 80}>
+                    <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', padding:'20px', display:'flex', alignItems:'center', gap:'16px'}}>
+                      <div style={{width:'48px', height:'48px', background:stat.bg, borderRadius:'14px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px', flexShrink:0}}>
+                        {stat.icon}
+                      </div>
+                      <div>
+                        <div style={{fontWeight:'900', fontSize:'28px', color:stat.color, lineHeight:'1'}}>{stat.value}</div>
+                        <div style={{fontSize:'12px', color:'rgba(255,255,255,0.5)', marginTop:'4px'}}>{stat.label}</div>
+                      </div>
+                    </div>
+                  </Animate>
                 ))}
               </div>
-              <div className="p-5 rounded-xl" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
-                <h3 className="font-bold mb-4">Курсы</h3>
-                {courses.map(c => (
-                  <div key={c.id} className="flex items-center justify-between py-3" style={{borderBottom:'1px solid var(--border)'}}>
-                    <div>
-                      <div className="font-medium">{c.name}</div>
-                      <div className="text-xs mt-1" style={{color:'var(--muted)'}}>{c.description}</div>
-                    </div>
-                    <div className="text-xs px-3 py-1 rounded-full font-bold" style={{background:'rgba(75,142,245,0.15)',color:'#4B8EF5'}}>
-                      {c.level}
-                    </div>
+
+              <Animate delay={200}>
+                <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', overflow:'hidden'}}>
+                  <div style={{padding:'16px 20px', borderBottom:`1px solid ${BORDER}`, display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                    <div style={{fontWeight:'700', fontSize:'15px'}}>Курстар</div>
                   </div>
-                ))}
-              </div>
+                  {courses.map((c, i) => (
+                    <div key={c.id} style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px', borderBottom: i < courses.length-1 ? `1px solid ${BORDER}` : 'none'}}>
+                      <div>
+                        <div style={{fontWeight:'600', fontSize:'14px'}}>{c.name}</div>
+                        <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginTop:'3px'}}>{c.description}</div>
+                      </div>
+                      <div style={{background:'rgba(37,99,235,0.2)', color:'#60A5FA', borderRadius:'8px', padding:'4px 12px', fontSize:'12px', fontWeight:'700'}}>{c.level}</div>
+                    </div>
+                  ))}
+                </div>
+              </Animate>
             </div>
           )}
 
+          {/* CRM */}
+          {activeTab === 'crm' && <CRMTab />}
+
+          {/* ПРОГРАММА */}
           {activeTab === 'courses' && (
             <div>
-              <h2 className="text-xl font-bold mb-6">Учебная программа</h2>
-              <div className="grid grid-cols-3 gap-4 mb-6">
+              <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'12px', marginBottom:'20px'}}>
                 {courses.map(c => (
                   <button key={c.id} onClick={() => fetchLessons(c.id)}
-                    className="p-4 rounded-xl text-left transition-all"
-                    style={{
-                      background: selectedCourse === c.id ? 'rgba(75,142,245,0.15)' : 'var(--surface)',
-                      border: selectedCourse === c.id ? '1px solid rgba(75,142,245,0.4)' : '1px solid var(--border)'
-                    }}>
-                    <div className="font-bold mb-1">{c.name}</div>
-                    <div className="text-xs" style={{color:'var(--muted)'}}>{c.month} · {c.level}</div>
+                    style={{padding:'16px', borderRadius:'12px', border:'none', cursor:'pointer', textAlign:'left', transition:'all 0.15s',
+                      background: selectedCourse === c.id ? 'rgba(37,99,235,0.2)' : SURFACE,
+                      borderLeft: selectedCourse === c.id ? `3px solid ${BLUE}` : `3px solid transparent`,
+                      color:'#fff'}}>
+                    <div style={{fontWeight:'700', fontSize:'14px'}}>{c.name}</div>
+                    <div style={{fontSize:'11px', color:'rgba(255,255,255,0.4)', marginTop:'4px'}}>{c.month} · {c.level}</div>
                   </button>
                 ))}
               </div>
               {lessons.length > 0 && (
-                <div className="rounded-xl overflow-hidden" style={{border:'1px solid var(--border)'}}>
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr style={{background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
-                        <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>№</th>
-                        <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Тема</th>
-                        <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Математика</th>
-                        <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Кыргыз тили</th>
-                        <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Чтение</th>
-                        <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Тест</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {lessons.map((l, i) => (
-                        <tr key={l.id} style={{borderBottom:'1px solid var(--border)',background: i%2===0?'var(--bg)':'var(--surface)'}}>
-                          <td className="px-4 py-3 font-bold" style={{color:'var(--muted)'}}>{l.lesson_number}</td>
-                          <td className="px-4 py-3 font-medium">{l.title}</td>
-                          <td className="px-4 py-3 text-xs" style={{color:'#4F8EF7'}}>{l.math_topic}</td>
-                          <td className="px-4 py-3 text-xs" style={{color:'#D45FCC'}}>{l.kyr_topic}</td>
-                          <td className="px-4 py-3 text-xs" style={{color:'#34C97B'}}>{l.reading_topic}</td>
-                          <td className="px-4 py-3">
-                            {l.is_test && <span className="text-xs px-2 py-1 rounded-full" style={{background:'rgba(123,97,255,0.15)',color:'#7B61FF'}}>Тест</span>}
-                          </td>
+                <Animate>
+                  <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', overflow:'hidden'}}>
+                    <table style={{width:'100%', fontSize:'13px', borderCollapse:'collapse'}}>
+                      <thead>
+                        <tr style={{borderBottom:`1px solid ${BORDER}`}}>
+                          {['№','Тема','Математика','Кыргыз тили','Чтение','Тест'].map(h => (
+                            <th key={h} style={{textAlign:'left', padding:'12px 16px', color:'rgba(255,255,255,0.4)', fontWeight:'600', fontSize:'12px'}}>{h}</th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {lessons.map((l, i) => (
+                          <tr key={l.id} style={{borderBottom: i < lessons.length-1 ? `1px solid ${BORDER}` : 'none', background: i%2===0 ? 'transparent' : 'rgba(255,255,255,0.02)'}}>
+                            <td style={{padding:'12px 16px', color:'rgba(255,255,255,0.4)', fontWeight:'700'}}>{l.lesson_number}</td>
+                            <td style={{padding:'12px 16px', fontWeight:'600'}}>{l.title}</td>
+                            <td style={{padding:'12px 16px', color:'#60A5FA', fontSize:'12px'}}>{l.math_topic}</td>
+                            <td style={{padding:'12px 16px', color:'#C084FC', fontSize:'12px'}}>{l.kyr_topic}</td>
+                            <td style={{padding:'12px 16px', color:'#34D399', fontSize:'12px'}}>{l.reading_topic}</td>
+                            <td style={{padding:'12px 16px'}}>
+                              {l.is_test && <span style={{background:'rgba(139,92,246,0.2)', color:'#A78BFA', borderRadius:'6px', padding:'3px 8px', fontSize:'11px', fontWeight:'700'}}>Тест</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Animate>
               )}
             </div>
           )}
 
+          {/* ОКУУЧУЛАР */}
           {activeTab === 'students' && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">Ученики ({students.length})</h2>
-              </div>
-              <div className="rounded-xl overflow-hidden" style={{border:'1px solid var(--border)'}}>
-                <table className="w-full text-sm">
+            <Animate>
+              <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', overflow:'hidden'}}>
+                <div style={{padding:'16px 20px', borderBottom:`1px solid ${BORDER}`}}>
+                  <div style={{fontWeight:'700', fontSize:'15px'}}>Окуучулар ({students.length})</div>
+                </div>
+                <table style={{width:'100%', fontSize:'13px', borderCollapse:'collapse'}}>
                   <thead>
-                    <tr style={{background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
-                      <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Имя</th>
-                      <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Телефон</th>
-                      <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Дата</th>
+                    <tr style={{borderBottom:`1px solid ${BORDER}`}}>
+                      {['Аты-жөнү','Телефон','Катталган күн'].map(h => (
+                        <th key={h} style={{textAlign:'left', padding:'12px 16px', color:'rgba(255,255,255,0.4)', fontWeight:'600', fontSize:'12px'}}>{h}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
                     {students.map((s, i) => (
-                      <tr key={s.id} style={{borderBottom:'1px solid var(--border)',background:i%2===0?'var(--bg)':'var(--surface)'}}>
-                        <td className="px-4 py-3 font-medium">{s.full_name}</td>
-                        <td className="px-4 py-3" style={{color:'var(--muted)'}}>{s.phone || '—'}</td>
-                        <td className="px-4 py-3 text-xs" style={{color:'var(--muted)'}}>{new Date(s.created_at).toLocaleDateString('ru')}</td>
+                      <tr key={s.id} style={{borderBottom: i < students.length-1 ? `1px solid ${BORDER}` : 'none'}}>
+                        <td style={{padding:'12px 16px'}}>
+                          <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+                            <div style={{width:'32px', height:'32px', background:BLUE, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'700', fontSize:'13px', flexShrink:0}}>
+                              {s.full_name?.[0]}
+                            </div>
+                            <span style={{fontWeight:'600'}}>{s.full_name}</span>
+                          </div>
+                        </td>
+                        <td style={{padding:'12px 16px', color:'rgba(255,255,255,0.5)'}}>{s.phone || '—'}</td>
+                        <td style={{padding:'12px 16px', color:'rgba(255,255,255,0.5)', fontSize:'12px'}}>{new Date(s.created_at).toLocaleDateString('ru')}</td>
                       </tr>
                     ))}
                     {students.length === 0 && (
-                      <tr><td colSpan={3} className="px-4 py-8 text-center" style={{color:'var(--muted)'}}>Ученики не добавлены</td></tr>
+                      <tr><td colSpan={3} style={{padding:'32px', textAlign:'center', color:'rgba(255,255,255,0.3)'}}>Окуучулар жок</td></tr>
                     )}
                   </tbody>
                 </table>
               </div>
-            </div>
+            </Animate>
           )}
 
+          {/* МУГАЛИМДЕР */}
           {activeTab === 'teachers' && (
-            <div>
-              <h2 className="text-xl font-bold mb-6">Учителя ({teachers.length})</h2>
-              <div className="rounded-xl overflow-hidden" style={{border:'1px solid var(--border)'}}>
-                <table className="w-full text-sm">
+            <Animate>
+              <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', overflow:'hidden'}}>
+                <div style={{padding:'16px 20px', borderBottom:`1px solid ${BORDER}`}}>
+                  <div style={{fontWeight:'700', fontSize:'15px'}}>Мугалимдер ({teachers.length})</div>
+                </div>
+                <table style={{width:'100%', fontSize:'13px', borderCollapse:'collapse'}}>
                   <thead>
-                    <tr style={{background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
-                      <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Имя</th>
-                      <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Телефон</th>
-                      <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Дата</th>
+                    <tr style={{borderBottom:`1px solid ${BORDER}`}}>
+                      {['Аты-жөнү','Телефон','Катталган күн'].map(h => (
+                        <th key={h} style={{textAlign:'left', padding:'12px 16px', color:'rgba(255,255,255,0.4)', fontWeight:'600', fontSize:'12px'}}>{h}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
                     {teachers.map((t, i) => (
-                      <tr key={t.id} style={{borderBottom:'1px solid var(--border)',background:i%2===0?'var(--bg)':'var(--surface)'}}>
-                        <td className="px-4 py-3 font-medium">{t.full_name}</td>
-                        <td className="px-4 py-3" style={{color:'var(--muted)'}}>{t.phone || '—'}</td>
-                        <td className="px-4 py-3 text-xs" style={{color:'var(--muted)'}}>{new Date(t.created_at).toLocaleDateString('ru')}</td>
+                      <tr key={t.id} style={{borderBottom: i < teachers.length-1 ? `1px solid ${BORDER}` : 'none'}}>
+                        <td style={{padding:'12px 16px'}}>
+                          <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+                            <div style={{width:'32px', height:'32px', background:'#8B5CF6', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'700', fontSize:'13px', flexShrink:0}}>
+                              {t.full_name?.[0]}
+                            </div>
+                            <span style={{fontWeight:'600'}}>{t.full_name}</span>
+                          </div>
+                        </td>
+                        <td style={{padding:'12px 16px', color:'rgba(255,255,255,0.5)'}}>{t.phone || '—'}</td>
+                        <td style={{padding:'12px 16px', color:'rgba(255,255,255,0.5)', fontSize:'12px'}}>{new Date(t.created_at).toLocaleDateString('ru')}</td>
                       </tr>
                     ))}
                     {teachers.length === 0 && (
-                      <tr><td colSpan={3} className="px-4 py-8 text-center" style={{color:'var(--muted)'}}>Учителя не добавлены</td></tr>
+                      <tr><td colSpan={3} style={{padding:'32px', textAlign:'center', color:'rgba(255,255,255,0.3)'}}>Мугалимдер жок</td></tr>
                     )}
                   </tbody>
                 </table>
               </div>
-            </div>
+            </Animate>
           )}
 
+          {/* ГРУППАЛАР */}
           {activeTab === 'groups' && (
-            <div>
-              <h2 className="text-xl font-bold mb-6">Группы ({groups.length})</h2>
-              <div className="grid grid-cols-3 gap-4">
-                {groups.map(g => (
-                  <div key={g.id} className="p-4 rounded-xl" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
-                    <div className="font-bold mb-2">{g.name}</div>
-                    <div className="text-xs mb-1" style={{color:'var(--muted)'}}>Курс: {g.courses?.name || '—'}</div>
-                    <div className="text-xs" style={{color:'var(--muted)'}}>Учитель: {g.profiles?.full_name || '—'}</div>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px'}}>
+              {groups.map((g, i) => (
+                <Animate key={g.id} delay={i * 80}>
+                  <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', padding:'20px'}}>
+                    <div style={{fontWeight:'700', fontSize:'15px', marginBottom:'12px'}}>{g.name}</div>
+                    <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
+                      <div style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'13px', color:'rgba(255,255,255,0.6)'}}>
+                        <span>📚</span><span>{g.courses?.name || '—'}</span>
+                      </div>
+                      <div style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'13px', color:'rgba(255,255,255,0.6)'}}>
+                        <span>👨‍🏫</span><span>{g.profiles?.full_name || '—'}</span>
+                      </div>
+                    </div>
                   </div>
-                ))}
-                {groups.length === 0 && (
-                  <div className="col-span-3 py-8 text-center" style={{color:'var(--muted)'}}>Группы не созданы</div>
-                )}
-              </div>
+                </Animate>
+              ))}
+              {groups.length === 0 && (
+                <div style={{gridColumn:'span 3', textAlign:'center', color:'rgba(255,255,255,0.3)', padding:'48px'}}>Группалар жок</div>
+              )}
             </div>
           )}
 
+          {/* ТЕСТТЕР */}
           {activeTab === 'tests' && (
-            <div>
-              <h2 className="text-xl font-bold mb-6">Практикалык тесттер</h2>
-              <AdminTests />
-            </div>
+            <AdminTests />
           )}
 
+          {/* НАТЫЙЖАЛАР */}
           {activeTab === 'results' && (
-            <div>
-              <h2 className="text-xl font-bold mb-6">Результаты тестов</h2>
-              <ResultsTab />
-            </div>
+            <ResultsTab />
           )}
 
         </div>
@@ -279,44 +365,147 @@ export default function AdminPage() {
   )
 }
 
-function ResultsTab() {
-  const [results, setResults] = useState<any[]>([])
+function CRMTab() {
+  const [leads, setLeads] = useState<any[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [newLead, setNewLead] = useState({ full_name: '', phone: '', course: 'B1', stage: 'new' })
+  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    supabase.from('test_results')
-      .select('*, profiles(full_name), lessons(title, courses(name))')
-      .order('created_at', { ascending: false })
-      .then(({ data }) => setResults(data || []))
-  }, [])
+  const stages = [
+    { id: 'new', label: 'Жаңы заявка', color: '#6B7280', bg: 'rgba(107,114,128,0.15)' },
+    { id: 'call', label: 'Биринчи чалуу', color: '#3B82F6', bg: 'rgba(59,130,246,0.15)' },
+    { id: 'consult', label: 'Консультация', color: '#8B5CF6', bg: 'rgba(139,92,246,0.15)' },
+    { id: 'trial', label: 'Сынак сабак', color: '#F59E0B', bg: 'rgba(245,158,11,0.15)' },
+    { id: 'payment', label: 'Оплата', color: '#EF4444', bg: 'rgba(239,68,68,0.15)' },
+    { id: 'studying', label: 'Окуп жатат', color: '#10B981', bg: 'rgba(16,185,129,0.15)' },
+    { id: 'graduate', label: 'Бүтүрүүчү', color: '#F0C040', bg: 'rgba(240,192,64,0.15)' },
+  ]
+
+  useEffect(() => { fetchLeads() }, [])
+
+  const fetchLeads = async () => {
+    const { data } = await supabase.from('crm_leads').select('*').order('created_at', { ascending: false })
+    setLeads(data || [])
+  }
+
+  const createLead = async () => {
+    if (!newLead.full_name || !newLead.phone) return
+    setSaving(true)
+    await supabase.from('crm_leads').insert(newLead)
+    setNewLead({ full_name: '', phone: '', course: 'B1', stage: 'new' })
+    setShowForm(false)
+    fetchLeads()
+    setSaving(false)
+  }
+
+  const updateStage = async (id: number, stage: string) => {
+    await supabase.from('crm_leads').update({ stage }).eq('id', id)
+    fetchLeads()
+  }
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{border:'1px solid var(--border)'}}>
-      <table className="w-full text-sm">
+    <div>
+      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'24px'}}>
+        <div style={{fontWeight:'800', fontSize:'18px'}}>CRM — Воронка продаж</div>
+        <button onClick={() => setShowForm(p => !p)}
+          style={{background:BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'10px 20px', fontWeight:'700', fontSize:'13px', cursor:'pointer'}}>
+          + Жаңы клиент
+        </button>
+      </div>
+
+      {showForm && (
+        <Animate>
+          <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', padding:'20px', marginBottom:'20px', display:'grid', gridTemplateColumns:'1fr 1fr 1fr auto', gap:'12px', alignItems:'end'}}>
+            <div>
+              <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>Аты-жөнү</div>
+              <input value={newLead.full_name} onChange={e => setNewLead(p => ({...p, full_name: e.target.value}))}
+                placeholder="Иванов Айбек"
+                style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:`1px solid ${BORDER}`, background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'13px', boxSizing:'border-box' as const}} />
+            </div>
+            <div>
+              <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>Телефон</div>
+              <input value={newLead.phone} onChange={e => setNewLead(p => ({...p, phone: e.target.value}))}
+                placeholder="+996 700 000 000"
+                style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:`1px solid ${BORDER}`, background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'13px', boxSizing:'border-box' as const}} />
+            </div>
+            <div>
+              <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>Курс</div>
+              <select value={newLead.course} onChange={e => setNewLead(p => ({...p, course: e.target.value}))}
+                style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:`1px solid ${BORDER}`, background:'#0D1E4A', color:'#fff', fontSize:'13px', boxSizing:'border-box' as const}}>
+                {['B1','B2','C1','Жайкы интенсив'].map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <button onClick={createLead} disabled={saving}
+              style={{background:BLUE, color:'#fff', border:'none', borderRadius:'8px', padding:'10px 20px', fontWeight:'700', fontSize:'13px', cursor:'pointer'}}>
+              {saving ? '...' : 'Кошуу'}
+            </button>
+          </div>
+        </Animate>
+      )}
+
+      {/* KANBAN */}
+      <div style={{display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:'12px', overflowX:'auto'}}>
+        {stages.map(stage => {
+          const stageLeads = leads.filter(l => l.stage === stage.id)
+          return (
+            <div key={stage.id} style={{minWidth:'160px'}}>
+              <div style={{background:stage.bg, border:`1px solid ${stage.color}44`, borderRadius:'10px', padding:'8px 12px', marginBottom:'10px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                <div style={{fontSize:'12px', fontWeight:'700', color:stage.color}}>{stage.label}</div>
+                <div style={{background:stage.color, color:'#fff', borderRadius:'50%', width:'20px', height:'20px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:'800'}}>{stageLeads.length}</div>
+              </div>
+              <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
+                {stageLeads.map(lead => (
+                  <div key={lead.id} style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'10px', padding:'12px'}}>
+                    <div style={{fontWeight:'700', fontSize:'13px', marginBottom:'4px'}}>{lead.full_name}</div>
+                    <div style={{fontSize:'11px', color:'rgba(255,255,255,0.5)', marginBottom:'8px'}}>{lead.phone}</div>
+                    <div style={{fontSize:'11px', background:'rgba(37,99,235,0.15)', color:'#60A5FA', borderRadius:'6px', padding:'2px 8px', display:'inline-block', marginBottom:'8px'}}>{lead.course}</div>
+                    <select value={lead.stage} onChange={e => updateStage(lead.id, e.target.value)}
+                      style={{width:'100%', padding:'4px 8px', borderRadius:'6px', border:`1px solid ${BORDER}`, background:'#0D1E4A', color:'rgba(255,255,255,0.7)', fontSize:'11px'}}>
+                      {stages.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function ResultsTab() {
+  const [results, setResults] = useState<any[]>([])
+  useEffect(() => {
+    supabase.from('test_results').select('*, profiles(full_name), lessons(title)').order('created_at', { ascending: false }).then(({ data }) => setResults(data || []))
+  }, [])
+  return (
+    <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', overflow:'hidden'}}>
+      <div style={{padding:'16px 20px', borderBottom:`1px solid ${BORDER}`}}>
+        <div style={{fontWeight:'700', fontSize:'15px'}}>ЖРТ Натыйжалары</div>
+      </div>
+      <table style={{width:'100%', fontSize:'13px', borderCollapse:'collapse'}}>
         <thead>
-          <tr style={{background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
-            <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Ученик</th>
-            <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Занятие</th>
-            <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Мат</th>
-            <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Аналогия</th>
-            <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Чтение</th>
-            <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Грамматика</th>
-            <th className="text-left px-4 py-3" style={{color:'var(--muted)'}}>Итог</th>
+          <tr style={{borderBottom:`1px solid ${BORDER}`}}>
+            {['Окуучу','Сабак','Мат','Аналогия','Чтение','Грамматика','Жалпы'].map(h => (
+              <th key={h} style={{textAlign:'left', padding:'12px 16px', color:'rgba(255,255,255,0.4)', fontWeight:'600', fontSize:'12px'}}>{h}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {results.map((r, i) => (
-            <tr key={r.id} style={{borderBottom:'1px solid var(--border)',background:i%2===0?'var(--bg)':'var(--surface)'}}>
-              <td className="px-4 py-3 font-medium">{r.profiles?.full_name}</td>
-              <td className="px-4 py-3 text-xs" style={{color:'var(--muted)'}}>{r.lessons?.title}</td>
-              <td className="px-4 py-3" style={{color:'#4B8EF5'}}>{r.math_score}</td>
-              <td className="px-4 py-3" style={{color:'#D45FCC'}}>{r.analogy_score}</td>
-              <td className="px-4 py-3" style={{color:'#34C97B'}}>{r.reading_score}</td>
-              <td className="px-4 py-3" style={{color:'#F5A623'}}>{r.grammar_score}</td>
-              <td className="px-4 py-3 font-bold" style={{color:'#7B61FF'}}>{Number(r.total_score).toFixed(1)}</td>
+            <tr key={r.id} style={{borderBottom: i < results.length-1 ? `1px solid ${BORDER}` : 'none'}}>
+              <td style={{padding:'12px 16px', fontWeight:'600'}}>{r.profiles?.full_name}</td>
+              <td style={{padding:'12px 16px', color:'rgba(255,255,255,0.5)', fontSize:'12px'}}>{r.lessons?.title}</td>
+              <td style={{padding:'12px 16px', color:'#60A5FA'}}>{r.math_score}</td>
+              <td style={{padding:'12px 16px', color:'#C084FC'}}>{r.analogy_score}</td>
+              <td style={{padding:'12px 16px', color:'#34D399'}}>{r.reading_score}</td>
+              <td style={{padding:'12px 16px', color:'#FCD34D'}}>{r.grammar_score}</td>
+              <td style={{padding:'12px 16px', fontWeight:'800', color:'#A78BFA'}}>{Number(r.total_score).toFixed(1)}</td>
             </tr>
           ))}
           {results.length === 0 && (
-            <tr><td colSpan={7} className="px-4 py-8 text-center" style={{color:'var(--muted)'}}>Результатов пока нет</td></tr>
+            <tr><td colSpan={7} style={{padding:'32px', textAlign:'center', color:'rgba(255,255,255,0.3)'}}>Натыйжалар жок</td></tr>
           )}
         </tbody>
       </table>
@@ -334,7 +523,6 @@ function AdminTests() {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [qType, setQType] = useState<'text' | 'image'>('text')
-  const router = useRouter()
 
   useEffect(() => { fetchTests() }, [])
 
@@ -348,20 +536,12 @@ function AdminTests() {
     setQuestions(data || [])
   }
 
-  const selectTest = (t: any) => {
-    setSelectedTest(t)
-    fetchQuestions(t.id)
-  }
+  const selectTest = (t: any) => { setSelectedTest(t); fetchQuestions(t.id) }
 
   const createTest = async () => {
     if (!newTest.title) return
     setSaving(true)
-    const { data } = await supabase.from('practice_tests').insert({
-      title: newTest.title,
-      subject: newTest.subject,
-      questions: [],
-      lesson_id: 1,
-    }).select().single()
+    const { data } = await supabase.from('practice_tests').insert({ title: newTest.title, subject: newTest.subject, questions: [], lesson_id: 1 }).select().single()
     if (data) { setTests(p => [...p, data]); selectTest(data) }
     setNewTest({ title: '', subject: 'math' })
     setShowForm(false)
@@ -369,26 +549,19 @@ function AdminTests() {
   }
 
   const uploadImage = async (file: File) => {
-  setUploading(true)
-  try {
-    const ext = file.name.split('.').pop()
-    const path = `question_${Date.now()}.${ext}`
-    const { data, error } = await supabase.storage.from('questions').upload(path, file, {
-      cacheControl: '3600',
-      upsert: false
-    })
-    if (error) {
-      console.error('Upload error:', error)
-      alert('Жүктөө катасы: ' + error.message)
-    } else {
-      const { data: urlData } = supabase.storage.from('questions').getPublicUrl(path)
-      setNewQ(p => ({ ...p, image_url: urlData.publicUrl }))
-    }
-  } catch (e) {
-    console.error(e)
+    setUploading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `question_${Date.now()}.${ext}`
+      const { error } = await supabase.storage.from('questions').upload(path, file, { cacheControl: '3600', upsert: false })
+      if (error) { alert('Жүктөө катасы: ' + error.message) }
+      else {
+        const { data: urlData } = supabase.storage.from('questions').getPublicUrl(path)
+        setNewQ(p => ({ ...p, image_url: urlData.publicUrl }))
+      }
+    } catch (e) { console.error(e) }
+    setUploading(false)
   }
-  setUploading(false)
-}
 
   const addQuestion = async () => {
     if (!selectedTest) return
@@ -416,7 +589,6 @@ function AdminTests() {
     if (selectedTest) fetchQuestions(selectedTest.id)
   }
 
-  const BLUE = '#2563EB'
   const subjects = [
     { value: 'math', label: 'Математика' },
     { value: 'kyr', label: 'Кыргыз тили' },
@@ -425,167 +597,126 @@ function AdminTests() {
   ]
 
   return (
-    <div style={{display:'grid', gridTemplateColumns:'280px 1fr', gap:'24px', alignItems:'start'}}>
+    <div style={{display:'grid', gridTemplateColumns:'240px 1fr', gap:'20px', alignItems:'start'}}>
       <div>
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px'}}>
-          <div style={{fontWeight:'700', fontSize:'14px', color:'var(--muted)'}}>Тесттер</div>
-          <button onClick={() => setShowForm(p => !p)}
-            style={{background:BLUE, color:'#fff', border:'none', borderRadius:'8px', padding:'6px 14px', fontSize:'12px', fontWeight:'700', cursor:'pointer'}}>
-            + Жаңы
-          </button>
+          <div style={{fontWeight:'700', fontSize:'13px', color:'rgba(255,255,255,0.5)'}}>Тесттер</div>
+          <button onClick={() => setShowForm(p => !p)} style={{background:BLUE, color:'#fff', border:'none', borderRadius:'8px', padding:'5px 12px', fontSize:'12px', fontWeight:'700', cursor:'pointer'}}>+ Жаңы</button>
         </div>
-
         {showForm && (
-          <div style={{background:'var(--surface)', border:'1px solid var(--border)', borderRadius:'12px', padding:'16px', marginBottom:'12px'}}>
-            <input value={newTest.title} onChange={e => setNewTest(p => ({...p, title: e.target.value}))}
-              placeholder="Тест аталышы"
-              style={{width:'100%', padding:'8px 12px', borderRadius:'8px', border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text)', fontSize:'13px', marginBottom:'8px', boxSizing:'border-box' as const}} />
+          <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'12px', padding:'14px', marginBottom:'12px'}}>
+            <input value={newTest.title} onChange={e => setNewTest(p => ({...p, title: e.target.value}))} placeholder="Тест аталышы"
+              style={{width:'100%', padding:'8px 10px', borderRadius:'8px', border:`1px solid ${BORDER}`, background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'13px', marginBottom:'8px', boxSizing:'border-box' as const}} />
             <select value={newTest.subject} onChange={e => setNewTest(p => ({...p, subject: e.target.value}))}
-              style={{width:'100%', padding:'8px 12px', borderRadius:'8px', border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text)', fontSize:'13px', marginBottom:'12px', boxSizing:'border-box' as const}}>
+              style={{width:'100%', padding:'8px 10px', borderRadius:'8px', border:`1px solid ${BORDER}`, background:'#0D1E4A', color:'#fff', fontSize:'13px', marginBottom:'10px', boxSizing:'border-box' as const}}>
               {subjects.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
-            <button onClick={createTest} disabled={saving}
-              style={{width:'100%', background:BLUE, color:'#fff', border:'none', borderRadius:'8px', padding:'8px', fontSize:'13px', fontWeight:'700', cursor:'pointer'}}>
-              {saving ? 'Сакталууда...' : 'Түзүү'}
+            <button onClick={createTest} disabled={saving} style={{width:'100%', background:BLUE, color:'#fff', border:'none', borderRadius:'8px', padding:'8px', fontSize:'13px', fontWeight:'700', cursor:'pointer'}}>
+              {saving ? '...' : 'Түзүү'}
             </button>
           </div>
         )}
-
-        <div style={{display:'flex', flexDirection:'column', gap:'6px'}}>
+        <div style={{display:'flex', flexDirection:'column', gap:'4px'}}>
           {tests.map(t => (
             <button key={t.id} onClick={() => selectTest(t)}
-              style={{textAlign:'left', padding:'12px', borderRadius:'10px', border:'none', cursor:'pointer',
-                background: selectedTest?.id === t.id ? 'rgba(37,99,235,0.15)' : 'var(--surface)',
-                borderLeft: selectedTest?.id === t.id ? `3px solid ${BLUE}` : '3px solid transparent',
-                color:'var(--text)'}}>
+              style={{textAlign:'left', padding:'10px 12px', borderRadius:'10px', border:'none', cursor:'pointer',
+                background: selectedTest?.id === t.id ? 'rgba(37,99,235,0.2)' : SURFACE,
+                borderLeft: selectedTest?.id === t.id ? `3px solid ${BLUE}` : `3px solid transparent`,
+                color:'#fff'}}>
               <div style={{fontWeight:'600', fontSize:'13px'}}>{t.title}</div>
-              <div style={{fontSize:'11px', color:'var(--muted)', marginTop:'3px'}}>
-                {subjects.find(s => s.value === t.subject)?.label}
-              </div>
+              <div style={{fontSize:'11px', color:'rgba(255,255,255,0.4)', marginTop:'2px'}}>{subjects.find(s => s.value === t.subject)?.label}</div>
             </button>
           ))}
-          {tests.length === 0 && (
-            <div style={{textAlign:'center', color:'var(--muted)', fontSize:'13px', padding:'24px'}}>
-              Тест жок
-            </div>
-          )}
         </div>
       </div>
 
       {selectedTest ? (
         <div>
-          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px'}}>
+          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px'}}>
             <div>
-              <h3 style={{fontWeight:'800', fontSize:'18px'}}>{selectedTest.title}</h3>
-              <div style={{color:'var(--muted)', fontSize:'13px', marginTop:'4px'}}>{questions.length} суроо</div>
+              <h3 style={{fontWeight:'800', fontSize:'17px'}}>{selectedTest.title}</h3>
+              <div style={{color:'rgba(255,255,255,0.4)', fontSize:'12px', marginTop:'3px'}}>{questions.length} суроо</div>
             </div>
             <a href={`/student/test?id=${selectedTest.id}`} target="_blank" rel="noopener noreferrer"
-              style={{background:'rgba(37,99,235,0.15)', color:BLUE, borderRadius:'8px', padding:'8px 16px', fontSize:'13px', fontWeight:'700', textDecoration:'none'}}>
-              👁 Алдын ала көрүү
+              style={{background:'rgba(37,99,235,0.15)', color:'#60A5FA', borderRadius:'8px', padding:'7px 14px', fontSize:'12px', fontWeight:'700', textDecoration:'none'}}>
+              👁 Көрүү
             </a>
           </div>
 
-          <div style={{background:'var(--surface)', border:'1px solid var(--border)', borderRadius:'16px', padding:'20px', marginBottom:'20px'}}>
-            <div style={{fontWeight:'700', fontSize:'14px', marginBottom:'16px'}}>Жаңы суроо кошуу</div>
-
-            <div style={{display:'flex', gap:'8px', marginBottom:'16px'}}>
+          <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'14px', padding:'18px', marginBottom:'16px'}}>
+            <div style={{fontWeight:'700', fontSize:'13px', marginBottom:'14px'}}>Жаңы суроо</div>
+            <div style={{display:'flex', gap:'8px', marginBottom:'14px'}}>
               {(['text', 'image'] as const).map(type => (
                 <button key={type} onClick={() => setQType(type)}
-                  style={{padding:'6px 16px', borderRadius:'8px', border:'none', cursor:'pointer', fontSize:'13px', fontWeight:'600',
+                  style={{padding:'6px 14px', borderRadius:'8px', border:'none', cursor:'pointer', fontSize:'12px', fontWeight:'600',
                     background: qType === type ? BLUE : 'rgba(255,255,255,0.05)',
-                    color: qType === type ? '#fff' : 'var(--muted)'}}>
+                    color: qType === type ? '#fff' : 'rgba(255,255,255,0.5)'}}>
                   {type === 'text' ? '📝 Текст' : '🖼 Сүрөт'}
                 </button>
               ))}
             </div>
-
             {qType === 'text' ? (
               <textarea value={newQ.question_text} onChange={e => setNewQ(p => ({...p, question_text: e.target.value}))}
-                placeholder="Суроону жазыңыз..."
-                rows={3}
-                style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text)', fontSize:'13px', marginBottom:'12px', resize:'none', boxSizing:'border-box' as const}} />
+                placeholder="Суроону жазыңыз..." rows={3}
+                style={{width:'100%', padding:'10px', borderRadius:'8px', border:`1px solid ${BORDER}`, background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'13px', marginBottom:'12px', resize:'none', boxSizing:'border-box' as const}} />
             ) : (
               <div style={{marginBottom:'12px'}}>
-                <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0])}
-                  style={{display:'none'}} id="img-upload" />
-                <label htmlFor="img-upload" style={{display:'block', border:'2px dashed var(--border)', borderRadius:'12px', padding:'24px', textAlign:'center', cursor:'pointer'}}>
-                  {uploading ? (
-                    <div style={{color:'var(--muted)', fontSize:'13px'}}>Жүктөлүүдө...</div>
-                  ) : newQ.image_url ? (
-                    <img src={newQ.image_url} alt="preview" style={{maxHeight:'120px', borderRadius:'8px'}} />
-                  ) : (
-                    <div style={{color:'var(--muted)', fontSize:'13px'}}>🖼 Сүрөт жүктөө үчүн басыңыз</div>
-                  )}
+                <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0])} style={{display:'none'}} id="img-upload" />
+                <label htmlFor="img-upload" style={{display:'block', border:`2px dashed ${BORDER}`, borderRadius:'10px', padding:'20px', textAlign:'center', cursor:'pointer'}}>
+                  {uploading ? <div style={{color:'rgba(255,255,255,0.5)', fontSize:'13px'}}>Жүктөлүүдө...</div>
+                    : newQ.image_url ? <img src={newQ.image_url} alt="preview" style={{maxHeight:'100px', borderRadius:'8px'}} />
+                    : <div style={{color:'rgba(255,255,255,0.4)', fontSize:'13px'}}>🖼 Сүрөт жүктөө</div>}
                 </label>
               </div>
             )}
-
-            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'12px'}}>
+            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'10px'}}>
               {(['A','B','C','D'] as const).map(opt => (
                 <div key={opt} style={{display:'flex', gap:'6px', alignItems:'center'}}>
-                  <div style={{width:'24px', height:'24px', borderRadius:'6px', background: newQ.correct_answer === opt ? BLUE : 'rgba(255,255,255,0.05)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:'800', color: newQ.correct_answer === opt ? '#fff' : 'var(--muted)', flexShrink:0, cursor:'pointer'}}
+                  <div style={{width:'22px', height:'22px', borderRadius:'6px', background: newQ.correct_answer === opt ? BLUE : 'rgba(255,255,255,0.05)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'10px', fontWeight:'800', color: newQ.correct_answer === opt ? '#fff' : 'rgba(255,255,255,0.4)', cursor:'pointer', flexShrink:0}}
                     onClick={() => setNewQ(p => ({...p, correct_answer: opt}))}>
                     {opt}
                   </div>
-                  <input
-                    value={(newQ as any)[`option_${opt.toLowerCase()}`]}
-                    onChange={e => setNewQ(p => ({...p, [`option_${opt.toLowerCase()}`]: e.target.value}))}
+                  <input value={(newQ as any)[`option_${opt.toLowerCase()}`]} onChange={e => setNewQ(p => ({...p, [`option_${opt.toLowerCase()}`]: e.target.value}))}
                     placeholder={`${opt} варианты`}
-                    style={{flex:1, padding:'6px 10px', borderRadius:'6px', border:`1px solid ${newQ.correct_answer === opt ? BLUE : 'var(--border)'}`, background:'var(--bg)', color:'var(--text)', fontSize:'12px'}} />
+                    style={{flex:1, padding:'6px 8px', borderRadius:'6px', border:`1px solid ${newQ.correct_answer === opt ? BLUE : BORDER}`, background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'12px'}} />
                 </div>
               ))}
             </div>
-
-            <div style={{fontSize:'11px', color:'var(--muted)', marginBottom:'12px'}}>
-              💡 Туура жооптун тамгасын басыңыз (азыр: <strong style={{color:BLUE}}>{newQ.correct_answer}</strong>)
+            <div style={{fontSize:'11px', color:'rgba(255,255,255,0.4)', marginBottom:'10px'}}>
+              💡 Туура жооп: <strong style={{color:'#60A5FA'}}>{newQ.correct_answer}</strong> — тамгасын басыңыз
             </div>
-
             <button onClick={addQuestion} disabled={saving || uploading}
-              style={{background:BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'10px 24px', fontSize:'14px', fontWeight:'700', cursor:'pointer', opacity: saving ? 0.7 : 1}}>
-              {saving ? 'Сакталууда...' : '+ Суроо кошуу'}
+              style={{background:BLUE, color:'#fff', border:'none', borderRadius:'8px', padding:'10px 20px', fontSize:'13px', fontWeight:'700', cursor:'pointer', opacity: saving ? 0.7 : 1}}>
+              {saving ? '...' : '+ Суроо кошуу'}
             </button>
           </div>
 
-          <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+          <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
             {questions.map((q, i) => (
-              <div key={q.id} style={{background:'var(--surface)', border:'1px solid var(--border)', borderRadius:'12px', padding:'16px', display:'flex', gap:'16px', alignItems:'flex-start'}}>
-                <div style={{width:'28px', height:'28px', background:BLUE, borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', fontWeight:'800', flexShrink:0}}>
-                  {i + 1}
-                </div>
+              <div key={q.id} style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'12px', padding:'14px', display:'flex', gap:'12px', alignItems:'flex-start'}}>
+                <div style={{width:'26px', height:'26px', background:BLUE, borderRadius:'7px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:'800', flexShrink:0}}>{i+1}</div>
                 <div style={{flex:1}}>
-                  {q.image_url ? (
-                    <img src={q.image_url} alt="question" style={{maxHeight:'80px', borderRadius:'8px', marginBottom:'8px'}} />
-                  ) : (
-                    <div style={{fontSize:'13px', fontWeight:'600', marginBottom:'8px'}}>{q.question_text}</div>
-                  )}
-                  <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
+                  {q.image_url ? <img src={q.image_url} alt="q" style={{maxHeight:'70px', borderRadius:'8px', marginBottom:'8px'}} />
+                    : <div style={{fontSize:'13px', fontWeight:'600', marginBottom:'8px'}}>{q.question_text}</div>}
+                  <div style={{display:'flex', gap:'6px', flexWrap:'wrap'}}>
                     {['A','B','C','D'].map(opt => (
                       <span key={opt} style={{fontSize:'11px', padding:'3px 8px', borderRadius:'6px',
-                        background: q.correct_answer === opt ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.05)',
-                        color: q.correct_answer === opt ? '#10B981' : 'var(--muted)',
+                        background: q.correct_answer === opt ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.04)',
+                        color: q.correct_answer === opt ? '#34D399' : 'rgba(255,255,255,0.4)',
                         fontWeight: q.correct_answer === opt ? '700' : '400'}}>
                         {opt}: {q[`option_${opt.toLowerCase()}`]}
                       </span>
                     ))}
                   </div>
                 </div>
-                <button onClick={() => deleteQuestion(q.id)}
-                  style={{background:'rgba(239,68,68,0.15)', color:'#EF4444', border:'none', borderRadius:'8px', padding:'6px 10px', cursor:'pointer', fontSize:'12px', flexShrink:0}}>
-                  🗑
-                </button>
+                <button onClick={() => deleteQuestion(q.id)} style={{background:'rgba(239,68,68,0.1)', color:'#FCA5A5', border:'none', borderRadius:'7px', padding:'5px 8px', cursor:'pointer', fontSize:'12px', flexShrink:0}}>🗑</button>
               </div>
             ))}
-            {questions.length === 0 && (
-              <div style={{textAlign:'center', color:'var(--muted)', fontSize:'13px', padding:'32px'}}>
-                Суроолор жок — жогорудагы форм менен кошуңуз
-              </div>
-            )}
+            {questions.length === 0 && <div style={{textAlign:'center', color:'rgba(255,255,255,0.3)', fontSize:'13px', padding:'24px'}}>Суроолор жок</div>}
           </div>
         </div>
       ) : (
-        <div style={{textAlign:'center', color:'var(--muted)', fontSize:'14px', padding:'60px'}}>
-          ← Тест тандаңыз же жаңы тест түзүңүз
-        </div>
+        <div style={{textAlign:'center', color:'rgba(255,255,255,0.3)', fontSize:'14px', padding:'60px'}}>← Тест тандаңыз</div>
       )}
     </div>
   )
