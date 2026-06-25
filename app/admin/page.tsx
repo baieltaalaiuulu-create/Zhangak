@@ -815,5 +815,5 @@ function AddUserForm({ role, onAdded }: { role: string, onAdded: () => void }) {
       )}
     </div>
   )
-}}
+}
 
