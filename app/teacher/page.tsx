@@ -18,19 +18,19 @@ export default function TeacherPage() {
   const [userId, setUserId] = useState<string>('')
   const router = useRouter()
 
-  useEffect(() => {
-    checkAuth()
-  }, [])
+ useEffect(() => { checkAuth() }, [])
 
-  const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/'); return }
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-    if (profile?.role !== 'teacher') { router.push('/'); return }
-    setUserId(user.id)
-    fetchData(user.id)
+const checkAuth = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) { router.push('/'); return }
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (!profile || profile.role !== 'teacher') {
+    await supabase.auth.signOut()
+    router.push('/')
+    return
   }
-
+  fetchData(user.id)
+}
   const fetchData = async (uid: string) => {
     const { data: grps } = await supabase
       .from('groups')

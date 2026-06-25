@@ -40,16 +40,18 @@ export default function AdminPage() {
   const [selectedCourse, setSelectedCourse] = useState<number | null>(null)
   const router = useRouter()
 
-  useEffect(() => { checkAuth(); fetchData() }, [])
+  useEffect(() => { checkAuth() }, [])
 
-  const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/'); return }
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-    if (!profile) return
-    if (profile.role !== 'admin') router.push('/')
+ const checkAuth = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) { router.push('/'); return }
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (!profile || profile.role !== 'admin') {
+    await supabase.auth.signOut()
+    router.push('/')
+    return
   }
-
+}
   const fetchData = async () => {
     const [c, g, s, t] = await Promise.all([
       supabase.from('courses').select('*').order('id'),
