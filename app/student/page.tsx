@@ -156,15 +156,12 @@ export default function StudentPage() {
 
         {/* TESTS */}
         {activeTab === 'tests' && (
-          <div>
-            <h2 style={{fontSize:'20px', fontWeight:'800', color:'#1E293B', marginBottom:'20px'}}>Практикалык тесттер</h2>
-            <div style={{background:'#fff', borderRadius:'16px', border:'1px solid #E8ECF4', padding:'48px', textAlign:'center'}}>
-              <div style={{fontSize:'48px', marginBottom:'16px'}}>📝</div>
-              <div style={{fontWeight:'700', fontSize:'18px', color:'#1E293B', marginBottom:'8px'}}>Тесттер жакында</div>
-              <div style={{color:'#94A3B8', fontSize:'14px'}}>Мугалим тесттерди жүктөгөндөн кийин бул жерде пайда болот</div>
-            </div>
-          </div>
-        )}
+  <div>
+    <h2 style={{fontSize:'20px',fontWeight:'800',color:'#1E293B',marginBottom:'20px'}}>Практикалык тесттер</h2>
+    <TestsList userId={profile?.id} />
+  </div>
+)
+}
 
         {/* RESULTS */}
         {activeTab === 'results' && (
@@ -282,4 +279,45 @@ export default function StudentPage() {
       </div>
     </div>
   )
-}
+function TestsList({ userId }: { userId: string }) {
+  const [tests, setTests] = useState<any[]>([])
+  const router = useRouter()
+
+  useEffect(() => {
+    supabase.from('practice_tests').select('*, practice_results(score, student_id)')
+      .then(({ data }) => setTests(data || []))
+  }, [])
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+      {tests.length === 0 ? (
+        <div style={{background:'#fff',borderRadius:'16px',border:'1px solid #E8ECF4',padding:'48px',textAlign:'center'}}>
+          <div style={{fontSize:'48px',marginBottom:'16px'}}>📝</div>
+          <div style={{fontWeight:'700',fontSize:'18px',color:'#1E293B',marginBottom:'8px'}}>Тесттер жок</div>
+          <div style={{color:'#94A3B8',fontSize:'14px'}}>Администратор тест кошкондон кийин бул жерде пайда болот</div>
+        </div>
+      ) : tests.map(t => {
+        const myResult = t.practice_results?.find((r: any) => r.student_id === userId)
+        return (
+          <div key={t.id} style={{background:'#fff',borderRadius:'16px',border:'1px solid #E8ECF4',padding:'20px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'16px'}}>
+            <div>
+              <div style={{fontWeight:'700',fontSize:'15px',color:'#1E293B',marginBottom:'4px'}}>{t.title}</div>
+              <div style={{fontSize:'12px',color:'#94A3B8'}}>{t.subject === 'math' ? 'Математика' : t.subject === 'kyr' ? 'Кыргыз тили' : t.subject}</div>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+              {myResult && (
+                <div style={{background:'#EFF6FF',color:'#2563EB',borderRadius:'10px',padding:'6px 14px',fontWeight:'700',fontSize:'14px'}}>
+                  {myResult.score}%
+                </div>
+              )}
+              <button onClick={() => router.push(`/student/test?id=${t.id}`)}
+                style={{background:'#2563EB',color:'#fff',border:'none',borderRadius:'10px',padding:'10px 20px',fontWeight:'700',fontSize:'14px',cursor:'pointer'}}>
+                {myResult ? 'Кайра тапшыруу' : 'Баштоо →'}
+              </button>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}}
