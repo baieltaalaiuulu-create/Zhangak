@@ -369,16 +369,26 @@ function AdminTests() {
   }
 
   const uploadImage = async (file: File) => {
-    setUploading(true)
+  setUploading(true)
+  try {
     const ext = file.name.split('.').pop()
     const path = `question_${Date.now()}.${ext}`
-    const { error } = await supabase.storage.from('questions').upload(path, file)
-    if (!error) {
+    const { data, error } = await supabase.storage.from('questions').upload(path, file, {
+      cacheControl: '3600',
+      upsert: false
+    })
+    if (error) {
+      console.error('Upload error:', error)
+      alert('Жүктөө катасы: ' + error.message)
+    } else {
       const { data: urlData } = supabase.storage.from('questions').getPublicUrl(path)
       setNewQ(p => ({ ...p, image_url: urlData.publicUrl }))
     }
-    setUploading(false)
+  } catch (e) {
+    console.error(e)
   }
+  setUploading(false)
+}
 
   const addQuestion = async () => {
     if (!selectedTest) return

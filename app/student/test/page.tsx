@@ -240,15 +240,21 @@ export default function TestPage() {
             </button>
           ))}
 
-          <button onClick={handleAnswer} disabled={!selected}
-            style={{
-              marginTop: '8px', background: selected ? BLUE : 'rgba(255,255,255,0.05)',
-              color: selected ? '#fff' : 'rgba(255,255,255,0.3)',
-              border: 'none', borderRadius: '14px', padding: '16px', fontWeight: '900',
-              fontSize: '16px', cursor: selected ? 'pointer' : 'not-allowed', transition: 'all 0.15s',
-            }}>
-            {current + 1 >= questions.length ? 'Аяктоо ✓' : 'Жооп берүү →'}
-          </button>
+        <button onClick={handleAnswer} disabled={!selected}
+  style={{
+    marginTop: '8px', background: selected ? BLUE : 'rgba(255,255,255,0.05)',
+    color: selected ? '#fff' : 'rgba(255,255,255,0.3)',
+    border: 'none', borderRadius: '14px', padding: '16px', fontWeight: '900',
+    fontSize: '16px', cursor: selected ? 'pointer' : 'not-allowed', transition: 'all 0.15s',
+  }}>
+  {current + 1 >= questions.length ? 'Аяктоо ✓' : 'Жооп берүү →'}
+</button>
+
+{current + 1 >= questions.length && Object.keys(answers).length < questions.length - 1 && (
+  <div style={{textAlign:'center', color:'#F59E0B', fontSize:'12px', marginTop:'8px'}}>
+    ⚠️ Бардык суроолорго жооп бериңиз ({Object.keys(answers).length + (selected ? 1 : 0)}/{questions.length})
+  </div>
+)}
 
           <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '12px', marginTop: '4px' }}>
             {Object.keys(answers).length} / {questions.length} суроого жооп берилди
