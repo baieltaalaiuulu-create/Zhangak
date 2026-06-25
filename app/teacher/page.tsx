@@ -21,6 +21,7 @@ export default function TeacherPage() {
  useEffect(() => { checkAuth() }, [])
 
 const checkAuth = async () => {
+  await supabase.auth.getSession()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) { router.push('/'); return }
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()

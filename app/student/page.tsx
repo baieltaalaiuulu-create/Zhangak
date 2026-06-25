@@ -18,6 +18,7 @@ export default function StudentPage() {
   useEffect(() => { checkAuth() }, [])
 
   const checkAuth = async () => {
+    await supabase.auth.getSession() 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/'); return }
     const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single()

@@ -43,7 +43,8 @@ export default function AdminPage() {
   useEffect(() => { checkAuth() }, [])
 
  const checkAuth = async () => {
-  const { data: { user } } = await supabase.auth.getUser()
+await supabase.auth.getSession()
+const { data: { user } } = await supabase.auth.getUser()  
   if (!user) { router.push('/'); return }
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (!profile || profile.role !== 'admin') {
