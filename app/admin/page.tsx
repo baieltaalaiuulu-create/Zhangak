@@ -249,81 +249,87 @@ export default function AdminPage() {
 
           {/* ОКУУЧУЛАР */}
           {activeTab === 'students' && (
-            <Animate>
-              <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', overflow:'hidden'}}>
-                <div style={{padding:'16px 20px', borderBottom:`1px solid ${BORDER}`}}>
-                  <div style={{fontWeight:'700', fontSize:'15px'}}>Окуучулар ({students.length})</div>
-                </div>
-                <table style={{width:'100%', fontSize:'13px', borderCollapse:'collapse'}}>
-                  <thead>
-                    <tr style={{borderBottom:`1px solid ${BORDER}`}}>
-                      {['Аты-жөнү','Телефон','Катталган күн'].map(h => (
-                        <th key={h} style={{textAlign:'left', padding:'12px 16px', color:'rgba(255,255,255,0.4)', fontWeight:'600', fontSize:'12px'}}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {students.map((s, i) => (
-                      <tr key={s.id} style={{borderBottom: i < students.length-1 ? `1px solid ${BORDER}` : 'none'}}>
-                        <td style={{padding:'12px 16px'}}>
-                          <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                            <div style={{width:'32px', height:'32px', background:BLUE, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'700', fontSize:'13px', flexShrink:0}}>
-                              {s.full_name?.[0]}
-                            </div>
-                            <span style={{fontWeight:'600'}}>{s.full_name}</span>
-                          </div>
-                        </td>
-                        <td style={{padding:'12px 16px', color:'rgba(255,255,255,0.5)'}}>{s.phone || '—'}</td>
-                        <td style={{padding:'12px 16px', color:'rgba(255,255,255,0.5)', fontSize:'12px'}}>{new Date(s.created_at).toLocaleDateString('ru')}</td>
-                      </tr>
-                    ))}
-                    {students.length === 0 && (
-                      <tr><td colSpan={3} style={{padding:'32px', textAlign:'center', color:'rgba(255,255,255,0.3)'}}>Окуучулар жок</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </Animate>
-          )}
+  <div>
+    <AddUserForm role="student" onAdded={fetchData} />
+    <Animate>
+      <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', overflow:'hidden', marginTop:'20px'}}>
+        <div style={{padding:'16px 20px', borderBottom:`1px solid ${BORDER}`}}>
+          <div style={{fontWeight:'700', fontSize:'15px'}}>Окуучулар ({students.length})</div>
+        </div>
+        <table style={{width:'100%', fontSize:'13px', borderCollapse:'collapse'}}>
+          <thead>
+            <tr style={{borderBottom:`1px solid ${BORDER}`}}>
+              {['Аты-жөнү','Телефон','Катталган күн'].map(h => (
+                <th key={h} style={{textAlign:'left', padding:'12px 16px', color:'rgba(255,255,255,0.4)', fontWeight:'600', fontSize:'12px'}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {students.map((s, i) => (
+              <tr key={s.id} style={{borderBottom: i < students.length-1 ? `1px solid ${BORDER}` : 'none'}}>
+                <td style={{padding:'12px 16px'}}>
+                  <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+                    <div style={{width:'32px', height:'32px', background:BLUE, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'700', fontSize:'13px', flexShrink:0}}>
+                      {s.full_name?.[0]}
+                    </div>
+                    <span style={{fontWeight:'600'}}>{s.full_name}</span>
+                  </div>
+                </td>
+                <td style={{padding:'12px 16px', color:'rgba(255,255,255,0.5)'}}>{s.phone || '—'}</td>
+                <td style={{padding:'12px 16px', color:'rgba(255,255,255,0.5)', fontSize:'12px'}}>{new Date(s.created_at).toLocaleDateString('ru')}</td>
+              </tr>
+            ))}
+            {students.length === 0 && (
+              <tr><td colSpan={3} style={{padding:'32px', textAlign:'center', color:'rgba(255,255,255,0.3)'}}>Окуучулар жок</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Animate>
+  </div>
+)}
 
           {/* МУГАЛИМДЕР */}
           {activeTab === 'teachers' && (
-            <Animate>
-              <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', overflow:'hidden'}}>
-                <div style={{padding:'16px 20px', borderBottom:`1px solid ${BORDER}`}}>
-                  <div style={{fontWeight:'700', fontSize:'15px'}}>Мугалимдер ({teachers.length})</div>
-                </div>
-                <table style={{width:'100%', fontSize:'13px', borderCollapse:'collapse'}}>
-                  <thead>
-                    <tr style={{borderBottom:`1px solid ${BORDER}`}}>
-                      {['Аты-жөнү','Телефон','Катталган күн'].map(h => (
-                        <th key={h} style={{textAlign:'left', padding:'12px 16px', color:'rgba(255,255,255,0.4)', fontWeight:'600', fontSize:'12px'}}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {teachers.map((t, i) => (
-                      <tr key={t.id} style={{borderBottom: i < teachers.length-1 ? `1px solid ${BORDER}` : 'none'}}>
-                        <td style={{padding:'12px 16px'}}>
-                          <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                            <div style={{width:'32px', height:'32px', background:'#8B5CF6', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'700', fontSize:'13px', flexShrink:0}}>
-                              {t.full_name?.[0]}
-                            </div>
-                            <span style={{fontWeight:'600'}}>{t.full_name}</span>
-                          </div>
-                        </td>
-                        <td style={{padding:'12px 16px', color:'rgba(255,255,255,0.5)'}}>{t.phone || '—'}</td>
-                        <td style={{padding:'12px 16px', color:'rgba(255,255,255,0.5)', fontSize:'12px'}}>{new Date(t.created_at).toLocaleDateString('ru')}</td>
-                      </tr>
-                    ))}
-                    {teachers.length === 0 && (
-                      <tr><td colSpan={3} style={{padding:'32px', textAlign:'center', color:'rgba(255,255,255,0.3)'}}>Мугалимдер жок</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </Animate>
-          )}
+  <div>
+    <AddUserForm role="teacher" onAdded={fetchData} />
+    <Animate>
+      <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', overflow:'hidden', marginTop:'20px'}}>
+        <div style={{padding:'16px 20px', borderBottom:`1px solid ${BORDER}`}}>
+          <div style={{fontWeight:'700', fontSize:'15px'}}>Мугалимдер ({teachers.length})</div>
+        </div>
+        <table style={{width:'100%', fontSize:'13px', borderCollapse:'collapse'}}>
+          <thead>
+            <tr style={{borderBottom:`1px solid ${BORDER}`}}>
+              {['Аты-жөнү','Телефон','Катталган күн'].map(h => (
+                <th key={h} style={{textAlign:'left', padding:'12px 16px', color:'rgba(255,255,255,0.4)', fontWeight:'600', fontSize:'12px'}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {teachers.map((t, i) => (
+              <tr key={t.id} style={{borderBottom: i < teachers.length-1 ? `1px solid ${BORDER}` : 'none'}}>
+                <td style={{padding:'12px 16px'}}>
+                  <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+                    <div style={{width:'32px', height:'32px', background:'#8B5CF6', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'700', fontSize:'13px', flexShrink:0}}>
+                      {t.full_name?.[0]}
+                    </div>
+                    <span style={{fontWeight:'600'}}>{t.full_name}</span>
+                  </div>
+                </td>
+                <td style={{padding:'12px 16px', color:'rgba(255,255,255,0.5)'}}>{t.phone || '—'}</td>
+                <td style={{padding:'12px 16px', color:'rgba(255,255,255,0.5)', fontSize:'12px'}}>{new Date(t.created_at).toLocaleDateString('ru')}</td>
+              </tr>
+            ))}
+            {teachers.length === 0 && (
+              <tr><td colSpan={3} style={{padding:'32px', textAlign:'center', color:'rgba(255,255,255,0.3)'}}>Мугалимдер жок</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Animate>
+  </div>
+)}
 
           {/* ГРУППАЛАР */}
           {activeTab === 'groups' && (
@@ -720,4 +726,110 @@ function AdminTests() {
       )}
     </div>
   )
-}
+function AddUserForm({ role, onAdded }: { role: string, onAdded: () => void }) {
+  const [show, setShow] = useState(false)
+  const [form, setForm] = useState({ full_name: '', email: '', password: '', phone: '' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  const handleSubmit = async () => {
+    if (!form.full_name || !form.email || !form.password) {
+      setError('Бардык талааларды толтуруңуз')
+      return
+    }
+    setSaving(true)
+    setError('')
+    setSuccess('')
+    try {
+      const res = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, role }),
+      })
+      const data = await res.json()
+      if (data.error) {
+        setError(data.error)
+      } else {
+        setSuccess(role === 'student' ? 'Окуучу кошулду!' : 'Мугалим кошулду!')
+        setForm({ full_name: '', email: '', password: '', phone: '' })
+        setShow(false)
+        onAdded()
+      }
+    } catch (e) {
+      setError('Ката кетти')
+    }
+    setSaving(false)
+  }
+
+  return (
+    <div>
+      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px'}}>
+        <div style={{fontWeight:'800', fontSize:'18px'}}>
+          {role === 'student' ? 'Окуучулар' : 'Мугалимдер'}
+        </div>
+        <button onClick={() => { setShow(p => !p); setError(''); setSuccess('') }}
+          style={{background:BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'10px 20px', fontWeight:'700', fontSize:'13px', cursor:'pointer'}}>
+          + {role === 'student' ? 'Окуучу кошуу' : 'Мугалим кошуу'}
+        </button>
+      </div>
+
+      {success && (
+        <div style={{background:'rgba(16,185,129,0.15)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:'10px', padding:'12px 16px', marginBottom:'16px', color:'#34D399', fontSize:'14px'}}>
+          ✅ {success}
+        </div>
+      )}
+
+      {show && (
+        <Animate>
+          <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', padding:'20px', marginBottom:'16px'}}>
+            <div style={{fontWeight:'700', fontSize:'14px', marginBottom:'16px'}}>
+              {role === 'student' ? '🎓 Жаңы окуучу' : '👨‍🏫 Жаңы мугалим'}
+            </div>
+            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'12px'}}>
+              <div>
+                <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>Аты-жөнү *</div>
+                <input value={form.full_name} onChange={e => setForm(p => ({...p, full_name: e.target.value}))}
+                  placeholder="Иванов Айбек"
+                  style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:`1px solid ${BORDER}`, background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'13px', boxSizing:'border-box' as const}} />
+              </div>
+              <div>
+                <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>Телефон</div>
+                <input value={form.phone} onChange={e => setForm(p => ({...p, phone: e.target.value}))}
+                  placeholder="+996 700 000 000"
+                  style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:`1px solid ${BORDER}`, background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'13px', boxSizing:'border-box' as const}} />
+              </div>
+              <div>
+                <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>Email *</div>
+                <input value={form.email} onChange={e => setForm(p => ({...p, email: e.target.value}))}
+                  placeholder="student@gmail.com" type="email"
+                  style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:`1px solid ${BORDER}`, background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'13px', boxSizing:'border-box' as const}} />
+              </div>
+              <div>
+                <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>Сырсөз *</div>
+                <input value={form.password} onChange={e => setForm(p => ({...p, password: e.target.value}))}
+                  placeholder="Жок дегенде 6 символ" type="password"
+                  style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:`1px solid ${BORDER}`, background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'13px', boxSizing:'border-box' as const}} />
+              </div>
+            </div>
+            {error && (
+              <div style={{background:'rgba(239,68,68,0.15)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:'8px', padding:'10px 14px', marginBottom:'12px', color:'#FCA5A5', fontSize:'13px'}}>
+                ❌ {error}
+              </div>
+            )}
+            <div style={{display:'flex', gap:'10px'}}>
+              <button onClick={handleSubmit} disabled={saving}
+                style={{background:BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'10px 24px', fontWeight:'700', fontSize:'14px', cursor:'pointer', opacity: saving ? 0.7 : 1}}>
+                {saving ? 'Кошулууда...' : '+ Кошуу'}
+              </button>
+              <button onClick={() => setShow(false)}
+                style={{background:'rgba(255,255,255,0.05)', color:'rgba(255,255,255,0.5)', border:`1px solid ${BORDER}`, borderRadius:'10px', padding:'10px 20px', fontWeight:'600', fontSize:'14px', cursor:'pointer'}}>
+                Жокко чыгаруу
+              </button>
+            </div>
+          </div>
+        </Animate>
+      )}
+    </div>
+  )
+}}
