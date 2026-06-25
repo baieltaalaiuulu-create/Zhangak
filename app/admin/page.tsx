@@ -69,15 +69,15 @@ export default function AdminPage() {
     router.push('/')
   }
 
-  const tabs = [
-    { id: 'dashboard', label: '📊 Главная' },
-    { id: 'courses', label: '📚 Программа' },
-    { id: 'groups', label: '👥 Группы' },
-    { id: 'students', label: '🎓 Ученики' },
-    { id: 'teachers', label: '👨‍🏫 Учителя' },
-    { id: 'results', label: '📈 Результаты' },
-  ]
-
+const tabs = [
+  { id: 'dashboard', label: '📊 Главная' },
+  { id: 'courses', label: '📚 Программа' },
+  { id: 'groups', label: '👥 Группы' },
+  { id: 'students', label: '🎓 Ученики' },
+  { id: 'teachers', label: '👨‍🏫 Учителя' },
+  { id: 'tests', label: '📝 Тесттер' },
+  { id: 'results', label: '📈 Результаты' },
+]
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={{background:'var(--bg)'}}>
       <div style={{color:'var(--muted)'}}>Загрузка...</div>
@@ -282,6 +282,15 @@ export default function AdminPage() {
               </div>
             </div>
           )}
+          
+          
+          {/* ТЕСТТЕР */}
+{activeTab === 'tests' && (
+  <div>
+    <h2 className="text-xl font-bold mb-6">Практикалык тесттер</h2>
+    <AdminTests />
+  </div>
+)}
 
           {/* РЕЗУЛЬТАТЫ */}
           {activeTab === 'results' && (
@@ -340,4 +349,264 @@ function ResultsTab() {
       </table>
     </div>
   )
+function AdminTests() {
+  const [tests, setTests] = useState<any[]>([])
+  const [selectedTest, setSelectedTest] = useState<any>(null)
+  const [questions, setQuestions] = useState<any[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [newTest, setNewTest] = useState({ title: '', subject: 'math' })
+  const [newQ, setNewQ] = useState({ question_text: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'A', image_url: '' })
+  const [uploading, setUploading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [qType, setQType] = useState<'text' | 'image'>('text')
+
+  useEffect(() => { fetchTests() }, [])
+
+  const fetchTests = async () => {
+    const { data } = await supabase.from('practice_tests').select('*').order('id')
+    setTests(data || [])
+  }
+
+  const fetchQuestions = async (testId: number) => {
+    const { data } = await supabase.from('questions').select('*').eq('practice_test_id', testId).order('order_num')
+    setQuestions(data || [])
+  }
+
+  const selectTest = (t: any) => {
+    setSelectedTest(t)
+    fetchQuestions(t.id)
+  }
+
+  const createTest = async () => {
+    if (!newTest.title) return
+    setSaving(true)
+    const { data } = await supabase.from('practice_tests').insert({
+      title: newTest.title,
+      subject: newTest.subject,
+      questions: [],
+      lesson_id: 1,
+    }).select().single()
+    if (data) { setTests(p => [...p, data]); selectTest(data) }
+    setNewTest({ title: '', subject: 'math' })
+    setShowForm(false)
+    setSaving(false)
+  }
+
+  const uploadImage = async (file: File) => {
+    setUploading(true)
+    const ext = file.name.split('.').pop()
+    const path = `question_${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('questions').upload(path, file)
+    if (!error) {
+      const { data: urlData } = supabase.storage.from('questions').getPublicUrl(path)
+      setNewQ(p => ({ ...p, image_url: urlData.publicUrl }))
+    }
+    setUploading(false)
+  }
+
+  const addQuestion = async () => {
+    if (!selectedTest) return
+    if (qType === 'text' && !newQ.question_text) return
+    if (qType === 'image' && !newQ.image_url) return
+    setSaving(true)
+    await supabase.from('questions').insert({
+      practice_test_id: selectedTest.id,
+      question_text: qType === 'text' ? newQ.question_text : '',
+      image_url: qType === 'image' ? newQ.image_url : '',
+      option_a: newQ.option_a || 'А тилкеси чоң',
+      option_b: newQ.option_b || 'Б тилкеси чоң',
+      option_c: newQ.option_c || 'Барабар',
+      option_d: newQ.option_d || 'Аныктоо мүмкүн эмес',
+      correct_answer: newQ.correct_answer,
+      order_num: questions.length + 1,
+    })
+    setNewQ({ question_text: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'A', image_url: '' })
+    fetchQuestions(selectedTest.id)
+    setSaving(false)
+  }
+
+  const deleteQuestion = async (id: number) => {
+    await supabase.from('questions').delete().eq('id', id)
+    fetchQuestions(selectedTest.id)
+  }
+
+  const BLUE = '#2563EB'
+  const subjects = [
+    { value: 'math', label: 'Математика' },
+    { value: 'kyr', label: 'Кыргыз тили' },
+    { value: 'reading', label: 'Окуу жана түшүнүү' },
+    { value: 'grammar', label: 'Грамматика' },
+  ]
+
+  return (
+    <div style={{display:'grid', gridTemplateColumns:'280px 1fr', gap:'24px', alignItems:'start'}}>
+      {/* TEST LIST */}
+      <div>
+        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px'}}>
+          <div style={{fontWeight:'700', fontSize:'14px', color:'var(--muted)'}}>Тесттер</div>
+          <button onClick={() => setShowForm(p => !p)}
+            style={{background:BLUE, color:'#fff', border:'none', borderRadius:'8px', padding:'6px 14px', fontSize:'12px', fontWeight:'700', cursor:'pointer'}}>
+            + Жаңы
+          </button>
+        </div>
+
+        {showForm && (
+          <div style={{background:'var(--surface)', border:'1px solid var(--border)', borderRadius:'12px', padding:'16px', marginBottom:'12px'}}>
+            <input value={newTest.title} onChange={e => setNewTest(p => ({...p, title: e.target.value}))}
+              placeholder="Тест аталышы"
+              style={{width:'100%', padding:'8px 12px', borderRadius:'8px', border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text)', fontSize:'13px', marginBottom:'8px', boxSizing:'border-box' as const}} />
+            <select value={newTest.subject} onChange={e => setNewTest(p => ({...p, subject: e.target.value}))}
+              style={{width:'100%', padding:'8px 12px', borderRadius:'8px', border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text)', fontSize:'13px', marginBottom:'12px', boxSizing:'border-box' as const}}>
+              {subjects.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+            <button onClick={createTest} disabled={saving}
+              style={{width:'100%', background:BLUE, color:'#fff', border:'none', borderRadius:'8px', padding:'8px', fontSize:'13px', fontWeight:'700', cursor:'pointer'}}>
+              {saving ? 'Сакталууда...' : 'Түзүү'}
+            </button>
+          </div>
+        )}
+
+        <div style={{display:'flex', flexDirection:'column', gap:'6px'}}>
+          {tests.map(t => (
+            <button key={t.id} onClick={() => selectTest(t)}
+              style={{textAlign:'left', padding:'12px', borderRadius:'10px', border:'none', cursor:'pointer',
+                background: selectedTest?.id === t.id ? 'rgba(37,99,235,0.15)' : 'var(--surface)',
+                borderLeft: selectedTest?.id === t.id ? `3px solid ${BLUE}` : '3px solid transparent',
+                color:'var(--text)'}}>
+              <div style={{fontWeight:'600', fontSize:'13px'}}>{t.title}</div>
+              <div style={{fontSize:'11px', color:'var(--muted)', marginTop:'3px'}}>
+                {subjects.find(s => s.value === t.subject)?.label}
+              </div>
+            </button>
+          ))}
+          {tests.length === 0 && (
+            <div style={{textAlign:'center', color:'var(--muted)', fontSize:'13px', padding:'24px'}}>
+              Тест жок
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* QUESTIONS */}
+      {selectedTest ? (
+        <div>
+          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px'}}>
+            <div>
+              <h3 style={{fontWeight:'800', fontSize:'18px'}}>{selectedTest.title}</h3>
+              <div style={{color:'var(--muted)', fontSize:'13px', marginTop:'4px'}}>{questions.length} суроо</div>
+            </div>
+            <a href={`/student/test?id=${selectedTest.id}`} target="_blank" rel="noopener noreferrer"
+              style={{background:'rgba(37,99,235,0.15)', color:BLUE, borderRadius:'8px', padding:'8px 16px', fontSize:'13px', fontWeight:'700', textDecoration:'none'}}>
+              👁 Алдын ала көрүү
+            </a>
+          </div>
+
+          {/* ADD QUESTION FORM */}
+          <div style={{background:'var(--surface)', border:'1px solid var(--border)', borderRadius:'16px', padding:'20px', marginBottom:'20px'}}>
+            <div style={{fontWeight:'700', fontSize:'14px', marginBottom:'16px'}}>Жаңы суроо кошуу</div>
+
+            {/* TYPE TOGGLE */}
+            <div style={{display:'flex', gap:'8px', marginBottom:'16px'}}>
+              {(['text', 'image'] as const).map(type => (
+                <button key={type} onClick={() => setQType(type)}
+                  style={{padding:'6px 16px', borderRadius:'8px', border:'none', cursor:'pointer', fontSize:'13px', fontWeight:'600',
+                    background: qType === type ? BLUE : 'rgba(255,255,255,0.05)',
+                    color: qType === type ? '#fff' : 'var(--muted)'}}>
+                  {type === 'text' ? '📝 Текст' : '🖼 Сүрөт'}
+                </button>
+              ))}
+            </div>
+
+            {qType === 'text' ? (
+              <textarea value={newQ.question_text} onChange={e => setNewQ(p => ({...p, question_text: e.target.value}))}
+                placeholder="Суроону жазыңыз..."
+                rows={3}
+                style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text)', fontSize:'13px', marginBottom:'12px', resize:'none', boxSizing:'border-box' as const}} />
+            ) : (
+              <div style={{marginBottom:'12px'}}>
+                <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0])}
+                  style={{display:'none'}} id="img-upload" />
+                <label htmlFor="img-upload" style={{display:'block', border:'2px dashed var(--border)', borderRadius:'12px', padding:'24px', textAlign:'center', cursor:'pointer'}}>
+                  {uploading ? (
+                    <div style={{color:'var(--muted)', fontSize:'13px'}}>Жүктөлүүдө...</div>
+                  ) : newQ.image_url ? (
+                    <img src={newQ.image_url} alt="preview" style={{maxHeight:'120px', borderRadius:'8px'}} />
+                  ) : (
+                    <div style={{color:'var(--muted)', fontSize:'13px'}}>🖼 Сүрөт жүктөө үчүн басыңыз</div>
+                  )}
+                </label>
+              </div>
+            )}
+
+            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'12px'}}>
+              {(['A','B','C','D'] as const).map(opt => (
+                <div key={opt} style={{display:'flex', gap:'6px', alignItems:'center'}}>
+                  <div style={{width:'24px', height:'24px', borderRadius:'6px', background: newQ.correct_answer === opt ? BLUE : 'rgba(255,255,255,0.05)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:'800', color: newQ.correct_answer === opt ? '#fff' : 'var(--muted)', flexShrink:0, cursor:'pointer'}}
+                    onClick={() => setNewQ(p => ({...p, correct_answer: opt}))}>
+                    {opt}
+                  </div>
+                  <input
+                    value={newQ[`option_${opt.toLowerCase()}` as keyof typeof newQ]}
+                    onChange={e => setNewQ(p => ({...p, [`option_${opt.toLowerCase()}`]: e.target.value}))}
+                    placeholder={`${opt} варианты`}
+                    style={{flex:1, padding:'6px 10px', borderRadius:'6px', border:`1px solid ${newQ.correct_answer === opt ? BLUE : 'var(--border)'}`, background:'var(--bg)', color:'var(--text)', fontSize:'12px'}} />
+                </div>
+              ))}
+            </div>
+
+            <div style={{fontSize:'11px', color:'var(--muted)', marginBottom:'12px'}}>
+              💡 Туура жооптун тамгасын басыңыз (азыр: <strong style={{color:BLUE}}>{newQ.correct_answer}</strong>)
+            </div>
+
+            <button onClick={addQuestion} disabled={saving || uploading}
+              style={{background:BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'10px 24px', fontSize:'14px', fontWeight:'700', cursor:'pointer', opacity: saving ? 0.7 : 1}}>
+              {saving ? 'Сакталууда...' : '+ Суроо кошуу'}
+            </button>
+          </div>
+
+          {/* QUESTIONS LIST */}
+          <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+            {questions.map((q, i) => (
+              <div key={q.id} style={{background:'var(--surface)', border:'1px solid var(--border)', borderRadius:'12px', padding:'16px', display:'flex', gap:'16px', alignItems:'flex-start'}}>
+                <div style={{width:'28px', height:'28px', background:BLUE, borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', fontWeight:'800', flexShrink:0}}>
+                  {i + 1}
+                </div>
+                <div style={{flex:1}}>
+                  {q.image_url ? (
+                    <img src={q.image_url} alt="question" style={{maxHeight:'80px', borderRadius:'8px', marginBottom:'8px'}} />
+                  ) : (
+                    <div style={{fontSize:'13px', fontWeight:'600', marginBottom:'8px'}}>{q.question_text}</div>
+                  )}
+                  <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
+                    {['A','B','C','D'].map(opt => (
+                      <span key={opt} style={{fontSize:'11px', padding:'3px 8px', borderRadius:'6px',
+                        background: q.correct_answer === opt ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.05)',
+                        color: q.correct_answer === opt ? '#10B981' : 'var(--muted)',
+                        fontWeight: q.correct_answer === opt ? '700' : '400'}}>
+                        {opt}: {q[`option_${opt.toLowerCase()}`]}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <button onClick={() => deleteQuestion(q.id)}
+                  style={{background:'rgba(239,68,68,0.15)', color:'#EF4444', border:'none', borderRadius:'8px', padding:'6px 10px', cursor:'pointer', fontSize:'12px', flexShrink:0}}>
+                  🗑
+                </button>
+              </div>
+            ))}
+            {questions.length === 0 && (
+              <div style={{textAlign:'center', color:'var(--muted)', fontSize:'13px', padding:'32px'}}>
+                Суроолор жок — жогорудагы форм менен кошуңуз
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div style={{textAlign:'center', color:'var(--muted)', fontSize:'14px', padding:'60px'}}>
+          ← Тест тандаңыз же жаңы тест түзүңүз
+        </div>
+      )}
+    </div>
+  )
+}
 }
