@@ -141,7 +141,7 @@ export default function TestPage() {
         </div>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-          <button onClick={() => router.push('/student')}
+          <button onClick={() => window.location.href = '/student'}
             style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: '12px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>
             Кабинетке кайтуу
           </button>
