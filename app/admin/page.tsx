@@ -51,6 +51,7 @@ export default function AdminPage() {
     router.push('/')
     return
   }
+  fetchData()
 }
   const fetchData = async () => {
     const [c, g, s, t] = await Promise.all([
