@@ -832,4 +832,50 @@ function AddUserForm({ role, onAdded }: { role: string, onAdded: () => void }) {
       )}
     </div>
   )
-}}
+}
+
+function AddUserForm({ role, onAdded }: { role: string, onAdded: () => void }) {
+  const [show, setShow] = useState(false)
+  const [form, setForm] = useState({ full_name: '', email: '', password: '', phone: '' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  const handleSubmit = async () => {
+    if (!form.full_name || !form.email || !form.password) { setError('?????? ?????????? ??????????'); return }
+    setSaving(true); setError(''); setSuccess('')
+    try {
+      const res = await fetch('/api/create-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, role }) })
+      const data = await res.json()
+      if (data.error) { setError(data.error) } else { setSuccess(role === 'student' ? '?????? ???????!' : '??????? ???????!'); setForm({ full_name: '', email: '', password: '', phone: '' }); setShow(false); onAdded() }
+    } catch (e) { setError('???? ?????') }
+    setSaving(false)
+  }
+
+  return (
+    <div>
+      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px'}}>
+        <div style={{fontWeight:'800', fontSize:'18px'}}>{role === 'student' ? '?????????' : '??????????'}</div>
+        <button onClick={() => { setShow(p => !p); setError(''); setSuccess('') }} style={{background:BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'10px 20px', fontWeight:'700', fontSize:'13px', cursor:'pointer'}}>+ {role === 'student' ? '?????? ?????' : '??????? ?????'}</button>
+      </div>
+      {success && <div style={{background:'rgba(16,185,129,0.15)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:'10px', padding:'12px 16px', marginBottom:'16px', color:'#34D399', fontSize:'14px'}}>? {success}</div>}
+      {show && (
+        <Animate>
+          <div style={{background:SURFACE, border:1px solid , borderRadius:'16px', padding:'20px', marginBottom:'16px'}}>
+            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'12px'}}>
+              <div><div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>???-???? *</div><input value={form.full_name} onChange={e => setForm(p => ({...p, full_name: e.target.value}))} placeholder='?????? ?????' style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:1px solid , background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'13px', boxSizing:'border-box'}} /></div>
+              <div><div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>???????</div><input value={form.phone} onChange={e => setForm(p => ({...p, phone: e.target.value}))} placeholder='+996 700 000 000' style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:1px solid , background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'13px', boxSizing:'border-box'}} /></div>
+              <div><div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>Email *</div><input value={form.email} onChange={e => setForm(p => ({...p, email: e.target.value}))} placeholder='student@gmail.com' type='email' style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:1px solid , background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'13px', boxSizing:'border-box'}} /></div>
+              <div><div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>?????? *</div><input value={form.password} onChange={e => setForm(p => ({...p, password: e.target.value}))} placeholder='??? ??????? 6 ??????' type='password' style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:1px solid , background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'13px', boxSizing:'border-box'}} /></div>
+            </div>
+            {error && <div style={{background:'rgba(239,68,68,0.15)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:'8px', padding:'10px 14px', marginBottom:'12px', color:'#FCA5A5', fontSize:'13px'}}>? {error}</div>}
+            <div style={{display:'flex', gap:'10px'}}>
+              <button onClick={handleSubmit} disabled={saving} style={{background:BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'10px 24px', fontWeight:'700', fontSize:'14px', cursor:'pointer', opacity: saving ? 0.7 : 1}}>{saving ? '?????????...' : '+ ?????'}</button>
+              <button onClick={() => setShow(false)} style={{background:'rgba(255,255,255,0.05)', color:'rgba(255,255,255,0.5)', border:1px solid , borderRadius:'10px', padding:'10px 20px', fontWeight:'600', fontSize:'14px', cursor:'pointer'}}>????? ???????</button>
+            </div>
+          </div>
+        </Animate>
+      )}
+    </div>
+  )
+}
