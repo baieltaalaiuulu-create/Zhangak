@@ -67,6 +67,7 @@ export default function LandingPage() {
      else if (profile.role === 'teacher') router.push('/teacher')
      else if (profile.role === 'manager') router.push('/manager')
      else if (profile.role === 'director') router.push('/director')
+     else if (profile.role === 'finance') router.push('/finance')
      else router.push('/student')
   }
 
