@@ -113,7 +113,7 @@ function Particles() {
         }
         .review-card:hover {
           transform: translateY(-6px) !important;
-          border-color: rgba(99,102,241,0.5) !important;
+          border-color: rgba(27,79,216,0.5) !important;
         }
         .nav-link:hover { color: #fff !important; }
         @media (max-width: 768px) {
@@ -135,7 +135,7 @@ function Particles() {
         <div key={p.id} style={{
           position: 'absolute', bottom: '-20px', left: `${p.x}%`,
           width: p.size, height: p.size,
-          background: p.id % 3 === 0 ? '#6366F1' : p.id % 3 === 1 ? '#10B981' : '#F59E0B',
+          background: p.id % 3 === 0 ? '#1B4FD8' : p.id % 3 === 1 ? '#2563EB' : '#F59E0B',
           borderRadius: '50%', opacity: p.opacity,
           animation: `floatUp ${p.duration}s ${p.delay}s infinite linear`,
         }} />
@@ -251,13 +251,13 @@ export default function LandingPage() {
   const courses = [
     {
       level: 'B1', name: 'Базовый', month: '1-ай', price: '4 500',
-      color: '#6366F1', glow: 'rgba(99,102,241,0.3)',
+      color: '#60A5FA', glow: 'rgba(96,165,250,0.25)',
       topics: ['Арифметика', 'Лексика жана морфология', 'Базалык аналогиялар', 'Чтение негиздери'],
       badge: 'Башталгычтар үчүн',
     },
     {
       level: 'B2', name: 'Продвинутый', month: '2-ай', price: '5 000',
-      color: '#10B981', glow: 'rgba(16,185,129,0.3)',
+      color: '#1B4FD8', glow: 'rgba(27,79,216,0.4)',
       topics: ['Алгебра', 'Синтаксис жана аналогия', 'Функциялар', 'Окуу жана түшүнүү'],
       badge: 'Эң популярдуу',
       featured: true,
@@ -271,11 +271,11 @@ export default function LandingPage() {
   ]
 
   return (
-    <div style={{ background: '#080C1A', minHeight: '100vh', fontFamily: 'Inter, -apple-system, sans-serif', color: '#fff', overflowX: 'hidden' }}>
+    <div style={{ background: '#050C1F', minHeight: '100vh', fontFamily: 'Inter, -apple-system, sans-serif', color: '#fff', overflowX: 'hidden' }}>
 
       {/* ── ANNOUNCEMENT BANNER ──────────────────────────────────────────────── */}
       <div style={{
-        background: 'linear-gradient(90deg, #6366F1, #8B5CF6, #EC4899, #6366F1)',
+        background: 'linear-gradient(90deg, #1B4FD8, #1E63E8, #3B82F6, #1B4FD8)',
         backgroundSize: '300% 100%',
         animation: 'gradientShift 4s ease infinite',
         padding: '10px 20px', textAlign: 'center', fontSize: '13px', fontWeight: '700',
@@ -313,7 +313,7 @@ export default function LandingPage() {
             Кирүү
           </button>
           <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
-            style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff', borderRadius: '10px', padding: '9px 18px', fontWeight: '800', fontSize: '13px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.25s', boxShadow: '0 4px 20px rgba(99,102,241,0.4)' }}>
+            style={{ background: 'linear-gradient(135deg,#1B4FD8,#1E63E8)', color: '#fff', borderRadius: '10px', padding: '9px 18px', fontWeight: '800', fontSize: '13px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.25s', boxShadow: '0 4px 20px rgba(27,79,216,0.4)' }}>
             📲 Жазылуу
           </a>
         </div>
@@ -323,17 +323,17 @@ export default function LandingPage() {
       <div style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
         <Particles />
         {/* Glow orbs */}
-        <div style={{ position: 'absolute', top: '10%', left: '5%', width: '500px', height: '500px', background: 'radial-gradient(circle,rgba(99,102,241,0.15) 0%,transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: '10%', right: '5%', width: '400px', height: '400px', background: 'radial-gradient(circle,rgba(16,185,129,0.12) 0%,transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '10%', left: '5%', width: '500px', height: '500px', background: 'radial-gradient(circle,rgba(27,79,216,0.15) 0%,transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: '10%', right: '5%', width: '400px', height: '400px', background: 'radial-gradient(circle,rgba(27,79,216,0.08) 0%,transparent 70%)', pointerEvents: 'none' }} />
 
         <div className="section-pad hero-grid" style={{ padding: '80px 60px', maxWidth: '1200px', margin: '0 auto', width: '100%', display: 'flex', alignItems: 'center', gap: '60px', position: 'relative', zIndex: 1 }}>
           {/* LEFT */}
           <div style={{ flex: 1 }}>
             <div style={{ animation: 'slideInLeft 0.8s cubic-bezier(.22,1,.36,1) both' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.4)', borderRadius: '20px', padding: '8px 16px', marginBottom: '28px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(27,79,216,0.2)', border: '1px solid rgba(27,79,216,0.4)', borderRadius: '20px', padding: '8px 16px', marginBottom: '28px' }}>
                 <span style={{ fontSize: '14px' }}>🏆</span>
-                <span style={{ color: '#A5B4FC', fontSize: '13px', fontWeight: '700' }}>220+ ЖРТ жеңүүчүлөрү</span>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', animation: 'pulseGlow 2s ease infinite' }} />
+                <span style={{ color: '#93C5FD', fontSize: '13px', fontWeight: '700' }}>220+ ЖРТ жеңүүчүлөрү</span>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#2563EB', animation: 'pulseGlow 2s ease infinite' }} />
               </div>
             </div>
 
@@ -344,14 +344,14 @@ export default function LandingPage() {
               }}>
                 ЖРТдан{' '}
                 <span style={{
-                  background: 'linear-gradient(135deg,#6366F1,#8B5CF6,#EC4899)',
+                  background: 'linear-gradient(135deg,#1B4FD8,#1E63E8,#3B82F6)',
                   WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                   backgroundSize: '200% 200%', animation: 'gradientShift 3s ease infinite',
                 }}>
                   жогорку балл
                 </span>
                 {' '}—{'\n'}сенин{'\n'}келечегиңдин{'\n'}
-                <span style={{ color: '#10B981' }}>ачкычы.</span>
+                <span style={{ color: '#2563EB' }}>ачкычы.</span>
               </h1>
             </div>
 
@@ -363,7 +363,7 @@ export default function LandingPage() {
 
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', animation: 'slideInLeft 0.8s 0.3s cubic-bezier(.22,1,.36,1) both' }}>
               <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
-                style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff', borderRadius: '14px', padding: '15px 32px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', display: 'inline-block', boxShadow: '0 8px 32px rgba(99,102,241,0.45)', transition: 'all 0.25s' }}>
+                style={{ background: 'linear-gradient(135deg,#1B4FD8,#1E63E8)', color: '#fff', borderRadius: '14px', padding: '15px 32px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', display: 'inline-block', boxShadow: '0 8px 32px rgba(27,79,216,0.45)', transition: 'all 0.25s' }}>
                 📲 Жазылуу
               </a>
               <button onClick={() => setShowLogin(true)} className="cta-btn"
@@ -374,7 +374,7 @@ export default function LandingPage() {
 
             {/* Stats */}
             <div style={{ display: 'flex', gap: '36px', marginTop: '44px', paddingTop: '36px', borderTop: '1px solid rgba(255,255,255,0.07)', flexWrap: 'wrap', animation: 'slideInLeft 0.8s 0.4s cubic-bezier(.22,1,.36,1) both' }}>
-              {[{ n: '220+', l: 'Жеңүүчүлөр', c: '#A5B4FC' }, { n: '221', l: 'Эң жогорку', c: '#6EE7B7' }, { n: '3', l: 'Деңгээл', c: '#FCD34D' }].map(s => (
+              {[{ n: '220+', l: 'Жеңүүчүлөр', c: '#93C5FD' }, { n: '221', l: 'Эң жогорку', c: '#93C5FD' }, { n: '3', l: 'Деңгээл', c: '#FCD34D' }].map(s => (
                 <div key={s.l}>
                   <div style={{ fontWeight: '900', fontSize: '26px', color: s.c, letterSpacing: '-1px' }}>{s.n}</div>
                   <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: '4px' }}>{s.l}</div>
@@ -396,7 +396,7 @@ export default function LandingPage() {
                   <img src={r.img} alt={r.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(8,12,26,0.97) 0%,transparent 55%)' }} />
                   <div style={{ position: 'absolute', bottom: '12px', left: '12px', right: '12px' }}>
-                    <div style={{ fontWeight: '900', fontSize: '18px', color: '#6EE7B7', letterSpacing: '-0.5px' }}>{r.score}</div>
+                    <div style={{ fontWeight: '900', fontSize: '18px', color: '#93C5FD', letterSpacing: '-0.5px' }}>{r.score}</div>
                     <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{r.name}</div>
                   </div>
                   {/* score badge */}
@@ -450,10 +450,10 @@ export default function LandingPage() {
       {/* ── STATS ROW ─────────────────────────────────────────────────────────── */}
       <div className="section-pad" style={{ padding: '0 60px 80px' }}>
         <div className="stats-row" style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px' }}>
-          <StatCard value={220} suffix="+" label="ЖРТ жеңүүчүлөрү" color="#A5B4FC" delay={0} />
-          <StatCard value={221} label="Эң жогорку балл" color="#6EE7B7" delay={100} />
+          <StatCard value={220} suffix="+" label="ЖРТ жеңүүчүлөрү" color="#93C5FD" delay={0} />
+          <StatCard value={221} label="Эң жогорку балл" color="#93C5FD" delay={100} />
           <StatCard value={80} suffix="%" label="Университетке кирди" color="#FCD34D" delay={200} />
-          <StatCard value={3} label="Курс деңгээли" color="#F9A8D4" delay={300} />
+          <StatCard value={3} label="Курс деңгээли" color="#BFDBFE" delay={300} />
         </div>
       </div>
 
@@ -471,10 +471,10 @@ export default function LandingPage() {
               ].map((t, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div className="timer-box" style={{
-                    background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)',
+                    background: 'rgba(27,79,216,0.12)', border: '1px solid rgba(27,79,216,0.3)',
                     borderRadius: '16px', padding: '18px 28px', minWidth: '90px', textAlign: 'center',
                   }}>
-                    <div className="timer-num" style={{ fontWeight: '900', fontSize: '42px', lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: '#A5B4FC' }}>
+                    <div className="timer-num" style={{ fontWeight: '900', fontSize: '42px', lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: '#93C5FD' }}>
                       {String(t.n).padStart(2, '0')}
                     </div>
                     <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: '6px', fontWeight: '600' }}>{t.l}</div>
@@ -484,7 +484,7 @@ export default function LandingPage() {
               ))}
             </div>
             <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
-              style={{ display: 'inline-block', marginTop: '32px', background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff', borderRadius: '14px', padding: '14px 36px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 8px 32px rgba(99,102,241,0.4)', transition: 'all 0.25s' }}>
+              style={{ display: 'inline-block', marginTop: '32px', background: 'linear-gradient(135deg,#1B4FD8,#1E63E8)', color: '#fff', borderRadius: '14px', padding: '14px 36px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 8px 32px rgba(27,79,216,0.4)', transition: 'all 0.25s' }}>
               Азыр жазылуу →
             </a>
           </div>
@@ -499,7 +499,7 @@ export default function LandingPage() {
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '16px' }}>Программа</p>
               <h2 style={{ fontSize: 'clamp(28px,4vw,44px)', fontWeight: '900', letterSpacing: '-1.5px', marginBottom: '12px' }}>
                 3 деңгээл — башталгычтан{' '}
-                <span style={{ color: '#A5B4FC' }}>финалга чейин</span>
+                <span style={{ color: '#93C5FD' }}>финалга чейин</span>
               </h2>
               <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '15px' }}>Каждый находит свой уровень и растёт</p>
             </div>
@@ -509,7 +509,7 @@ export default function LandingPage() {
             {courses.map((c, i) => (
               <Reveal key={c.level} delay={i * 120}>
                 <div className="course-card" style={{
-                  background: c.featured ? `linear-gradient(160deg,rgba(16,185,129,0.12),rgba(16,185,129,0.04))` : 'rgba(255,255,255,0.03)',
+                  background: c.featured ? `linear-gradient(160deg,rgba(27,79,216,0.08),rgba(16,185,129,0.04))` : 'rgba(255,255,255,0.03)',
                   border: c.featured ? `2px solid rgba(16,185,129,0.5)` : '1px solid rgba(255,255,255,0.08)',
                   borderRadius: '24px', overflow: 'hidden', height: '100%',
                   transition: 'all 0.35s cubic-bezier(.22,1,.36,1)',
@@ -567,7 +567,7 @@ export default function LandingPage() {
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '16px' }}>Далил</p>
               <h2 style={{ fontSize: 'clamp(28px,4vw,44px)', fontWeight: '900', letterSpacing: '-1.5px', marginBottom: '12px' }}>
                 Реалдуу{' '}
-                <span style={{ color: '#6EE7B7' }}>натыйжалар</span>
+                <span style={{ color: '#93C5FD' }}>натыйжалар</span>
               </h2>
             </div>
           </Reveal>
@@ -580,7 +580,7 @@ export default function LandingPage() {
                   <img src={r.img} alt={r.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(8,12,26,1) 0%,rgba(8,12,26,0.3) 60%,transparent 100%)' }} />
                   <div style={{ position: 'absolute', bottom: '14px', left: '14px', right: '14px' }}>
-                    <div style={{ fontWeight: '900', fontSize: '22px', color: '#6EE7B7', letterSpacing: '-0.5px' }}>{r.score} балл</div>
+                    <div style={{ fontWeight: '900', fontSize: '22px', color: '#93C5FD', letterSpacing: '-0.5px' }}>{r.score} балл</div>
                     <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', marginTop: '3px', fontWeight: '500' }}>{r.name}</div>
                   </div>
                 </div>
@@ -598,7 +598,7 @@ export default function LandingPage() {
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '16px' }}>Пикирлер</p>
               <h2 style={{ fontSize: 'clamp(28px,4vw,44px)', fontWeight: '900', letterSpacing: '-1.5px' }}>
                 Алар айтат — биз{' '}
-                <span style={{ color: '#F9A8D4' }}>далилдейбиз</span>
+                <span style={{ color: '#BFDBFE' }}>далилдейбиз</span>
               </h2>
             </div>
           </Reveal>
@@ -612,13 +612,13 @@ export default function LandingPage() {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '15px' }}>
+                      <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg,#1B4FD8,#1E63E8)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '15px' }}>
                         {r.name[0]}
                       </div>
                       <div>
                         <div style={{ fontWeight: '700', fontSize: '14px' }}>{r.name}</div>
                         <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '1px' }}>
-                          {r.before} → <span style={{ color: '#6EE7B7', fontWeight: '700' }}>{r.score} балл</span>
+                          {r.before} → <span style={{ color: '#93C5FD', fontWeight: '700' }}>{r.score} балл</span>
                         </div>
                       </div>
                     </div>
@@ -640,7 +640,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <Reveal>
             <h2 style={{ fontSize: 'clamp(24px,3.5vw,36px)', fontWeight: '900', marginBottom: '40px', letterSpacing: '-1px' }}>
-              Биздин <span style={{ color: '#A5B4FC' }}>офис</span>
+              Биздин <span style={{ color: '#93C5FD' }}>офис</span>
             </h2>
           </Reveal>
           <Reveal delay={100}>
@@ -656,7 +656,7 @@ export default function LandingPage() {
                 </div>
                 {[['📍', 'Дарек', 'Горький көчөсү, 108'], ['🕙', 'Убакыт', 'Дүй–Жума: 9:00–19:00'], ['📲', 'Телефон', '+996 502 077 326']].map(([icon, label, value]) => (
                   <div key={label} style={{ display: 'flex', gap: '12px' }}>
-                    <div style={{ width: '36px', height: '36px', background: 'rgba(99,102,241,0.2)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>{icon}</div>
+                    <div style={{ width: '36px', height: '36px', background: 'rgba(27,79,216,0.2)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>{icon}</div>
                     <div>
                       <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginBottom: '2px' }}>{label}</div>
                       <div style={{ fontSize: '13px', fontWeight: '600' }}>{value}</div>
@@ -664,7 +664,7 @@ export default function LandingPage() {
                   </div>
                 ))}
                 <a href="https://go.2gis.com/VQjcS" target="_blank" rel="noopener noreferrer" className="cta-btn"
-                  style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff', borderRadius: '12px', padding: '12px 20px', fontWeight: '700', fontSize: '13px', textDecoration: 'none', textAlign: 'center', marginTop: 'auto', transition: 'all 0.25s' }}>
+                  style={{ background: 'linear-gradient(135deg,#1B4FD8,#1E63E8)', color: '#fff', borderRadius: '12px', padding: '12px 20px', fontWeight: '700', fontSize: '13px', textDecoration: 'none', textAlign: 'center', marginTop: 'auto', transition: 'all 0.25s' }}>
                   🗺 2GIS-те ачуу →
                 </a>
               </div>
@@ -687,8 +687,8 @@ export default function LandingPage() {
             {faqs.map((faq, i) => (
               <Reveal key={i} delay={i * 60}>
                 <div style={{
-                  background: openFaq === i ? 'rgba(99,102,241,0.08)' : 'rgba(255,255,255,0.03)',
-                  border: openFaq === i ? '1px solid rgba(99,102,241,0.3)' : '1px solid rgba(255,255,255,0.07)',
+                  background: openFaq === i ? 'rgba(27,79,216,0.08)' : 'rgba(255,255,255,0.03)',
+                  border: openFaq === i ? '1px solid rgba(27,79,216,0.3)' : '1px solid rgba(255,255,255,0.07)',
                   borderRadius: '16px', overflow: 'hidden', transition: 'all 0.3s ease',
                 }}>
                   <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
@@ -696,7 +696,7 @@ export default function LandingPage() {
                     <span style={{ fontWeight: '600', fontSize: '14px', lineHeight: '1.5' }}>{faq.q}</span>
                     <div style={{
                       width: '28px', height: '28px', borderRadius: '50%',
-                      background: openFaq === i ? '#6366F1' : 'rgba(255,255,255,0.08)',
+                      background: openFaq === i ? '#1B4FD8' : 'rgba(255,255,255,0.08)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       flexShrink: 0, transition: 'all 0.3s ease',
                       transform: openFaq === i ? 'rotate(45deg)' : 'rotate(0)',
@@ -716,7 +716,7 @@ export default function LandingPage() {
             <div style={{ textAlign: 'center', marginTop: '40px' }}>
               <p style={{ color: 'rgba(255,255,255,0.45)', marginBottom: '16px', fontSize: '14px' }}>Дагы суроо барбы?</p>
               <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
-                style={{ display: 'inline-block', background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff', borderRadius: '14px', padding: '14px 32px', fontWeight: '800', fontSize: '14px', textDecoration: 'none', boxShadow: '0 8px 32px rgba(99,102,241,0.35)', transition: 'all 0.25s' }}>
+                style={{ display: 'inline-block', background: 'linear-gradient(135deg,#1B4FD8,#1E63E8)', color: '#fff', borderRadius: '14px', padding: '14px 32px', fontWeight: '800', fontSize: '14px', textDecoration: 'none', boxShadow: '0 8px 32px rgba(27,79,216,0.35)', transition: 'all 0.25s' }}>
                 📲 WhatsAppта суроо берүү
               </a>
             </div>
@@ -726,13 +726,13 @@ export default function LandingPage() {
 
       {/* ── FINAL CTA ─────────────────────────────────────────────────────────── */}
       <div className="section-pad" style={{ padding: '100px 60px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '600px', height: '600px', background: 'radial-gradient(circle,rgba(99,102,241,0.15) 0%,transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '600px', height: '600px', background: 'radial-gradient(circle,rgba(27,79,216,0.15) 0%,transparent 70%)', pointerEvents: 'none' }} />
         <Reveal>
           <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
             <div style={{ fontSize: '48px', marginBottom: '24px', animation: 'wobble 3s ease infinite' }}>🚀</div>
             <h2 style={{ fontSize: 'clamp(28px,4vw,48px)', fontWeight: '900', letterSpacing: '-2px', marginBottom: '16px', lineHeight: '1.1' }}>
               Келечегиңди<br />
-              <span style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6,#EC4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <span style={{ background: 'linear-gradient(135deg,#1B4FD8,#1E63E8,#3B82F6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 бүгүн баштагыз
               </span>
             </h2>
@@ -741,7 +741,7 @@ export default function LandingPage() {
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
-                style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff', borderRadius: '16px', padding: '17px 40px', fontWeight: '900', fontSize: '16px', textDecoration: 'none', boxShadow: '0 12px 40px rgba(99,102,241,0.5)', transition: 'all 0.25s' }}>
+                style={{ background: 'linear-gradient(135deg,#1B4FD8,#1E63E8)', color: '#fff', borderRadius: '16px', padding: '17px 40px', fontWeight: '900', fontSize: '16px', textDecoration: 'none', boxShadow: '0 12px 40px rgba(27,79,216,0.5)', transition: 'all 0.25s' }}>
                 📲 Жазылуу
               </a>
               <button onClick={() => setShowLogin(true)} className="cta-btn"
@@ -754,13 +754,13 @@ export default function LandingPage() {
       </div>
 
       {/* ── FOOTER ────────────────────────────────────────────────────────────── */}
-      <div className="section-pad" style={{ background: '#040710', borderTop: '1px solid rgba(255,255,255,0.05)', padding: '28px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="section-pad" style={{ background: '#020810', borderTop: '1px solid rgba(255,255,255,0.05)', padding: '28px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <img src="/images/logo.png" alt="Zhangak" style={{ width: '28px', height: '28px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
           <span style={{ fontWeight: '900', fontSize: '15px' }}>Zhangak</span>
         </div>
         <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: '12px' }}>© 2025 Жангак. Бардык укуктар корголгон.</div>
-        <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#A5B4FC', fontSize: '13px', textDecoration: 'none', fontWeight: '600' }}>
+        <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#93C5FD', fontSize: '13px', textDecoration: 'none', fontWeight: '600' }}>
           📲 +996 502 077 326
         </a>
       </div>
@@ -769,9 +769,9 @@ export default function LandingPage() {
       {showLogin && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(16px)', padding: '20px' }}
           onClick={e => { if (e.target === e.currentTarget) setShowLogin(false) }}>
-          <div style={{ background: '#0D1425', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '28px', padding: '44px', width: '100%', maxWidth: '420px', position: 'relative', boxShadow: '0 24px 80px rgba(99,102,241,0.3)', animation: 'bounceIn 0.4s cubic-bezier(.22,1,.36,1) both' }}>
+          <div style={{ background: '#0D1425', border: '1px solid rgba(27,79,216,0.3)', borderRadius: '28px', padding: '44px', width: '100%', maxWidth: '420px', position: 'relative', boxShadow: '0 24px 80px rgba(27,79,216,0.3)', animation: 'bounceIn 0.4s cubic-bezier(.22,1,.36,1) both' }}>
             {/* Glow */}
-            <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', width: '200px', height: '200px', background: 'radial-gradient(circle,rgba(99,102,241,0.2) 0%,transparent 70%)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', width: '200px', height: '200px', background: 'radial-gradient(circle,rgba(27,79,216,0.2) 0%,transparent 70%)', pointerEvents: 'none' }} />
             <button onClick={() => setShowLogin(false)} style={{ position: 'absolute', top: '18px', right: '18px', background: 'rgba(255,255,255,0.07)', border: 'none', width: '32px', height: '32px', borderRadius: '50%', fontSize: '15px', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
             <div style={{ textAlign: 'center', marginBottom: '32px' }}>
               <img src="/images/logo.png" alt="Zhangak" style={{ width: '44px', height: '44px', objectFit: 'contain', filter: 'brightness(0) invert(1)', marginBottom: '14px' }} />
@@ -793,13 +793,13 @@ export default function LandingPage() {
               ))}
               {error && <div style={{ background: 'rgba(239,68,68,0.15)', color: '#FCA5A5', padding: '11px 14px', borderRadius: '10px', fontSize: '13px', textAlign: 'center', border: '1px solid rgba(239,68,68,0.3)' }}>{error}</div>}
               <button type="submit" disabled={loading} className="cta-btn"
-                style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff', border: 'none', borderRadius: '12px', padding: '15px', fontWeight: '900', fontSize: '16px', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, transition: 'all 0.25s', boxShadow: '0 8px 24px rgba(99,102,241,0.4)', marginTop: '4px' }}>
+                style={{ background: 'linear-gradient(135deg,#1B4FD8,#1E63E8)', color: '#fff', border: 'none', borderRadius: '12px', padding: '15px', fontWeight: '900', fontSize: '16px', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, transition: 'all 0.25s', boxShadow: '0 8px 24px rgba(27,79,216,0.4)', marginTop: '4px' }}>
                 {loading ? 'Кирүүдө...' : 'Кирүү →'}
               </button>
             </form>
             <div style={{ textAlign: 'center', marginTop: '20px' }}>
               <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px' }}>Аккаунт жокпу? </span>
-              <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#A5B4FC', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>📲 Жазылуу</a>
+              <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#93C5FD', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>📲 Жазылуу</a>
             </div>
           </div>
         </div>
