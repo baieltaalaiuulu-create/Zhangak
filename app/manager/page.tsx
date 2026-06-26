@@ -24,8 +24,8 @@ function Animate({ children, delay = 0 }: { children: React.ReactNode, delay?: n
 
 const BLUE = '#2563EB'
 const DARK = '#F5F5F7'
-const SURFACE = '#0F1E35'
-const BORDER = 'rgba(255,255,255,0.08)'
+const SURFACE = '#ffffff'
+const BORDER = '#E5E5EA'
 
 const stages = [
   { id: 'new', label: 'Жаңы заявка', color: '#6B7280' },
@@ -176,7 +176,7 @@ export default function ManagerPage() {
             {/* WELCOME */}
             <Animate>
               <div style={{ marginBottom: '24px' }}>
-                <h1 style={{ fontSize: '24px', fontWeight: '900', marginBottom: '4px' }}>Кош келиңиз! 👋</h1>
+                <h1 style={{ fontSize: '24px', fontWeight: '900', marginBottom: '4px', color: '#1D1D1F' }}>Кош келиңиз! 👋</h1>
                 <div style={{ color: '#6B6B6B', fontSize: '14px' }}>
                   Бүгүн {leads.filter(l => {
                     const today = new Date().toDateString()
@@ -458,7 +458,7 @@ export default function ManagerPage() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         {stageLeads.map(lead => (
                           <div key={lead.id} onClick={() => { setSelectedLead(lead); setNote(lead.note || '') }}
-                            style={{ background: selectedLead?.id === lead.id ? 'rgba(37,99,235,0.2)' : SURFACE, border: `1px solid ${selectedLead?.id === lead.id ? BLUE : BORDER}`, borderRadius: '10px', padding: '10px', cursor: 'pointer', transition: 'all 0.15s' }}>
+                            style={{ background: selectedLead?.id === lead.id ? 'rgba(37,99,235,0.2)' : '#ffffff', border: `1px solid ${selectedLead?.id === lead.id ? BLUE : BORDER}`, borderRadius: '10px', padding: '10px', cursor: 'pointer', transition: 'all 0.15s' }}>
                             <div style={{ fontWeight: '700', fontSize: '12px', marginBottom: '3px' }}>{lead.full_name}</div>
                             <div style={{ fontSize: '10px', color: '#8A8A8E', marginBottom: '5px' }}>{lead.phone}</div>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
