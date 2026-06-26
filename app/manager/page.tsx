@@ -23,7 +23,7 @@ function Animate({ children, delay = 0 }: { children: React.ReactNode, delay?: n
 }
 
 const BLUE = '#2563EB'
-const DARK = '#0D1E4A'
+const DARK = '#F5F5F7'
 const SURFACE = '#0F1E35'
 const BORDER = 'rgba(255,255,255,0.08)'
 
@@ -150,7 +150,7 @@ export default function ManagerPage() {
   })
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: DARK, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#F5F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
       <div style={{ textAlign: 'center' }}>
         <img src="/images/logo.png" alt="Zhangak" style={{ width: '48px', filter: 'brightness(0) invert(1)', marginBottom: '16px' }} />
         <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>Жүктөлүүдө...</div>
@@ -159,7 +159,7 @@ export default function ManagerPage() {
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: DARK, fontFamily: 'Inter, sans-serif', color: '#fff' }}>
+    <div style={{ minHeight: '100vh', background: '#F5F5F7', fontFamily: 'Inter, sans-serif', color: '#fff' }}>
 
       {/* NAVBAR */}
      <Navbar
@@ -195,7 +195,7 @@ export default function ManagerPage() {
                 { label: 'Жаңы заявка', value: leads.filter(l => l.stage === 'new').length, icon: '🔔', color: '#FCD34D', bg: 'rgba(252,211,77,0.1)', change: 'Иштетүү керек' },
               ].map((s, i) => (
                 <Animate key={i} delay={i * 80}>
-                  <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px' }}>
+                  <div style={{ background: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                       <div style={{ width: '40px', height: '40px', background: s.bg, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{s.icon}</div>
                     </div>
@@ -212,7 +212,7 @@ export default function ManagerPage() {
 
               {/* LINE CHART */}
               <Animate delay={100}>
-                <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px' }}>
+                <div style={{ background: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px' }}>
                   <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '4px' }}>📈 Заявкалар динамикасы</div>
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '16px' }}>Акыркы 6 ай</div>
                   {monthData.length > 0 ? (
@@ -220,7 +220,7 @@ export default function ManagerPage() {
                       <LineChart data={monthData}>
                         <XAxis dataKey="name" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} />
                         <YAxis tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '8px', color: '#fff' }} />
+                        <Tooltip contentStyle={{ background: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: '8px', color: '#fff' }} />
                         <Line type="monotone" dataKey="value" stroke={BLUE} strokeWidth={2} dot={{ fill: BLUE, r: 4 }} />
                       </LineChart>
                     </ResponsiveContainer>
@@ -234,7 +234,7 @@ export default function ManagerPage() {
 
               {/* FUNNEL */}
               <Animate delay={150}>
-                <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px' }}>
+                <div style={{ background: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px' }}>
                   <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '4px' }}>🎯 Воронка</div>
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '16px' }}>Этаптар боюнча</div>
                   {stageData.length > 0 ? (
@@ -242,7 +242,7 @@ export default function ManagerPage() {
                       <BarChart data={stageData} layout="vertical">
                         <XAxis type="number" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} />
                         <YAxis type="category" dataKey="name" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }} axisLine={false} tickLine={false} width={90} />
-                        <Tooltip contentStyle={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '8px', color: '#fff' }} />
+                        <Tooltip contentStyle={{ background: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: '8px', color: '#fff' }} />
                         <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                           {stageData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                         </Bar>
@@ -262,7 +262,7 @@ export default function ManagerPage() {
 
               {/* SOURCE PIE */}
               <Animate delay={200}>
-                <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px' }}>
+                <div style={{ background: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px' }}>
                   <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '4px' }}>📱 Булактар</div>
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '16px' }}>Кайдан келишет</div>
                   {sourceData.length > 0 ? (
@@ -271,7 +271,7 @@ export default function ManagerPage() {
                         <Pie data={sourceData} cx={75} cy={75} innerRadius={45} outerRadius={70} dataKey="value" paddingAngle={3}>
                           {sourceData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                         </Pie>
-                        <Tooltip contentStyle={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '8px', color: '#fff' }} />
+                        <Tooltip contentStyle={{ background: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: '8px', color: '#fff' }} />
                       </PieChart>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {sourceData.map((s, i) => (
@@ -293,7 +293,7 @@ export default function ManagerPage() {
 
               {/* COURSE BAR */}
               <Animate delay={250}>
-                <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px' }}>
+                <div style={{ background: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px' }}>
                   <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '4px' }}>📚 Курстар</div>
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '16px' }}>Кайсы курска жазылышат</div>
                   {courseData.length > 0 ? (
@@ -301,7 +301,7 @@ export default function ManagerPage() {
                       <BarChart data={courseData}>
                         <XAxis dataKey="name" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} />
                         <YAxis tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '8px', color: '#fff' }} />
+                        <Tooltip contentStyle={{ background: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: '8px', color: '#fff' }} />
                         <Bar dataKey="value" fill={BLUE} radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
@@ -316,7 +316,7 @@ export default function ManagerPage() {
 
             {/* RECENT LEADS */}
             <Animate delay={300}>
-              <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '16px', overflow: 'hidden' }}>
+              <div style={{ background: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: '16px', overflow: 'hidden' }}>
                 <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ fontWeight: '700', fontSize: '14px' }}>🕐 Акыркы заявкалар</div>
                   <button onClick={() => setActiveTab('crm')} style={{ background: 'rgba(37,99,235,0.15)', color: '#60A5FA', border: 'none', borderRadius: '8px', padding: '5px 12px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
@@ -374,9 +374,9 @@ export default function ManagerPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
                 <input value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="🔍 Издөө..."
-                  style={{ flex: 1, minWidth: '200px', padding: '10px 14px', borderRadius: '10px', border: `1px solid ${BORDER}`, background: SURFACE, color: '#fff', fontSize: '14px', outline: 'none' }} />
+                  style={{ flex: 1, minWidth: '200px', padding: '10px 14px', borderRadius: '10px', border: `1px solid ${BORDER}`, background: '#ffffff', color: '#fff', fontSize: '14px', outline: 'none' }} />
                 <select value={filterStage} onChange={e => setFilterStage(e.target.value)}
-                  style={{ padding: '10px 14px', borderRadius: '10px', border: `1px solid ${BORDER}`, background: SURFACE, color: '#fff', fontSize: '13px' }}>
+                  style={{ padding: '10px 14px', borderRadius: '10px', border: `1px solid ${BORDER}`, background: '#ffffff', color: '#fff', fontSize: '13px' }}>
                   <option value="all">Бардык этап</option>
                   {stages.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                 </select>
@@ -389,7 +389,7 @@ export default function ManagerPage() {
               {/* ADD FORM */}
               {showForm && (
                 <Animate>
-                  <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px', marginBottom: '20px' }}>
+                  <div style={{ background: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px', marginBottom: '20px' }}>
                     <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '16px' }}>Жаңы клиент</div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px', marginBottom: '12px' }}>
                       {[
@@ -406,21 +406,21 @@ export default function ManagerPage() {
                       <div>
                         <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '6px' }}>Курс</div>
                         <select value={newLead.course} onChange={e => setNewLead(p => ({ ...p, course: e.target.value }))}
-                          style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${BORDER}`, background: DARK, color: '#fff', fontSize: '13px', boxSizing: 'border-box' as const }}>
+                          style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${BORDER}`, background: '#F5F5F7', color: '#fff', fontSize: '13px', boxSizing: 'border-box' as const }}>
                           {['B1', 'B2', 'C1', 'Жайкы интенсив'].map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                       </div>
                       <div>
                         <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '6px' }}>Булак</div>
                         <select value={newLead.source} onChange={e => setNewLead(p => ({ ...p, source: e.target.value }))}
-                          style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${BORDER}`, background: DARK, color: '#fff', fontSize: '13px', boxSizing: 'border-box' as const }}>
+                          style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${BORDER}`, background: '#F5F5F7', color: '#fff', fontSize: '13px', boxSizing: 'border-box' as const }}>
                           {sources.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                         </select>
                       </div>
                       <div>
                         <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '6px' }}>Этап</div>
                         <select value={newLead.stage} onChange={e => setNewLead(p => ({ ...p, stage: e.target.value }))}
-                          style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${BORDER}`, background: DARK, color: '#fff', fontSize: '13px', boxSizing: 'border-box' as const }}>
+                          style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${BORDER}`, background: '#F5F5F7', color: '#fff', fontSize: '13px', boxSizing: 'border-box' as const }}>
                           {stages.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                         </select>
                       </div>
@@ -476,7 +476,7 @@ export default function ManagerPage() {
 
             {/* LEAD DETAIL */}
             {selectedLead && (
-              <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '20px', padding: '24px', height: 'fit-content', position: 'sticky', top: '88px' }}>
+              <div style={{ background: '#ffffff', border: `1px solid ${BORDER}`, borderRadius: '20px', padding: '24px', height: 'fit-content', position: 'sticky', top: '88px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                   <div style={{ fontWeight: '800', fontSize: '15px' }}>Клиент карточкасы</div>
                   <button onClick={() => setSelectedLead(null)} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', width: '26px', height: '26px', borderRadius: '50%', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '13px' }}>✕</button>
@@ -503,7 +503,7 @@ export default function ManagerPage() {
                 <div style={{ marginBottom: '14px' }}>
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '6px' }}>Этап</div>
                   <select value={selectedLead.stage} onChange={e => updateStage(selectedLead.id, e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: `1px solid ${BORDER}`, background: DARK, color: '#fff', fontSize: '13px', boxSizing: 'border-box' as const }}>
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: `1px solid ${BORDER}`, background: '#F5F5F7', color: '#fff', fontSize: '13px', boxSizing: 'border-box' as const }}>
                     {stages.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                   </select>
                 </div>
