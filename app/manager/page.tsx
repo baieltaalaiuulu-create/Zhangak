@@ -374,9 +374,9 @@ export default function ManagerPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
                 <input value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="🔍 Издөө..."
-                  style={{ flex: 1, minWidth: '200px', padding: '10px 14px', borderRadius: '10px', border: `1px solid ${BORDER}`, background: '#ffffff', color: '#fff', fontSize: '14px', outline: 'none' }} />
+                  style={{ flex: 1, minWidth: '200px', padding: '10px 14px', borderRadius: '10px', border: `1px solid ${BORDER}`, background: '#ffffff', color: '#1D1D1F', fontSize: '14px', outline: 'none' }} />
                 <select value={filterStage} onChange={e => setFilterStage(e.target.value)}
-                  style={{ padding: '10px 14px', borderRadius: '10px', border: `1px solid ${BORDER}`, background: '#ffffff', color: '#fff', fontSize: '13px' }}>
+                  style={{ padding: '10px 14px', borderRadius: '10px', border: `1px solid ${BORDER}`, background: '#ffffff', color: '#1D1D1F', fontSize: '13px' }}>
                   <option value="all">Бардык этап</option>
                   {stages.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                 </select>
@@ -459,7 +459,7 @@ export default function ManagerPage() {
                         {stageLeads.map(lead => (
                           <div key={lead.id} onClick={() => { setSelectedLead(lead); setNote(lead.note || '') }}
                             style={{ background: selectedLead?.id === lead.id ? 'rgba(37,99,235,0.2)' : '#ffffff', border: `1px solid ${selectedLead?.id === lead.id ? BLUE : BORDER}`, borderRadius: '10px', padding: '10px', cursor: 'pointer', transition: 'all 0.15s' }}>
-                            <div style={{ fontWeight: '700', fontSize: '12px', marginBottom: '3px' }}>{lead.full_name}</div>
+                            <div style={{ fontWeight: '700', fontSize: '12px', marginBottom: '3px', color: '#1D1D1F' }}>{lead.full_name}</div>
                             <div style={{ fontSize: '10px', color: '#8A8A8E', marginBottom: '5px' }}>{lead.phone}</div>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                               <div style={{ fontSize: '10px', background: 'rgba(37,99,235,0.15)', color: '#60A5FA', borderRadius: '4px', padding: '1px 6px' }}>{lead.course}</div>
