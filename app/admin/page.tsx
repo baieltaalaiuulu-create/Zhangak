@@ -77,15 +77,16 @@ const { data: { user } } = await supabase.auth.getUser()
   const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
 
   const tabs = [
-    { id: 'dashboard', label: 'Башкы бет', icon: '📊' },
-    { id: 'crm', label: 'CRM', icon: '🎯' },
-    { id: 'courses', label: 'Программа', icon: '📚' },
-    { id: 'groups', label: 'Группалар', icon: '👥' },
-    { id: 'students', label: 'Окуучулар', icon: '🎓' },
-    { id: 'teachers', label: 'Мугалимдер', icon: '👨‍🏫' },
-    { id: 'tests', label: 'Тесттер', icon: '📝' },
-    { id: 'results', label: 'Натыйжалар', icon: '📈' },
-  ]
+  { id: 'dashboard', label: 'Башкы бет', icon: '📊' },
+  { id: 'crm', label: 'CRM', icon: '🎯' },
+  { id: 'finance', label: 'Финансы', icon: '💰' },
+  { id: 'courses', label: 'Программа', icon: '📚' },
+  { id: 'groups', label: 'Группалар', icon: '👥' },
+  { id: 'students', label: 'Окуучулар', icon: '🎓' },
+  { id: 'teachers', label: 'Мугалимдер', icon: '👨‍🏫' },
+  { id: 'tests', label: 'Тесттер', icon: '📝' },
+  { id: 'results', label: 'Натыйжалар', icon: '📈' },
+]
 
   if (loading) return (
     <div style={{minHeight:'100vh', background:DARK, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Inter, sans-serif'}}>
@@ -359,7 +360,11 @@ const { data: { user } } = await supabase.auth.getUser()
             </div>
           )}
 
-          {/* ТЕСТТЕР */}
+          {activeTab === 'finance' && (
+  <FinanceTab students={students} />
+)
+}
+{/* ТЕСТТЕР */}
           {activeTab === 'tests' && (
             <AdminTests />
           )}
@@ -819,5 +824,227 @@ function AddUserForm({ role, onAdded }: { role: string, onAdded: () => void }) {
       )}
     </div>
   )
+}
+  function FinanceTab({ students }: { students: any[] }) {
+  const [payments, setPayments] = useState<any[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [newPayment, setNewPayment] = useState({ student_id: '', amount: '', month: new Date().toISOString().slice(0,7), status: 'paid', note: '' })
+  const [saving, setSaving] = useState(false)
+  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0,7))
+
+  useEffect(() => { fetchPayments() }, [])
+
+  const fetchPayments = async () => {
+    const { data } = await supabase.from('payments').select('*, profiles(full_name)').order('created_at', { ascending: false })
+    setPayments(data || [])
+  }
+
+  const addPayment = async () => {
+    if (!newPayment.student_id || !newPayment.amount) return
+    setSaving(true)
+    await supabase.from('payments').insert({
+      student_id: newPayment.student_id,
+      amount: Number(newPayment.amount),
+      month: newPayment.month,
+      status: newPayment.status,
+      note: newPayment.note,
+    })
+    setNewPayment({ student_id: '', amount: '', month: new Date().toISOString().slice(0,7), status: 'paid', note: '' })
+    setShowForm(false)
+    fetchPayments()
+    setSaving(false)
+  }
+
+  const deletePayment = async (id: number) => {
+    await supabase.from('payments').delete().eq('id', id)
+    fetchPayments()
+  }
+
+  const filtered = filterMonth ? payments.filter(p => p.month === filterMonth) : payments
+  const totalIncome = filtered.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0)
+  const totalDebt = filtered.filter(p => p.status === 'debt').reduce((sum, p) => sum + p.amount, 0)
+
+  // Кто не оплатил в этом месяце
+  const paidStudentIds = filtered.filter(p => p.status === 'paid').map(p => p.student_id)
+  const debtors = students.filter(s => !paidStudentIds.includes(s.id))
+
+  const months = []
+  for (let i = 0; i < 6; i++) {
+    const d = new Date()
+    d.setMonth(d.getMonth() - i)
+    months.push(d.toISOString().slice(0,7))
+  }
+
+  return (
+    <div>
+      {/* STATS */}
+      <div style={{display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'16px', marginBottom:'24px'}}>
+        {[
+          {label:'Айлык киреше', value: totalIncome.toLocaleString() + ' сом', icon:'💰', color:'#34D399', bg:'rgba(52,211,153,0.1)'},
+          {label:'Карыз', value: totalDebt.toLocaleString() + ' сом', icon:'⚠️', color:'#FCA5A5', bg:'rgba(239,68,68,0.1)'},
+          {label:'Төлөгөндөр', value: filtered.filter(p=>p.status==='paid').length + ' окуучу', icon:'✅', color:'#60A5FA', bg:'rgba(96,165,250,0.1)'},
+          {label:'Карыздуулар', value: debtors.length + ' окуучу', icon:'❌', color:'#FCD34D', bg:'rgba(252,211,77,0.1)'},
+        ].map((s,i) => (
+          <Animate key={i} delay={i*80}>
+            <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', padding:'20px'}}>
+              <div style={{width:'40px', height:'40px', background:s.bg, borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', marginBottom:'12px'}}>{s.icon}</div>
+              <div style={{fontWeight:'900', fontSize:'22px', color:s.color, marginBottom:'4px'}}>{s.value}</div>
+              <div style={{fontSize:'12px', color:'rgba(255,255,255,0.5)'}}>{s.label}</div>
+            </div>
+          </Animate>
+        ))}
+      </div>
+
+      {/* TOOLBAR */}
+      <div style={{display:'flex', alignItems:'center', gap:'12px', marginBottom:'20px', flexWrap:'wrap'}}>
+        <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)}
+          style={{padding:'10px 14px', borderRadius:'10px', border:`1px solid ${BORDER}`, background:SURFACE, color:'#fff', fontSize:'13px'}}>
+          {months.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+        <button onClick={() => setShowForm(p => !p)}
+          style={{background:BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'10px 20px', fontWeight:'700', fontSize:'14px', cursor:'pointer'}}>
+          + Оплата кошуу
+        </button>
+      </div>
+
+      {/* ADD FORM */}
+      {showForm && (
+        <Animate>
+          <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', padding:'20px', marginBottom:'20px'}}>
+            <div style={{fontWeight:'700', fontSize:'15px', marginBottom:'16px'}}>Жаңы оплата</div>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'12px', marginBottom:'12px'}}>
+              <div>
+                <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>Окуучу *</div>
+                <select value={newPayment.student_id} onChange={e => setNewPayment(p => ({...p, student_id: e.target.value}))}
+                  style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:`1px solid ${BORDER}`, background:DARK, color:'#fff', fontSize:'13px', boxSizing:'border-box' as const}}>
+                  <option value="">Тандаңыз</option>
+                  {students.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>Сумма (сом) *</div>
+                <input value={newPayment.amount} onChange={e => setNewPayment(p => ({...p, amount: e.target.value}))}
+                  placeholder="5000" type="number"
+                  style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:`1px solid ${BORDER}`, background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'13px', boxSizing:'border-box' as const}} />
+              </div>
+              <div>
+                <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>Ай</div>
+                <input value={newPayment.month} onChange={e => setNewPayment(p => ({...p, month: e.target.value}))}
+                  type="month"
+                  style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:`1px solid ${BORDER}`, background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'13px', boxSizing:'border-box' as const}} />
+              </div>
+              <div>
+                <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>Статус</div>
+                <select value={newPayment.status} onChange={e => setNewPayment(p => ({...p, status: e.target.value}))}
+                  style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:`1px solid ${BORDER}`, background:DARK, color:'#fff', fontSize:'13px', boxSizing:'border-box' as const}}>
+                  <option value="paid">✅ Төлөдү</option>
+                  <option value="debt">⚠️ Карыз</option>
+                  <option value="partial">🔶 Жарым-жартылай</option>
+                </select>
+              </div>
+            </div>
+            <div style={{marginBottom:'12px'}}>
+              <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)', marginBottom:'6px'}}>Эскертүү</div>
+              <input value={newPayment.note} onChange={e => setNewPayment(p => ({...p, note: e.target.value}))}
+                placeholder="Кошумча маалымат..."
+                style={{width:'100%', padding:'10px 12px', borderRadius:'8px', border:`1px solid ${BORDER}`, background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:'13px', boxSizing:'border-box' as const}} />
+            </div>
+            <div style={{display:'flex', gap:'10px'}}>
+              <button onClick={addPayment} disabled={saving}
+                style={{background:BLUE, color:'#fff', border:'none', borderRadius:'10px', padding:'10px 24px', fontWeight:'700', fontSize:'14px', cursor:'pointer'}}>
+                {saving ? '...' : '+ Кошуу'}
+              </button>
+              <button onClick={() => setShowForm(false)}
+                style={{background:'rgba(255,255,255,0.05)', color:'rgba(255,255,255,0.5)', border:`1px solid ${BORDER}`, borderRadius:'10px', padding:'10px 20px', fontWeight:'600', fontSize:'14px', cursor:'pointer'}}>
+                Жокко чыгаруу
+              </button>
+            </div>
+          </div>
+        </Animate>
+      )}
+
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px'}}>
+        {/* PAYMENTS TABLE */}
+        <Animate>
+          <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', overflow:'hidden'}}>
+            <div style={{padding:'16px 20px', borderBottom:`1px solid ${BORDER}`}}>
+              <div style={{fontWeight:'700', fontSize:'14px'}}>💳 Оплаталар — {filterMonth}</div>
+            </div>
+            <table style={{width:'100%', fontSize:'13px', borderCollapse:'collapse'}}>
+              <thead>
+                <tr style={{borderBottom:`1px solid ${BORDER}`}}>
+                  {['Окуучу','Сумма','Статус',''].map(h => (
+                    <th key={h} style={{textAlign:'left', padding:'10px 16px', color:'rgba(255,255,255,0.4)', fontWeight:'600', fontSize:'11px'}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p, i) => (
+                  <tr key={p.id} style={{borderBottom: i < filtered.length-1 ? `1px solid ${BORDER}` : 'none'}}>
+                    <td style={{padding:'10px 16px', fontWeight:'600'}}>{p.profiles?.full_name}</td>
+                    <td style={{padding:'10px 16px', fontWeight:'700', color:'#34D399'}}>{p.amount.toLocaleString()} сом</td>
+                    <td style={{padding:'10px 16px'}}>
+                      <span style={{
+                        background: p.status === 'paid' ? 'rgba(52,211,153,0.15)' : p.status === 'debt' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
+                        color: p.status === 'paid' ? '#34D399' : p.status === 'debt' ? '#FCA5A5' : '#FCD34D',
+                        borderRadius:'6px', padding:'3px 8px', fontSize:'11px', fontWeight:'600'
+                      }}>
+                        {p.status === 'paid' ? '✅ Төлөдү' : p.status === 'debt' ? '⚠️ Карыз' : '🔶 Жарым'}
+                      </span>
+                    </td>
+                    <td style={{padding:'10px 16px'}}>
+                      <button onClick={() => deletePayment(p.id)}
+                        style={{background:'rgba(239,68,68,0.1)', color:'#FCA5A5', border:'none', borderRadius:'6px', padding:'4px 8px', cursor:'pointer', fontSize:'11px'}}>
+                        🗑
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr><td colSpan={4} style={{padding:'24px', textAlign:'center', color:'rgba(255,255,255,0.3)'}}>Оплаталар жок</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Animate>
+
+        {/* DEBTORS */}
+        <Animate delay={100}>
+          <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:'16px', overflow:'hidden'}}>
+            <div style={{padding:'16px 20px', borderBottom:`1px solid ${BORDER}`}}>
+              <div style={{fontWeight:'700', fontSize:'14px'}}>⚠️ Төлөбөгөндөр — {filterMonth}</div>
+            </div>
+            <div style={{padding:'8px'}}>
+              {debtors.length === 0 ? (
+                <div style={{padding:'24px', textAlign:'center', color:'rgba(255,255,255,0.3)', fontSize:'13px'}}>
+                  ✅ Баары төлөдү!
+                </div>
+              ) : debtors.map((s, i) => (
+                <div key={s.id} style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', borderRadius:'10px', marginBottom:'4px', background:'rgba(239,68,68,0.05)', border:'1px solid rgba(239,68,68,0.1)'}}>
+                  <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+                    <div style={{width:'32px', height:'32px', background:'rgba(239,68,68,0.2)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'700', fontSize:'13px', color:'#FCA5A5'}}>
+                      {s.full_name?.[0]}
+                    </div>
+                    <div>
+                      <div style={{fontWeight:'600', fontSize:'13px'}}>{s.full_name}</div>
+                      <div style={{fontSize:'11px', color:'rgba(255,255,255,0.4)'}}>{s.phone || '—'}</div>
+                    </div>
+                  </div>
+                  <button onClick={() => {
+                    setNewPayment(p => ({...p, student_id: s.id, status: 'debt'}))
+                    setShowForm(true)
+                  }}
+                    style={{background:'rgba(239,68,68,0.15)', color:'#FCA5A5', border:'none', borderRadius:'8px', padding:'5px 10px', fontSize:'11px', fontWeight:'600', cursor:'pointer'}}>
+                    Карыз кошуу
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Animate>
+      </div>
+    </div>
+  )
+}
 }
 
