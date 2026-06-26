@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import Navbar from '@/components/Navbar'
 
 function Animate({ children, delay = 0 }: { children: React.ReactNode, delay?: number }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -46,11 +47,11 @@ const incomeSources = [
 ]
 
 const tabs = [
-  { id: 'cashflow', label: '📊 CashFlow' },
-  { id: 'income',   label: '💚 Киреше' },
-  { id: 'expenses', label: '❤️ Чыгаша' },
-  { id: 'salary',   label: '👥 Зарплата' },
-  { id: 'payments', label: '💳 Оплаталар' },
+  { id: 'cashflow', label: ' CashFlow' },
+  { id: 'income',   label: ' Киреше' },
+  { id: 'expenses', label: ' Чыгаша' },
+  { id: 'salary',   label: ' Зарплата' },
+  { id: 'payments', label: ' Оплаталар' },
 ]
 
 const avatarColors = ['#5856D6','#AF52DE','#FF6B9D','#F5A623','#34C759','#0071E3','#FF9500','#FF3B30']
@@ -221,24 +222,12 @@ export default function FinancePage() {
   return (
     <div style={S.page}>
       {/* NAVBAR */}
-      <nav style={S.nav}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={S.logoBox}>Ж</div>
-          <span style={S.logoText}>Zhangak</span>
-        </div>
-        <div style={S.tabBar}>
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => { setActiveTab(t.id); setShowForm(false) }}
-              style={{ ...S.tabBtn, ...(activeTab === t.id ? S.tabActive : {}) }}>
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <span style={S.badge}>💰 Финансист</span>
-          <button onClick={async () => { await supabase.auth.signOut(); router.push('/') }} style={S.exitBtn}>Чыгуу</button>
-        </div>
-      </nav>
+      <Navbar
+  tabs={tabs}
+  activeTab={activeTab}
+  onTabChange={(id) => { setActiveTab(id); setShowForm(false) }}
+  role="💰 Финансист"
+/>
 
       <div style={S.body}>
         {/* TOP BAR */}
@@ -340,7 +329,7 @@ export default function FinancePage() {
         {activeTab === 'income' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 style={{ fontSize: 17, fontWeight: 700, color: TEXT }}>💚 Киреше — {filterMonth}</h3>
+              <h3 style={{ fontSize: 17, fontWeight: 700, color: TEXT }}> Киреше — {filterMonth}</h3>
               <button onClick={() => setShowForm(p => !p)} style={S.btnGreen}>+ Киреше кошуу</button>
             </div>
             {showForm && (
@@ -392,7 +381,7 @@ export default function FinancePage() {
         {activeTab === 'expenses' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 style={{ fontSize: 17, fontWeight: 700, color: TEXT }}>❤️ Чыгаша — {filterMonth}</h3>
+              <h3 style={{ fontSize: 17, fontWeight: 700, color: TEXT }}> Чыгаша — {filterMonth}</h3>
               <button onClick={() => setShowForm(p => !p)} style={{ ...S.btnGreen, background: '#D92F2F' }}>+ Чыгаша кошуу</button>
             </div>
             {showForm && (
