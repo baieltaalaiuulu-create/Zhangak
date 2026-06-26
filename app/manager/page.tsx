@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts'
+import Navbar from '@/components/Navbar'
 
 function Animate({ children, delay = 0 }: { children: React.ReactNode, delay?: number }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -161,33 +162,12 @@ export default function ManagerPage() {
     <div style={{ minHeight: '100vh', background: DARK, fontFamily: 'Inter, sans-serif', color: '#fff' }}>
 
       {/* NAVBAR */}
-      <div style={{ background: SURFACE, borderBottom: `1px solid ${BORDER}`, padding: '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img src="/images/logo.png" alt="Zhangak" style={{ width: '30px', filter: 'brightness(0) invert(1)' }} />
-            <span style={{ fontWeight: '900', fontSize: '16px' }}>Zhangak</span>
-          </div>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {tabs.map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                style={{ padding: '6px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
-                  background: activeTab === tab.id ? 'rgba(37,99,235,0.2)' : 'transparent',
-                  color: activeTab === tab.id ? '#60A5FA' : 'rgba(255,255,255,0.5)' }}>
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.3)', borderRadius: '20px', padding: '5px 12px', fontSize: '12px', color: '#60A5FA', fontWeight: '600' }}>
-            🎯 Менеджер
-          </div>
-          <button onClick={handleLogout} style={{ background: 'rgba(239,68,68,0.1)', color: '#FCA5A5', border: 'none', borderRadius: '8px', padding: '7px 14px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
-            Чыгуу
-          </button>
-        </div>
-      </div>
-
+     <Navbar
+  tabs={tabs}
+  activeTab={activeTab}
+  onTabChange={(id) => setActiveTab(id)}
+  role="🎯 Менеджер"
+/>
       <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
 
         {/* DASHBOARD TAB */}
