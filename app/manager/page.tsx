@@ -277,7 +277,7 @@ export default function ManagerPage() {
                         {sourceData.map((s, i) => (
                           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: s.color, flexShrink: 0 }} />
-                            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>{s.name}</span>
+                            <span style={{ fontSize: '12px', color: '#6B6B6B' }}>{s.name}</span>
                             <span style={{ fontSize: '12px', fontWeight: '700', color: '#fff', marginLeft: 'auto' }}>{s.value}</span>
                           </div>
                         ))}
@@ -400,7 +400,7 @@ export default function ManagerPage() {
                           <div style={{ fontSize: '12px', color: '#8A8A8E', marginBottom: '6px' }}>{f.label}</div>
                           <input value={(newLead as any)[f.key]} onChange={e => setNewLead(p => ({ ...p, [f.key]: e.target.value }))}
                             placeholder={f.placeholder}
-                            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${BORDER}`, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '13px', boxSizing: 'border-box' as const }} />
+                            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${BORDER}`, background: '#F5F5F7', color: '#1D1D1F', fontSize: '13px', boxSizing: 'border-box' as const }} />
                         </div>
                       ))}
                       <div>
@@ -429,7 +429,7 @@ export default function ManagerPage() {
                       <div style={{ fontSize: '12px', color: '#8A8A8E', marginBottom: '6px' }}>Эскертүү</div>
                       <input value={newLead.note} onChange={e => setNewLead(p => ({ ...p, note: e.target.value }))}
                         placeholder="Кошумча маалымат..."
-                        style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${BORDER}`, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '13px', boxSizing: 'border-box' as const }} />
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${BORDER}`, background: '#F5F5F7', color: '#1D1D1F', fontSize: '13px', boxSizing: 'border-box' as const }} />
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <button onClick={createLead} disabled={saving}
@@ -494,7 +494,7 @@ export default function ManagerPage() {
                     { label: 'Булак', value: sources.find(s => s.id === selectedLead.source)?.label || '—' },
                     { label: 'Катталган', value: new Date(selectedLead.created_at).toLocaleDateString('ru') },
                   ].map(item => (
-                    <div key={item.label} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '10px' }}>
+                    <div key={item.label} style={{ background: '#F5F5F7', borderRadius: '8px', padding: '10px' }}>
                       <div style={{ fontSize: '10px', color: '#8A8A8E', marginBottom: '3px' }}>{item.label}</div>
                       <div style={{ fontWeight: '600', fontSize: '13px' }}>{item.value}</div>
                     </div>
@@ -511,7 +511,7 @@ export default function ManagerPage() {
                   <div style={{ fontSize: '12px', color: '#8A8A8E', marginBottom: '6px' }}>Эскертүү</div>
                   <textarea value={note} onChange={e => setNote(e.target.value)} rows={3}
                     placeholder="Комментарий..."
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: `1px solid ${BORDER}`, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '13px', resize: 'none', boxSizing: 'border-box' as const }} />
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: `1px solid ${BORDER}`, background: '#F5F5F7', color: '#1D1D1F', fontSize: '13px', resize: 'none', boxSizing: 'border-box' as const }} />
                   <button onClick={updateNote} style={{ marginTop: '6px', background: BLUE, color: '#fff', border: 'none', borderRadius: '8px', padding: '7px 16px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>Сактоо</button>
                 </div>
                 <button onClick={() => deleteLead(selectedLead.id)}
