@@ -360,8 +360,7 @@ const { data: { user } } = await supabase.auth.getUser()
             </div>
           )}
 
-          {activeTab === 'finance' && (
-  <FinanceTab students={students} />
+          {activeTab === 'finance' && (<FinanceTab students={students} />
 )
 }
 {/* ТЕСТТЕР */}
@@ -823,8 +822,8 @@ function AddUserForm({ role, onAdded }: { role: string, onAdded: () => void }) {
         </Animate>
       )}
     </div>
-  )
-}
+    )
+   }
   function FinanceTab({ students }: { students: any[] }) {
   const [payments, setPayments] = useState<any[]>([])
   const [showForm, setShowForm] = useState(false)
