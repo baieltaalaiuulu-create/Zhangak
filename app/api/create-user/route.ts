@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       }
     )
 
-    const { email, password, full_name, role, phone } = await req.json()
+    const { email, password, full_name, role, phone, class_number } = await req.json()
 
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
@@ -29,11 +29,12 @@ export async function POST(req: NextRequest) {
       full_name,
       role,
       phone,
+      class_number: class_number || null,
     })
 
     if (profileError) return NextResponse.json({ error: profileError.message }, { status: 400 })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, id: authData.user.id })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }

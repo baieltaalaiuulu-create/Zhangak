@@ -68,39 +68,49 @@ export default function MathAdminPage() {
   const showMsg = (text: string) => { setMsg(text); setTimeout(() => setMsg(''), 3000) }
 
   // Create student
-  const createStudent = async () => {
-    setSaving(true)
-    const { data, error } = await supabase.auth.admin.createUser({
+ const createStudent = async () => {
+  setSaving(true)
+  const res = await fetch('/api/create-user', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
       email: newStudent.email,
       password: newStudent.password,
-      email_confirm: true,
-    })
-    if (error) { showMsg('Ката: ' + error.message); setSaving(false); return }
-    await supabase.from('profiles').update({ full_name: newStudent.full_name, role: 'math_student', class_number: newStudent.class_number }).eq('id', data.user.id).eq('id', data.user.id)
-    setNewStudent({ full_name: '', email: '', password: '', class_number: 6 })
-    fetchAll()
-    showMsg('✓ Студент түзүлдү')
-    setSaving(false)
-  }
-
+      full_name: newStudent.full_name,
+      role: 'math_student',
+      class_number: newStudent.class_number,
+    }),
+  })
+  const json = await res.json()
+  if (json.error) { showMsg('Ката: ' + json.error); setSaving(false); return }
+  setNewStudent({ full_name: '', email: '', password: '', class_number: 6 })
+  fetchAll()
+  showMsg('✓ Студент түзүлдү')
+  setSaving(false)
+}
   // Create parent
-  const createParent = async () => {
-    setSaving(true)
-    const { data, error } = await supabase.auth.admin.createUser({
+ const createParent = async () => {
+  setSaving(true)
+  const res = await fetch('/api/create-user', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
       email: newParent.email,
       password: newParent.password,
-      email_confirm: true,
-    })
-    if (error) { showMsg('Ката: ' + error.message); setSaving(false); return }
-    await supabase.from('profiles').update({ full_name: newParent.full_name, role: 'math_parent' }).eq('id', data.user.id)
-    if (newParent.student_id) {
-      await supabase.from('math_parent_student').insert({ parent_id: data.user.id, student_id: newParent.student_id })
-    }
-    setNewParent({ full_name: '', email: '', password: '', student_id: '' })
-    fetchAll()
-    showMsg('✓ Ата-эне түзүлдү')
-    setSaving(false)
+      full_name: newParent.full_name,
+      role: 'math_parent',
+    }),
+  })
+  const json = await res.json()
+  if (json.error) { showMsg('Ката: ' + json.error); setSaving(false); return }
+  if (newParent.student_id) {
+    await supabase.from('math_parent_student').insert({ parent_id: json.id, student_id: newParent.student_id })
   }
+  setNewParent({ full_name: '', email: '', password: '', student_id: '' })
+  fetchAll()
+  showMsg('✓ Ата-эне түзүлдү')
+  setSaving(false)
+}
 
   // Create lesson
   const createLesson = async () => {
