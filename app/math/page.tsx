@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
 
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null)
@@ -74,6 +75,11 @@ const FAQS = [
 
 export default function MathPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+const [showLogin, setShowLogin] = useState(false)
+const [email, setEmail] = useState('')
+const [password, setPassword] = useState('')
+const [loginLoading, setLoginLoading] = useState(false)
+const [loginError, setLoginError] = useState('')
   const [scrollY, setScrollY] = useState(0)
   const router = useRouter()
 
@@ -141,7 +147,7 @@ export default function MathPage() {
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={() => router.push('/student')} style={{ background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '9px 18px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>Кирүү</button>
+          <button onClick={() => setShowLogin(true)} style={{ background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '9px 18px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>Кирүү</button>
           <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
             style={{ background: '#1B4FD8', color: '#fff', borderRadius: '10px', padding: '9px 18px', fontWeight: '800', fontSize: '13px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.25s', boxShadow: '0 4px 16px rgba(27,79,216,0.3)' }}>
             📲 Жазылуу
@@ -391,7 +397,47 @@ export default function MathPage() {
         </div>
         <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>© 2025 Жангак Math</div>
         <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#93C5FD', fontSize: '13px', textDecoration: 'none', fontWeight: '600' }}>📲 +996 708 584 613</a>
+      </div>{showLogin && (
+  <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(16px)', padding: '20px' }}
+    onClick={e => { if (e.target === e.currentTarget) setShowLogin(false) }}>
+    <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '28px', padding: '44px', width: '100%', maxWidth: '420px', position: 'relative', boxShadow: '0 24px 80px rgba(0,0,0,0.2)' }}>
+      <button onClick={() => setShowLogin(false)} style={{ position: 'absolute', top: '18px', right: '18px', background: '#F8FAFF', border: '1px solid #E2E8F0', width: '32px', height: '32px', borderRadius: '50%', fontSize: '15px', cursor: 'pointer', color: '#64748B' }}>✕</button>
+      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div style={{ width: '44px', height: '44px', background: '#1B4FD8', borderRadius: '12px', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img src="/images/logo.png" alt="Z" style={{ width: '44px', height: '44px', objectFit: 'cover', borderRadius: '12px' }} />
+        </div>
+        <div style={{ fontWeight: '900', fontSize: '22px', color: '#0D1E4A' }}>Кирүү</div>
+        <div style={{ color: '#94A3B8', fontSize: '13px', marginTop: '6px' }}>Жангак Math системасына</div>
       </div>
+      <form onSubmit={async e => {
+        e.preventDefault(); setLoginLoading(true); setLoginError('')
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) { setLoginError('Туура эмес email же сырсөз'); setLoginLoading(false); return }
+        const { data: prof } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
+        const role = prof?.role
+        if (role === 'math_admin') router.push('/math/admin')
+        else if (role === 'math_parent') router.push('/math/parent')
+        else if (role === 'math_student') router.push('/math/student')
+        else if (role === 'admin') router.push('/admin')
+        else if (role === 'student') router.push('/student')
+        else router.push('/math/student')
+      }} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div>
+          <label style={{ fontSize: '12px', fontWeight: '600', color: '#64748B', display: 'block', marginBottom: '7px' }}>Email</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@gmail.com" required style={{ width: '100%', padding: '13px 16px', borderRadius: '12px', border: '1px solid #E2E8F0', fontSize: '15px', outline: 'none', color: '#0D1E4A', background: '#FAFBFF', boxSizing: 'border-box' as const }} />
+        </div>
+        <div>
+          <label style={{ fontSize: '12px', fontWeight: '600', color: '#64748B', display: 'block', marginBottom: '7px' }}>Сырсөз</label>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required style={{ width: '100%', padding: '13px 16px', borderRadius: '12px', border: '1px solid #E2E8F0', fontSize: '15px', outline: 'none', color: '#0D1E4A', background: '#FAFBFF', boxSizing: 'border-box' as const }} />
+        </div>
+        {loginError && <div style={{ background: '#FEF2F2', color: '#EF4444', padding: '11px 14px', borderRadius: '10px', fontSize: '13px', textAlign: 'center' }}>{loginError}</div>}
+        <button type="submit" disabled={loginLoading} style={{ background: '#1B4FD8', color: '#fff', border: 'none', borderRadius: '12px', padding: '15px', fontWeight: '900', fontSize: '16px', cursor: 'pointer', marginTop: '4px' }}>
+          {loginLoading ? 'Кирүүдө...' : 'Кирүү →'}
+        </button>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   )
 }
