@@ -19,21 +19,18 @@ export default function MathAdminPage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  // Data
   const [students, setStudents] = useState<Student[]>([])
   const [parents, setParents] = useState<Parent[]>([])
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [results, setResults] = useState<Result[]>([])
   const [questions, setQuestions] = useState<Question[]>([])
 
-  // Forms
   const [newStudent, setNewStudent] = useState({ full_name: '', email: '', password: '', class_number: 6 })
   const [newParent, setNewParent] = useState({ full_name: '', email: '', password: '', student_id: '' })
   const [newLesson, setNewLesson] = useState({ title: '', class_number: 6, video_url: '', description: '', order_number: 0 })
   const [newQuestion, setNewQuestion] = useState({ lesson_id: '', question: '', options: ['', '', '', ''], correct_answer: 0 })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
-  const [selectedLesson, setSelectedLesson] = useState('')
 
   useEffect(() => { checkAuth() }, [])
 
@@ -49,8 +46,8 @@ export default function MathAdminPage() {
 
   const fetchAll = async () => {
     const [{ data: s }, { data: p }, { data: l }, { data: r }] = await Promise.all([
-      supabase.from('profiles').select('id, full_name, email').eq('role', 'math_student'),
-      supabase.from('profiles').select('id, full_name, email').eq('role', 'math_parent'),
+      supabase.from('profiles').select('id, full_name, email').eq('role', 'math_student' as any),
+      supabase.from('profiles').select('id, full_name, email').eq('role', 'math_parent' as any),
       supabase.from('math_lessons').select('*').order('class_number').order('order_number'),
       supabase.from('math_results').select('*, profiles(full_name), math_lessons(title, class_number)').order('created_at', { ascending: false }).limit(50),
     ])
@@ -67,63 +64,43 @@ export default function MathAdminPage() {
 
   const showMsg = (text: string) => { setMsg(text); setTimeout(() => setMsg(''), 3000) }
 
-  // Create student
- const createStudent = async () => {
-  setSaving(true)
-  const res = await fetch('/api/create-user', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: newStudent.email,
-      password: newStudent.password,
-      full_name: newStudent.full_name,
-      role: 'math_student',
-      class_number: newStudent.class_number,
-    }),
-  })
-  const json = await res.json()
-  if (json.error) { showMsg('Ката: ' + json.error); setSaving(false); return }
-  setNewStudent({ full_name: '', email: '', password: '', class_number: 6 })
-  fetchAll()
-  showMsg('✓ Студент түзүлдү')
-  setSaving(false)
-}
-  // Create parent
- const createParent = async () => {
-  if (!newParent.full_name || !newParent.email || !newParent.password) {
-    showMsg('Бардык талааларды толтуруңуз'); return
-  }
-  setSaving(true)
-  const res = await fetch('/api/create-user', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: newParent.email,
-      password: newParent.password,
-      full_name: newParent.full_name,
-      role: 'math_parent',
-    }),
-  })
-  const json = await res.json()
-  if (json.error) { showMsg('Ката: ' + json.error); setSaving(false); return }
-  
-  const parentId = json.id
-  if (!parentId) { showMsg('Ката: ID алынган жок'); setSaving(false); return }
-  
-  if (newParent.student_id) {
-    const { error } = await supabase.from('math_parent_student').insert({ 
-      parent_id: parentId, 
-      student_id: newParent.student_id 
+  const createStudent = async () => {
+    setSaving(true)
+    const res = await fetch('/api/create-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: newStudent.email, password: newStudent.password, full_name: newStudent.full_name, role: 'math_student', class_number: newStudent.class_number }),
     })
-    if (error) { showMsg('Ката байланыш: ' + error.message); setSaving(false); return }
+    const json = await res.json()
+    if (json.error) { showMsg('Ката: ' + json.error); setSaving(false); return }
+    setNewStudent({ full_name: '', email: '', password: '', class_number: 6 })
+    fetchAll()
+    showMsg('✓ Студент түзүлдү')
+    setSaving(false)
   }
-  setNewParent({ full_name: '', email: '', password: '', student_id: '' })
-  fetchAll()
-  showMsg('✓ Ата-эне түзүлдү')
-  setSaving(false)
-}
 
-  // Create lesson
+  const createParent = async () => {
+    if (!newParent.full_name || !newParent.email || !newParent.password) { showMsg('Бардык талааларды толтуруңуз'); return }
+    setSaving(true)
+    const res = await fetch('/api/create-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: newParent.email, password: newParent.password, full_name: newParent.full_name, role: 'math_parent' }),
+    })
+    const json = await res.json()
+    if (json.error) { showMsg('Ката: ' + json.error); setSaving(false); return }
+    const parentId = json.id
+    if (!parentId) { showMsg('Ката: ID алынган жок'); setSaving(false); return }
+    if (newParent.student_id) {
+      const { error } = await supabase.from('math_parent_student').insert({ parent_id: parentId, student_id: newParent.student_id })
+      if (error) { showMsg('Ката байланыш: ' + error.message); setSaving(false); return }
+    }
+    setNewParent({ full_name: '', email: '', password: '', student_id: '' })
+    fetchAll()
+    showMsg('✓ Ата-эне түзүлдү')
+    setSaving(false)
+  }
+
   const createLesson = async () => {
     setSaving(true)
     const { error } = await supabase.from('math_lessons').insert(newLesson)
@@ -134,22 +111,27 @@ export default function MathAdminPage() {
     setSaving(false)
   }
 
-  // Create question
   const createQuestion = async () => {
     if (!newQuestion.lesson_id) { showMsg('Сабак тандаңыз'); return }
     setSaving(true)
     const { error } = await supabase.from('math_questions').insert({
-      lesson_id: newQuestion.lesson_id,
-      question: newQuestion.question,
-      options: newQuestion.options,
-      correct_answer: newQuestion.correct_answer,
-      order_number: questions.length,
+      lesson_id: newQuestion.lesson_id, question: newQuestion.question,
+      options: newQuestion.options, correct_answer: newQuestion.correct_answer, order_number: questions.length,
     })
     if (error) { showMsg('Ката: ' + error.message); setSaving(false); return }
     setNewQuestion({ ...newQuestion, question: '', options: ['', '', '', ''], correct_answer: 0 })
     fetchQuestions(newQuestion.lesson_id)
     showMsg('✓ Суроо кошулду')
     setSaving(false)
+  }
+
+  const deleteUser = async (id: string, name: string) => {
+    if (!confirm(`${name} өчүрүлсүнбү?`)) return
+    const res = await fetch('/api/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    const json = await res.json()
+    if (json.error) { showMsg('Ката: ' + json.error); return }
+    fetchAll()
+    showMsg('✓ Өчүрүлдү')
   }
 
   const deleteLesson = async (id: string) => {
@@ -161,6 +143,12 @@ export default function MathAdminPage() {
   const deleteQuestion = async (id: string) => {
     await supabase.from('math_questions').delete().eq('id', id)
     fetchQuestions(newQuestion.lesson_id)
+  }
+
+  const reassignParent = async (parentId: string, studentId: string) => {
+    await supabase.from('math_parent_student').delete().eq('parent_id', parentId)
+    if (studentId) await supabase.from('math_parent_student').insert({ parent_id: parentId, student_id: studentId })
+    showMsg('✓ Байланыш өзгөртүлдү')
   }
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
@@ -175,11 +163,11 @@ export default function MathAdminPage() {
 
   const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #E2E8F0', fontSize: '14px', outline: 'none', color: '#0D1E4A', background: '#FAFBFF', boxSizing: 'border-box' as const }
   const selectStyle = { ...inputStyle, cursor: 'pointer' }
-  const btnStyle = { background: '#1B4FD8', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 20px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }
+  const btnStyle = { background: '#1B4FD8', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 20px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', width: '100%' }
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFF' }}>
-      <div style={{ textAlign: 'center', color: '#64748B' }}>Жүктөлүүдө...</div>
+      <div style={{ color: '#64748B' }}>Жүктөлүүдө...</div>
     </div>
   )
 
@@ -201,7 +189,6 @@ export default function MathAdminPage() {
       </nav>
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
-        {/* Message */}
         {msg && <div style={{ background: msg.startsWith('✓') ? '#F0FDF4' : '#FEF2F2', color: msg.startsWith('✓') ? '#10B981' : '#EF4444', padding: '12px 20px', borderRadius: '12px', marginBottom: '20px', fontWeight: '600', fontSize: '14px' }}>{msg}</div>}
 
         {/* Tabs */}
@@ -217,7 +204,6 @@ export default function MathAdminPage() {
         {/* STUDENTS */}
         {tab === 'students' && (
           <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '24px' }}>
-            {/* Form */}
             <div style={{ background: '#fff', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '24px' }}>
               <h3 style={{ fontWeight: '800', fontSize: '16px', color: '#0D1E4A', marginBottom: '20px' }}>Студент кошуу</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -232,36 +218,25 @@ export default function MathAdminPage() {
                 <button onClick={createStudent} disabled={saving} style={btnStyle}>{saving ? 'Сакталууда...' : '+ Студент кошуу'}</button>
               </div>
             </div>
-            {/* List */}
-          <div style={{ background: '#fff', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '24px' }}>
-  <h3 style={{ fontWeight: '800', fontSize: '16px', color: '#0D1E4A', marginBottom: '20px' }}>Студенттер ({students.length})</h3>
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-    {students.map(s => (
-      <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8FAFF', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
-        <div>
-          <div style={{ fontWeight: '600', fontSize: '14px', color: '#0D1E4A' }}>{s.full_name}</div>
-          <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>{s.email}</div>
-        </div>
-        <button onClick={async () => {
-          if (!confirm(`${s.full_name} өчүрүлсүнбү?`)) return
-          const res = await fetch('/api/delete-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: s.id }),
-          })
-          const json = await res.json()
-          if (json.error) { showMsg('Ката: ' + json.error); return }
-          fetchAll()
-          showMsg('✓ Студент өчүрүлдү')
-        }} style={{ background: '#FEF2F2', color: '#EF4444', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}>
-          Өчүр
-        </button>
-      </div>
-    ))}
-    {students.length === 0 && <div style={{ color: '#94A3B8', fontSize: '14px', textAlign: 'center', padding: '32px' }}>Студент жок</div>}
-  </div>
-</div>
-   </div>   )}
+            <div style={{ background: '#fff', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '24px' }}>
+              <h3 style={{ fontWeight: '800', fontSize: '16px', color: '#0D1E4A', marginBottom: '20px' }}>Студенттер ({students.length})</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {students.map(s => (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8FAFF', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                    <div>
+                      <div style={{ fontWeight: '600', fontSize: '14px', color: '#0D1E4A' }}>{s.full_name}</div>
+                      <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>{s.email}</div>
+                    </div>
+                    <button onClick={() => deleteUser(s.id, s.full_name)} style={{ background: '#FEF2F2', color: '#EF4444', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}>
+                      Өчүр
+                    </button>
+                  </div>
+                ))}
+                {students.length === 0 && <div style={{ color: '#94A3B8', fontSize: '14px', textAlign: 'center', padding: '32px' }}>Студент жок</div>}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* PARENTS */}
         {tab === 'parents' && (
@@ -284,8 +259,19 @@ export default function MathAdminPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {parents.map(p => (
                   <div key={p.id} style={{ padding: '12px 16px', background: '#F8FAFF', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
-                    <div style={{ fontWeight: '600', fontSize: '14px', color: '#0D1E4A' }}>{p.full_name}</div>
-                    <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>{p.email}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                      <div>
+                        <div style={{ fontWeight: '600', fontSize: '14px', color: '#0D1E4A' }}>{p.full_name}</div>
+                        <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>{p.email}</div>
+                      </div>
+                      <button onClick={() => deleteUser(p.id, p.full_name)} style={{ background: '#FEF2F2', color: '#EF4444', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}>
+                        Өчүр
+                      </button>
+                    </div>
+                    <select defaultValue="" onChange={e => reassignParent(p.id, e.target.value)} style={{ width: '100%', padding: '6px 10px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '12px', color: '#0D1E4A', background: '#fff', cursor: 'pointer' }}>
+                      <option value="">Баланы өзгөртүү...</option>
+                      {students.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+                    </select>
                   </div>
                 ))}
                 {parents.length === 0 && <div style={{ color: '#94A3B8', fontSize: '14px', textAlign: 'center', padding: '32px' }}>Ата-эне жок</div>}
