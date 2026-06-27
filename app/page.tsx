@@ -317,7 +317,7 @@ export default function LandingPage() {
 
       {/* STATS */}
       <div className="section-pad" style={{ padding: '60px 60px', background: '#F5F8FF' }}>
-        <div className="stats-row" style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px' }}>
+<div className="stats-row" style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px' }}>
           <StatCard value={9000} suffix="+" label="Ийгиликтүү бүтүрүүчү" color="#1B4FD8" delay={0} />
           <StatCard value={221} label="Эң жогорку балл" color="#1B4FD8" delay={100} />
           <StatCard value={80} suffix="%" label="Университетке кирди" color="#F59E0B" delay={200} />
@@ -436,31 +436,18 @@ export default function LandingPage() {
               </h2>
             </div>
           </Reveal>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px' }}>
-            {/* Featured — top scorer */}
-            <Reveal delay={0}>
-              <div style={{ gridColumn: 'span 2', position: 'relative', borderRadius: '24px', overflow: 'hidden', aspectRatio: '16/9', border: '2px solid #1B4FD8', background: '#0D1E4A' }}
-                onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.02)')}
-                onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}>
-                <img src={ALL_RESULTS[0].img} alt={ALL_RESULTS[0].name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(5,12,31,1) 0%,transparent 60%)' }} />
-                <div style={{ position: 'absolute', top: '16px', left: '16px', background: '#1B4FD8', color: '#fff', fontSize: '11px', fontWeight: '900', padding: '5px 14px', borderRadius: '20px' }}>🏆 Эң жогорку балл</div>
-                <div style={{ position: 'absolute', bottom: '20px', left: '20px' }}>
-                  <div style={{ fontWeight: '900', fontSize: '52px', color: '#fff', letterSpacing: '-2px', lineHeight: 1 }}>{ALL_RESULTS[0].score}</div>
-                  <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', marginTop: '6px', fontWeight: '600' }}>{ALL_RESULTS[0].name}</div>
-                </div>
-              </div>
-            </Reveal>
-            {ALL_RESULTS.slice(1).map((r, i) => (
-              <Reveal key={i} delay={(i + 1) * 80}>
-                <div style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden', aspectRatio: i < 2 ? '3/4' : '1', border: '1px solid #E2E8F0', background: '#0D1E4A', transition: 'transform 0.3s ease' }}
-                  onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.03)')}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: '16px' }}>
+            {ALL_RESULTS.map((r, i) => (
+              <Reveal key={i} delay={i * 80}>
+                <div style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden', aspectRatio: '3/4', border: i === 0 ? '2px solid #1B4FD8' : '1px solid #E2E8F0', background: '#0D1E4A', transition: 'transform 0.3s ease', cursor: 'pointer' }}
+                  onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.04)')}
                   onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}>
-                  <img src={r.img} alt={r.name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(5,12,31,1) 0%,transparent 60%)' }} />
+                  <img src={r.img} alt={r.name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }} />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(5,12,31,1) 0%,transparent 55%)' }} />
+                  {i === 0 && <div style={{ position: 'absolute', top: '12px', left: '12px', background: '#1B4FD8', color: '#fff', fontSize: '10px', fontWeight: '900', padding: '4px 10px', borderRadius: '20px' }}>🏆 Эң жогорку</div>}
                   <div style={{ position: 'absolute', bottom: '12px', left: '12px', right: '12px' }}>
-                    <div style={{ fontWeight: '900', fontSize: i < 2 ? '28px' : '20px', color: '#fff', letterSpacing: '-0.5px', lineHeight: 1 }}>{r.score}</div>
-                    <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', marginTop: '3px', fontWeight: '500' }}>{r.name}</div>
+                    <div style={{ fontWeight: '900', fontSize: '28px', color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>{r.score}</div>
+                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.75)', marginTop: '4px', fontWeight: '500' }}>{r.name}</div>
                   </div>
                 </div>
               </Reveal>
@@ -468,8 +455,7 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
-
-      {/* OFFICE */}
+           {/* OFFICE */}
       <div id="office" className="section-pad" style={{ padding: '100px 60px', background: '#EEF4FF' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <Reveal>
