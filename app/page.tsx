@@ -202,18 +202,11 @@ export default function LandingPage() {
 
       {/* NAVBAR */}
       <nav className="section-pad" style={{ background: navScrolled ? 'rgba(255,255,255,0.97)' : 'transparent', backdropFilter: navScrolled ? 'blur(20px)' : 'none', borderBottom: navScrolled ? '1px solid #E2E8F0' : 'none', padding: '0 60px', height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 200, transition: 'all 0.3s ease' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '36px', height: '36px', background: '#1B4FD8', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <img src="/images/logo.png" alt="Zhangak" style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '8px' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: '12px', padding: '4px', gap: '4px', marginRight: '8px' }}>
+            <button style={{ padding: '7px 16px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '700', cursor: 'pointer', background: '#1B4FD8', color: '#fff' }}>ЖРТ</button>
+            <button onClick={() => router.push('/math')} style={{ padding: '7px 16px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '600', cursor: 'pointer', background: 'transparent', color: '#64748B' }}>Math</button>
           </div>
-          <span style={{ fontWeight: '900', fontSize: '20px', letterSpacing: '-0.5px', color: '#0D1E4A' }}>Zhangak</span>
-        </div>
-        <div className="nav-links" style={{ display: 'flex', gap: '28px' }}>
-          {[['Курстар', '#courses'], ['Натыйжалар', '#results'], ['FAQ', '#faq'], ['Офис', '#office']].map(([l, h]) => (
-            <a key={l} href={h} className="nav-link" style={{ color: '#64748B', fontSize: '14px', textDecoration: 'none', fontWeight: '500', transition: 'color 0.2s' }}>{l}</a>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
           <button onClick={() => setShowLogin(true)} style={{ background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '9px 18px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>Кирүү</button>
           <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ background: '#1B4FD8', color: '#fff', borderRadius: '10px', padding: '9px 18px', fontWeight: '800', fontSize: '13px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.25s', boxShadow: '0 4px 16px rgba(27,79,216,0.3)' }}>📲 Жазылуу</a>
         </div>
