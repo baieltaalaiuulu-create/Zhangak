@@ -271,7 +271,7 @@ export default function LandingPage() {
   ]
 
   return (
-    <div style={{ background: '#F8FAFF', minHeight: '100vh', fontFamily: 'Inter, -apple-system, sans-serif', color: '#0D1E4A', overflowX: 'hidden' }}>
+    <div style={{ background: '#FFFFFF', minHeight: '100vh', fontFamily: 'Inter, -apple-system, sans-serif', color: '#0D1E4A', overflowX: 'hidden' }}>
 
       {/* ── ANNOUNCEMENT BANNER ──────────────────────────────────────────────── */}
       <div style={{
@@ -297,7 +297,7 @@ export default function LandingPage() {
         transition: 'all 0.3s ease',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <img src="/images/logo.png" alt="Zhangak" style={{ width: '34px', height: '34px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+        <img src="/images/logo.png" alt="Zhangak" style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '8px' }} />
           <span style={{ fontWeight: '900', fontSize: '20px', letterSpacing: '-0.5px', background: 'linear-gradient(135deg,#fff,rgba(255,255,255,0.7))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             Zhangak
           </span>
@@ -411,7 +411,7 @@ export default function LandingPage() {
       </div>
 
       {/* ── SUMMER INTENSIVE ─────────────────────────────────────────────────── */}
-      <div className="section-pad" style={{ padding: '0 60px 60px' }}>
+      <div className="section-pad" style={{ padding: '0 60px 60px', background: '#EEF4FF' }}>
         <Reveal>
           <div style={{
             maxWidth: '1200px', margin: '0 auto',
@@ -448,7 +448,7 @@ export default function LandingPage() {
       </div>
 
       {/* ── STATS ROW ─────────────────────────────────────────────────────────── */}
-      <div className="section-pad" style={{ padding: '0 60px 80px' }}>
+      <div className="section-pad" style={{ padding: '0 60px 80px', background: '#F5F8FF' }}>
         <div className="stats-row" style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px' }}>
           <StatCard value={220} suffix="+" label="Ийгиликтүү бүтүрүүчү" color="#93C5FD" delay={0} />
           <StatCard value={221} label="Эң жогорку балл" color="#93C5FD" delay={100} />
@@ -458,7 +458,7 @@ export default function LandingPage() {
       </div>
 
       {/* ── TIMER ─────────────────────────────────────────────────────────────── */}
-      <div className="section-pad" style={{ padding: '60px 60px', background: '#F0F4FF', borderTop: '1px solid #E2E8F0', borderBottom: '1px solid #E2E8F0' }}>
+      <div className="section-pad" style={{ padding: '60px 60px', background: '#E8F0FF', borderTop: 'none', borderBottom: 'none' }}>
         <Reveal>
           <div style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto' }}>
             <p style={{ color: '#94A3B8', fontSize: '12px', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '20px' }}>ЖРТга чейин калды</p>
@@ -492,7 +492,7 @@ export default function LandingPage() {
       </div>
 
       {/* ── COURSES ───────────────────────────────────────────────────────────── */}
-      <div id="courses" className="section-pad" style={{ padding: '100px 60px' }}>
+      <div id="courses" className="section-pad" style={{ padding: '100px 60px', background: '#F5F8FF' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <Reveal>
             <div style={{ textAlign: 'center', marginBottom: '64px' }}>
@@ -560,7 +560,7 @@ export default function LandingPage() {
       </div>
 
       {/* ── RESULTS ───────────────────────────────────────────────────────────── */}
-      <div id="results" className="section-pad" style={{ padding: '100px 60px', background: '#F0F4FF' }}>
+      <div id="results" className="section-pad" style={{ padding: '100px 60px', background: '#D6E4FF' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <Reveal>
             <div style={{ textAlign: 'center', marginBottom: '64px' }}>
@@ -591,7 +591,7 @@ export default function LandingPage() {
       </div>
 
       {/* ── REVIEWS ───────────────────────────────────────────────────────────── */}
-      <div className="section-pad" style={{ padding: '100px 60px' }}>
+      <div className="section-pad" style={{ padding: '100px 60px', background: '#EEF4FF' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <Reveal>
             <div style={{ textAlign: 'center', marginBottom: '64px' }}>
@@ -636,7 +636,7 @@ export default function LandingPage() {
       </div>
 
       {/* ── OFFICE ────────────────────────────────────────────────────────────── */}
-      <div id="office" className="section-pad" style={{ padding: '100px 60px', background: '#F0F4FF' }}>
+      <div id="office" className="section-pad" style={{ padding: '100px 60px', background: '#D6E4FF' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <Reveal>
             <h2 style={{ fontSize: 'clamp(24px,3.5vw,36px)', fontWeight: '900', marginBottom: '40px', letterSpacing: '-1px' }}>
@@ -674,7 +674,7 @@ export default function LandingPage() {
       </div>
 
       {/* ── FAQ ───────────────────────────────────────────────────────────────── */}
-      <div id="faq" className="section-pad" style={{ padding: '100px 60px' }}>
+      <div id="faq" className="section-pad" style={{ padding: '100px 60px', background: '#F5F8FF' }}>
         <div style={{ maxWidth: '860px', margin: '0 auto' }}>
           <Reveal>
             <div style={{ textAlign: 'center', marginBottom: '56px' }}>
@@ -725,27 +725,27 @@ export default function LandingPage() {
       </div>
 
       {/* ── FINAL CTA ─────────────────────────────────────────────────────────── */}
-      <div className="section-pad" style={{ padding: '100px 60px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '600px', height: '600px', background: 'radial-gradient(circle,rgba(27,79,216,0.15) 0%,transparent 70%)', pointerEvents: 'none' }} />
+      <div className="section-pad" style={{ padding: '100px 60px', position: 'relative', overflow: 'hidden', background: '#1B4FD8' }}>
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '600px', height: '600px', background: 'radial-gradient(circle,rgba(255,255,255,0.1) 0%,transparent 70%)', pointerEvents: 'none' }} />
         <Reveal>
           <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
             <div style={{ fontSize: '48px', marginBottom: '24px', animation: 'wobble 3s ease infinite' }}>🚀</div>
-            <h2 style={{ fontSize: 'clamp(28px,4vw,48px)', fontWeight: '900', letterSpacing: '-2px', marginBottom: '16px', lineHeight: '1.1' }}>
+            <h2 style={{ fontSize: 'clamp(28px,4vw,48px)', fontWeight: '900', letterSpacing: '-2px', marginBottom: '16px', lineHeight: '1.1', color: '#fff' }}>
               Келечегиңди<br />
-              <span style={{ background: 'linear-gradient(135deg,#1B4FD8,#1E63E8,#3B82F6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <span style={{ color: '#BFDBFE' }}>
                 бүгүн баштагыз
               </span>
             </h2>
-            <p style={{ color: '#64748B', marginBottom: '36px', fontSize: '16px', lineHeight: '1.7' }}>
+            <p style={{ color: 'rgba(255,255,255,0.75)', marginBottom: '36px', fontSize: '16px', lineHeight: '1.7' }}>
               Биз менен ЖРТга даяр болуңуз.<br />Орундар чектелүү.
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
-                style={{ background: 'linear-gradient(135deg,#1B4FD8,#1E63E8)', color: '#0D1E4A', borderRadius: '16px', padding: '17px 40px', fontWeight: '900', fontSize: '16px', textDecoration: 'none', boxShadow: '0 12px 40px rgba(27,79,216,0.5)', transition: 'all 0.25s' }}>
+                style={{ background: '#fff', color: '#1B4FD8', borderRadius: '16px', padding: '17px 40px', fontWeight: '900', fontSize: '16px', textDecoration: 'none', boxShadow: '0 12px 40px rgba(0,0,0,0.2)', transition: 'all 0.25s' }}>
                 📲 Жазылуу
               </a>
               <button onClick={() => setShowLogin(true)} className="cta-btn"
-                style={{ background: '#F1F5FF', color: '#0D1E4A', border: '1px solid #CBD5E1', borderRadius: '16px', padding: '17px 40px', fontWeight: '700', fontSize: '16px', cursor: 'pointer', transition: 'all 0.25s' }}>
+                style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '16px', padding: '17px 40px', fontWeight: '700', fontSize: '16px', cursor: 'pointer', transition: 'all 0.25s' }}>
                 Кирүү →
               </button>
             </div>
@@ -754,7 +754,7 @@ export default function LandingPage() {
       </div>
 
       {/* ── FOOTER ────────────────────────────────────────────────────────────── */}
-      <div className="section-pad" style={{ background: '#EEF2FF', borderTop: '1px solid #E2E8F0', padding: '28px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="section-pad" style={{ background: '#1B4FD8', borderTop: 'none', padding: '28px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <img src="/images/logo.png" alt="Zhangak" style={{ width: '28px', height: '28px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
           <span style={{ fontWeight: '900', fontSize: '15px' }}>Zhangak</span>
