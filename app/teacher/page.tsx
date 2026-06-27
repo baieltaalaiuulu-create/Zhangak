@@ -1,11 +1,14 @@
- 'use client'
+'use client'
 export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
+type Tab = 'lessons' | 'attendance' | 'results' | 'homework'
+
 export default function TeacherPage() {
-  const [activeTab, setActiveTab] = useState('lessons')
+  const [activeTab, setActiveTab] = useState<Tab>('lessons')
   const [lessons, setLessons] = useState<any[]>([])
   const [groups, setGroups] = useState<any[]>([])
   const [students, setStudents] = useState<any[]>([])
@@ -15,31 +18,22 @@ export default function TeacherPage() {
   const [testScores, setTestScores] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [userId, setUserId] = useState<string>('')
+  const [msg, setMsg] = useState('')
   const router = useRouter()
 
- useEffect(() => { checkAuth() }, [])
+  useEffect(() => { checkAuth() }, [])
 
-const checkAuth = async () => {
-  await supabase.auth.getSession()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) { router.push('/'); return }
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!profile || profile.role !== 'teacher') {
-    await supabase.auth.signOut()
-    router.push('/')
-    return
+  const checkAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { router.push('/'); return }
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (!profile || profile.role !== 'teacher') { await supabase.auth.signOut(); router.push('/'); return }
+    fetchData(user.id)
   }
-  fetchData(user.id)
-}
+
   const fetchData = async (uid: string) => {
-    const { data: grps } = await supabase
-      .from('groups')
-      .select('*, courses(name, level)')
-      .eq('teacher_id', uid)
-
+    const { data: grps } = await supabase.from('groups').select('*, courses(name, level)').eq('teacher_id', uid)
     setGroups(grps || [])
-
     if (grps && grps.length > 0) {
       setSelectedGroup(grps[0])
       fetchGroupStudents(grps[0].id)
@@ -49,28 +43,17 @@ const checkAuth = async () => {
   }
 
   const fetchLessons = async (courseId: number) => {
-    const { data } = await supabase
-      .from('lessons')
-      .select('*')
-      .eq('course_id', courseId)
-      .order('lesson_number')
+    const { data } = await supabase.from('lessons').select('*').eq('course_id', courseId).order('lesson_number')
     setLessons(data || [])
   }
 
   const fetchGroupStudents = async (groupId: number) => {
-    const { data } = await supabase
-      .from('group_students')
-      .select('*, profiles(id, full_name, phone)')
-      .eq('group_id', groupId)
+    const { data } = await supabase.from('group_students').select('*, profiles(id, full_name, phone)').eq('group_id', groupId)
     setStudents(data?.map((d: any) => d.profiles) || [])
   }
 
   const fetchAttendance = async (lessonId: number) => {
-    const { data } = await supabase
-      .from('attendance')
-      .select('*')
-      .eq('lesson_id', lessonId)
-
+    const { data } = await supabase.from('attendance').select('*').eq('lesson_id', lessonId)
     const map: any = {}
     data?.forEach((a: any) => { map[a.student_id] = a.status })
     setAttendance(map)
@@ -79,300 +62,279 @@ const checkAuth = async () => {
   const selectLesson = async (lesson: any) => {
     setSelectedLesson(lesson)
     await fetchAttendance(lesson.id)
-
     if (lesson.is_test) {
-      const { data } = await supabase
-        .from('test_results')
-        .select('*')
-        .eq('lesson_id', lesson.id)
+      const { data } = await supabase.from('test_results').select('*').eq('lesson_id', lesson.id)
       const map: any = {}
-      data?.forEach((r: any) => {
-        map[r.student_id] = {
-          math_score: r.math_score,
-          analogy_score: r.analogy_score,
-          reading_score: r.reading_score,
-          grammar_score: r.grammar_score,
-        }
-      })
+      data?.forEach((r: any) => { map[r.student_id] = { math_score: r.math_score, analogy_score: r.analogy_score, reading_score: r.reading_score, grammar_score: r.grammar_score } })
       setTestScores(map)
     }
   }
 
+  const flash = (text: string) => { setMsg(text); setTimeout(() => setMsg(''), 3000) }
+
   const saveAttendance = async () => {
     if (!selectedLesson) return
     setSaving(true)
-
     for (const student of students) {
       const status = attendance[student.id] || 'absent'
-      await supabase.from('attendance').upsert({
-        lesson_id: selectedLesson.id,
-        student_id: student.id,
-        status,
-      }, { onConflict: 'lesson_id,student_id' })
+      await supabase.from('attendance').upsert({ lesson_id: selectedLesson.id, student_id: student.id, status }, { onConflict: 'lesson_id,student_id' })
     }
     setSaving(false)
-    alert('Посещаемость сохранена!')
+    flash('✓ Катышуу сакталды')
   }
 
   const saveTestResults = async () => {
     if (!selectedLesson) return
     setSaving(true)
-
     for (const student of students) {
       const scores = testScores[student.id] || {}
-      const math = Number(scores.math_score || 0)
-      const analogy = Number(scores.analogy_score || 0)
-      const reading = Number(scores.reading_score || 0)
-      const grammar = Number(scores.grammar_score || 0)
-
       await supabase.from('test_results').upsert({
-        lesson_id: selectedLesson.id,
-        student_id: student.id,
-        math_score: math,
-        analogy_score: analogy,
-        reading_score: reading,
-        grammar_score: grammar,
+        lesson_id: selectedLesson.id, student_id: student.id,
+        math_score: Number(scores.math_score || 0), analogy_score: Number(scores.analogy_score || 0),
+        reading_score: Number(scores.reading_score || 0), grammar_score: Number(scores.grammar_score || 0),
       }, { onConflict: 'lesson_id,student_id' })
     }
     setSaving(false)
-    alert('Результаты сохранены!')
+    flash('✓ Натыйжалар сакталды')
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
+  const handleLogout = async () => { await supabase.auth.signOut(); router.push('/') }
 
-  const tabs = [
-    { id: 'lessons', label: '📚 Занятия' },
-    { id: 'attendance', label: '✅ Посещаемость' },
-    { id: 'results', label: '📊 Результаты' },
-    { id: 'homework', label: '📝 Домашка' },
+  const tabs: { id: Tab; label: string; icon: string }[] = [
+    { id: 'lessons', label: 'Сабактар', icon: '📚' },
+    { id: 'attendance', label: 'Катышуу', icon: '✅' },
+    { id: 'results', label: 'Натыйжалар', icon: '📊' },
+    { id: 'homework', label: 'Үй тапшырма', icon: '📝' },
   ]
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{background:'var(--bg)'}}>
-      <div style={{color:'var(--muted)'}}>Загрузка...</div>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFF' }}>
+      <div style={{ color: '#64748B', fontSize: '14px' }}>Жүктөлүүдө...</div>
     </div>
   )
 
   return (
-    <div className="min-h-screen" style={{background:'var(--bg)'}}>
-      {/* Шапка */}
-      <div className="flex items-center justify-between px-6 py-4" style={{borderBottom:'1px solid var(--border)',background:'var(--surface)'}}>
-        <div className="font-black text-lg" style={{background:'linear-gradient(90deg,#4B8EF5,#D45FCC)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
-          ЖАНГАК — Учитель
-        </div>
-        <div className="flex items-center gap-4">
-          {selectedGroup && (
-            <div className="text-sm px-3 py-1 rounded-lg" style={{background:'rgba(75,142,245,0.1)',color:'#4B8EF5',border:'1px solid rgba(75,142,245,0.2)'}}>
-              {selectedGroup.name} · {selectedGroup.courses?.level}
+    <div style={{ minHeight: '100vh', background: '#F8FAFF', fontFamily: 'Inter, sans-serif', display: 'flex' }}>
+
+      {/* SIDEBAR */}
+      <aside style={{ width: '220px', background: '#fff', borderRight: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 100 }}>
+        {/* Logo */}
+        <div style={{ padding: '20px 16px', borderBottom: '1px solid #E2E8F0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '32px', height: '32px', background: '#1B4FD8', borderRadius: '8px', overflow: 'hidden' }}>
+              <img src="/images/logo.png" alt="Z" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
-          )}
-          <button onClick={handleLogout} className="text-sm px-4 py-2 rounded-lg" style={{background:'var(--bg)',color:'var(--muted)',border:'1px solid var(--border)'}}>
-            Выйти
-          </button>
-        </div>
-      </div>
-
-      <div className="flex">
-        {/* Меню */}
-        <div className="w-52 min-h-screen p-4 flex flex-col gap-1" style={{borderRight:'1px solid var(--border)',background:'var(--surface)'}}>
-          {tabs.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className="text-left px-4 py-3 rounded-xl text-sm font-medium transition-all"
-              style={{
-                background: activeTab === tab.id ? 'rgba(75,142,245,0.15)' : 'transparent',
-                color: activeTab === tab.id ? '#4B8EF5' : 'var(--muted)',
-                border: activeTab === tab.id ? '1px solid rgba(75,142,245,0.3)' : '1px solid transparent'
-              }}>
-              {tab.label}
-            </button>
-          ))}
-
-          <div className="mt-4 pt-4" style={{borderTop:'1px solid var(--border)'}}>
-            <div className="text-xs mb-2 px-2" style={{color:'var(--muted)'}}>Группы</div>
-            {groups.map(g => (
-              <button key={g.id}
-                onClick={() => { setSelectedGroup(g); fetchGroupStudents(g.id); fetchLessons(g.course_id) }}
-                className="w-full text-left px-3 py-2 rounded-lg text-xs mb-1"
-                style={{
-                  background: selectedGroup?.id === g.id ? 'rgba(212,95,204,0.15)' : 'transparent',
-                  color: selectedGroup?.id === g.id ? '#D45FCC' : 'var(--muted)'
-                }}>
-                {g.name}
-              </button>
-            ))}
+            <div>
+              <div style={{ fontWeight: '900', fontSize: '15px', color: '#0D1E4A' }}>Zhangak</div>
+              <div style={{ fontSize: '11px', color: '#94A3B8' }}>Мугалим</div>
+            </div>
           </div>
         </div>
 
-        {/* Контент */}
-        <div className="flex-1 p-6">
+        {/* Group selector */}
+        {groups.length > 0 && (
+          <div style={{ padding: '12px 12px', borderBottom: '1px solid #E2E8F0' }}>
+            <div style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', marginBottom: '8px', letterSpacing: '0.5px' }}>ГРУППАЛАР</div>
+            {groups.map(g => (
+              <button key={g.id} onClick={() => { setSelectedGroup(g); fetchGroupStudents(g.id); fetchLessons(g.course_id) }}
+                style={{ width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer', marginBottom: '2px', fontSize: '12px', fontWeight: '600', background: selectedGroup?.id === g.id ? '#EEF2FF' : 'transparent', color: selectedGroup?.id === g.id ? '#1B4FD8' : '#64748B' }}>
+                {g.name}
+                <span style={{ fontSize: '10px', color: '#94A3B8', marginLeft: '4px' }}>{g.courses?.level}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
-          {/* ЗАНЯТИЯ */}
-          {activeTab === 'lessons' && (
-            <div>
-              <h2 className="text-xl font-bold mb-6">Занятия</h2>
-              <div className="grid grid-cols-3 gap-3">
-                {lessons.map(l => (
-                  <button key={l.id} onClick={() => { selectLesson(l); setActiveTab('attendance') }}
-                    className="p-4 rounded-xl text-left transition-all"
-                    style={{
-                      background: 'var(--surface)',
-                      border: l.is_test ? '1px solid rgba(123,97,255,0.4)' : '1px solid var(--border)'
-                    }}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold" style={{color:'var(--muted)'}}>№{l.lesson_number}</span>
-                      {l.is_test && <span className="text-xs px-2 py-0.5 rounded-full" style={{background:'rgba(123,97,255,0.15)',color:'#7B61FF'}}>Тест</span>}
-                    </div>
-                    <div className="font-medium text-sm mb-2">{l.title}</div>
-                    <div className="text-xs" style={{color:'#4B8EF5'}}>{l.math_topic}</div>
-                    <div className="text-xs mt-1" style={{color:'#D45FCC'}}>{l.kyr_topic}</div>
-                  </button>
-                ))}
-              </div>
+        {/* Nav */}
+        <nav style={{ padding: '12px 12px', flex: 1 }}>
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 10px', borderRadius: '10px', border: 'none', cursor: 'pointer', marginBottom: '2px', fontSize: '13px', fontWeight: '600', background: activeTab === t.id ? '#EEF2FF' : 'transparent', color: activeTab === t.id ? '#1B4FD8' : '#64748B' }}>
+              <span>{t.icon}</span>{t.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Logout */}
+        <div style={{ padding: '12px', borderTop: '1px solid #E2E8F0' }}>
+          <button onClick={handleLogout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: 'transparent', color: '#94A3B8', fontSize: '13px' }}>
+            🚪 Чыгуу
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN */}
+      <main style={{ marginLeft: '220px', flex: 1, padding: '32px', minHeight: '100vh' }}>
+
+        {/* MSG */}
+        {msg && (
+          <div style={{ background: '#F0FDF4', color: '#10B981', padding: '12px 20px', borderRadius: '12px', marginBottom: '20px', fontWeight: '600', fontSize: '14px', border: '1px solid #BBF7D0' }}>
+            {msg}
+          </div>
+        )}
+
+        {/* ── LESSONS ── */}
+        {activeTab === 'lessons' && (
+          <div>
+            <div style={{ marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#0D1E4A', margin: 0 }}>Сабактар</h2>
+              <p style={{ color: '#94A3B8', fontSize: '13px', margin: '4px 0 0' }}>{lessons.length} сабак · {selectedGroup?.name}</p>
             </div>
-          )}
-
-          {/* ПОСЕЩАЕМОСТЬ */}
-          {activeTab === 'attendance' && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">Посещаемость</h2>
-                <button onClick={saveAttendance} disabled={saving || !selectedLesson}
-                  className="px-5 py-2 rounded-xl text-sm font-bold"
-                  style={{background:'linear-gradient(90deg,#4B8EF5,#D45FCC)',color:'#fff',opacity:saving?0.7:1}}>
-                  {saving ? 'Сохраняем...' : 'Сохранить'}
-                </button>
-              </div>
-
-              {!selectedLesson ? (
-                <div className="text-center py-12" style={{color:'var(--muted)'}}>
-                  Выберите занятие на вкладке Занятия
-                </div>
-              ) : (
-                <div>
-                  <div className="p-4 rounded-xl mb-4" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
-                    <div className="font-bold">{selectedLesson.title}</div>
-                    <div className="text-xs mt-1" style={{color:'var(--muted)'}}>
-                      Мат: {selectedLesson.math_topic} · Кыр: {selectedLesson.kyr_topic}
-                    </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px' }}>
+              {lessons.map(l => (
+                <div key={l.id} onClick={() => { selectLesson(l); setActiveTab('attendance') }}
+                  style={{ background: '#fff', borderRadius: '16px', border: `1px solid ${l.is_test ? '#C7D2FE' : '#E2E8F0'}`, padding: '18px', cursor: 'pointer', transition: 'all 0.15s', overflow: 'hidden' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#1B4FD8'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = l.is_test ? '#C7D2FE' : '#E2E8F0'; e.currentTarget.style.transform = 'translateY(0)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8' }}>№{l.lesson_number}</span>
+                    {l.is_test && <span style={{ background: '#EEF2FF', color: '#1B4FD8', fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '20px' }}>Тест</span>}
                   </div>
+                  <div style={{ fontWeight: '700', fontSize: '14px', color: '#0D1E4A', marginBottom: '10px' }}>{l.title}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {l.math_topic && <div style={{ fontSize: '11px', color: '#1B4FD8', background: '#EFF6FF', padding: '3px 8px', borderRadius: '6px', display: 'inline-block' }}>📐 {l.math_topic}</div>}
+                    {l.kyr_topic && <div style={{ fontSize: '11px', color: '#7C3AED', background: '#F5F3FF', padding: '3px 8px', borderRadius: '6px', display: 'inline-block' }}>✍️ {l.kyr_topic}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-                  <div className="flex flex-col gap-2">
-                    {students.map(student => (
-                      <div key={student.id} className="flex items-center justify-between p-4 rounded-xl"
-                        style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
-                        <div className="font-medium">{student.full_name}</div>
-                        <div className="flex gap-2">
+        {/* ── ATTENDANCE ── */}
+        {activeTab === 'attendance' && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div>
+                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#0D1E4A', margin: 0 }}>Катышуу</h2>
+                <p style={{ color: '#94A3B8', fontSize: '13px', margin: '4px 0 0' }}>{selectedLesson ? selectedLesson.title : 'Сабак тандаңыз'}</p>
+              </div>
+              <button onClick={saveAttendance} disabled={saving || !selectedLesson}
+                style={{ background: '#1B4FD8', color: '#fff', border: 'none', borderRadius: '12px', padding: '11px 24px', fontWeight: '700', fontSize: '14px', cursor: saving || !selectedLesson ? 'not-allowed' : 'pointer', opacity: saving || !selectedLesson ? 0.5 : 1 }}>
+                {saving ? 'Сакталууда...' : 'Сактоо'}
+              </button>
+            </div>
+
+            {!selectedLesson ? (
+              <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #E2E8F0', padding: '48px', textAlign: 'center', color: '#94A3B8', fontSize: '14px' }}>
+                📚 "Сабактар" бөлүмүнөн сабак тандаңыз
+              </div>
+            ) : (
+              <div>
+                {/* Selected lesson info */}
+                <div style={{ background: '#EEF2FF', borderRadius: '14px', padding: '16px 20px', marginBottom: '20px', border: '1px solid #C7D2FE' }}>
+                  <div style={{ fontWeight: '700', fontSize: '15px', color: '#0D1E4A' }}>{selectedLesson.title}</div>
+                  {selectedLesson.math_topic && <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>📐 {selectedLesson.math_topic} · ✍️ {selectedLesson.kyr_topic}</div>}
+                </div>
+
+                {/* Stats */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px', marginBottom: '20px' }}>
+                  {[
+                    { label: 'Катышты', count: Object.values(attendance).filter((v: any) => v === 'present').length, color: '#10B981', bg: '#F0FDF4' },
+                    { label: 'Кечигди', count: Object.values(attendance).filter((v: any) => v === 'late').length, color: '#F59E0B', bg: '#FFF7ED' },
+                    { label: 'Жок', count: Object.values(attendance).filter((v: any) => v === 'absent').length, color: '#EF4444', bg: '#FEF2F2' },
+                  ].map(s => (
+                    <div key={s.label} style={{ background: s.bg, borderRadius: '12px', padding: '14px', textAlign: 'center', border: `1px solid ${s.color}22` }}>
+                      <div style={{ fontWeight: '900', fontSize: '24px', color: s.color }}>{s.count}</div>
+                      <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Students */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {students.map(student => (
+                    <div key={student.id} style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+                      <div style={{ fontWeight: '600', fontSize: '14px', color: '#0D1E4A' }}>{student.full_name}</div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {[
+                          { value: 'present', label: '✓ Келди', color: '#10B981' },
+                          { value: 'late', label: '⏰ Кечигди', color: '#F59E0B' },
+                          { value: 'absent', label: '✗ Жок', color: '#EF4444' },
+                        ].map(opt => (
+                          <button key={opt.value} onClick={() => setAttendance((prev: any) => ({ ...prev, [student.id]: opt.value }))}
+                            style={{ padding: '6px 12px', borderRadius: '8px', border: `1px solid ${attendance[student.id] === opt.value ? opt.color : '#E2E8F0'}`, background: attendance[student.id] === opt.value ? `${opt.color}15` : '#F8FAFF', color: attendance[student.id] === opt.value ? opt.color : '#94A3B8', fontSize: '12px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s' }}>
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  {students.length === 0 && <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '32px', textAlign: 'center', color: '#94A3B8', fontSize: '14px' }}>Студент кошулган жок</div>}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── RESULTS ── */}
+        {activeTab === 'results' && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div>
+                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#0D1E4A', margin: 0 }}>Тест натыйжалары</h2>
+                <p style={{ color: '#94A3B8', fontSize: '13px', margin: '4px 0 0' }}>{selectedLesson?.is_test ? selectedLesson.title : 'Тест сабагын тандаңыз'}</p>
+              </div>
+              <button onClick={saveTestResults} disabled={saving || !selectedLesson?.is_test}
+                style={{ background: '#1B4FD8', color: '#fff', border: 'none', borderRadius: '12px', padding: '11px 24px', fontWeight: '700', fontSize: '14px', cursor: saving || !selectedLesson?.is_test ? 'not-allowed' : 'pointer', opacity: saving || !selectedLesson?.is_test ? 0.5 : 1 }}>
+                {saving ? 'Сакталууда...' : 'Сактоо'}
+              </button>
+            </div>
+
+            {!selectedLesson?.is_test ? (
+              <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #E2E8F0', padding: '48px', textAlign: 'center', color: '#94A3B8', fontSize: '14px' }}>
+                📊 "Сабактар" бөлүмүнөн тест сабагын тандаңыз
+              </div>
+            ) : (
+              <div>
+                <div style={{ background: '#EEF2FF', borderRadius: '12px', padding: '12px 16px', marginBottom: '20px', fontSize: '13px', color: '#1B4FD8', fontWeight: '600' }}>
+                  Формула: Мат×1.12 + Аналогия×2 + Окуу×2 + Грамматика×1.93
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {students.map(student => {
+                    const scores = testScores[student.id] || {}
+                    const total = (Number(scores.math_score || 0) * 1.12 + Number(scores.analogy_score || 0) * 2 + Number(scores.reading_score || 0) * 2 + Number(scores.grammar_score || 0) * 1.93).toFixed(1)
+                    return (
+                      <div key={student.id} style={{ background: '#fff', borderRadius: '16px', border: '1px solid #E2E8F0', padding: '18px 20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                          <div style={{ fontWeight: '700', fontSize: '15px', color: '#0D1E4A' }}>{student.full_name}</div>
+                          <div style={{ background: 'linear-gradient(135deg,#1B4FD8,#7C3AED)', color: '#fff', borderRadius: '10px', padding: '6px 16px', fontWeight: '900', fontSize: '16px' }}>{total} б</div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '10px' }}>
                           {[
-                            { value: 'present', label: '✓ Пришёл', color: '#34C97B' },
-                            { value: 'late', label: '⏰ Опоздал', color: '#F5A623' },
-                            { value: 'absent', label: '✗ Отсутствует', color: '#FF6B6B' },
-                          ].map(opt => (
-                            <button key={opt.value}
-                              onClick={() => setAttendance((prev: any) => ({...prev, [student.id]: opt.value}))}
-                              className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all"
-                              style={{
-                                background: attendance[student.id] === opt.value ? `${opt.color}22` : 'var(--bg)',
-                                color: attendance[student.id] === opt.value ? opt.color : 'var(--muted)',
-                                border: attendance[student.id] === opt.value ? `1px solid ${opt.color}44` : '1px solid var(--border)'
-                              }}>
-                              {opt.label}
-                            </button>
+                            { key: 'math_score', label: 'Математика', color: '#1B4FD8', bg: '#EFF6FF' },
+                            { key: 'analogy_score', label: 'Аналогия', color: '#7C3AED', bg: '#F5F3FF' },
+                            { key: 'reading_score', label: 'Окуу', color: '#059669', bg: '#F0FDF4' },
+                            { key: 'grammar_score', label: 'Грамматика', color: '#D97706', bg: '#FFF7ED' },
+                          ].map(field => (
+                            <div key={field.key}>
+                              <div style={{ fontSize: '11px', color: field.color, fontWeight: '700', marginBottom: '6px' }}>{field.label}</div>
+                              <input type="number" min="0" value={scores[field.key] || ''} placeholder="0"
+                                onChange={e => setTestScores((prev: any) => ({ ...prev, [student.id]: { ...(prev[student.id] || {}), [field.key]: e.target.value } }))}
+                                style={{ width: '100%', padding: '8px', borderRadius: '8px', border: `1px solid ${field.color}44`, background: field.bg, color: field.color, fontWeight: '700', fontSize: '14px', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }} />
+                            </div>
                           ))}
                         </div>
                       </div>
-                    ))}
-                    {students.length === 0 && (
-                      <div className="text-center py-8" style={{color:'var(--muted)'}}>Ученики не добавлены в группу</div>
-                    )}
-                  </div>
+                    )
+                  })}
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* РЕЗУЛЬТАТЫ ТЕСТОВ */}
-          {activeTab === 'results' && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">Результаты тестов</h2>
-                <button onClick={saveTestResults} disabled={saving || !selectedLesson?.is_test}
-                  className="px-5 py-2 rounded-xl text-sm font-bold"
-                  style={{background:'linear-gradient(90deg,#4B8EF5,#D45FCC)',color:'#fff',opacity:(saving||!selectedLesson?.is_test)?0.5:1}}>
-                  {saving ? 'Сохраняем...' : 'Сохранить'}
-                </button>
               </div>
+            )}
+          </div>
+        )}
 
-              {!selectedLesson?.is_test ? (
-                <div className="text-center py-12" style={{color:'var(--muted)'}}>
-                  Выберите тестовое занятие на вкладке Занятия
-                </div>
-              ) : (
-                <div>
-                  <div className="p-3 mb-4 rounded-xl text-sm" style={{background:'rgba(75,142,245,0.1)',color:'#4B8EF5',border:'1px solid rgba(75,142,245,0.2)'}}>
-                    Формула: Мат×1.12 + Аналогия×2 + Чтение×2 + Грамматика×1.93
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    {students.map(student => {
-                      const scores = testScores[student.id] || {}
-                      const total = (
-                        Number(scores.math_score||0)*1.12 +
-                        Number(scores.analogy_score||0)*2 +
-                        Number(scores.reading_score||0)*2 +
-                        Number(scores.grammar_score||0)*1.93
-                      ).toFixed(1)
-                      return (
-                        <div key={student.id} className="p-4 rounded-xl" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="font-bold">{student.full_name}</div>
-                            <div className="font-black text-lg" style={{color:'#7B61FF'}}>{total} б</div>
-                          </div>
-                          <div className="grid grid-cols-4 gap-3">
-                            {[
-                              { key:'math_score', label:'Математика', color:'#4B8EF5' },
-                              { key:'analogy_score', label:'Аналогия', color:'#D45FCC' },
-                              { key:'reading_score', label:'Чтение', color:'#34C97B' },
-                              { key:'grammar_score', label:'Грамматика', color:'#F5A623' },
-                            ].map(field => (
-                              <div key={field.key}>
-                                <div className="text-xs mb-1" style={{color:field.color}}>{field.label}</div>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={scores[field.key] || ''}
-                                  onChange={e => setTestScores((prev: any) => ({
-                                    ...prev,
-                                    [student.id]: {...(prev[student.id]||{}), [field.key]: e.target.value}
-                                  }))}
-                                  placeholder="0"
-                                  className="w-full px-3 py-2 rounded-lg text-sm text-center font-bold outline-none"
-                                  style={{background:'var(--bg)',border:`1px solid ${field.color}44`,color:field.color}}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+        {/* ── HOMEWORK ── */}
+        {activeTab === 'homework' && (
+          <HomeworkTab lessons={lessons} students={students} selectedLesson={selectedLesson} setSelectedLesson={setSelectedLesson} flash={flash} />
+        )}
 
-          {/* ДОМАШКА */}
-          {activeTab === 'homework' && (
-            <HomeworkTab lessons={lessons} students={students} selectedLesson={selectedLesson} setSelectedLesson={setSelectedLesson} />
-          )}
-        </div>
-      </div>
+      </main>
     </div>
   )
 }
 
-function HomeworkTab({ lessons, students, selectedLesson, setSelectedLesson }: any) {
+function HomeworkTab({ lessons, students, selectedLesson, setSelectedLesson, flash }: any) {
   const [homeworks, setHomeworks] = useState<any[]>([])
   const [newHW, setNewHW] = useState({ title: '', description: '', due_date: '' })
   const [saving, setSaving] = useState(false)
@@ -382,81 +344,70 @@ function HomeworkTab({ lessons, students, selectedLesson, setSelectedLesson }: a
     setHomeworks(data || [])
   }
 
-  const selectLesson = (l: any) => {
-    setSelectedLesson(l)
-    fetchHomeworks(l.id)
-  }
+  const selectLesson = (l: any) => { setSelectedLesson(l); fetchHomeworks(l.id) }
 
   const addHomework = async () => {
     if (!selectedLesson || !newHW.title) return
     setSaving(true)
-    await supabase.from('homeworks').insert({
-      lesson_id: selectedLesson.id,
-      title: newHW.title,
-      description: newHW.description,
-      due_date: newHW.due_date || null,
-    })
+    await supabase.from('homeworks').insert({ lesson_id: selectedLesson.id, title: newHW.title, description: newHW.description, due_date: newHW.due_date || null })
     setNewHW({ title: '', description: '', due_date: '' })
     fetchHomeworks(selectedLesson.id)
     setSaving(false)
+    flash('✓ Тапшырма кошулду')
   }
+
+  const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #E2E8F0', fontSize: '14px', outline: 'none', color: '#0D1E4A', background: '#FAFBFF', boxSizing: 'border-box' as const }
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-6">Домашние задания</h2>
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div style={{ marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#0D1E4A', margin: 0 }}>Үй тапшырмалар</h2>
+      </div>
+
+      {/* Lesson selector */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '24px' }}>
         {lessons.map((l: any) => (
           <button key={l.id} onClick={() => selectLesson(l)}
-            className="p-3 rounded-xl text-left text-sm"
-            style={{
-              background: selectedLesson?.id === l.id ? 'rgba(75,142,245,0.15)' : 'var(--surface)',
-              border: selectedLesson?.id === l.id ? '1px solid rgba(75,142,245,0.4)' : '1px solid var(--border)',
-              color: 'var(--text)'
-            }}>
-            <span style={{color:'var(--muted)'}}>№{l.lesson_number}</span> {l.title}
+            style={{ padding: '12px 14px', borderRadius: '12px', border: `1px solid ${selectedLesson?.id === l.id ? '#1B4FD8' : '#E2E8F0'}`, background: selectedLesson?.id === l.id ? '#EEF2FF' : '#fff', color: selectedLesson?.id === l.id ? '#1B4FD8' : '#64748B', fontSize: '12px', fontWeight: '600', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
+            <span style={{ color: '#94A3B8' }}>№{l.lesson_number}</span> {l.title}
           </button>
         ))}
       </div>
 
       {selectedLesson && (
-        <div>
-          {/* Добавить ДЗ */}
-          <div className="p-4 rounded-xl mb-4" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
-            <div className="font-bold mb-3">Новое задание</div>
-            <input value={newHW.title} onChange={e => setNewHW(p => ({...p, title: e.target.value}))}
-              placeholder="Название задания"
-              className="w-full px-3 py-2 rounded-lg text-sm mb-2 outline-none"
-              style={{background:'var(--bg)',border:'1px solid var(--border)',color:'var(--text)'}} />
-            <textarea value={newHW.description} onChange={e => setNewHW(p => ({...p, description: e.target.value}))}
-              placeholder="Описание (необязательно)"
-              rows={2}
-              className="w-full px-3 py-2 rounded-lg text-sm mb-2 outline-none resize-none"
-              style={{background:'var(--bg)',border:'1px solid var(--border)',color:'var(--text)'}} />
-            <div className="flex gap-2">
-              <input type="date" value={newHW.due_date} onChange={e => setNewHW(p => ({...p, due_date: e.target.value}))}
-                className="px-3 py-2 rounded-lg text-sm outline-none"
-                style={{background:'var(--bg)',border:'1px solid var(--border)',color:'var(--text)'}} />
-              <button onClick={addHomework} disabled={saving}
-                className="px-5 py-2 rounded-lg text-sm font-bold"
-                style={{background:'linear-gradient(90deg,#4B8EF5,#D45FCC)',color:'#fff'}}>
-                {saving ? 'Добавляем...' : 'Добавить'}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          {/* Add form */}
+          <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #E2E8F0', padding: '20px' }}>
+            <h3 style={{ fontWeight: '800', fontSize: '15px', color: '#0D1E4A', marginBottom: '16px' }}>Тапшырма кошуу</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <input value={newHW.title} onChange={e => setNewHW(p => ({ ...p, title: e.target.value }))} placeholder="Тапшырманын аты" style={inputStyle} />
+              <textarea value={newHW.description} onChange={e => setNewHW(p => ({ ...p, description: e.target.value }))} placeholder="Сүрөттөмө (милдеттүү эмес)" rows={3} style={{ ...inputStyle, resize: 'vertical' as const }} />
+              <input type="date" value={newHW.due_date} onChange={e => setNewHW(p => ({ ...p, due_date: e.target.value }))} style={inputStyle} />
+              <button onClick={addHomework} disabled={saving} style={{ background: '#1B4FD8', color: '#fff', border: 'none', borderRadius: '10px', padding: '11px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
+                {saving ? 'Кошулууда...' : '+ Тапшырма кошуу'}
               </button>
             </div>
           </div>
 
-          {/* Список ДЗ */}
-          {homeworks.map(hw => (
-            <div key={hw.id} className="p-4 rounded-xl mb-3" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="font-bold">{hw.title}</div>
-                <div className="text-xs" style={{color:'var(--muted)'}}>
-                  Сдали: {hw.homework_submissions?.length || 0} / {students.length}
+          {/* HW list */}
+          <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #E2E8F0', padding: '20px' }}>
+            <h3 style={{ fontWeight: '800', fontSize: '15px', color: '#0D1E4A', marginBottom: '16px' }}>Тапшырмалар ({homeworks.length})</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {homeworks.map(hw => (
+                <div key={hw.id} style={{ padding: '14px', background: '#F8FAFF', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <div style={{ fontWeight: '700', fontSize: '14px', color: '#0D1E4A' }}>{hw.title}</div>
+                    <div style={{ fontSize: '12px', color: '#1B4FD8', fontWeight: '700' }}>
+                      {hw.homework_submissions?.length || 0}/{students.length}
+                    </div>
+                  </div>
+                  {hw.description && <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '4px' }}>{hw.description}</div>}
+                  {hw.due_date && <div style={{ fontSize: '11px', color: '#D97706' }}>📅 {new Date(hw.due_date).toLocaleDateString('ru')}</div>}
                 </div>
-              </div>
-              {hw.description && <div className="text-sm mb-2" style={{color:'var(--muted)'}}>{hw.description}</div>}
-              {hw.due_date && <div className="text-xs" style={{color:'#F5A623'}}>До: {new Date(hw.due_date).toLocaleDateString('ru')}</div>}
+              ))}
+              {homeworks.length === 0 && <div style={{ color: '#94A3B8', textAlign: 'center', padding: '24px', fontSize: '13px' }}>Тапшырма жок</div>}
             </div>
-          ))}
+          </div>
         </div>
       )}
     </div>
