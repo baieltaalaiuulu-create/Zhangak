@@ -129,7 +129,7 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const handleLogin = async (e: React.FormEvent) => {
+ const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true); setError('')
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
@@ -141,6 +141,9 @@ export default function LandingPage() {
     else if (role === 'manager') router.push('/manager')
     else if (role === 'director') router.push('/director')
     else if (role === 'finance') router.push('/finance')
+    else if (role === 'math_admin') router.push('/math/admin')
+    else if (role === 'math_student') router.push('/math/student')
+    else if (role === 'math_parent') router.push('/math/parent')
     else router.push('/student')
   }
 
