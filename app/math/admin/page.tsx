@@ -90,6 +90,9 @@ export default function MathAdminPage() {
 }
   // Create parent
  const createParent = async () => {
+  if (!newParent.full_name || !newParent.email || !newParent.password) {
+    showMsg('Бардык талааларды толтуруңуз'); return
+  }
   setSaving(true)
   const res = await fetch('/api/create-user', {
     method: 'POST',
@@ -103,8 +106,16 @@ export default function MathAdminPage() {
   })
   const json = await res.json()
   if (json.error) { showMsg('Ката: ' + json.error); setSaving(false); return }
+  
+  const parentId = json.id
+  if (!parentId) { showMsg('Ката: ID алынган жок'); setSaving(false); return }
+  
   if (newParent.student_id) {
-    await supabase.from('math_parent_student').insert({ parent_id: json.id, student_id: newParent.student_id })
+    const { error } = await supabase.from('math_parent_student').insert({ 
+      parent_id: parentId, 
+      student_id: newParent.student_id 
+    })
+    if (error) { showMsg('Ката байланыш: ' + error.message); setSaving(false); return }
   }
   setNewParent({ full_name: '', email: '', password: '', student_id: '' })
   fetchAll()
