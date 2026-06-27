@@ -233,22 +233,35 @@ export default function MathAdminPage() {
               </div>
             </div>
             {/* List */}
-            <div style={{ background: '#fff', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '24px' }}>
-              <h3 style={{ fontWeight: '800', fontSize: '16px', color: '#0D1E4A', marginBottom: '20px' }}>Студенттер ({students.length})</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {students.map(s => (
-                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8FAFF', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
-                    <div>
-                      <div style={{ fontWeight: '600', fontSize: '14px', color: '#0D1E4A' }}>{s.full_name}</div>
-                      <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>{s.email}</div>
-                    </div>
-                  </div>
-                ))}
-                {students.length === 0 && <div style={{ color: '#94A3B8', fontSize: '14px', textAlign: 'center', padding: '32px' }}>Студент жок</div>}
-              </div>
-            </div>
-          </div>
-        )}
+          <div style={{ background: '#fff', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '24px' }}>
+  <h3 style={{ fontWeight: '800', fontSize: '16px', color: '#0D1E4A', marginBottom: '20px' }}>Студенттер ({students.length})</h3>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    {students.map(s => (
+      <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8FAFF', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+        <div>
+          <div style={{ fontWeight: '600', fontSize: '14px', color: '#0D1E4A' }}>{s.full_name}</div>
+          <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>{s.email}</div>
+        </div>
+        <button onClick={async () => {
+          if (!confirm(`${s.full_name} өчүрүлсүнбү?`)) return
+          const res = await fetch('/api/delete-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: s.id }),
+          })
+          const json = await res.json()
+          if (json.error) { showMsg('Ката: ' + json.error); return }
+          fetchAll()
+          showMsg('✓ Студент өчүрүлдү')
+        }} style={{ background: '#FEF2F2', color: '#EF4444', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}>
+          Өчүр
+        </button>
+      </div>
+    ))}
+    {students.length === 0 && <div style={{ color: '#94A3B8', fontSize: '14px', textAlign: 'center', padding: '32px' }}>Студент жок</div>}
+  </div>
+</div>
+   </div>   )}
 
         {/* PARENTS */}
         {tab === 'parents' && (
