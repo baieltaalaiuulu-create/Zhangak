@@ -151,15 +151,15 @@ export default function LandingPage() {
     { q: 'Кайсы предметтер курска кирет?', a: 'Математика, Аналогиялар, Текст түшүнүү, Кыргыз тили грамматикасы — ЖРТнын бардык 4 бөлүмү.' },
     { q: 'Жангактын жетишкендиктери кандай?', a: '9000+ ийгиликтүү бүтүрүүчү. Эң жогорку натыйжа — 221 балл.' },
     { q: 'Кайсы класстын окуучулары жазыла алат?', a: '10 жана 11-класстын окуучулары. ЖРТга кайра даярданып жаткандар да жазыла алат.' },
-    { q: 'Курс канча турат?', a: 'B1, B2, C1 — баары 6 300 сом/ай. Жайкы интенсив — 7 000 сом.' },
+    { q: 'Курс канча турат?', a: 'Баа жөнүндө WhatsAppта сурасаңыз болот.' },
     { q: 'Курс онлайн же оффлайн?', a: 'Оффлайн — Бишкек, Горький көчөсү 108. Онлайн платформа жакында.' },
     { q: 'Бир сабак канча убакыт?', a: '3 саат: Математика 50 мин + Кыргыз тили 50 мин + Чтение 50 мин + 20 мин оюн.' },
   ]
 
   const courses = [
-    { level: 'B1', name: 'Базовый', month: '1-ай', price: '6 300', color: '#60A5FA', glow: 'rgba(96,165,250,0.2)', topics: ['Арифметика', 'Лексика жана морфология', 'Базалык аналогиялар', 'Чтение негиздери'] },
-    { level: 'B2', name: 'Продвинутый', month: '2-ай', price: '6 300', color: '#1B4FD8', glow: 'rgba(27,79,216,0.3)', topics: ['Алгебра', 'Синтаксис жана аналогия', 'Функциялар', 'Окуу жана түшүнүү'], featured: true },
-    { level: 'C1', name: 'Финальный', month: '3-ай', price: '6 300', color: '#F59E0B', glow: 'rgba(245,158,11,0.25)', topics: ['Геометрия', 'Грамматика жана чтение', 'Татаал аналогиялар', 'Толук ЖРТ форматы'] },
+    { level: 'B1', name: 'Базовый', month: '1-ай', color: '#60A5FA', glow: 'rgba(96,165,250,0.2)', topics: ['Арифметика', 'Лексика жана морфология', 'Базалык аналогиялар', 'Чтение негиздери'] },
+    { level: 'B2', name: 'Продвинутый', month: '2-ай', color: '#1B4FD8', glow: 'rgba(27,79,216,0.3)', topics: ['Алгебра', 'Синтаксис жана аналогия', 'Функциялар', 'Окуу жана түшүнүү'], featured: true },
+    { level: 'C1', name: 'Финальный', month: '3-ай', color: '#F59E0B', glow: 'rgba(245,158,11,0.25)', topics: ['Геометрия', 'Грамматика жана чтение', 'Татаал аналогиялар', 'Толук ЖРТ форматы'] },
   ]
 
   return (
@@ -386,7 +386,7 @@ export default function LandingPage() {
               <h2 style={{ fontSize: 'clamp(28px,4vw,44px)', fontWeight: '900', letterSpacing: '-1.5px', marginBottom: '12px', color: '#0D1E4A' }}>
                 3 деңгээл — башталгычтан <span style={{ color: '#1B4FD8' }}>финалга чейин</span>
               </h2>
-              <p style={{ color: '#94A3B8', fontSize: '15px' }}>Баары бир баада — 6 300 сом/ай</p>
+              <p style={{ color: '#94A3B8', fontSize: '15px' }}>Деңгээлиңди тандап, бизге жаз</p>
             </div>
           </Reveal>
           <div className="courses-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '20px' }}>
@@ -411,14 +411,10 @@ export default function LandingPage() {
                         </div>
                       ))}
                     </div>
-                    <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div>
-                        <div style={{ fontWeight: '900', fontSize: '22px', color: c.color }}>{c.price}</div>
-                        <div style={{ fontSize: '11px', color: '#94A3B8' }}>сом / ай</div>
-                      </div>
+ <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '20px' }}>
                       <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
-                        style={{ background: c.color, color: '#fff', borderRadius: '12px', padding: '11px 22px', fontSize: '13px', fontWeight: '800', textDecoration: 'none', transition: 'all 0.25s', boxShadow: `0 4px 16px ${c.glow}` }}>
-                        Жазылуу
+                        style={{ display: 'block', textAlign: 'center', background: c.color, color: '#fff', borderRadius: '12px', padding: '13px 22px', fontSize: '13px', fontWeight: '800', textDecoration: 'none', transition: 'all 0.25s', boxShadow: `0 4px 16px ${c.glow}` }}>
+                        📲 Баа жөнүндө сурануу
                       </a>
                     </div>
                   </div>
