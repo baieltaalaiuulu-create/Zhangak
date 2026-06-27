@@ -40,8 +40,8 @@ export default function MathAdminPage() {
 
   const fetchAll = async () => {
     const [{ data: s }, { data: p }, { data: l }, { data: r }] = await Promise.all([
-      supabase.from('profiles').select('id, full_name, email, class_number').eq('role', 'math_student' as any),
-      supabase.from('profiles').select('id, full_name, email').eq('role', 'math_parent' as any),
+      supabase.from('profiles').select('id, full_name, class_number').eq('role', 'math_student' as any),
+      supabase.from('profiles').select('id, full_name').eq('role', 'math_parent' as any),
       supabase.from('math_lessons').select('*').order('class_number').order('order_number'),
       supabase.from('math_results').select('*, profiles(full_name), math_lessons(title, class_number)').order('created_at', { ascending: false }).limit(50),
     ])
