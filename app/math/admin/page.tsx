@@ -76,7 +76,7 @@ export default function MathAdminPage() {
       email_confirm: true,
     })
     if (error) { showMsg('Ката: ' + error.message); setSaving(false); return }
-    await supabase.from('profiles').update({ full_name: newStudent.full_name, role: 'math_student' }).eq('id', data.user.id)
+    await supabase.from('profiles').update({ full_name: newStudent.full_name, role: 'math_student', class_number: newStudent.class_number }).eq('id', data.user.id).eq('id', data.user.id)
     setNewStudent({ full_name: '', email: '', password: '', class_number: 6 })
     fetchAll()
     showMsg('✓ Студент түзүлдү')
