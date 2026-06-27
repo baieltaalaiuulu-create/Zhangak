@@ -22,10 +22,9 @@ export default function MathAdminPage() {
   const [questions, setQuestions] = useState<any[]>([])
 
   const [newStudent, setNewStudent] = useState({ full_name: '', email: '', password: '', class_number: 6 })
-  const [newParent, setNewParent] = useState({ full_name: '', email: '', password: '', student_id: '' })
+  const [newParent, setNewParent] = useState({ full_name: '', email: '', password: '', student_ids: [] as string[] })
   const [newLesson, setNewLesson] = useState({ title: '', class_number: 6, video_url: '', description: '', order_number: 0 })
   const [newQuestion, setNewQuestion] = useState({ lesson_id: '', question: '', options: ['', '', '', ''], correct_answer: 0 })
-
   useEffect(() => { checkAuth() }, [])
 
   const checkAuth = async () => {
@@ -97,14 +96,14 @@ export default function MathAdminPage() {
     const json = await createUser({ ...newParent, role: 'math_parent' })
     if (json.error) { flash('Ката: ' + json.error); setSaving(false); return }
     if (!json.id) { flash('Ката: ID алынган жок'); setSaving(false); return }
-    if (newParent.student_id) {
-      await supabase.from('math_parent_student').insert({ parent_id: json.id, student_id: newParent.student_id })
-    }
-    setNewParent({ full_name: '', email: '', password: '', student_id: '' })
-    await fetchAll()
-    flash('✓ Ата-эне түзүлдү')
-    setSaving(false)
-  }
+    if (newParent.student_ids.length > 0) {
+for (const sid of newParent.student_ids) {
+  await supabase.from('math_parent_student').insert({ parent_id: json.id, student_id: sid })
+}    }
+setNewParent({ full_name: '', email: '', password: '', student_ids: [] })
+await fetchAll()
+flash('✓ Ата-эне түзүлдү')
+    setSaving(false)  }
 
   const handleCreateLesson = async () => {
     if (!newLesson.title) { flash('Сабактын атын жазыңыз'); return }
@@ -250,43 +249,60 @@ export default function MathAdminPage() {
 
         {/* ── PARENTS ── */}
         {tab === 'parents' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '20px' }}>
-            <div style={S.card}>
-              <h3 style={{ fontWeight: '800', fontSize: '16px', color: '#0D1E4A', marginBottom: '18px' }}>Ата-эне кошуу</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <input placeholder="Толук аты" value={newParent.full_name} onChange={e => setNewParent({ ...newParent, full_name: e.target.value })} style={S.input} />
-                <input placeholder="Email" type="email" value={newParent.email} onChange={e => setNewParent({ ...newParent, email: e.target.value })} style={S.input} />
-                <input placeholder="Сырсөз" type="password" value={newParent.password} onChange={e => setNewParent({ ...newParent, password: e.target.value })} style={S.input} />
-                <select value={newParent.student_id} onChange={e => setNewParent({ ...newParent, student_id: e.target.value })} style={{ ...S.input, cursor: 'pointer' }}>
-                  <option value="">Студент тандоо</option>
-                  {students.map(s => <option key={s.id} value={s.id}>{s.full_name} ({s.class_number}-класс)</option>)}
-                </select>
-                <button onClick={handleCreateParent} disabled={saving} style={S.btn}>{saving ? 'Жүктөлүүдө...' : '+ Ата-эне кошуу'}</button>
+  <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '20px' }}>
+    <div style={S.card}>
+      <h3 style={{ fontWeight: '800', fontSize: '16px', color: '#0D1E4A', marginBottom: '18px' }}>Ата-эне кошуу</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <input placeholder="Толук аты" value={newParent.full_name} onChange={e => setNewParent({ ...newParent, full_name: e.target.value })} style={S.input} />
+        <input placeholder="Email" type="email" value={newParent.email} onChange={e => setNewParent({ ...newParent, email: e.target.value })} style={S.input} />
+        <input placeholder="Сырсөз" type="password" value={newParent.password} onChange={e => setNewParent({ ...newParent, password: e.target.value })} style={S.input} />
+        <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748B' }}>Балдарды тандоо (1-3)</div>
+        {students.map(s => (
+          <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: newParent.student_ids.includes(s.id) ? '#EEF2FF' : '#F8FAFF', borderRadius: '10px', border: `1px solid ${newParent.student_ids.includes(s.id) ? '#BFDBFE' : '#E2E8F0'}`, cursor: 'pointer' }}>
+            <input type="checkbox" checked={newParent.student_ids.includes(s.id)} onChange={e => {
+              const ids = e.target.checked
+                ? [...newParent.student_ids, s.id]
+                : newParent.student_ids.filter(id => id !== s.id)
+              setNewParent({ ...newParent, student_ids: ids })
+            }} style={{ accentColor: '#1B4FD8', width: '16px', height: '16px' }} />
+            <span style={{ fontSize: '13px', fontWeight: '500', color: '#0D1E4A' }}>{s.full_name} ({s.class_number}-класс)</span>
+          </label>
+        ))}
+        <button onClick={handleCreateParent} disabled={saving} style={S.btn}>{saving ? 'Жүктөлүүдө...' : '+ Ата-эне кошуу'}</button>
+      </div>
+    </div>
+    <div style={S.card}>
+      <h3 style={{ fontWeight: '800', fontSize: '16px', color: '#0D1E4A', marginBottom: '18px' }}>Ата-эне ({parents.length})</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {parents.map(p => (
+          <div key={p.id} style={{ ...S.card, padding: '14px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <div>
+                <div style={{ fontWeight: '600', fontSize: '14px', color: '#0D1E4A' }}>{p.full_name}</div>
               </div>
+              <button onClick={() => deleteUser(p.id, p.full_name)} style={S.delBtn}>Өчүр</button>
             </div>
-            <div style={S.card}>
-              <h3 style={{ fontWeight: '800', fontSize: '16px', color: '#0D1E4A', marginBottom: '18px' }}>Ата-эне ({parents.length})</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {parents.map(p => (
-                  <div key={p.id} style={{ ...S.card, padding: '14px 16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                      <div>
-                        <div style={{ fontWeight: '600', fontSize: '14px', color: '#0D1E4A' }}>{p.full_name}</div>
-                        <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>{p.email}</div>
-                      </div>
-                      <button onClick={() => deleteUser(p.id, p.full_name)} style={S.delBtn}>Өчүр</button>
-                    </div>
-                    <select defaultValue="" onChange={e => handleReassign(p.id, e.target.value)} style={{ ...S.input, fontSize: '12px', padding: '7px 12px' }}>
-                      <option value="">Баланы өзгөртүү...</option>
-                      {students.map(s => <option key={s.id} value={s.id}>{s.full_name} ({s.class_number}-класс)</option>)}
-                    </select>
-                  </div>
-                ))}
-                {parents.length === 0 && <div style={{ color: '#94A3B8', textAlign: 'center', padding: '32px', fontSize: '14px' }}>Ата-эне жок</div>}
-              </div>
-            </div>
+            <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '8px' }}>Балдарды кошуу/алып салуу:</div>
+            {students.map(s => (
+              <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', cursor: 'pointer' }}>
+                <input type="checkbox" defaultChecked={false} onChange={async e => {
+                  if (e.target.checked) {
+                    await supabase.from('math_parent_student').insert({ parent_id: p.id, student_id: s.id })
+                  } else {
+                    await supabase.from('math_parent_student').delete().eq('parent_id', p.id).eq('student_id', s.id)
+                  }
+                  flash('✓ Өзгөртүлдү')
+                }} style={{ accentColor: '#1B4FD8' }} />
+                <span style={{ fontSize: '13px', color: '#0D1E4A' }}>{s.full_name} ({s.class_number}-класс)</span>
+              </label>
+            ))}
           </div>
-        )}
+        ))}
+        {parents.length === 0 && <div style={{ color: '#94A3B8', textAlign: 'center', padding: '32px', fontSize: '14px' }}>Ата-эне жок</div>}
+      </div>
+    </div>
+  </div>
+)}
 
         {/* ── LESSONS ── */}
         {tab === 'lessons' && (
