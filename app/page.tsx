@@ -387,10 +387,10 @@ export default function LandingPage() {
           <div className="hero-images" style={{ flex: '0 0 440px', animation: 'slideInRight 0.8s 0.2s cubic-bezier(.22,1,.36,1) both' }}>
             <div style={{
   display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px',
-  background: 'linear-gradient(135deg, #1B4FD8 0%, #3B82F6 50%, #1B4FD8 100%)',
+  background: 'linear-gradient(135deg, #050C1F 0%, #0D1E4A 50%, #1B4FD8 100%)',
   borderRadius: '28px', padding: '16px',
-  boxShadow: '0 20px 60px rgba(27,79,216,0.3)',
-}}>              {results.map((r, i) => (
+  boxShadow: '0 20px 60px rgba(27,79,216,0.4)',
+}}>             {results.map((r, i) => (
                 <div key={i} style={{
                   position: 'relative', borderRadius: '20px', overflow: 'hidden',
                   aspectRatio: '3/4', border: '1px solid #E2E8F0',
