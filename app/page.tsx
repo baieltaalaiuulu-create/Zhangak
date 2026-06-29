@@ -100,12 +100,11 @@ export default function LandingPage() {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) { setError('Туура эмес email же сырсөз'); setLoading(false); return }
   const { data: profile } = await supabase.from('profiles').select('role, student_type').eq('id', data.user.id).single()
-  console.log('PROFILE:', profile) // ← кош
   const role = profile?.role
   const type = profile?.student_type
-  console.log('ROLE:', role, 'TYPE:', type) // ← кош
   if (role === 'admin') router.push('/admin')
   else if (role === 'super_admin') router.push('/admin')
+  else if (role === 'admin_jr') router.push('/admin/jr')
   else if (role === 'teacher') router.push('/teacher')
   else if (role === 'manager') router.push('/manager')
   else if (role === 'director') router.push('/director')
