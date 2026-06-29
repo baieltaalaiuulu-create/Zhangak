@@ -142,14 +142,19 @@ export default function OnlineStudentPage() {
   useEffect(() => { checkAuth() }, [])
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/'); return }
-    const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-    if (!prof || prof.role !== 'student') { router.push('/'); return }
-    setProfile(prof)
-    await Promise.all([fetchMockTests(user.id), fetchLessons('math')])
-    setLoading(false)
-  }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) { router.push('/'); return }
+  const { data: prof, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+  if (error || !prof) { router.push('/'); return }
+  if (prof.role !== 'student') { router.push('/'); return }
+  setProfile(prof)
+  await Promise.all([fetchMockTests(user.id), fetchLessons('math')])
+  setLoading(false)
+}
 
   const fetchMockTests = async (uid: string) => {
     const [{ data: tests }, { data: results }] = await Promise.all([
