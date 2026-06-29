@@ -95,22 +95,25 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault(); setLoading(true); setError('')
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) { setError('Туура эмес email же сырсөз'); setLoading(false); return }
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
-    const role = profile?.role
-    if (role === 'admin') router.push('/admin')
-    else if (role === 'teacher') router.push('/teacher')
-    else if (role === 'manager') router.push('/manager')
-    else if (role === 'director') router.push('/director')
-    else if (role === 'finance') router.push('/finance')
-    else if (role === 'math_admin') router.push('/math/admin')
-    else if (role === 'math_student') router.push('/math/student')
-    else if (role === 'math_parent') router.push('/math/parent')
-    else router.push('/student')
-  }
+ const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault(); setLoading(true); setError('')
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) { setError('Туура эмес email же сырсөз'); setLoading(false); return }
+  const { data: profile } = await supabase.from('profiles').select('role, student_type').eq('id', data.user.id).single()
+  const role = profile?.role
+  const type = profile?.student_type
+  if (role === 'admin') router.push('/admin')
+  else if (role === 'super_admin') router.push('/admin')
+  else if (role === 'teacher') router.push('/teacher')
+  else if (role === 'manager') router.push('/manager')
+  else if (role === 'director') router.push('/director')
+  else if (role === 'finance') router.push('/finance')
+  else if (role === 'math_admin') router.push('/math/admin')
+  else if (role === 'math_student') router.push('/math/student')
+  else if (role === 'math_parent') router.push('/math/parent')
+  else if (role === 'student' && type === 'online') router.push('/student/online')
+  else router.push('/student')
+}
 
   const wa = 'https://wa.me/996502077326'
   const navScrolled = scrollY > 40
