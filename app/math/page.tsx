@@ -70,7 +70,6 @@ export default function MathPage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Close menu on scroll
   useEffect(() => { if (scrollY > 10) setMenuOpen(false) }, [scrollY])
 
   const wa = 'https://wa.me/996708584613'
@@ -105,7 +104,6 @@ export default function MathPage() {
         @media(hover:hover){.why-card:hover{border-color:#BFDBFE!important}}
         @media(hover:hover){.faq-row:hover{background:#F8FAFF!important}}
 
-        /* ── MOBILE ── */
         @media(max-width:640px){
           .banner-text-extra{display:none}
           .hero-grid{grid-template-columns:1fr!important;gap:32px!important;padding:60px 20px 48px!important}
@@ -160,7 +158,6 @@ export default function MathPage() {
       {/* NAVBAR */}
       <nav style={{ background: navScrolled ? 'rgba(255,255,255,0.97)' : 'transparent', backdropFilter: navScrolled ? 'blur(20px)' : 'none', borderBottom: navScrolled ? '1px solid #E2E8F0' : 'none', position: 'sticky', top: 0, zIndex: 200, transition: 'all 0.3s ease' }}>
         <div className="nav-inner" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
             <div style={{ width: '34px', height: '34px', background: '#1B4FD8', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
               <img src="/images/logo.png" alt="Z" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -169,7 +166,6 @@ export default function MathPage() {
             <span style={{ fontWeight: '800', fontSize: '12px', color: '#1B4FD8', background: '#EEF2FF', padding: '2px 7px', borderRadius: '6px' }}>Math</span>
           </div>
 
-          {/* Desktop switcher + buttons */}
           <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div className="switcher" style={{ display: 'flex', background: '#F1F5F9', borderRadius: '12px', padding: '4px', gap: '4px' }}>
               <button onClick={() => router.push('/')} style={{ padding: '6px 14px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '600', cursor: 'pointer', background: 'transparent', color: '#64748B' }}>ЖРТ</button>
@@ -181,7 +177,6 @@ export default function MathPage() {
             </a>
           </div>
 
-          {/* Mobile burger */}
           <button className="nav-mobile-btn" onClick={() => setMenuOpen(p => !p)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'none', flexDirection: 'column', gap: '5px', padding: '8px' }}>
             <div style={{ width: '22px', height: '2px', background: '#0D1E4A', borderRadius: '2px', transition: 'all 0.2s', transform: menuOpen ? 'rotate(45deg) translateY(7px)' : 'none' }} />
@@ -190,7 +185,6 @@ export default function MathPage() {
           </button>
         </div>
 
-        {/* Mobile menu */}
         {menuOpen && (
           <div className="mobile-menu" style={{ background: '#fff', borderTop: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px', animation: 'slideDown 0.2s ease' }}>
             <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: '12px', padding: '4px', gap: '4px' }}>
@@ -246,18 +240,19 @@ export default function MathPage() {
           </div>
 
           {/* Right — face photo */}
-<div className="hero-right">
-  <div style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 28px 72px rgba(27,79,216,0.22)' }}>
-    <img src="/images/face-2.jpg" alt="Жаңгак" style={{ width: '100%', height: 'auto', display: 'block' }} />
-    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(13,30,74,0.85))', padding: '40px 24px 24px' }}>
-      <div style={{ color: '#fff', fontWeight: 900, fontSize: 18 }}>Жаңгак Math</div>
-      <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, marginTop: 4 }}>Математиканын бекем фундаменти</div>
-    </div>
-  </div>
-</div>
-</div>
+          <div className="hero-right">
+            <div style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 28px 72px rgba(27,79,216,0.22)' }}>
+              <img src="/images/face-2.jpg" alt="Жаңгак" style={{ width: '100%', height: 'auto', display: 'block' }} />
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(13,30,74,0.85))', padding: '40px 24px 24px' }}>
+                <div style={{ color: '#fff', fontWeight: 900, fontSize: 18 }}>Жаңгак Math</div>
+                <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, marginTop: 4 }}>Математиканын бекем фундаменти</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
- {/* WHY */}
+
+      {/* WHY */}
       <div style={{ background: '#F8FAFF' }}>
         <div className="section-inner" style={{ maxWidth: '1200px', margin: '0 auto', padding: '72px 32px' }}>
           <Reveal>
