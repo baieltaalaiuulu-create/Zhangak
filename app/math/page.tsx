@@ -239,13 +239,33 @@ export default function MathPage() {
             </div>
           </div>
 
-          {/* Right — face photo */}
+          {/* Right — dark card */}
           <div className="hero-right">
-            <div style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 28px 72px rgba(27,79,216,0.22)' }}>
-              <img src="/images/face-2.jpg" alt="Жаңгак" style={{ width: '100%', height: 'auto', display: 'block' }} />
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(13,30,74,0.85))', padding: '40px 24px 24px' }}>
-                <div style={{ color: '#fff', fontWeight: 900, fontSize: 18 }}>Жаңгак Math</div>
-                <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, marginTop: 4 }}>Математиканын бекем фундаменти</div>
+            <div style={{ background: 'linear-gradient(135deg,#050C1F,#0D1E4A)', borderRadius: '24px', padding: '36px', position: 'relative', overflow: 'hidden', boxShadow: '0 28px 72px rgba(27,79,216,0.22)' }}>
+              <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '180px', height: '180px', background: 'radial-gradient(circle,rgba(27,79,216,0.4) 0%,transparent 70%)', pointerEvents: 'none' }} />
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: '600', marginBottom: '20px', letterSpacing: '1px', textTransform: 'uppercase' as const }}>Бир сабак ичинде</div>
+                {[
+                  { step: '01', text: 'Теориялык блок — 20 мин', done: true },
+                  { step: '02', text: 'Мисалдарды чогуу чечебиз', done: true },
+                  { step: '03', text: 'Өз алдынча практика', done: true },
+                  { step: '04', text: 'Тест жана жыйынтык', done: false },
+                ].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+                    <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: item.done ? '#1B4FD8' : 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: '#fff', flexShrink: 0 }}>
+                      {item.done ? '✓' : item.step}
+                    </div>
+                    <span style={{ fontSize: '13px', color: item.done ? '#fff' : 'rgba(255,255,255,0.45)', fontWeight: item.done ? '600' : '400' }}>{item.text}</span>
+                  </div>
+                ))}
+                <div style={{ marginTop: '24px', padding: '14px', background: 'rgba(27,79,216,0.3)', borderRadius: '12px', border: '1px solid rgba(27,79,216,0.5)' }}>
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginBottom: '8px' }}>Ар бир сабак боюнча тема</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {['Алгебра', 'Геометрия', 'Статистика', 'Функциялар'].map(t => (
+                      <span key={t} style={{ background: 'rgba(255,255,255,0.1)', color: '#93C5FD', fontSize: '11px', fontWeight: '600', padding: '3px 9px', borderRadius: '7px' }}>{t}</span>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
