@@ -327,8 +327,9 @@ function AdminTests() {
   const [tests, setTests]           = useState<any[]>([])
   const [selectedTest, setSelectedTest] = useState<any>(null)
   const [questions, setQuestions]   = useState<any[]>([])
+  const [lessons, setLessons]       = useState<any[]>([])
   const [showForm, setShowForm]     = useState(false)
-  const [newTest, setNewTest]       = useState({ title: '', subject: 'math', type: 'mock', time_limit_minutes: 90, max_attempts: 1, is_active: false })
+  const [newTest, setNewTest]       = useState({ title: '', subject: 'math', type: 'mock', time_limit_minutes: 90, max_attempts: 1, is_active: false, lesson_id: '' })
   const [newQ, setNewQ]             = useState({ question_text: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'A', image_url: '', section: 'general' })
   const [uploading, setUploading]   = useState(false)
   const [saving, setSaving]         = useState(false)
@@ -347,21 +348,26 @@ function AdminTests() {
     { value: 'grammar',    label: 'Грамматика' },
   ]
 
-  useEffect(() => { fetchTests() }, [])
+  useEffect(() => { fetchTests(); fetchLessons() }, [])
   const fetchTests = async () => { const { data } = await supabase.from('practice_tests').select('*').order('id'); setTests(data || []) }
+  const fetchLessons = async () => { const { data } = await supabase.from('practice_lessons').select('*').order('subject').order('order_number'); setLessons(data || []) }
   const fetchQuestions = async (id: number) => { const { data } = await supabase.from('questions').select('*').eq('practice_test_id', id).order('order_num'); setQuestions(data || []) }
   const selectTest = (t: any) => { setSelectedTest(t); fetchQuestions(t.id) }
 
   const createTest = async () => {
     if (!newTest.title) return
     setSaving(true)
-    const { data } = await supabase.from('practice_tests').insert({
+    const insertData: any = {
       title: newTest.title, subject: newTest.subject, type: newTest.type,
       time_limit_minutes: newTest.time_limit_minutes, max_attempts: newTest.max_attempts,
-      is_active: newTest.is_active, questions: [], lesson_id: 1
-    }).select().single()
+      is_active: newTest.is_active, questions: [],
+    }
+    if (newTest.type === 'practice' && newTest.lesson_id) {
+      insertData.lesson_id = newTest.lesson_id
+    }
+    const { data } = await supabase.from('practice_tests').insert(insertData).select().single()
     if (data) { setTests(p => [...p, data]); selectTest(data) }
-    setNewTest({ title: '', subject: 'math', type: 'mock', time_limit_minutes: 90, max_attempts: 1, is_active: false })
+    setNewTest({ title: '', subject: 'math', type: 'mock', time_limit_minutes: 90, max_attempts: 1, is_active: false, lesson_id: '' })
     setShowForm(false); setSaving(false)
   }
 
@@ -395,7 +401,8 @@ function AdminTests() {
       order_num: questions.length + 1,
     })
     setNewQ({ question_text: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'A', image_url: '', section: 'general' })
-    fetchQuestions(selectedTest.id); setSaving(false)
+    await fetchQuestions(selectedTest.id)
+    setSaving(false)
   }
 
   const deleteQuestion = async (id: number) => {
@@ -440,6 +447,17 @@ function AdminTests() {
                   <input value={newTest.max_attempts} onChange={e => setNewTest(p => ({ ...p, max_attempts: Number(e.target.value) }))} type="number" style={inp} />
                 </div>
               </div>
+              {newTest.type === 'practice' && (
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>САБАК (практика үчүн)</div>
+                  <select value={newTest.lesson_id} onChange={e => setNewTest(p => ({ ...p, lesson_id: e.target.value }))} style={sel}>
+                    <option value="">Сабак тандаңыз</option>
+                    {lessons.map(l => (
+                      <option key={l.id} value={l.id}>{l.subject === 'math' ? 'Мат' : 'Кыр'} — {l.title}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <label style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12, cursor: 'pointer', fontSize: 13, color: '#374151' }}>
                 <input type="checkbox" checked={newTest.is_active} onChange={e => setNewTest(p => ({ ...p, is_active: e.target.checked }))} />
                 Активдүү (студенттерге көрүнөт)
