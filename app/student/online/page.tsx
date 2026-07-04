@@ -214,7 +214,7 @@ export default function OnlineStudentPage() {
   const fetchMockTests = async (uid: string) => {
     const [{ data: tests }, { data: results }] = await Promise.all([
       supabase.from('practice_tests').select('*').eq('type', 'mock').eq('is_active', true).order('created_at'),
-      supabase.from('practice_results').select('*').eq('student_id', uid).eq('test_type', 'mock').order('created_at'),
+supabase.from('practice_results').select('*').eq('student_id', uid).eq('test_type', 'mock').order('created_at', { ascending: true }),
     ])
     setMockTests(tests || [])
     setMockResults(results || [])
