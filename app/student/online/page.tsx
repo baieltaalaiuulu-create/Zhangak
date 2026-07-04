@@ -248,18 +248,34 @@ supabase.from('practice_results').select('*').eq('student_id', uid).eq('test_typ
     setPQuestions(data || []); setPAnswers({}); setActivePTest(test); setView('practice_test')
   }
   const submitMock = async () => {
-    if (!activeMock || !profile) return
-    setSubmitting(true)
-    const sec = { comparison: mockQuestions.filter(q => q.section === 'comparison'), math: mockQuestions.filter(q => q.section === 'math'), analogy: mockQuestions.filter(q => q.section === 'analogy'), reading: mockQuestions.filter(q => q.section === 'reading'), grammar: mockQuestions.filter(q => q.section === 'grammar') }
-    const s = (qs: Question[]) => qs.filter(q => mockAnswers[q.id] === q.correct_answer).length
-    let mc = 0, mr = 0, an = 0, re = 0, gr = 0, total = 0
-   if (activeMock.subject === 'math') {
-  const correct = mockQuestions.filter(q => mockAnswers[q.id] === q.correct_answer).length
-  mc = correct; total = calcScore(mc, 0, 0, 0)
-} else {
-  const correct = mockQuestions.filter(q => mockAnswers[q.id] === q.correct_answer).length
-  an = correct; total = calcScore(0, an, 0, 0)
-}
+  if (!activeMock || !profile) return
+  setSubmitting(true)
+  const sec = {
+    comparison: mockQuestions.filter(q => q.section === 'comparison'),
+    math:       mockQuestions.filter(q => q.section === 'math'),
+    analogy:    mockQuestions.filter(q => q.section === 'analogy'),
+    reading:    mockQuestions.filter(q => q.section === 'reading'),
+    grammar:    mockQuestions.filter(q => q.section === 'grammar'),
+  }
+  const s = (qs: Question[]) => qs.filter(q => mockAnswers[q.id] === q.correct_answer).length
+  let mc = 0, mr = 0, an = 0, re = 0, gr = 0, total = 0
+
+  if (activeMock.subject === 'math') {
+    mc = s(sec.comparison) + s(sec.math)
+    total = calcScore(mc, 0, 0, 0)
+  } else if (activeMock.subject === 'kyr') {
+    an = s(sec.analogy)
+    re = s(sec.reading)
+    gr = s(sec.grammar)
+    total = calcScore(0, an, re, gr)
+  } else {
+    // all — толук ЖРТ
+    mc = s(sec.comparison) + s(sec.math)
+    an = s(sec.analogy)
+    re = s(sec.reading)
+    gr = s(sec.grammar)
+    total = calcScore(mc, an, re, gr)
+  }
     const attempts = mockResults.filter(r => r.test_id === activeMock.id).length + 1
     const { data } = await supabase.from('practice_results').insert({ student_id: profile.id, test_id: activeMock.id, test_type: 'mock', math_comparison_score: mc, math_raw_score: mr, analogy_score: an, reading_score: re, grammar_score: gr, total_score: total, attempt_number: attempts }).select().single()
     if (data) setMockResult(data)
