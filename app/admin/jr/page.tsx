@@ -317,9 +317,10 @@ function AdminTests() {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
 
   const subjects = [
-    { value: 'math', label: 'Математика' },
-    { value: 'kyr',  label: 'Кыргыз тили' },
-  ]
+  { value: 'math', label: 'Математика' },
+  { value: 'kyr',  label: 'Кыргыз тили' },
+  { value: 'all',  label: 'Толук ЖРТ (Мат + Кыр)' },
+]
   const sections = [
     { value: 'general',    label: 'Жалпы' },
     { value: 'comparison', label: 'Салыштыруу' },
