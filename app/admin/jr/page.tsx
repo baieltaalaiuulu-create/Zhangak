@@ -577,7 +577,7 @@ function AdminTests() {
                   <div style={{ width: 26, height: 26, background: BLUE, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{i+1}</div>
                   <div style={{ flex: 1 }}>
                     {q.image_url
-                      ? <img src={q.image_url} alt="q" style={{ maxHeight: 65, borderRadius: 7, marginBottom: 7, display: 'block' }} />
+                      ? <img src={q.image_url} alt="q" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, marginBottom: 8, display: 'block', cursor: 'pointer' }} />
                       : <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 7, color: '#111827', lineHeight: 1.4 }}>{q.question_text}</div>}
                     <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' as const }}>
                       {['A','B','C','D'].map(opt => (

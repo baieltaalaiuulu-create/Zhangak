@@ -13,21 +13,27 @@ import {
 } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+interface MockTest {
+  id: number; title: string; subject: 'math' | 'kyr'
+  time_limit_minutes: number; max_attempts: number; is_active: boolean
+}
 interface Profile {
   id: string; full_name: string; phone: string
   class_number: number; goal_score: number; student_type: string
   school: string; streak_days: number; last_active: string
 }
-interface MockTest {
-  id: string; title: string; subject: 'math' | 'kyr'
-  time_limit_minutes: number; max_attempts: number; is_active: boolean
+interface MockResult {
+  id: string; test_id: number; attempt_number: number
+  math_comparison_score: number; math_raw_score: number
+  analogy_score: number; reading_score: number; grammar_score: number
+  total_score: number; created_at: string
 }
 interface PracticeLesson {
   id: string; title: string; subject: 'math' | 'kyr'
   video_url: string; description: string; order_number: number
 }
 interface PracticeTest {
-  id: string; lesson_id: string; title: string
+  id: number; lesson_id: string; title: string
   time_limit_minutes: number | null
 }
 interface Question {
@@ -37,13 +43,13 @@ interface Question {
   section: 'comparison' | 'math' | 'analogy' | 'reading' | 'grammar' | 'general'
 }
 interface MockResult {
-  id: string; test_id: string; attempt_number: number
+  id: string; test_id: number; attempt_number: number
   math_comparison_score: number; math_raw_score: number
   analogy_score: number; reading_score: number; grammar_score: number
   total_score: number; created_at: string
 }
 interface PracticeResult {
-  id: string; test_id: string; score: number; total: number
+  id: string; test_id: number; score: number; total: number
   passed: boolean; created_at: string; lesson_id: string
 }
 
@@ -247,8 +253,13 @@ export default function OnlineStudentPage() {
     const sec = { comparison: mockQuestions.filter(q => q.section === 'comparison'), math: mockQuestions.filter(q => q.section === 'math'), analogy: mockQuestions.filter(q => q.section === 'analogy'), reading: mockQuestions.filter(q => q.section === 'reading'), grammar: mockQuestions.filter(q => q.section === 'grammar') }
     const s = (qs: Question[]) => qs.filter(q => mockAnswers[q.id] === q.correct_answer).length
     let mc = 0, mr = 0, an = 0, re = 0, gr = 0, total = 0
-    if (activeMock.subject === 'math') { mc = s(sec.comparison); mr = s(sec.math); total = calcScore(mc + mr, 0, 0, 0) }
-    else { an = s(sec.analogy); re = s(sec.reading); gr = s(sec.grammar); total = calcScore(0, an, re, gr) }
+   if (activeMock.subject === 'math') {
+  const correct = mockQuestions.filter(q => mockAnswers[q.id] === q.correct_answer).length
+  mc = correct; total = calcScore(mc, 0, 0, 0)
+} else {
+  const correct = mockQuestions.filter(q => mockAnswers[q.id] === q.correct_answer).length
+  an = correct; total = calcScore(0, an, 0, 0)
+}
     const attempts = mockResults.filter(r => r.test_id === activeMock.id).length + 1
     const { data } = await supabase.from('practice_results').insert({ student_id: profile.id, test_id: activeMock.id, test_type: 'mock', math_comparison_score: mc, math_raw_score: mr, analogy_score: an, reading_score: re, grammar_score: gr, total_score: total, attempt_number: attempts }).select().single()
     if (data) setMockResult(data)
@@ -290,13 +301,16 @@ export default function OnlineStudentPage() {
   }
 
   // ── Derived ─────────────────────────────────────────────────────────────────
-  const getMockAttempts = (id: string) => mockResults.filter(r => r.test_id === id).length
-  const getBestMock = (id: string) => { const r = mockResults.filter(r => r.test_id === id); return r.length ? r.reduce((b, c) => c.total_score > b.total_score ? c : b) : null }
-  const getLessonRes = (lid: string) => allPResults.find(r => r.lesson_id === lid)
-  const avgScore  = mockResults.length ? Math.round(mockResults.reduce((s, r) => s + r.total_score, 0) / mockResults.length) : 0
-  const bestScore = mockResults.length ? Math.max(...mockResults.map(r => r.total_score)) : 0
-  const lastScore = mockResults.length ? mockResults[mockResults.length - 1]?.total_score : 0
-  const goalScore = profile?.goal_score || 190
+const getMockAttempts = (id: number) => mockResults.filter(r => r.test_id === id).length
+const getBestMock = (id: number) => {
+  const r = mockResults.filter(r => r.test_id === id)
+  return r.length ? r.reduce((b, c) => c.total_score > b.total_score ? c : b) : null
+}
+const getLessonRes = (lid: string) => allPResults.find(r => r.lesson_id === lid)
+const avgScore = mockResults.length ? Math.round(mockResults.reduce((s, r) => s + r.total_score, 0) / mockResults.length) : 0
+const bestScore = mockResults.length ? Math.max(...mockResults.map(r => r.total_score)) : 0
+const lastScore = mockResults.length ? mockResults[mockResults.length - 1]?.total_score : 0  
+const goalScore = profile?.goal_score || 190
   const streak    = getStreakDays(mockResults, allPResults)
   const calendar  = getCalendarDays(mockResults, allPResults)
   const mathLessons = allLessons.filter(l => l.subject === 'math')
