@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { getStudentDashboard, type StudentDashboardData } from '@/lib/student-data'
+import { getStudentDashboard, DEFAULT_TARGET_SCORE, type StudentDashboardData } from '@/lib/student-data'
 
 import HeroCard     from '@/components/student/HeroCard'
 import DailyPlan    from '@/components/student/DailyPlan'
@@ -49,7 +49,14 @@ export default function StudentOnlinePage() {
   )
 
   const firstName = (data.profile?.full_name ?? profileName ?? 'Студент').split(' ')[0]
-  const targetScore = data.profile?.target_score ?? 180
+  const targetScore = data.profile?.target_score ?? DEFAULT_TARGET_SCORE
+
+  const handleGoalUpdate = (newGoal: number) => {
+    setData(prev => prev ? {
+      ...prev,
+      profile: prev.profile ? { ...prev.profile, target_score: newGoal } : prev.profile,
+    } : prev)
+  }
 
   // Greeting based on time
   const hour = new Date().getHours()
@@ -104,6 +111,7 @@ export default function StudentOnlinePage() {
               previousScore={data.previousScore}
               targetScore={targetScore}
               scoreHistory={data.scoreHistory}
+              onGoalUpdate={handleGoalUpdate}
             />
           </div>
           <div className="min-w-0">
@@ -133,6 +141,7 @@ export default function StudentOnlinePage() {
             <AICard
               latestScore={data.latestScore}
               subjects={data.subjects}
+              targetScore={targetScore}
             />
           </div>
           <div className="min-w-0">

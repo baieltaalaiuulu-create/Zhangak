@@ -1,5 +1,9 @@
 import { supabase } from '@/lib/supabase'
 
+export const DEFAULT_TARGET_SCORE = 180
+export const MIN_TARGET_SCORE = 100
+export const MAX_TARGET_SCORE = 245
+
 export type SubjectKey = 'math' | 'kyr' | 'analogy' | 'reading' | 'grammar'
 
 export interface ScoreHistory {

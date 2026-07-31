@@ -4,6 +4,7 @@ import { SubjectStat } from '@/lib/student-data'
 interface Props {
   latestScore: number | null
   subjects: SubjectStat[]
+  targetScore: number
 }
 
 function getWeakSubject(subjects: SubjectStat[]): { label: string; questionsNeeded: number } | null {
@@ -24,10 +25,11 @@ function getWeakSubject(subjects: SubjectStat[]): { label: string; questionsNeed
   return { label: m.label, questionsNeeded }
 }
 
-export default function AICard({ latestScore, subjects }: Props) {
+export default function AICard({ latestScore, subjects, targetScore }: Props) {
   const score = latestScore ?? 0
   const weak = getWeakSubject(subjects)
   const projectedScore = score + 8
+  const toGoal = Math.max(0, targetScore - score)
 
   return (
     <div className="rounded-2xl overflow-hidden shadow-sm">
@@ -55,6 +57,19 @@ export default function AICard({ latestScore, subjects }: Props) {
         ) : (
           <p className="text-sm text-slate-300 leading-relaxed">
             Отличный прогресс! Продолжай заниматься каждый день.
+          </p>
+        )}
+
+        {/* Distance to personal goal */}
+        {score > 0 && (
+          <p className="text-xs text-slate-400">
+            {toGoal > 0 ? (
+              <>До цели {targetScore} баллов осталось{' '}
+                <span className="font-bold text-orange-300">{toGoal} баллов</span>
+              </>
+            ) : (
+              <>Цель {targetScore} баллов уже достигнута 🎉</>
+            )}
           </p>
         )}
 
