@@ -65,13 +65,14 @@ export default function DailyPlanCard({ tasks }: DailyPlanCardProps) {
             }}>
               <Icon size={18} color={task.done ? '#10B981' : '#1B4FD8'} style={{ flexShrink: 0 }} />
               <span style={{
-                flex: 1, fontSize: '13px', fontWeight: 600,
+                flex: 1, minWidth: 0, fontSize: '13px', fontWeight: 600,
                 color: task.done ? '#94A3B8' : '#0D1E4A',
                 textDecoration: task.done ? 'line-through' : 'none',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {task.label}
               </span>
-              {task.done ? <CheckCircle2 size={18} color="#10B981" /> : <Circle size={18} color="#CBD5E1" />}
+              {task.done ? <CheckCircle2 size={18} color="#10B981" style={{ flexShrink: 0 }} /> : <Circle size={18} color="#CBD5E1" style={{ flexShrink: 0 }} />}
             </div>
           )
         })}

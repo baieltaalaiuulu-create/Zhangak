@@ -12,7 +12,7 @@ function motivation(remaining: number): string {
 
 export default function GreetingBar({ firstName, remaining }: GreetingBarProps) {
   return (
-    <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '22px 28px 0' }}>
+    <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '22px 24px 0', minWidth: 0 }}>
       <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0D1E4A', margin: 0, letterSpacing: '-0.3px' }}>
         Привет, {firstName} 👋
       </h1>

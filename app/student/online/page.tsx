@@ -192,23 +192,26 @@ export default function StudentOnlinePage() {
     : 8
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F4F6FA', fontFamily: 'Inter, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#F4F6FA', fontFamily: 'Inter, -apple-system, sans-serif', overflowX: 'hidden' }}>
       <style>{`
-        .ozb-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-        .ozb-col { display: flex; flex-direction: column; gap: 20px; }
+        .ozb-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+        .ozb-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
         @media (max-width: 900px) {
-          .ozb-layout { grid-template-columns: 1fr; }
+          .ozb-layout { grid-template-columns: minmax(0, 1fr); }
           .ozb-nav-links { display: none !important; }
           .ozb-hero-grid { flex-direction: column !important; }
           .ozb-hero-spark { width: 100% !important; margin-top: 16px; }
-          .ozb-subjects-grid { grid-template-columns: 1fr !important; }
+          .ozb-subjects-grid { grid-template-columns: minmax(0, 1fr) !important; }
+        }
+        @media (max-width: 480px) {
+          .ozb-page-pad { padding-left: 16px !important; padding-right: 16px !important; }
         }
       `}</style>
 
       <TopNavbar fullName={profile.full_name} daysToOrt={daysToOrt} onLogout={handleLogout} />
       <GreetingBar firstName={firstName} remaining={remaining} />
 
-      <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '20px 28px 60px' }}>
+      <div className="ozb-page-pad" style={{ maxWidth: '1180px', margin: '0 auto', padding: '20px 24px 60px', minWidth: 0 }}>
         <div className="ozb-layout">
           <div className="ozb-col">
             <HeroCard

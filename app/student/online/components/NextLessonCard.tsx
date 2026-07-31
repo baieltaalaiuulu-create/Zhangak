@@ -55,7 +55,7 @@ export default function NextLessonCard({ lesson, subjectDone, subjectTotal, onSt
               </svg>
             </div>
 
-            <div style={{ fontWeight: 800, fontSize: '15px', color: '#0D1E4A', marginBottom: '10px', lineHeight: 1.35 }}>
+            <div style={{ fontWeight: 800, fontSize: '15px', color: '#0D1E4A', marginBottom: '10px', lineHeight: 1.35, overflowWrap: 'anywhere' }}>
               {lesson.title}
             </div>
 
