@@ -1,13 +1,15 @@
 @import "tailwindcss";
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-body {
-  font-family: 'Inter', sans-serif;
+  body {
+    font-family: 'Inter', sans-serif;
+  }
 }
 
 ::-webkit-scrollbar { width: 6px; }

@@ -4,257 +4,145 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { getStudentDashboard, type StudentDashboardData } from '@/lib/student-data'
 
-import TopNavbar from './components/TopNavbar'
-import GreetingBar from './components/GreetingBar'
-import HeroCard from './components/HeroCard'
-import DailyPlanCard, { type DailyTask } from './components/DailyPlanCard'
-import SubjectAnalytics from './components/SubjectAnalytics'
-import NextLessonCard from './components/NextLessonCard'
-import AIAdvisorCard from './components/AIAdvisorCard'
-import StreakCard from './components/StreakCard'
-import StatsRow from './components/StatsRow'
-
-import type { Profile, PracticeLesson, PracticeResult, PracticeTest, SubjectKey, SubjectStat } from './lib/types'
-import { computeOrtScore, localDateKey, computeStreak, lastNDays, daysUntil, clamp } from './lib/utils'
-
-const ORT_EXAM_DATE = '2026-12-06'
-const BENCHMARK = { avg: 126, top: 182 }
-
-const SUBJECT_DEFS: { key: SubjectKey; label: string; color: string; field: keyof PracticeResult; weight: number }[] = [
-  { key: 'math', label: 'Математика', color: '#1B4FD8', field: 'math_raw_score', weight: 1.12 },
-  { key: 'kyr', label: 'Кыргызча', color: '#F59E0B', field: 'grammar_score', weight: 1.93 },
-  { key: 'analogy', label: 'Аналогия', color: '#10B981', field: 'analogy_score', weight: 2 },
-  { key: 'reading', label: 'Чтение', color: '#8B5CF6', field: 'reading_score', weight: 2 },
-]
+import HeroCard     from '@/components/student/HeroCard'
+import DailyPlan    from '@/components/student/DailyPlan'
+import SubjectCards from '@/components/student/SubjectCards'
+import NextLesson   from '@/components/student/NextLesson'
+import AICard       from '@/components/student/AICard'
+import StreakCard   from '@/components/student/StreakCard'
+import StatsRow     from '@/components/student/StatsRow'
 
 export default function StudentOnlinePage() {
-  const router = useRouter()
+  const [profileName, setProfileName] = useState<string | null>(null)
+  const [data, setData] = useState<StudentDashboardData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [lessons, setLessons] = useState<PracticeLesson[]>([])
-  const [results, setResults] = useState<PracticeResult[]>([])
-  const [tests, setTests] = useState<PracticeTest[]>([])
-  const [questionCounts, setQuestionCounts] = useState<Record<number, number>>({})
+  const router = useRouter()
 
-  useEffect(() => { checkAuth() }, [])
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push('/login'); return }
 
-  const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/'); return }
-    const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-    if (!prof || prof.role !== 'student') { router.push('/'); return }
-    if (prof.student_type === 'offline') { router.push('/student'); return }
-    setProfile(prof as Profile)
-    await fetchData(user.id)
-  }
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, student_type, full_name, target_score')
+        .eq('id', user.id)
+        .single()
 
-  const fetchData = async (uid: string) => {
-    const [{ data: l }, { data: r }, { data: t }] = await Promise.all([
-      supabase.from('practice_lessons').select('*').order('subject', { ascending: true }).order('order_number', { ascending: true }),
-      supabase.from('practice_results').select('*').eq('student_id', uid).order('completed_at', { ascending: false }),
-      supabase.from('practice_tests').select('id,subject,type,time_limit_minutes,lesson_id'),
-    ])
-    setLessons((l as PracticeLesson[]) || [])
-    setResults((r as PracticeResult[]) || [])
-    setTests((t as PracticeTest[]) || [])
+      if (!profile || profile.role !== 'student') { router.push('/login'); return }
+      if (profile.student_type === 'offline') { router.push('/student'); return }
 
-    const testIds = Array.from(new Set(((r as PracticeResult[]) || []).map(res => res.test_id).filter((id): id is number => id != null)))
-    if (testIds.length > 0) {
-      const { data: qs } = await supabase.from('questions').select('practice_test_id').in('practice_test_id', testIds)
-      const counts: Record<number, number> = {}
-      ;((qs as { practice_test_id: number }[]) || []).forEach(q => {
-        counts[q.practice_test_id] = (counts[q.practice_test_id] || 0) + 1
-      })
-      setQuestionCounts(counts)
+      setProfileName(profile.full_name)
+      const dashboard = await getStudentDashboard()
+      setData(dashboard)
+      setLoading(false)
     }
-    setLoading(false)
-  }
+    checkAuth()
+  }, [router])
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
+  if (loading || !data) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F4F6FA', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ color: '#9CA3AF', fontSize: 14 }}>Загрузка...</div>
+    </div>
+  )
 
-  if (loading || !profile) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F4F6FA', fontFamily: 'Inter, sans-serif' }}>
-        <div style={{ color: '#64748B', fontSize: '14px' }}>Жүктөлүүдө...</div>
-      </div>
-    )
-  }
+  const firstName = (data.profile?.full_name ?? profileName ?? 'Студент').split(' ')[0]
+  const targetScore = data.profile?.target_score ?? 180
 
-  // ---- derived data ----
-  const testSubjectMap: Record<number, string> = {}
-  const testMinutesMap: Record<number, number> = {}
-  tests.forEach(t => {
-    testSubjectMap[t.id] = t.subject
-    testMinutesMap[t.id] = t.time_limit_minutes ?? 0
-  })
+  // Greeting based on time
+  const hour = new Date().getHours()
+  const greeting =
+    hour < 12 ? 'Доброе утро' :
+    hour < 17 ? 'Добрый день' :
+    'Добрый вечер'
 
-  const fullOrtResults = results.filter(r => r.test_id != null && testSubjectMap[r.test_id] === 'all')
-  const latestOrt = fullOrtResults[0] ?? null
-  const currentScore = latestOrt ? computeOrtScore(latestOrt) : 0
-  const targetScore = profile.target_score ?? 180
-  const remaining = Math.max(targetScore - currentScore, 0)
-  const sparkline = [...fullOrtResults].slice(0, 8).reverse().map(r => ({
-    date: r.completed_at,
-    score: computeOrtScore(r),
-  }))
-
-  const subjectStats: SubjectStat[] = SUBJECT_DEFS.map(def => {
-    const withScore = results
-      .filter(r => Number(r[def.field] ?? 0) > 0)
-      .map(r => Math.round(Number(r[def.field]) * def.weight))
-    const current = withScore[0] ?? 0
-    const previous = withScore[1]
-    const delta = previous !== undefined ? current - previous : null
-    return { key: def.key, label: def.label, color: def.color, current, delta }
-  })
-
-  const weakest = [...subjectStats].sort((a, b) => a.current - b.current)[0]
-
-  const completedLessonIds = new Set(results.map(r => r.lesson_id).filter((id): id is string => !!id))
-  const nextLesson = lessons.find(l => !completedLessonIds.has(l.id)) ?? null
-  const nextLessonSubjectLessons = nextLesson ? lessons.filter(l => l.subject === nextLesson.subject) : []
-  const nextLessonSubjectDone = nextLessonSubjectLessons.filter(l => completedLessonIds.has(l.id)).length
-
-  const activeDates = new Set(results.map(r => localDateKey(r.completed_at)))
-  const streak = computeStreak(activeDates)
-  const streakDays = lastNDays(activeDates, 14)
-
-  const todayKey = localDateKey(new Date())
-  const todaysResults = results.filter(r => localDateKey(r.completed_at) === todayKey)
-
-  const dailyTasks: DailyTask[] = []
-  if (nextLesson) {
-    dailyTasks.push({
-      id: 'lesson',
-      label: `Урок: ${nextLesson.title}`,
-      icon: 'play',
-      done: todaysResults.some(r => r.lesson_id === nextLesson.id),
-    })
-  }
-  dailyTasks.push({
-    id: 'practice',
-    label: 'Пройти практический тест',
-    icon: 'pencil',
-    done: todaysResults.some(r => r.test_type === 'practice'),
-  })
-  const lastMock = results.find(r => r.test_type === 'mock')
-  const daysSinceMock = lastMock ? Math.floor((Date.now() - new Date(lastMock.completed_at).getTime()) / 86400000) : Infinity
-  if (daysSinceMock >= 6) {
-    dailyTasks.push({
-      id: 'mock',
-      label: 'Пройти пробный ОРТ',
-      icon: 'clipboard',
-      done: todaysResults.some(r => r.test_type === 'mock'),
-    })
-  }
-
-  // monthly stats
-  const now = new Date()
-  const monthResults = results.filter(r => {
-    const d = new Date(r.completed_at)
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
-  })
-  const monthLessons = new Set(monthResults.map(r => r.lesson_id).filter(Boolean)).size
-  const monthQuestions = monthResults.reduce((sum, r) => sum + (r.test_id != null ? (questionCounts[r.test_id] ?? 0) : 0), 0)
-  const monthPractice = monthResults.filter(r => r.test_type === 'practice').length
-  const monthMock = monthResults.filter(r => r.test_type === 'mock').length
-  const monthHours = Math.round((monthResults.reduce((sum, r) => sum + (r.test_id != null ? (testMinutesMap[r.test_id] ?? 0) : 0), 0) / 60) * 10) / 10
-
-  const daysToOrt = daysUntil(ORT_EXAM_DATE)
-  const firstName = profile.full_name?.split(' ')[0] ?? 'друг'
-
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
-  const weakSubjectLesson = (weakest.key === 'math' || weakest.key === 'kyr')
-    ? lessons.find(l => l.subject === weakest.key && !completedLessonIds.has(l.id))
-    : null
-
-  const handleAiAction = () => {
-    if (weakSubjectLesson?.video_url) {
-      window.open(weakSubjectLesson.video_url, '_blank')
-    } else {
-      scrollTo('hero')
-    }
-  }
-
-  const handleNextLessonStart = () => {
-    if (nextLesson?.video_url) window.open(nextLesson.video_url, '_blank')
-  }
-
-  const projectedGain = weakest.current > 0
-    ? clamp(Math.round((BENCHMARK.avg - weakest.current) / 2), 5, 15)
-    : 8
+  const latestScore = data.latestScore ?? 0
+  const delta = data.latestScore != null && data.previousScore != null
+    ? data.latestScore - data.previousScore : null
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F4F6FA', fontFamily: 'Inter, -apple-system, sans-serif', overflowX: 'hidden' }}>
-      <style>{`
-        .ozb-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 20px; align-items: start; }
-        .ozb-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-        @media (max-width: 900px) {
-          .ozb-layout { grid-template-columns: minmax(0, 1fr); }
-          .ozb-nav-links { display: none !important; }
-          .ozb-hero-grid { flex-direction: column !important; }
-          .ozb-hero-spark { width: 100% !important; margin-top: 16px; }
-          .ozb-subjects-grid { grid-template-columns: minmax(0, 1fr) !important; }
-        }
-        @media (max-width: 480px) {
-          .ozb-page-pad { padding-left: 16px !important; padding-right: 16px !important; }
-        }
-      `}</style>
-
-      <TopNavbar fullName={profile.full_name} daysToOrt={daysToOrt} onLogout={handleLogout} />
-      <GreetingBar firstName={firstName} remaining={remaining} />
-
-      <div className="ozb-page-pad" style={{ maxWidth: '1180px', margin: '0 auto', padding: '20px 24px 60px', minWidth: 0 }}>
-        <div className="ozb-layout">
-          <div className="ozb-col">
-            <HeroCard
-              currentScore={currentScore}
-              targetScore={targetScore}
-              remaining={remaining}
-              sparkline={sparkline}
-              onContinue={() => nextLesson ? handleNextLessonStart() : scrollTo('subjects')}
-            />
-            <DailyPlanCard tasks={dailyTasks} />
-            <SubjectAnalytics subjects={subjectStats} benchmark={BENCHMARK} />
-            <div>
-              <div style={{ fontWeight: 800, fontSize: '15px', color: '#0D1E4A', marginBottom: '12px' }}>
-                В этом месяце
-              </div>
-              <StatsRow
-                lessons={monthLessons}
-                questions={monthQuestions}
-                practiceTests={monthPractice}
-                mockTests={monthMock}
-                hours={monthHours}
-              />
-            </div>
+    <div className="min-h-screen bg-[#F4F6FA]">
+      {/* Top greeting bar */}
+      <div className="bg-white border-b border-gray-100 px-4 sm:px-6 py-4">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-gray-900 truncate">
+              {greeting}, {firstName} 👋
+            </h1>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {delta !== null && delta > 0
+                ? `Отличная работа! +${delta} баллов с прошлого раза`
+                : `До цели осталось ${Math.max(0, targetScore - latestScore)} баллов`
+              }
+            </p>
           </div>
 
-          <div className="ozb-col">
-            <NextLessonCard
-              lesson={nextLesson}
-              subjectDone={nextLessonSubjectDone}
-              subjectTotal={nextLessonSubjectLessons.length}
-              onStart={handleNextLessonStart}
-            />
-            <AIAdvisorCard
-              weakSubjectLabel={weakest.label}
-              weakScore={weakest.current}
-              avgScore={BENCHMARK.avg}
-              projectedGain={projectedGain}
-              ctaLabel={weakSubjectLesson ? `Начать: ${weakSubjectLesson.title}` : 'Пройти пробный ОРТ'}
-              onAction={handleAiAction}
-            />
-            <StreakCard streak={streak} days={streakDays} />
+          {/* ORT countdown pill */}
+          <div className="flex items-center gap-3 shrink-0 flex-wrap">
+            {data.streak > 0 && (
+              <span className="text-sm font-semibold text-orange-600 bg-orange-50 px-3 py-1.5 rounded-full whitespace-nowrap">
+                🔥 {data.streak} дней
+              </span>
+            )}
+            <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full whitespace-nowrap">
+              ⏳ 128 дней до ОРТ
+            </span>
           </div>
         </div>
+      </div>
+
+      {/* Main grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 min-w-0">
+
+        {/* Row 1: Hero + Next Lesson */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 min-w-0">
+            <HeroCard
+              latestScore={data.latestScore}
+              previousScore={data.previousScore}
+              targetScore={targetScore}
+              scoreHistory={data.scoreHistory}
+            />
+          </div>
+          <div className="min-w-0">
+            <NextLesson
+              lesson={data.nextLesson}
+              progress={data.nextLessonProgress}
+            />
+          </div>
+        </div>
+
+        {/* Row 2: Daily Plan + Subjects */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="min-w-0">
+            <DailyPlan tasks={data.todayTasks} />
+          </div>
+          <div className="lg:col-span-2 min-w-0">
+            <SubjectCards
+              subjects={data.subjects}
+              comparison={{ me: latestScore, avg: 126, top: 182 }}
+            />
+          </div>
+        </div>
+
+        {/* Row 3: AI + Streak */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 min-w-0">
+            <AICard
+              latestScore={data.latestScore}
+              subjects={data.subjects}
+            />
+          </div>
+          <div className="min-w-0">
+            <StreakCard streak={data.streak} />
+          </div>
+        </div>
+
+        {/* Row 4: Stats */}
+        <StatsRow stats={data.monthStats} />
+
       </div>
     </div>
   )
