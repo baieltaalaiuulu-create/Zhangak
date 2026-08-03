@@ -57,7 +57,7 @@ function getScoreFromResult(r: Record<string, number>): number {
   )
 }
 
-function calcStreak(dates: string[]): number {
+export function calcStreak(dates: string[]): number {
   if (!dates.length) return 0
   const unique = [...new Set(dates.map(d => d.slice(0, 10)))].sort().reverse()
   let streak = 0
