@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { LESSON_SUBJECT_META, type Lesson, type LessonStatus } from '@/lib/lessons-data'
+import { CheckCircle, Lock, Calculator, BookMarked, Play, RotateCcw, type LucideIcon } from 'lucide-react'
+import { LESSON_SUBJECT_META, type Lesson, type LessonStatus, type LessonSubject } from '@/lib/lessons-data'
 
 interface Props {
   lesson: Lesson
@@ -8,8 +9,14 @@ interface Props {
   courseProgress: number
 }
 
+const SUBJECT_ICON: Record<LessonSubject, LucideIcon> = {
+  math: Calculator,
+  kyr: BookMarked,
+}
+
 export default function LessonCard({ lesson, status, questionCount, courseProgress }: Props) {
   const meta = LESSON_SUBJECT_META[lesson.subject]
+  const SubjectIcon = SUBJECT_ICON[lesson.subject]
   const stripColor = status === 'locked' ? 'bg-gray-200' : meta.strip
 
   const body = (
@@ -24,10 +31,10 @@ export default function LessonCard({ lesson, status, questionCount, courseProgre
             status === 'current' ? 'bg-blue-50 text-blue-600' :
             'bg-gray-100 text-gray-400'
           }`}>
-            {status === 'done' ? '✓' : status === 'locked' ? '🔒' : lesson.order_number}
+            {status === 'done' ? <CheckCircle size={18} /> : status === 'locked' ? <Lock size={18} /> : lesson.order_number}
           </span>
-          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base ${meta.bg}`}>
-            {meta.icon}
+          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${meta.bg} ${meta.color}`}>
+            <SubjectIcon size={18} />
           </span>
         </div>
 
@@ -66,18 +73,21 @@ export default function LessonCard({ lesson, status, questionCount, courseProgre
 
         <div className="mt-1">
           {status === 'current' && (
-            <span className="block w-full rounded-xl bg-[#1B4FD8] py-2.5 text-center text-sm font-bold text-white">
-              Продолжить урок →
+            <span className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#1B4FD8] py-2.5 text-center text-sm font-bold text-white">
+              <Play size={18} />
+              {courseProgress === 0 ? 'Начать урок' : 'Продолжить →'}
             </span>
           )}
           {status === 'done' && (
-            <span className="block w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-center text-sm font-bold text-gray-600">
-              Пересмотреть
+            <span className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-center text-sm font-bold text-gray-600">
+              <RotateCcw size={18} />
+              Повторить
             </span>
           )}
           {status === 'locked' && (
             <span className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-gray-50 py-2.5 text-center text-sm font-semibold text-gray-400">
-              🔒 Заблокировано
+              <Lock size={18} />
+              Заблокировано
             </span>
           )}
         </div>

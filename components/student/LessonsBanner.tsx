@@ -11,6 +11,7 @@ function streakWord(n: number): string {
 
 export default function LessonsBanner({ completed, total, streak, targetScore }: Props) {
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0
+  const xp = completed * 100
 
   return (
     <div className="rounded-2xl bg-white shadow-sm border border-gray-100 p-5 sm:p-6">
@@ -27,17 +28,26 @@ export default function LessonsBanner({ completed, total, streak, targetScore }:
               🔥 {streak} {streakWord(streak)} подряд
             </span>
           )}
+          <span className="text-sm font-semibold text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded-full whitespace-nowrap">
+            ⭐ {xp} XP
+          </span>
           <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full whitespace-nowrap">
             🎯 Цель: {targetScore} баллов
           </span>
         </div>
       </div>
 
-      <div className="mt-4 h-2 rounded-full bg-gray-100 overflow-hidden">
-        <div
-          className="h-full rounded-full bg-[#1B4FD8] transition-all duration-700"
-          style={{ width: `${pct}%` }}
-        />
+      <div className="mt-4">
+        <div className="mb-1.5 flex items-center justify-between text-xs font-semibold text-gray-500">
+          <span>Прогресс курса</span>
+          <span>{pct}%</span>
+        </div>
+        <div className="h-3 rounded-full bg-gray-100 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-[#1B4FD8] transition-all duration-700"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
       </div>
     </div>
   )

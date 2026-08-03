@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { BookOpen, Calculator, BookMarked, Brain, Eye, type LucideIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import {
   fetchLessons,
@@ -19,19 +20,22 @@ import LessonCard from '@/components/student/LessonCard'
 
 type FilterKey = 'all' | LessonSubject | 'analogy' | 'reading'
 
-const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: 'all', label: 'Все' },
-  { key: 'math', label: 'Математика' },
-  { key: 'kyr', label: 'Кыргыз тили' },
-  { key: 'analogy', label: 'Аналогия' },
-  { key: 'reading', label: 'Окуу' },
+const FILTERS: { key: FilterKey; label: string; icon: LucideIcon }[] = [
+  { key: 'all', label: 'Все', icon: BookOpen },
+  { key: 'math', label: 'Математика', icon: Calculator },
+  { key: 'kyr', label: 'Кыргыз тили', icon: BookMarked },
+  { key: 'analogy', label: 'Аналогия', icon: Brain },
+  { key: 'reading', label: 'Окуу', icon: Eye },
 ]
+
+const MINUTES_PER_LESSON = 25
 
 export default function LessonsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
+  const [todayLessonIds, setTodayLessonIds] = useState<Set<string>>(new Set())
   const [questionCounts, setQuestionCounts] = useState<Record<string, number>>({})
   const [streak, setStreak] = useState(0)
   const [targetScore, setTargetScore] = useState(DEFAULT_TARGET_SCORE)
@@ -64,12 +68,22 @@ export default function LessonsPage() {
         fetchQuestionCounts(allLessons.map(l => l.id)),
         supabase
           .from('practice_results')
-          .select('completed_at')
+          .select('completed_at, lesson_id')
           .eq('student_id', user.id)
           .not('completed_at', 'is', null),
       ])
       setQuestionCounts(counts)
-      setStreak(calcStreak((allResults ?? []).map(r => r.completed_at as string)))
+
+      const results = allResults ?? []
+      setStreak(calcStreak(results.map(r => r.completed_at as string)))
+
+      const todayStr = new Date().toISOString().slice(0, 10)
+      setTodayLessonIds(new Set(
+        results
+          .filter(r => (r.completed_at as string)?.slice(0, 10) === todayStr)
+          .map(r => r.lesson_id as string)
+          .filter(Boolean)
+      ))
 
       setLoading(false)
     }
@@ -89,6 +103,9 @@ export default function LessonsPage() {
   const completedCount = lessons.filter(l => completedIds.has(l.id)).length
   const courseProgress = total > 0 ? Math.round((completedCount / total) * 100) : 0
 
+  const currentLesson = lessons.find(l => statuses[l.id] === 'current')
+  const remainingToday = currentLesson && !todayLessonIds.has(currentLesson.id) ? 1 : 0
+
   const visibleLessons = lessons.filter(l => filter === 'all' || l.subject === filter)
 
   return (
@@ -101,21 +118,31 @@ export default function LessonsPage() {
         <LessonsBanner completed={completedCount} total={total} streak={streak} targetScore={targetScore} />
 
         <div className="flex flex-wrap gap-2">
-          {FILTERS.map(f => (
-            <button
-              key={f.key}
-              type="button"
-              onClick={() => setFilter(f.key)}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-                filter === f.key
-                  ? 'bg-[#1B4FD8] text-white'
-                  : 'border border-gray-100 bg-white text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+          {FILTERS.map(f => {
+            const Icon = f.icon
+            return (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setFilter(f.key)}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                  filter === f.key
+                    ? 'bg-[#1B4FD8] text-white'
+                    : 'border border-gray-100 bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <Icon size={16} />
+                {f.label}
+              </button>
+            )
+          })}
         </div>
+
+        {remainingToday > 0 && (
+          <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700">
+            Сегодня осталось: {remainingToday} урок · ~{remainingToday * MINUTES_PER_LESSON} минут
+          </div>
+        )}
 
         {visibleLessons.length === 0 ? (
           <div className="rounded-2xl border border-gray-100 bg-white p-10 text-center text-sm text-gray-400">
