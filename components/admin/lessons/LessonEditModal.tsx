@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { X } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
-import { setLessonActive, SUBJECT_LABELS, type AdminLesson } from '@/lib/admin-data'
+import { updateLesson, setLessonActive, SUBJECT_LABELS, type AdminLesson } from '@/lib/admin-data'
 
 interface Props {
   lesson: AdminLesson
@@ -27,17 +26,14 @@ export default function LessonEditModal({ lesson, onClose, onSaved }: Props) {
 
     setSaving(true)
     try {
-      const { error: updateError } = await supabase
-        .from('practice_lessons')
-        .update({
-          title: title.trim(),
-          description: description.trim() || null,
-          subject,
-          order_number: orderNumber,
-          video_url: videoUrl.trim() || null,
-        })
-        .eq('id', lesson.id)
-      if (updateError) throw new Error(updateError.message)
+      await updateLesson({
+        id: lesson.id,
+        title: title.trim(),
+        description: description.trim(),
+        subject,
+        order_number: orderNumber,
+        video_url: videoUrl.trim(),
+      })
 
       await setLessonActive({ id: lesson.id, title: title.trim(), subject }, active)
 

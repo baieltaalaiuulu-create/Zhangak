@@ -5,7 +5,7 @@ import { X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { MIN_TARGET_SCORE, MAX_TARGET_SCORE, DEFAULT_TARGET_SCORE } from '@/lib/student-data'
 import {
-  createStudent, STUDENT_TYPES,
+  createStudent, assignStudentGroup, removeStudentGroup, STUDENT_TYPES,
   type AdminStudent, type CourseOption, type GroupOption,
 } from '@/lib/admin-data'
 
@@ -63,8 +63,8 @@ export default function StudentFormModal({ mode, student, courses, groups, onClo
         if (updateError) throw new Error(updateError.message)
 
         if (groupId !== '') {
-          await supabase.from('group_students').delete().eq('student_id', student.id)
-          await supabase.from('group_students').insert({ student_id: student.id, group_id: groupId })
+          await removeStudentGroup(student.id)
+          await assignStudentGroup(student.id, groupId)
         }
       }
       onSaved()

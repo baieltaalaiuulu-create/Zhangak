@@ -228,6 +228,29 @@ export async function fetchStudents(): Promise<AdminStudent[]> {
   })
 }
 
+// group_students carries an admin/admin_jr/manager/director-only RLS write policy,
+// so assignment goes through app/api/admin/group-students (service-role) instead
+// of the anon client.
+export async function assignStudentGroup(studentId: string, groupId: number): Promise<void> {
+  const res = await fetch('/api/admin/group-students', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ studentId, groupId }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to assign group')
+}
+
+export async function removeStudentGroup(studentId: string): Promise<void> {
+  const res = await fetch('/api/admin/group-students', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ studentId }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to remove group')
+}
+
 export interface NewStudentPayload {
   full_name: string
   phone: string
@@ -258,7 +281,7 @@ export async function createStudent(payload: NewStudentPayload): Promise<string>
   const studentId = data.id as string
 
   if (payload.group_id) {
-    await supabase.from('group_students').insert({ group_id: payload.group_id, student_id: studentId })
+    await assignStudentGroup(studentId, payload.group_id)
   }
   if (payload.initial_paid_amount > 0) {
     const monthStr = new Date().toISOString().slice(0, 7)
@@ -306,7 +329,7 @@ export async function setStudentBlocked(id: string, blocked: boolean): Promise<v
 }
 
 export async function deleteStudent(id: string): Promise<void> {
-  await supabase.from('group_students').delete().eq('student_id', id)
+  await removeStudentGroup(id)
   await supabase.from('payments').delete().eq('student_id', id)
   const res = await fetch('/api/delete-user', {
     method: 'POST',
@@ -413,20 +436,18 @@ export interface NewLessonPayload {
   video_url: string
 }
 
+// practice_lessons carries the same admin-only RLS write policy as practice_tests,
+// so create/update/delete go through app/api/admin/lessons (service-role) instead
+// of writing directly with the anon-key client.
 export async function createLesson(payload: NewLessonPayload, activate: boolean): Promise<string> {
-  const { data: lesson, error } = await supabase
-    .from('practice_lessons')
-    .insert({
-      title: payload.title,
-      description: payload.description || null,
-      subject: payload.subject,
-      order_number: payload.order_number,
-      video_url: payload.video_url || null,
-    })
-    .select('id, title, subject')
-    .single()
-
-  if (error || !lesson) throw new Error(error?.message ?? 'Failed to create lesson')
+  const res = await fetch('/api/admin/lessons', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to create lesson')
+  const lesson = data.lesson as LessonForTest
 
   if (activate) {
     await callEnsurePracticeTest(lesson, true)
@@ -435,18 +456,30 @@ export async function createLesson(payload: NewLessonPayload, activate: boolean)
   return lesson.id
 }
 
+export interface UpdateLessonPayload extends NewLessonPayload { id: string }
+
+export async function updateLesson(payload: UpdateLessonPayload): Promise<void> {
+  const res = await fetch('/api/admin/lessons', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to update lesson')
+}
+
 export async function setLessonActive(lesson: LessonForTest, active: boolean): Promise<void> {
   await callEnsurePracticeTest(lesson, active)
 }
 
 export async function deleteLesson(id: string): Promise<void> {
-  const { data: tests } = await supabase.from('practice_tests').select('id').eq('lesson_id', id)
-  const testIds = (tests ?? []).map(t => t.id)
-  if (testIds.length) {
-    await supabase.from('questions').delete().in('practice_test_id', testIds)
-    await supabase.from('practice_tests').delete().in('id', testIds)
-  }
-  await supabase.from('practice_lessons').delete().eq('id', id)
+  const res = await fetch('/api/admin/lessons', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to delete lesson')
 }
 
 // ── Questions ────────────────────────────────────────────────────────────
@@ -479,16 +512,34 @@ export interface QuestionPayload {
   section: string
 }
 
+// questions carries the same admin-only RLS write policy, so create/update/delete
+// go through app/api/admin/questions (service-role) instead of the anon client.
 export async function addQuestion(testId: number, payload: QuestionPayload, orderNum: number): Promise<void> {
-  const { error } = await supabase.from('questions').insert({ practice_test_id: testId, ...payload, order_num: orderNum })
-  if (error) throw new Error(error.message)
+  const res = await fetch('/api/admin/questions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ testId, payload, orderNum }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to add question')
 }
 
 export async function updateQuestion(id: number, payload: QuestionPayload): Promise<void> {
-  const { error } = await supabase.from('questions').update(payload).eq('id', id)
-  if (error) throw new Error(error.message)
+  const res = await fetch('/api/admin/questions', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, payload }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to update question')
 }
 
 export async function deleteQuestion(id: number): Promise<void> {
-  await supabase.from('questions').delete().eq('id', id)
+  const res = await fetch('/api/admin/questions', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to delete question')
 }
