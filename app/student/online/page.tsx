@@ -6,13 +6,14 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getStudentDashboard, DEFAULT_TARGET_SCORE, type StudentDashboardData } from '@/lib/student-data'
 
-import HeroCard     from '@/components/student/HeroCard'
-import DailyPlan    from '@/components/student/DailyPlan'
-import SubjectCards from '@/components/student/SubjectCards'
-import NextLesson   from '@/components/student/NextLesson'
-import AICard       from '@/components/student/AICard'
-import StreakCard   from '@/components/student/StreakCard'
-import StatsRow     from '@/components/student/StatsRow'
+import HeroCard      from '@/components/student/HeroCard'
+import DailyPlan     from '@/components/student/DailyPlan'
+import SubjectCards  from '@/components/student/SubjectCards'
+import NextLesson    from '@/components/student/NextLesson'
+import AICard        from '@/components/student/AICard'
+import StreakCard    from '@/components/student/StreakCard'
+import StatsRow      from '@/components/student/StatsRow'
+import DashboardHero from '@/components/student/DashboardHero'
 
 export default function StudentOnlinePage() {
   const [profileName, setProfileName] = useState<string | null>(null)
@@ -58,50 +59,23 @@ export default function StudentOnlinePage() {
     } : prev)
   }
 
-  // Greeting based on time
-  const hour = new Date().getHours()
-  const greeting =
-    hour < 12 ? 'Доброе утро' :
-    hour < 17 ? 'Добрый день' :
-    'Добрый вечер'
-
   const latestScore = data.latestScore ?? 0
-  const delta = data.latestScore != null && data.previousScore != null
-    ? data.latestScore - data.previousScore : null
+  const remaining = Math.max(0, targetScore - latestScore)
+  const continueHref = data.nextLesson
+    ? `/student/online/lessons/${data.nextLesson.id}`
+    : '/student/online/lessons'
 
   return (
     <div className="min-h-screen bg-[#F4F6FA]">
-      {/* Top greeting bar */}
-      <div className="bg-white border-b border-gray-100 px-4 sm:px-6 py-4">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="text-xl font-bold text-gray-900 truncate">
-              {greeting}, {firstName} 👋
-            </h1>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {delta !== null && delta > 0
-                ? `Отличная работа! +${delta} баллов с прошлого раза`
-                : `До цели осталось ${Math.max(0, targetScore - latestScore)} баллов`
-              }
-            </p>
-          </div>
-
-          {/* ORT countdown pill */}
-          <div className="flex items-center gap-3 shrink-0 flex-wrap">
-            {data.streak > 0 && (
-              <span className="text-sm font-semibold text-orange-600 bg-orange-50 px-3 py-1.5 rounded-full whitespace-nowrap">
-                🔥 {data.streak} дней
-              </span>
-            )}
-            <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full whitespace-nowrap">
-              ⏳ 128 дней до ОРТ
-            </span>
-          </div>
-        </div>
-      </div>
-
       {/* Main grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 min-w-0">
+
+        <DashboardHero
+          firstName={firstName}
+          remaining={remaining}
+          streak={data.streak}
+          ctaHref={continueHref}
+        />
 
         {/* Row 1: Hero + Next Lesson */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
