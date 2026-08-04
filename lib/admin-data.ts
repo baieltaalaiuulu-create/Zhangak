@@ -386,33 +386,23 @@ export async function fetchLessonById(id: string): Promise<LessonRow | null> {
 
 export interface LessonForTest { id: string; title: string; subject: 'math' | 'kyr' }
 
+// practice_tests has an RLS write policy scoped to admin/admin_jr roles that
+// rejects inserts/updates from the browser's anon-key client in practice, so
+// find-or-create (and the active-flag toggle below) go through a server-side
+// route using the service-role key instead — see app/api/admin/ensure-practice-test.
+async function callEnsurePracticeTest(lesson: LessonForTest, setActive?: boolean): Promise<{ id: number; is_active: boolean }> {
+  const res = await fetch('/api/admin/ensure-practice-test', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lessonId: lesson.id, title: lesson.title, subject: lesson.subject, setActive }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to ensure practice test')
+  return data.test
+}
+
 export async function ensurePracticeTestForLesson(lesson: LessonForTest): Promise<{ id: number; is_active: boolean }> {
-  const { data: existing } = await supabase
-    .from('practice_tests')
-    .select('id, is_active')
-    .eq('lesson_id', lesson.id)
-    .eq('type', 'practice')
-    .limit(1)
-    .maybeSingle()
-
-  if (existing) return existing
-
-  const { data: created, error } = await supabase
-    .from('practice_tests')
-    .insert({
-      title: `Практика: ${lesson.title}`,
-      subject: lesson.subject,
-      type: 'practice',
-      lesson_id: lesson.id,
-      is_active: false,
-      max_attempts: 5,
-      time_limit_minutes: 30,
-    })
-    .select('id, is_active')
-    .single()
-
-  if (error || !created) throw new Error(error?.message ?? 'Failed to create practice test')
-  return created
+  return callEnsurePracticeTest(lesson)
 }
 
 export interface NewLessonPayload {
@@ -439,20 +429,14 @@ export async function createLesson(payload: NewLessonPayload, activate: boolean)
   if (error || !lesson) throw new Error(error?.message ?? 'Failed to create lesson')
 
   if (activate) {
-    const test = await ensurePracticeTestForLesson(lesson)
-    if (!test.is_active) {
-      await supabase.from('practice_tests').update({ is_active: true }).eq('id', test.id)
-    }
+    await callEnsurePracticeTest(lesson, true)
   }
 
   return lesson.id
 }
 
 export async function setLessonActive(lesson: LessonForTest, active: boolean): Promise<void> {
-  const test = await ensurePracticeTestForLesson(lesson)
-  if (test.is_active !== active) {
-    await supabase.from('practice_tests').update({ is_active: active }).eq('id', test.id)
-  }
+  await callEnsurePracticeTest(lesson, active)
 }
 
 export async function deleteLesson(id: string): Promise<void> {
