@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { calcStreak, DEFAULT_TARGET_SCORE } from '@/lib/student-data'
 import StudentSidebar from './StudentSidebar'
@@ -11,8 +11,15 @@ interface Props {
   children: ReactNode
 }
 
+// The mock exam screen (/student/online/mock/[id], but not its /results child
+// or the /mock listing page) runs full-screen with its own dark header — no
+// sidebar/topbar chrome.
+const EXAM_ROUTE = /^\/student\/online\/mock\/[^/]+$/
+
 export default function StudentLayout({ children }: Props) {
   const router = useRouter()
+  const pathname = usePathname()
+  const isExamScreen = EXAM_ROUTE.test(pathname ?? '')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [fullName, setFullName] = useState('Студент')
   const [targetScore, setTargetScore] = useState(DEFAULT_TARGET_SCORE)
@@ -54,6 +61,8 @@ export default function StudentLayout({ children }: Props) {
     await supabase.auth.signOut()
     router.push('/')
   }
+
+  if (isExamScreen) return <>{children}</>
 
   return (
     <div className="min-h-screen bg-[#FAF8FF]">
