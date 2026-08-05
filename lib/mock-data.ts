@@ -224,11 +224,15 @@ function toDetail(r: RawResultRow): MockResultDetail {
   }
 }
 
-export async function fetchMockResultById(resultId: string): Promise<MockResultDetail | null> {
+// testId is required (not just resultId) so a result belonging to a different
+// test — mock or otherwise — can never be shown on this test's results page.
+export async function fetchMockResultById(resultId: string, testId: number): Promise<MockResultDetail | null> {
   const { data } = await supabase
     .from('practice_results')
     .select('id, test_id, student_id, math_raw_score, math_comparison_score, analogy_score, reading_score, grammar_score, total_score, attempt_number, completed_at, answers')
     .eq('id', resultId)
+    .eq('test_id', testId)
+    .eq('test_type', 'mock')
     .maybeSingle()
 
   return data ? toDetail(data as RawResultRow) : null

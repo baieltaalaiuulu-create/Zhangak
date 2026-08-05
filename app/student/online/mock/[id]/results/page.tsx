@@ -50,7 +50,7 @@ export default function MockResultsPage() {
       if (profile.student_type === 'offline') { router.push('/student'); return }
       setTargetScore(profile.target_score ?? DEFAULT_TARGET_SCORE)
 
-      const r = resultId ? await fetchMockResultById(resultId) : await fetchLatestMockResult(user.id, testId)
+      const r = resultId ? await fetchMockResultById(resultId, testId) : await fetchLatestMockResult(user.id, testId)
       if (!r) { router.push('/student/online/mock'); return }
 
       const [prevScore, board, qCount, historyRows] = await Promise.all([
