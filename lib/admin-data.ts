@@ -482,6 +482,116 @@ export async function deleteLesson(id: string): Promise<void> {
   if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to delete lesson')
 }
 
+// ── Practice Tests ───────────────────────────────────────────────────────
+
+export interface AdminPracticeTest {
+  id: number
+  title: string
+  subject: 'math' | 'kyr' | 'all'
+  lessonId: string | null
+  lessonTitle: string | null
+  timeLimitMinutes: number | null
+  maxAttempts: number
+  isActive: boolean
+  questionCount: number
+  createdAt: string
+}
+
+interface PracticeTestRow {
+  id: number
+  title: string
+  subject: 'math' | 'kyr' | 'all'
+  lesson_id: string | null
+  time_limit_minutes: number | null
+  max_attempts: number | null
+  is_active: boolean | null
+  created_at: string
+  practice_lessons: { title: string | null } | null
+}
+
+export async function fetchPracticeTests(): Promise<AdminPracticeTest[]> {
+  const [{ data: testsRaw }, { data: questionsRaw }] = await Promise.all([
+    supabase
+      .from('practice_tests')
+      .select('id, title, subject, lesson_id, time_limit_minutes, max_attempts, is_active, created_at, practice_lessons(title)')
+      .eq('type', 'practice')
+      .order('created_at', { ascending: false }),
+    supabase.from('questions').select('practice_test_id'),
+  ])
+
+  const countByTest = new Map<number, number>()
+  for (const q of (questionsRaw ?? []) as { practice_test_id: number }[]) {
+    countByTest.set(q.practice_test_id, (countByTest.get(q.practice_test_id) ?? 0) + 1)
+  }
+
+  const tests = (testsRaw ?? []) as unknown as PracticeTestRow[]
+  return tests.map(t => ({
+    id: t.id,
+    title: t.title,
+    subject: t.subject,
+    lessonId: t.lesson_id,
+    lessonTitle: t.practice_lessons?.title ?? null,
+    timeLimitMinutes: t.time_limit_minutes,
+    maxAttempts: t.max_attempts ?? 1,
+    isActive: !!t.is_active,
+    questionCount: countByTest.get(t.id) ?? 0,
+    createdAt: t.created_at,
+  }))
+}
+
+export interface PracticeTestPayload {
+  title: string
+  subject: 'math' | 'kyr' | 'all'
+  lessonId: string | null
+  timeLimitMinutes: number | null
+  maxAttempts: number
+  isActive: boolean
+}
+
+// practice_tests carries the same admin-only RLS write policy as practice_lessons
+// and questions, so create/update/delete go through app/api/admin/practice-tests
+// (service-role) instead of the anon client — see lib/admin-data.ts's Lessons
+// section above for the identical pattern.
+export async function createPracticeTest(payload: PracticeTestPayload): Promise<void> {
+  const res = await fetch('/api/admin/practice-tests', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to create practice test')
+}
+
+export async function updatePracticeTest(id: number, payload: PracticeTestPayload): Promise<void> {
+  const res = await fetch('/api/admin/practice-tests', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, ...payload }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to update practice test')
+}
+
+export async function setPracticeTestActive(id: number, isActive: boolean): Promise<void> {
+  const res = await fetch('/api/admin/practice-tests', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, isActive }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to update practice test')
+}
+
+export async function deletePracticeTest(id: number): Promise<void> {
+  const res = await fetch('/api/admin/practice-tests', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to delete practice test')
+}
+
 // ── Questions ────────────────────────────────────────────────────────────
 
 export interface AdminQuestion {

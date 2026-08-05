@@ -5,6 +5,7 @@ import { Search, Bell, Menu } from 'lucide-react'
 
 interface Props {
   fullName: string
+  avatarUrl: string | null
   streak: number
   targetScore: number
   level: number
@@ -20,7 +21,7 @@ function Pill({ children }: { children: ReactNode }) {
   )
 }
 
-export default function StudentTopbar({ fullName, streak, targetScore, level, onMenuClick, onLogout }: Props) {
+export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore, level, onMenuClick, onLogout }: Props) {
   const [notifOpen, setNotifOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const initial = fullName?.[0]?.toUpperCase() ?? '?'
@@ -70,9 +71,15 @@ export default function StudentTopbar({ fullName, streak, targetScore, level, on
           <button
             type="button"
             onClick={() => setMenuOpen(v => !v)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1B4FD8] text-xs font-bold text-white"
+            aria-label="Меню профиля"
+            className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#1B4FD8] text-xs font-bold text-white"
           >
-            {initial}
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL, no next/image domain config in this project
+              <img src={avatarUrl} alt={fullName} className="h-full w-full object-cover" />
+            ) : (
+              initial
+            )}
           </button>
           {menuOpen && (
             <div className="absolute right-0 top-11 w-48 rounded-xl border border-[#C3C6D7]/50 bg-white p-2 shadow-lg">

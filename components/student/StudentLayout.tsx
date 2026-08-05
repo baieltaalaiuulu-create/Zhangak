@@ -22,6 +22,7 @@ export default function StudentLayout({ children }: Props) {
   const isExamScreen = EXAM_ROUTE.test(pathname ?? '')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [fullName, setFullName] = useState('Студент')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [targetScore, setTargetScore] = useState(DEFAULT_TARGET_SCORE)
   const [streak, setStreak] = useState(0)
   const [level, setLevel] = useState(1)
@@ -35,13 +36,14 @@ export default function StudentLayout({ children }: Props) {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name, target_score')
+        .select('full_name, target_score, avatar_url')
         .eq('id', user.id)
         .single()
 
       if (profile) {
         setFullName(profile.full_name ?? 'Студент')
         setTargetScore(profile.target_score ?? DEFAULT_TARGET_SCORE)
+        setAvatarUrl(profile.avatar_url ?? null)
       }
 
       const { data: results } = await supabase
@@ -71,6 +73,7 @@ export default function StudentLayout({ children }: Props) {
       <div className="lg:ml-64">
         <StudentTopbar
           fullName={fullName}
+          avatarUrl={avatarUrl}
           streak={streak}
           targetScore={targetScore}
           level={level}

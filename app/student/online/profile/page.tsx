@@ -27,6 +27,7 @@ import NotificationSettings from '@/components/student/profile/NotificationSetti
 export default function ProfilePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [studentId, setStudentId] = useState<string | null>(null)
   const [profile, setProfile] = useState<ProfileInfo | null>(null)
   const [latestScore, setLatestScore] = useState<number | null>(null)
   const [scoreHistory, setScoreHistory] = useState<ScorePoint[]>([])
@@ -48,6 +49,8 @@ export default function ProfilePage() {
 
       if (!authProfile || authProfile.role !== 'student') { router.push('/login'); return }
       if (authProfile.student_type === 'offline') { router.push('/student'); return }
+
+      setStudentId(user.id)
 
       const [info, latest, history, learningProgress, solved, { data: allResults }] = await Promise.all([
         fetchProfileInfo(user.id),
@@ -86,7 +89,15 @@ export default function ProfilePage() {
     setProfile(prev => prev ? { ...prev, target_score: newGoal } : prev)
   }
 
-  if (loading || !profile) {
+  const handleNameUpdate = (name: string) => {
+    setProfile(prev => prev ? { ...prev, full_name: name } : prev)
+  }
+
+  const handleAvatarUpdate = (url: string) => {
+    setProfile(prev => prev ? { ...prev, avatar_url: url } : prev)
+  }
+
+  if (loading || !profile || !studentId) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAF8FF', fontFamily: 'Inter, sans-serif' }}>
         <div style={{ color: '#9CA3AF', fontSize: 14 }}>Загрузка...</div>
@@ -102,12 +113,16 @@ export default function ProfilePage() {
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[320px_1fr]">
           <div className="space-y-5 min-w-0">
             <ProfileHeader
+              studentId={studentId}
               fullName={profile.full_name}
+              avatarUrl={profile.avatar_url}
               studentType={profile.student_type}
               latestScore={latestScore}
               streak={streak}
               level={level}
               onSignOut={handleSignOut}
+              onNameUpdate={handleNameUpdate}
+              onAvatarUpdate={handleAvatarUpdate}
             />
             <ProfileInfoCard fullName={profile.full_name} phone={profile.phone} />
             <ProfileGoalCard targetScore={profile.target_score ?? DEFAULT_TARGET_SCORE} onGoalUpdate={handleGoalUpdate} />

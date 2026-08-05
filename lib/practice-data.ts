@@ -43,6 +43,55 @@ export const SECTION_LABELS: Record<string, string> = {
   general: 'Общее',
 }
 
+export interface PracticeTestListItem {
+  id: number
+  lessonId: string
+  title: string
+  subject: 'math' | 'kyr' | 'all'
+  timeLimitMinutes: number | null
+  questionCount: number
+}
+
+interface ActiveTestRow {
+  id: number
+  subject: 'math' | 'kyr' | 'all'
+  time_limit_minutes: number | null
+  lesson_id: string | null
+  practice_lessons: { title: string | null } | null
+}
+
+// Lists every active practice test for the browsing grid (no lesson chosen
+// yet). Tests without a linked lesson are excluded — the practice flow is
+// keyed entirely off lessonId, so an orphaned test has nowhere to link to.
+export async function fetchAvailablePracticeTests(): Promise<PracticeTestListItem[]> {
+  const [{ data: testsRaw }, { data: questionsRaw }] = await Promise.all([
+    supabase
+      .from('practice_tests')
+      .select('id, subject, time_limit_minutes, lesson_id, practice_lessons(title)')
+      .eq('type', 'practice')
+      .eq('is_active', true)
+      .not('lesson_id', 'is', null),
+    supabase.from('questions').select('practice_test_id'),
+  ])
+
+  const countByTest = new Map<number, number>()
+  for (const q of questionsRaw ?? []) {
+    countByTest.set(q.practice_test_id, (countByTest.get(q.practice_test_id) ?? 0) + 1)
+  }
+
+  const tests = (testsRaw ?? []) as unknown as ActiveTestRow[]
+  return tests
+    .filter(t => t.lesson_id)
+    .map(t => ({
+      id: t.id,
+      lessonId: t.lesson_id as string,
+      title: t.practice_lessons?.title ?? 'Практика',
+      subject: t.subject,
+      timeLimitMinutes: t.time_limit_minutes,
+      questionCount: countByTest.get(t.id) ?? 0,
+    }))
+}
+
 export async function fetchPracticeTest(lessonId: string): Promise<PracticeTest | null> {
   const { data } = await supabase
     .from('practice_tests')

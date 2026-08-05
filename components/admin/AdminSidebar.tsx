@@ -4,13 +4,14 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard, BookOpen, PenLine, ClipboardList, Users, BarChart2, Megaphone, User, Menu, X,
+  LayoutDashboard, BookOpen, PenLine, ListChecks, ClipboardList, Users, BarChart2, Megaphone, User, Menu, X,
   type LucideIcon,
 } from 'lucide-react'
 
 const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/lessons', label: 'Уроки', icon: BookOpen },
+  { href: '/admin/practice', label: 'Практика', icon: ListChecks },
   { href: '/admin/questions', label: 'Вопросы', icon: PenLine },
   { href: '/admin/mock', label: 'Пробный ОРТ', icon: ClipboardList },
   { href: '/admin/students', label: 'Ученики', icon: Users },

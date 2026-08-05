@@ -9,12 +9,14 @@ import {
   fetchPracticeTest,
   fetchQuestions,
   fetchPreviousScore,
+  fetchAvailablePracticeTests,
   savePracticeResult,
   isCorrect,
   PASS_RATIO,
   type PracticeTest,
   type PracticeQuestion,
   type AnswerLetter,
+  type PracticeTestListItem,
 } from '@/lib/practice-data'
 import { fetchLessons, type Lesson } from '@/lib/lessons-data'
 import { calcStreak } from '@/lib/student-data'
@@ -22,6 +24,7 @@ import PracticeStartScreen from '@/components/student/PracticeStartScreen'
 import PracticeQuestionScreen from '@/components/student/PracticeQuestionScreen'
 import PracticeResultsScreen, { type WrongAnswer } from '@/components/student/PracticeResultsScreen'
 import PracticeErrorReview from '@/components/student/PracticeErrorReview'
+import PracticeTestCard from '@/components/student/PracticeTestCard'
 
 type View = 'start' | 'question' | 'results' | 'review'
 
@@ -56,6 +59,7 @@ export default function PracticePage() {
   const [previousScore, setPreviousScore] = useState<number | null>(null)
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [streak, setStreak] = useState(0)
+  const [availableTests, setAvailableTests] = useState<PracticeTestListItem[]>([])
 
   const [view, setView] = useState<View>('start')
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -81,7 +85,11 @@ export default function PracticePage() {
 
       setStudentId(user.id)
 
-      if (!lessonId) { setLoading(false); return }
+      if (!lessonId) {
+        setAvailableTests(await fetchAvailablePracticeTests())
+        setLoading(false)
+        return
+      }
 
       const foundTest = await fetchPracticeTest(lessonId)
       setTest(foundTest)
@@ -148,7 +156,26 @@ export default function PracticePage() {
   }, [view, secondsLeft])
 
   if (loading) return <LoadingScreen />
-  if (!lessonId) return <EmptyState text="Выбери урок, чтобы начать практический тест" />
+
+  if (!lessonId) {
+    if (availableTests.length === 0) {
+      return <EmptyState text="Уроки скоро появятся" />
+    }
+    return (
+      <div className="min-h-screen bg-[#F4F6FA] px-4 py-6 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <h1 className="text-xl font-bold text-[#191B23]">Практика</h1>
+          <p className="mt-1 text-sm text-gray-500">Выбери тест, чтобы закрепить пройденный урок</p>
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {availableTests.map(t => (
+              <PracticeTestCard key={t.id} test={t} />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (!test) return <EmptyState text="Тест для этого урока пока недоступен" />
   if (questions.length === 0) return <EmptyState text="В этом тесте пока нет вопросов" />
 

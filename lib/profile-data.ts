@@ -5,12 +5,13 @@ export interface ProfileInfo {
   phone: string | null
   student_type: string
   target_score: number
+  avatar_url: string | null
 }
 
 export async function fetchProfileInfo(studentId: string): Promise<ProfileInfo | null> {
   const { data } = await supabase
     .from('profiles')
-    .select('full_name, phone, student_type, target_score')
+    .select('full_name, phone, student_type, target_score, avatar_url')
     .eq('id', studentId)
     .single()
 
@@ -20,6 +21,7 @@ export async function fetchProfileInfo(studentId: string): Promise<ProfileInfo |
     phone: data.phone,
     student_type: data.student_type ?? 'offline',
     target_score: data.target_score ?? 180,
+    avatar_url: data.avatar_url ?? null,
   }
 }
 
