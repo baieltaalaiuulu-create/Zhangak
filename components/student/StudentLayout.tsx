@@ -7,6 +7,7 @@ import { calcStreak, DEFAULT_TARGET_SCORE } from '@/lib/student-data'
 import StudentSidebar from './StudentSidebar'
 import StudentTopbar from './StudentTopbar'
 import NotificationPopup from './NotificationPopup'
+import AIDrawer from './ai/AIDrawer'
 
 interface Props {
   children: ReactNode
@@ -94,6 +95,7 @@ export default function StudentLayout({ children }: Props) {
       </div>
 
       <NotificationPopup studentId={studentId} onUnreadChange={setUnreadCount} />
+      <AIDrawer />
     </div>
   )
 }
