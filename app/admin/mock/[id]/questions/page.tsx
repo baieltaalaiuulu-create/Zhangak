@@ -8,9 +8,11 @@ import AdminTopbar from '@/components/admin/AdminTopbar'
 import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
 import QuestionImageUploader from '@/components/admin/QuestionImageUploader'
 import {
-  fetchLessonById, ensurePracticeTestForLesson, fetchQuestionsForTest,
-  addQuestion, updateQuestion, deleteQuestion,
-  SUBJECT_LABELS, SECTION_OPTIONS,
+  fetchMockTestById,
+} from '@/lib/mock-data'
+import {
+  fetchQuestionsForTest, addQuestion, updateQuestion, deleteQuestion,
+  SECTION_OPTIONS,
   type AdminQuestion, type QuestionPayload,
 } from '@/lib/admin-data'
 
@@ -18,16 +20,15 @@ const ANSWER_OPTIONS: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D']
 
 const emptyForm: QuestionPayload = {
   question_text: '', option_a: '', option_b: '', option_c: '', option_d: '',
-  correct_answer: 'A', section: 'general', image_url: null,
+  correct_answer: 'A', section: 'math', image_url: null,
 }
 
-export default function AdminLessonQuestionsPage() {
+export default function AdminMockQuestionsPage() {
   const params = useParams<{ id: string }>()
-  const lessonId = params.id
+  const testId = Number(params.id)
   const router = useRouter()
 
-  const [lesson, setLesson] = useState<{ id: string; title: string; subject: 'math' | 'kyr' } | null>(null)
-  const [testId, setTestId] = useState<number | null>(null)
+  const [sessionTitle, setSessionTitle] = useState<string | null>(null)
   const [questions, setQuestions] = useState<AdminQuestion[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -40,17 +41,15 @@ export default function AdminLessonQuestionsPage() {
 
   useEffect(() => {
     const init = async () => {
-      const l = await fetchLessonById(lessonId)
-      if (!l) { router.push('/admin/lessons'); return }
-      setLesson(l)
-      const test = await ensurePracticeTestForLesson(l)
-      setTestId(test.id)
-      const qs = await fetchQuestionsForTest(test.id)
+      const session = await fetchMockTestById(testId)
+      if (!session) { router.push('/admin/mock'); return }
+      setSessionTitle(session.title)
+      const qs = await fetchQuestionsForTest(testId)
       setQuestions(qs)
       setLoading(false)
     }
     init()
-  }, [lessonId, router])
+  }, [testId, router])
 
   const resetForm = () => { setForm(emptyForm); setEditingId(null); setError('') }
 
@@ -62,7 +61,7 @@ export default function AdminLessonQuestionsPage() {
       option_c: q.option_c ?? '',
       option_d: q.option_d ?? '',
       correct_answer: (q.correct_answer as 'A' | 'B' | 'C' | 'D') ?? 'A',
-      section: q.section ?? 'general',
+      section: q.section ?? 'math',
       image_url: q.image_url ?? null,
     })
     setEditingId(q.id)
@@ -73,7 +72,6 @@ export default function AdminLessonQuestionsPage() {
     setError('')
     if (!form.question_text.trim()) { setError('Суроонун текстин киргизиңиз'); return }
     if (!form.option_a.trim() || !form.option_b.trim() || !form.option_c.trim() || !form.option_d.trim()) { setError('Бардык варианттарды толтуруңуз'); return }
-    if (!testId) return
 
     setSaving(true)
     try {
@@ -103,7 +101,7 @@ export default function AdminLessonQuestionsPage() {
   }
 
   const handleDelete = async () => {
-    if (!deleteTarget || !testId) return
+    if (!deleteTarget) return
     setDeleting(true)
     try {
       await deleteQuestion(deleteTarget.id)
@@ -118,18 +116,12 @@ export default function AdminLessonQuestionsPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF8FF]">
-      <AdminTopbar title={lesson ? `Суроолор — ${lesson.title}` : 'Суроолор'} />
+      <AdminTopbar title={sessionTitle ? `Суроолор — ${sessionTitle}` : 'Суроолор'} />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-4">
-        <button onClick={() => router.push('/admin/lessons')} className="flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-[#1B4FD8]">
-          <ArrowLeft size={15} /> Уроктарга кайтуу
+        <button onClick={() => router.push('/admin/mock')} className="flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-[#1B4FD8]">
+          <ArrowLeft size={15} /> Пробный ОРТко кайтуу
         </button>
-
-        {lesson && (
-          <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-bold ${lesson.subject === 'math' ? 'bg-[#EEF2FF] text-[#1B4FD8]' : 'bg-[#F5F3FF] text-[#7C3AED]'}`}>
-            {SUBJECT_LABELS[lesson.subject]}
-          </span>
-        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-5 items-start">
 
@@ -150,6 +142,7 @@ export default function AdminLessonQuestionsPage() {
                       <p className="line-clamp-2 text-sm font-semibold text-[#191B23]">{q.question_text || '—'}</p>
                       <div className="mt-1 flex items-center gap-2">
                         <span className="inline-block text-xs font-bold text-green-600">Туура: {q.correct_answer}</span>
+                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">{q.section}</span>
                         {q.image_url && <ImageIcon size={13} className="text-gray-400" />}
                       </div>
                     </div>
@@ -210,7 +203,7 @@ export default function AdminLessonQuestionsPage() {
               <label className="mb-1 block text-xs font-semibold text-gray-500">Бөлүм</label>
               <select value={form.section} onChange={e => setForm(p => ({ ...p, section: e.target.value }))}
                 className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20">
-                {SECTION_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                {SECTION_OPTIONS.filter(s => s.value !== 'general').map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </div>
 

@@ -41,6 +41,10 @@ function validateItem(item: unknown, index: number): { payload: BankQuestionPayl
 
   const rawDifficulty = typeof o.difficulty === 'string' ? o.difficulty.trim() : ''
   const difficulty = VALID_DIFFICULTIES.includes(rawDifficulty) ? rawDifficulty : 'medium'
+  // Optional — lets an admin paste a pre-hosted image URL; there's no way to
+  // attach a binary file through a JSON paste, so upload-per-question stays
+  // the only path for new images.
+  const imageUrl = typeof o.image_url === 'string' && o.image_url.trim() ? o.image_url.trim() : null
 
   return {
     payload: {
@@ -53,6 +57,7 @@ function validateItem(item: unknown, index: number): { payload: BankQuestionPayl
       section,
       topic: (o.topic as string).trim(),
       difficulty: difficulty as 'easy' | 'medium' | 'hard',
+      image_url: imageUrl,
     },
   }
 }

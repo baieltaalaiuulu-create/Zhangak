@@ -592,6 +592,124 @@ export async function deletePracticeTest(id: number): Promise<void> {
   if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to delete practice test')
 }
 
+// ── Mock Sessions ("Пробный ОРТ" — practice_tests where type='mock') ──────
+//
+// A mock session IS a practice_tests row (type='mock', subject='all', one
+// attempt), scheduled via the scheduled_at column. Reuses the same
+// service-role route as regular practice tests — POST/PATCH there already
+// accept an optional `type` (defaults to 'practice' for every other caller)
+// and `scheduledAt`, so no separate API route was needed.
+
+export interface AdminMockSession {
+  id: number
+  title: string
+  scheduledAt: string | null
+  durationMinutes: number | null
+  isActive: boolean
+  questionCount: number
+  sectionCounts: Record<string, number>
+  registeredCount: number
+  createdAt: string
+}
+
+interface MockSessionRow {
+  id: number
+  title: string
+  time_limit_minutes: number | null
+  is_active: boolean | null
+  scheduled_at: string | null
+  created_at: string
+}
+
+export async function fetchMockSessions(): Promise<AdminMockSession[]> {
+  const [{ data: sessionsRaw }, { data: questionsRaw }, { data: regsRaw }] = await Promise.all([
+    supabase
+      .from('practice_tests')
+      .select('id, title, time_limit_minutes, is_active, scheduled_at, created_at')
+      .eq('type', 'mock')
+      .order('created_at', { ascending: false }),
+    supabase.from('questions').select('practice_test_id, section'),
+    supabase.from('mock_registrations').select('session_id'),
+  ])
+
+  const sessions = (sessionsRaw ?? []) as MockSessionRow[]
+
+  const sectionCountsByTest = new Map<number, Record<string, number>>()
+  for (const q of (questionsRaw ?? []) as { practice_test_id: number; section: string }[]) {
+    const counts = sectionCountsByTest.get(q.practice_test_id) ?? {}
+    counts[q.section] = (counts[q.section] ?? 0) + 1
+    sectionCountsByTest.set(q.practice_test_id, counts)
+  }
+
+  const registeredByTest = new Map<number, number>()
+  for (const r of (regsRaw ?? []) as { session_id: number }[]) {
+    registeredByTest.set(r.session_id, (registeredByTest.get(r.session_id) ?? 0) + 1)
+  }
+
+  return sessions.map(s => {
+    const sectionCounts = sectionCountsByTest.get(s.id) ?? {}
+    return {
+      id: s.id,
+      title: s.title,
+      scheduledAt: s.scheduled_at,
+      durationMinutes: s.time_limit_minutes,
+      isActive: !!s.is_active,
+      questionCount: Object.values(sectionCounts).reduce((a, b) => a + b, 0),
+      sectionCounts,
+      registeredCount: registeredByTest.get(s.id) ?? 0,
+      createdAt: s.created_at,
+    }
+  })
+}
+
+export interface MockSessionPayload {
+  title: string
+  scheduledAt: string | null
+  durationMinutes: number
+  isActive: boolean
+}
+
+export async function createMockSession(payload: MockSessionPayload): Promise<number> {
+  const res = await fetch('/api/admin/practice-tests', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: payload.title,
+      subject: 'all',
+      type: 'mock',
+      lessonId: null,
+      timeLimitMinutes: payload.durationMinutes,
+      maxAttempts: 1,
+      isActive: payload.isActive,
+      scheduledAt: payload.scheduledAt,
+    }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to create mock session')
+  return data.id as number
+}
+
+export async function updateMockSession(id: number, payload: MockSessionPayload): Promise<void> {
+  const res = await fetch('/api/admin/practice-tests', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id,
+      title: payload.title,
+      timeLimitMinutes: payload.durationMinutes,
+      isActive: payload.isActive,
+      scheduledAt: payload.scheduledAt,
+    }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to update mock session')
+}
+
+// setPracticeTestActive / deletePracticeTest above are fully generic on
+// practice_tests.id — reused as-is for mock sessions (deleting one also
+// cascades to its questions and, via the FK's ON DELETE CASCADE, its
+// mock_registrations rows).
+
 // ── Questions ────────────────────────────────────────────────────────────
 
 export interface AdminQuestion {
@@ -605,6 +723,7 @@ export interface AdminQuestion {
   correct_answer: string
   section: string
   order_num: number
+  image_url: string | null
 }
 
 export async function fetchQuestionsForTest(testId: number): Promise<AdminQuestion[]> {
@@ -627,6 +746,7 @@ export interface QuestionPayload {
   // topic=null) rather than needing separate routes per question type.
   topic?: string | null
   difficulty?: 'easy' | 'medium' | 'hard'
+  image_url?: string | null
 }
 
 // questions carries the same admin-only RLS write policy, so create/update/delete
@@ -719,6 +839,7 @@ export interface BankQuestion {
   section: string
   topic: string | null
   difficulty: string
+  image_url: string | null
   subject: 'math' | 'kyr' | 'all'
 }
 
@@ -733,13 +854,14 @@ interface BankQuestionRow {
   section: string
   topic: string | null
   difficulty: string | null
+  image_url: string | null
   practice_tests: { subject: 'math' | 'kyr' | 'all' } | null
 }
 
 export async function fetchBankQuestions(): Promise<BankQuestion[]> {
   const { data } = await supabase
     .from('questions')
-    .select('id, question_text, option_a, option_b, option_c, option_d, correct_answer, section, topic, difficulty, created_at, practice_tests!inner(subject, lesson_id)')
+    .select('id, question_text, option_a, option_b, option_c, option_d, correct_answer, section, topic, difficulty, image_url, created_at, practice_tests!inner(subject, lesson_id)')
     .is('practice_tests.lesson_id', null)
     .order('created_at', { ascending: false })
 
@@ -755,6 +877,7 @@ export async function fetchBankQuestions(): Promise<BankQuestion[]> {
     section: r.section,
     topic: r.topic,
     difficulty: r.difficulty ?? 'medium',
+    image_url: r.image_url,
     subject: r.practice_tests?.subject ?? 'all',
   }))
 }

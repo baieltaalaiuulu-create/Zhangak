@@ -16,7 +16,7 @@ function getAdminClient() {
 export async function POST(req: NextRequest) {
   try {
     const supabaseAdmin = getAdminClient()
-    const { title, subject, lessonId, timeLimitMinutes, maxAttempts, isActive } = await req.json()
+    const { title, subject, lessonId, timeLimitMinutes, maxAttempts, isActive, type, scheduledAt } = await req.json()
     if (!title || !subject) {
       return NextResponse.json({ error: 'title жана subject талап кылынат' }, { status: 400 })
     }
@@ -26,11 +26,14 @@ export async function POST(req: NextRequest) {
       .insert({
         title,
         subject,
-        type: 'practice',
+        // Defaults to 'practice' — every pre-existing caller (lesson tests,
+        // bank tests) omits this field and must keep getting 'practice'.
+        type: type ?? 'practice',
         lesson_id: lessonId || null,
         time_limit_minutes: timeLimitMinutes ?? null,
         max_attempts: maxAttempts ?? 1,
         is_active: !!isActive,
+        scheduled_at: scheduledAt ?? null,
       })
       .select('id')
       .single()
@@ -59,6 +62,7 @@ export async function PATCH(req: NextRequest) {
     if (body.timeLimitMinutes !== undefined) update.time_limit_minutes = body.timeLimitMinutes
     if (body.maxAttempts !== undefined) update.max_attempts = body.maxAttempts
     if (body.isActive !== undefined) update.is_active = !!body.isActive
+    if (body.scheduledAt !== undefined) update.scheduled_at = body.scheduledAt
 
     const { error } = await supabaseAdmin.from('practice_tests').update(update).eq('id', id)
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })

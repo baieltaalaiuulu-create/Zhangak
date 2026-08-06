@@ -5,18 +5,17 @@ import {
   correctLetter,
 } from '@/lib/practice-data'
 
-// Suggested schema (NOT applied — noted per instructions, not run):
-// CREATE TABLE mock_sessions (id uuid DEFAULT gen_random_uuid(), title text, scheduled_at timestamptz, duration_minutes int DEFAULT 180, is_active bool DEFAULT true, created_at timestamptz DEFAULT now());
-// CREATE TABLE mock_registrations (id uuid DEFAULT gen_random_uuid(), student_id uuid REFERENCES profiles(id), session_id uuid REFERENCES mock_sessions(id), registered_at timestamptz DEFAULT now());
-// CREATE TABLE mock_results (id uuid DEFAULT gen_random_uuid(), student_id uuid REFERENCES profiles(id), session_id uuid REFERENCES mock_sessions(id), math_score int, analogy_score int, reading_score int, grammar_score int, total_score int, completed_at timestamptz, answers jsonb);
+// Scheduling: practice_tests.scheduled_at (timestamptz, nullable) was added
+// specifically for this feature. A mock session with scheduled_at=null keeps
+// the original "available now, no schedule" behavior (backward-compatible
+// with every mock test created before this column existed) — see
+// getMockSessionStatus's 'open' status below. duration comes from the
+// existing time_limit_minutes column (already used everywhere else as the
+// exam's time budget), so no separate duration column was needed.
 //
-// For now this reads/writes practice_tests (type='mock') and practice_results
-// (test_type='mock'), per instruction. One real gap this creates: practice_tests
-// has no scheduled_at/duration column, so there is no real future exam date to
-// count down to — an is_active mock test just means "open now." The main mock
-// page reflects that honestly (an "available now" state, no fabricated countdown
-// to a date nobody set) rather than faking a schedule. The exam page's countdown
-// is real, driven by time_limit_minutes.
+// mock_registrations(id, student_id, session_id, registered_at) is a new
+// table — session_id references practice_tests(id) (the mock session IS a
+// practice_tests row, same as everywhere else in this schema).
 
 export { type PracticeQuestion, type AnswerLetter, correctLetter } from '@/lib/practice-data'
 export const fetchMockQuestions = fetchPracticeQuestions
@@ -28,30 +27,99 @@ export interface MockTest {
   time_limit_minutes: number | null
   max_attempts: number
   created_at: string
+  scheduled_at: string | null
 }
 
-export async function fetchActiveMockTest(): Promise<MockTest | null> {
+export type MockSessionStatus = 'upcoming' | 'live' | 'ended' | 'open'
+
+const DEFAULT_MOCK_DURATION_MIN = 180
+
+// 'open' = legacy/no-schedule mock test — always available, matches the
+// pre-scheduling behavior exactly so existing active tests keep working.
+export function getMockSessionStatus(session: MockTest, now: Date = new Date()): MockSessionStatus {
+  if (!session.scheduled_at) return 'open'
+  const start = new Date(session.scheduled_at)
+  const durationMin = session.time_limit_minutes ?? DEFAULT_MOCK_DURATION_MIN
+  const end = new Date(start.getTime() + durationMin * 60_000)
+  if (now < start) return 'upcoming'
+  if (now <= end) return 'live'
+  return 'ended'
+}
+
+// Picks the single most relevant active mock session to show on the main
+// mock page: a session that's live right now wins, then the soonest
+// upcoming one, then any legacy no-schedule ("open") test. Ended sessions
+// are never surfaced here — the page falls back to history-only display.
+export async function fetchRelevantMockSession(): Promise<MockTest | null> {
   const { data } = await supabase
     .from('practice_tests')
-    .select('id, title, subject, time_limit_minutes, max_attempts, created_at')
+    .select('id, title, subject, time_limit_minutes, max_attempts, created_at, scheduled_at')
     .eq('type', 'mock')
     .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
 
-  return (data as MockTest) ?? null
+  const sessions = (data ?? []) as MockTest[]
+  if (sessions.length === 0) return null
+
+  const now = new Date()
+  const withStatus = sessions.map(s => ({ session: s, status: getMockSessionStatus(s, now) }))
+
+  const live = withStatus.find(x => x.status === 'live')
+  if (live) return live.session
+
+  const upcoming = withStatus
+    .filter(x => x.status === 'upcoming')
+    .sort((a, b) => new Date(a.session.scheduled_at!).getTime() - new Date(b.session.scheduled_at!).getTime())[0]
+  if (upcoming) return upcoming.session
+
+  const open = withStatus.find(x => x.status === 'open')
+  return open?.session ?? null
 }
 
 export async function fetchMockTestById(id: number): Promise<MockTest | null> {
   const { data } = await supabase
     .from('practice_tests')
-    .select('id, title, subject, time_limit_minutes, max_attempts, created_at')
+    .select('id, title, subject, time_limit_minutes, max_attempts, created_at, scheduled_at')
     .eq('id', id)
     .eq('type', 'mock')
     .maybeSingle()
 
   return (data as MockTest) ?? null
+}
+
+export interface MockRegistration {
+  id: string
+  student_id: string
+  session_id: number
+  registered_at: string
+}
+
+export async function fetchMyMockRegistration(studentId: string, sessionId: number): Promise<MockRegistration | null> {
+  const { data } = await supabase
+    .from('mock_registrations')
+    .select('*')
+    .eq('student_id', studentId)
+    .eq('session_id', sessionId)
+    .maybeSingle()
+
+  return data ?? null
+}
+
+export async function fetchMockRegisteredCount(sessionId: number): Promise<number> {
+  const { count } = await supabase
+    .from('mock_registrations')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', sessionId)
+
+  return count ?? 0
+}
+
+export async function registerForMock(studentId: string, sessionId: number): Promise<void> {
+  const { error } = await supabase
+    .from('mock_registrations')
+    .insert({ student_id: studentId, session_id: sessionId })
+  // 23505 = unique_violation (student_id, session_id) — already registered,
+  // treat as success rather than surfacing a confusing error.
+  if (error && (error as { code?: string }).code !== '23505') throw new Error(error.message)
 }
 
 export async function fetchQuestionCount(testId: number): Promise<number> {

@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2, ClipboardPaste } from 'lucide-react'
+import { Plus, Pencil, Trash2, ClipboardPaste, Image as ImageIcon } from 'lucide-react'
 import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
+import QuestionImageUploader from '@/components/admin/QuestionImageUploader'
 import BulkAddModal from './BulkAddModal'
 import { SECTION_LABELS } from '@/lib/practice-data'
 import {
@@ -20,7 +21,7 @@ const ANSWER_OPTIONS: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D']
 
 const emptyForm: BankQuestionPayload = {
   question_text: '', option_a: '', option_b: '', option_c: '', option_d: '',
-  correct_answer: 'A', section: 'math', topic: '', difficulty: 'medium',
+  correct_answer: 'A', section: 'math', topic: '', difficulty: 'medium', image_url: null,
 }
 
 export default function QuestionBankTab() {
@@ -66,6 +67,7 @@ export default function QuestionBankTab() {
       section: q.section,
       topic: q.topic ?? '',
       difficulty: (q.difficulty as 'easy' | 'medium' | 'hard') ?? 'medium',
+      image_url: q.image_url ?? null,
     })
     setEditingId(q.id)
     setError('')
@@ -89,6 +91,7 @@ export default function QuestionBankTab() {
         section: form.section,
         topic: form.topic.trim(),
         difficulty: form.difficulty,
+        image_url: form.image_url ?? null,
       }
       if (editingId) {
         await updateQuestion(editingId, payload)
@@ -155,6 +158,7 @@ export default function QuestionBankTab() {
                       <span className="rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-semibold text-gray-400">
                         {DIFFICULTY_OPTIONS.find(d => d.value === q.difficulty)?.label ?? q.difficulty}
                       </span>
+                      {q.image_url && <ImageIcon size={13} className="text-gray-400" />}
                     </div>
                     <p className="mt-1 line-clamp-2 text-sm font-semibold text-[#191B23]">{q.question_text || '—'}</p>
                     <span className="mt-1 inline-block text-xs font-bold text-green-600">Туура: {q.correct_answer}</span>
@@ -187,6 +191,11 @@ export default function QuestionBankTab() {
               placeholder="Суроону жазыңыз..."
               className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
           </div>
+
+          <QuestionImageUploader
+            imageUrl={form.image_url ?? null}
+            onChange={url => setForm(p => ({ ...p, image_url: url }))}
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {ANSWER_OPTIONS.map(letter => {
