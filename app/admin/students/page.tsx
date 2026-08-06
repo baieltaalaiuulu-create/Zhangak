@@ -9,6 +9,7 @@ import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
 import StudentFormModal from '@/components/admin/students/StudentFormModal'
 import AddPaymentModal from '@/components/admin/students/AddPaymentModal'
 import PaymentHistoryModal from '@/components/admin/students/PaymentHistoryModal'
+import ResetPasswordModal from '@/components/admin/students/ResetPasswordModal'
 import StudentActionsMenu from '@/components/admin/students/StudentActionsMenu'
 import {
   fetchStudents, fetchCourseOptions, fetchGroupOptions, setStudentBlocked, deleteStudent,
@@ -36,6 +37,7 @@ export default function AdminStudentsPage() {
   const [formModal, setFormModal] = useState<{ mode: 'create' | 'edit'; student?: AdminStudent } | null>(null)
   const [paymentModal, setPaymentModal] = useState<AdminStudent | null>(null)
   const [historyModal, setHistoryModal] = useState<AdminStudent | null>(null)
+  const [resetPasswordModal, setResetPasswordModal] = useState<AdminStudent | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AdminStudent | null>(null)
   const [deleting, setDeleting] = useState(false)
 
@@ -209,6 +211,7 @@ export default function AdminStudentsPage() {
                       onEdit={() => setFormModal({ mode: 'edit', student: s })}
                       onAddPayment={() => setPaymentModal(s)}
                       onPaymentHistory={() => setHistoryModal(s)}
+                      onResetPassword={() => setResetPasswordModal(s)}
                       onToggleBlock={() => handleToggleBlock(s)}
                       onDelete={() => setDeleteTarget(s)}
                     />
@@ -232,6 +235,7 @@ export default function AdminStudentsPage() {
       )}
       {paymentModal && <AddPaymentModal student={paymentModal} onClose={() => setPaymentModal(null)} onSaved={load} />}
       {historyModal && <PaymentHistoryModal student={historyModal} onClose={() => setHistoryModal(null)} />}
+      {resetPasswordModal && <ResetPasswordModal student={resetPasswordModal} onClose={() => setResetPasswordModal(null)} onSaved={() => {}} />}
       {deleteTarget && (
         <DeleteConfirmModal
           title="Удаление ученика"

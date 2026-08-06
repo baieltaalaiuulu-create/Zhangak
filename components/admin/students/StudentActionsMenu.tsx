@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MoreHorizontal, Eye, Pencil, Wallet, History, Ban, CheckCircle2, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Eye, Pencil, Wallet, History, KeyRound, Ban, CheckCircle2, Trash2 } from 'lucide-react'
 
 interface Props {
   blocked: boolean
@@ -9,11 +9,12 @@ interface Props {
   onEdit: () => void
   onAddPayment: () => void
   onPaymentHistory: () => void
+  onResetPassword: () => void
   onToggleBlock: () => void
   onDelete: () => void
 }
 
-export default function StudentActionsMenu({ blocked, onViewProfile, onEdit, onAddPayment, onPaymentHistory, onToggleBlock, onDelete }: Props) {
+export default function StudentActionsMenu({ blocked, onViewProfile, onEdit, onAddPayment, onPaymentHistory, onResetPassword, onToggleBlock, onDelete }: Props) {
   const [open, setOpen] = useState(false)
 
   const items: { label: string; icon: typeof Eye; onClick: () => void; danger?: boolean }[] = [
@@ -21,6 +22,7 @@ export default function StudentActionsMenu({ blocked, onViewProfile, onEdit, onA
     { label: 'Редактировать', icon: Pencil, onClick: onEdit },
     { label: 'Добавить платёж', icon: Wallet, onClick: onAddPayment },
     { label: 'История платежей', icon: History, onClick: onPaymentHistory },
+    { label: 'Сбросить пароль', icon: KeyRound, onClick: onResetPassword },
     { label: blocked ? 'Разблокировать' : 'Заблокировать', icon: blocked ? CheckCircle2 : Ban, onClick: onToggleBlock },
     { label: 'Удалить', icon: Trash2, onClick: onDelete, danger: true },
   ]

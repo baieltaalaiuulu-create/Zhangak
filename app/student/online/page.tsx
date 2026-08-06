@@ -14,6 +14,7 @@ import AICard        from '@/components/student/AICard'
 import StreakCard    from '@/components/student/StreakCard'
 import StatsRow      from '@/components/student/StatsRow'
 import DashboardHero from '@/components/student/DashboardHero'
+import AnnouncementBanner from '@/components/student/AnnouncementBanner'
 
 export default function StudentOnlinePage() {
   const [profileName, setProfileName] = useState<string | null>(null)
@@ -69,6 +70,8 @@ export default function StudentOnlinePage() {
     <div className="min-h-screen bg-[#F4F6FA]">
       {/* Main grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 min-w-0">
+
+        <AnnouncementBanner />
 
         <DashboardHero
           firstName={firstName}

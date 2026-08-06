@@ -4,14 +4,12 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import ChangePasswordCard from '@/components/student/settings/ChangePasswordCard'
 import SettingsNotifications from '@/components/student/settings/SettingsNotifications'
 import DangerZoneCard from '@/components/student/settings/DangerZoneCard'
 
 export default function SettingsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [email, setEmail] = useState<string | null>(null)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -27,7 +25,6 @@ export default function SettingsPage() {
       if (!profile || profile.role !== 'student') { router.push('/login'); return }
       if (profile.student_type === 'offline') { router.push('/student'); return }
 
-      setEmail(user.email ?? null)
       setLoading(false)
     }
     checkAuth()
@@ -48,7 +45,7 @@ export default function SettingsPage() {
     router.push('/')
   }
 
-  if (loading || !email) {
+  if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAF8FF', fontFamily: 'Inter, sans-serif' }}>
         <div style={{ color: '#9CA3AF', fontSize: 14 }}>Загрузка...</div>
@@ -61,7 +58,6 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6 sm:px-6">
         <h1 className="text-xl font-bold text-[#191B23]">Настройки</h1>
 
-        <ChangePasswordCard email={email} />
         <SettingsNotifications />
         <DangerZoneCard onDeleteAccount={handleDeleteAccount} />
       </div>

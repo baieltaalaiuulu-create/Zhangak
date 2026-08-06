@@ -328,6 +328,16 @@ export async function setStudentBlocked(id: string, blocked: boolean): Promise<v
   if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to update block status')
 }
 
+export async function resetStudentPassword(id: string, password: string): Promise<void> {
+  const res = await fetch('/api/admin/reset-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, password }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to reset password')
+}
+
 export async function deleteStudent(id: string): Promise<void> {
   await removeStudentGroup(id)
   await supabase.from('payments').delete().eq('student_id', id)
@@ -731,6 +741,11 @@ export async function fetchQuestionsForTest(testId: number): Promise<AdminQuesti
   return data ?? []
 }
 
+export async function fetchQuestionById(id: number): Promise<AdminQuestion | null> {
+  const { data } = await supabase.from('questions').select('*').eq('id', id).maybeSingle()
+  return data ?? null
+}
+
 export interface QuestionPayload {
   question_text: string
   option_a: string
@@ -779,6 +794,55 @@ export async function deleteQuestion(id: number): Promise<void> {
   })
   const data = await res.json()
   if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to delete question')
+}
+
+// ── All Questions (/admin/questions — master view across every test) ──────
+//
+// Unlike fetchQuestionsForTest (single test) or fetchBankQuestions (bank-only,
+// lesson_id=null), this lists every row in `questions` regardless of which
+// practice_tests bucket it lives in (lesson-tied, standalone bank, or mock),
+// joined two levels deep to also resolve the lesson title where one exists.
+
+export interface AllQuestionRow {
+  id: number
+  practice_test_id: number
+  question_text: string | null
+  correct_answer: string
+  section: string
+  image_url: string | null
+  subject: 'math' | 'kyr' | 'all'
+  lessonId: string | null
+  lessonTitle: string | null
+}
+
+interface AllQuestionRowRaw {
+  id: number
+  practice_test_id: number
+  question_text: string | null
+  correct_answer: string
+  section: string
+  image_url: string | null
+  practice_tests: { subject: 'math' | 'kyr' | 'all'; lesson_id: string | null; practice_lessons: { title: string | null } | null } | null
+}
+
+export async function fetchAllQuestions(): Promise<AllQuestionRow[]> {
+  const { data } = await supabase
+    .from('questions')
+    .select('id, practice_test_id, question_text, correct_answer, section, image_url, practice_tests(subject, lesson_id, practice_lessons(title))')
+    .order('id', { ascending: false })
+
+  const rows = (data ?? []) as unknown as AllQuestionRowRaw[]
+  return rows.map(r => ({
+    id: r.id,
+    practice_test_id: r.practice_test_id,
+    question_text: r.question_text,
+    correct_answer: r.correct_answer,
+    section: r.section,
+    image_url: r.image_url,
+    subject: r.practice_tests?.subject ?? 'all',
+    lessonId: r.practice_tests?.lesson_id ?? null,
+    lessonTitle: r.practice_tests?.practice_lessons?.title ?? null,
+  }))
 }
 
 // ── Question Bank ("Банк вопросов" — standalone, not tied to any lesson) ──
@@ -927,4 +991,184 @@ export async function bulkAddBankQuestions(items: BankQuestionPayload[]): Promis
   }
 
   return { inserted, errors }
+}
+
+// ── Announcements (/admin/announcements) ────────────────────────────────
+
+export interface AdminAnnouncement {
+  id: string
+  title: string
+  body: string
+  is_active: boolean
+  created_at: string
+}
+
+export async function fetchAnnouncements(): Promise<AdminAnnouncement[]> {
+  const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false })
+  return data ?? []
+}
+
+export interface AnnouncementPayload {
+  title: string
+  body: string
+  isActive: boolean
+}
+
+export async function createAnnouncement(payload: AnnouncementPayload): Promise<void> {
+  const res = await fetch('/api/admin/announcements', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to create announcement')
+}
+
+export async function updateAnnouncement(id: string, payload: AnnouncementPayload): Promise<void> {
+  const res = await fetch('/api/admin/announcements', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, ...payload }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to update announcement')
+}
+
+export async function setAnnouncementActive(id: string, isActive: boolean): Promise<void> {
+  const res = await fetch('/api/admin/announcements', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, isActive }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to update announcement')
+}
+
+export async function deleteAnnouncement(id: string): Promise<void> {
+  const res = await fetch('/api/admin/announcements', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to delete announcement')
+}
+
+// ── Analytics (/admin/analytics) ────────────────────────────────────────
+
+export interface AnalyticsStats {
+  totalStudents: number
+  totalLessons: number
+  totalQuestions: number
+  testsCompleted: number
+}
+
+export interface DailyTestCount {
+  date: string // YYYY-MM-DD
+  count: number
+}
+
+export interface TopStudent {
+  studentId: string
+  fullName: string
+  bestScore: number
+}
+
+export interface SectionAverage {
+  section: string
+  label: string
+  average: number
+}
+
+export interface AnalyticsData {
+  stats: AnalyticsStats
+  dailyCounts: DailyTestCount[]
+  topStudents: TopStudent[]
+  sectionAverages: SectionAverage[]
+}
+
+interface CompletedResultRow {
+  student_id: string
+  total_score: number | null
+  completed_at: string
+  math_raw_score: number | null
+  analogy_score: number | null
+  reading_score: number | null
+  grammar_score: number | null
+  profiles: { full_name: string | null } | null
+}
+
+async function fetchAnalyticsStats(): Promise<AnalyticsStats> {
+  const [{ count: totalStudents }, { count: totalLessons }, { count: totalQuestions }, { count: testsCompleted }] = await Promise.all([
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
+    supabase.from('practice_lessons').select('*', { count: 'exact', head: true }),
+    supabase.from('questions').select('*', { count: 'exact', head: true }),
+    supabase.from('practice_results').select('*', { count: 'exact', head: true }).not('completed_at', 'is', null),
+  ])
+  return {
+    totalStudents: totalStudents ?? 0,
+    totalLessons: totalLessons ?? 0,
+    totalQuestions: totalQuestions ?? 0,
+    testsCompleted: testsCompleted ?? 0,
+  }
+}
+
+// A single fetch of every completed result feeds all three breakdowns below
+// (daily counts, top students, section averages) — cheaper than three
+// separate round trips over the same table.
+export async function fetchAnalyticsData(): Promise<AnalyticsData> {
+  const [stats, { data: resultsRaw }] = await Promise.all([
+    fetchAnalyticsStats(),
+    supabase
+      .from('practice_results')
+      .select('student_id, total_score, completed_at, math_raw_score, analogy_score, reading_score, grammar_score, profiles(full_name)')
+      .not('completed_at', 'is', null),
+  ])
+  const rows = (resultsRaw ?? []) as unknown as CompletedResultRow[]
+
+  const dayCounts = new Map<string, number>()
+  for (const r of rows) {
+    const day = r.completed_at.slice(0, 10)
+    dayCounts.set(day, (dayCounts.get(day) ?? 0) + 1)
+  }
+  const dailyCounts: DailyTestCount[] = []
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    const key = d.toISOString().slice(0, 10)
+    dailyCounts.push({ date: key, count: dayCounts.get(key) ?? 0 })
+  }
+
+  const bestByStudent = new Map<string, { fullName: string; score: number }>()
+  for (const r of rows) {
+    const score = r.total_score ?? 0
+    const existing = bestByStudent.get(r.student_id)
+    if (!existing || score > existing.score) {
+      bestByStudent.set(r.student_id, { fullName: r.profiles?.full_name ?? 'Студент', score })
+    }
+  }
+  const topStudents = Array.from(bestByStudent.entries())
+    .map(([id, v]) => ({ studentId: id, fullName: v.fullName, bestScore: v.score }))
+    .sort((a, b) => b.bestScore - a.bestScore)
+    .slice(0, 10)
+
+  // Same coefficients as the ORT total_score formula (see zhangak-stack
+  // reference) applied to each section's raw score, so the breakdown is on
+  // the same points scale as the total rather than raw correct-answer counts.
+  const sums = { math: 0, analogy: 0, reading: 0, grammar: 0 }
+  for (const r of rows) {
+    sums.math += (r.math_raw_score ?? 0) * 1.12
+    sums.analogy += (r.analogy_score ?? 0) * 2
+    sums.reading += (r.reading_score ?? 0) * 2
+    sums.grammar += (r.grammar_score ?? 0) * 1.93
+  }
+  const n = rows.length || 1
+  const sectionAverages: SectionAverage[] = [
+    { section: 'math', label: 'Математика', average: Math.round((sums.math / n) * 10) / 10 },
+    { section: 'analogy', label: 'Аналогия', average: Math.round((sums.analogy / n) * 10) / 10 },
+    { section: 'reading', label: 'Чтение', average: Math.round((sums.reading / n) * 10) / 10 },
+    { section: 'grammar', label: 'Грамматика', average: Math.round((sums.grammar / n) * 10) / 10 },
+  ]
+
+  return { stats, dailyCounts, topStudents, sectionAverages }
 }

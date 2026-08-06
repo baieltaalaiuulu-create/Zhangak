@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { calcStreak, DEFAULT_TARGET_SCORE } from '@/lib/student-data'
 import StudentSidebar from './StudentSidebar'
 import StudentTopbar from './StudentTopbar'
+import NotificationPopup from './NotificationPopup'
 
 interface Props {
   children: ReactNode
@@ -26,9 +27,13 @@ export default function StudentLayout({ children }: Props) {
   const [targetScore, setTargetScore] = useState(DEFAULT_TARGET_SCORE)
   const [streak, setStreak] = useState(0)
   const [level, setLevel] = useState(1)
+  const [studentId, setStudentId] = useState<string | null>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   // Chrome data only — auth/role/student_type enforcement stays on each
-  // page (as before), so this never redirects on its own.
+  // page (as before), so this never redirects on its own, except for the
+  // admin/student cross-visit conflict below (an admin landing here should
+  // bounce to their own panel, not see a half-loaded student shell).
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -36,9 +41,13 @@ export default function StudentLayout({ children }: Props) {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name, target_score, avatar_url')
+        .select('role, full_name, target_score, avatar_url')
         .eq('id', user.id)
         .single()
+
+      if (profile?.role === 'super_admin' || profile?.role === 'admin') { router.push('/admin'); return }
+
+      setStudentId(user.id)
 
       if (profile) {
         setFullName(profile.full_name ?? 'Студент')
@@ -57,7 +66,7 @@ export default function StudentLayout({ children }: Props) {
       setLevel(Math.max(1, Math.floor(rows.length / 10) + 1))
     }
     load()
-  }, [])
+  }, [router])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -77,11 +86,14 @@ export default function StudentLayout({ children }: Props) {
           streak={streak}
           targetScore={targetScore}
           level={level}
+          unreadCount={unreadCount}
           onMenuClick={() => setSidebarOpen(true)}
           onLogout={handleLogout}
         />
         <main>{children}</main>
       </div>
+
+      <NotificationPopup studentId={studentId} onUnreadChange={setUnreadCount} />
     </div>
   )
 }

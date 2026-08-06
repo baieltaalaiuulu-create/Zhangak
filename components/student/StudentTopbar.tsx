@@ -9,6 +9,7 @@ interface Props {
   streak: number
   targetScore: number
   level: number
+  unreadCount?: number
   onMenuClick: () => void
   onLogout: () => void
 }
@@ -21,7 +22,7 @@ function Pill({ children }: { children: ReactNode }) {
   )
 }
 
-export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore, level, onMenuClick, onLogout }: Props) {
+export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore, level, unreadCount = 0, onMenuClick, onLogout }: Props) {
   const [notifOpen, setNotifOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const initial = fullName?.[0]?.toUpperCase() ?? '?'
@@ -56,13 +57,18 @@ export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore
             type="button"
             onClick={() => setNotifOpen(v => !v)}
             aria-label="Уведомления"
-            className="rounded-full p-2 text-gray-500 hover:bg-gray-50"
+            className="relative rounded-full p-2 text-gray-500 hover:bg-gray-50"
           >
             <Bell size={18} />
+            {unreadCount > 0 && (
+              <span className="absolute right-0.5 top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </button>
           {notifOpen && (
             <div className="absolute right-0 top-11 w-56 rounded-xl border border-[#C3C6D7]/50 bg-white p-4 text-center text-xs text-gray-400 shadow-lg">
-              Уведомлений пока нет
+              {unreadCount > 0 ? `Непрочитанных: ${unreadCount}` : 'Уведомлений пока нет'}
             </div>
           )}
         </div>

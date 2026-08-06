@@ -24,6 +24,8 @@ export default function AdminLayout({ children }: Props) {
         .eq('id', user.id)
         .single()
 
+      if (profile?.role === 'student') { router.push('/student/online'); return }
+
       if (!profile || (profile.role !== 'super_admin' && profile.role !== 'admin')) {
         router.push('/')
         return
