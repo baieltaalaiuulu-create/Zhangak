@@ -131,9 +131,21 @@ export default function MockExamPage() {
   const answeredCount = Object.keys(answers).length
   const isLast = currentIndex === orderedQuestions.length - 1
 
-  if (loading || !test || !currentQuestion) return (
+  if (loading || !test) return (
     <div className="flex min-h-screen items-center justify-center bg-[#111827]">
       <div className="text-sm text-gray-400">Загрузка экзамена...</div>
+    </div>
+  )
+
+  // Distinct from the loading state above — a test with zero questions
+  // attached would otherwise leave currentQuestion undefined forever and
+  // get stuck showing "Загрузка экзамена..." with no way out.
+  if (questions.length === 0 || !currentQuestion) return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#111827] p-6 text-center">
+      <p className="text-sm font-semibold text-gray-300">В этом пробном ОРТ пока нет вопросов</p>
+      <button onClick={() => router.push('/student/online/mock')} className="text-sm font-bold text-[#1B4FD8]">
+        ← Назад к пробным ОРТ
+      </button>
     </div>
   )
 

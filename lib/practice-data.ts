@@ -81,6 +81,15 @@ export const SUBJECT_TAB_SECTIONS: Record<Exclude<SubjectTab, 'all'>, string[]> 
 
 export const UNTAGGED_TOPIC_LABEL = 'Общие вопросы'
 
+// Section-only practice (see fetchQuestionsBySection below) has no
+// practice_tests row to read a subject off of, so the start screen's
+// subject badge is derived straight from the section instead.
+export function subjectForSection(section: string): PracticeTest['subject'] {
+  if (section === 'math' || section === 'comparison') return 'math'
+  if (section === 'grammar') return 'kyr'
+  return 'all'
+}
+
 export interface PracticeTopic {
   section: string
   topic: string
@@ -106,12 +115,18 @@ function modeDifficulty(list: string[]): PracticeTopic['difficulty'] {
 
 // Fetches every topic across all subjects once; the browser filters by tab
 // client-side (same pattern as the lessons page's subject filter).
+//
+// Reads straight from `questions` with no practice_tests join — the earlier
+// version required the owning test row to have lesson_id=null AND
+// is_active=true, which silently hid real questions whenever that row
+// wasn't in exactly that state (e.g. a bank test created before is_active
+// defaulted correctly, or a question actually filed under a lesson-tied
+// test). A student topic list shouldn't depend on admin-side test-row
+// bookkeeping, only on what questions actually exist.
 export async function fetchPracticeTopics(): Promise<PracticeTopic[]> {
   const { data } = await supabase
     .from('questions')
-    .select('section, topic, difficulty, practice_tests!inner(lesson_id, is_active)')
-    .is('practice_tests.lesson_id', null)
-    .eq('practice_tests.is_active', true)
+    .select('section, topic, difficulty')
     .neq('section', 'general')
 
   const rows = (data ?? []) as unknown as BankTopicRow[]
@@ -134,50 +149,27 @@ export async function fetchPracticeTopics(): Promise<PracticeTopic[]> {
     .sort((a, b) => a.topic.localeCompare(b.topic, 'ru'))
 }
 
-export interface BankQuestionSet {
-  testId: number
-  subject: 'math' | 'kyr' | 'all'
-  questions: PracticeQuestion[]
-}
+const BANK_QUESTION_LIMIT = 20
 
-interface BankQuestionRow extends PracticeQuestion {
-  practice_test_id: number
-  practice_tests: { subject: 'math' | 'kyr' | 'all' } | null
-}
-
-export async function fetchBankQuestions(section: string, topic: string): Promise<BankQuestionSet | null> {
-  let query = supabase
+// Practice-by-section: no practice_tests lookup at all — just the pool of
+// questions tagged with that section, regardless of which test row (or
+// none functionally reachable) they're attached to. Random subset capped
+// at 20 so a big section doesn't turn into a marathon; PostgREST has no
+// ORDER BY RANDOM() through the query builder, so the shuffle happens
+// client-side over the fetched pool.
+export async function fetchQuestionsBySection(section: string, limit = BANK_QUESTION_LIMIT): Promise<PracticeQuestion[]> {
+  const { data } = await supabase
     .from('questions')
-    .select('id, question_text, option_a, option_b, option_c, option_d, correct_answer, image_url, order_num, section, topic, difficulty, practice_test_id, practice_tests!inner(subject, lesson_id, is_active)')
+    .select('id, question_text, option_a, option_b, option_c, option_d, correct_answer, image_url, order_num, section, topic, difficulty')
     .eq('section', section)
-    .is('practice_tests.lesson_id', null)
-    .eq('practice_tests.is_active', true)
-    .order('order_num', { ascending: true })
 
-  query = topic === UNTAGGED_TOPIC_LABEL ? query.is('topic', null) : query.eq('topic', topic)
-
-  const { data } = await query
-  const rows = (data ?? []) as unknown as BankQuestionRow[]
-  if (rows.length === 0) return null
-
-  return {
-    testId: rows[0].practice_test_id,
-    subject: rows[0].practice_tests?.subject ?? 'all',
-    questions: rows.map(r => ({
-      id: r.id,
-      question_text: r.question_text,
-      option_a: r.option_a,
-      option_b: r.option_b,
-      option_c: r.option_c,
-      option_d: r.option_d,
-      correct_answer: r.correct_answer,
-      image_url: r.image_url,
-      order_num: r.order_num,
-      section: r.section,
-      topic: r.topic,
-      difficulty: r.difficulty,
-    })),
+  const rows = (data ?? []) as PracticeQuestion[]
+  const shuffled = [...rows]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
   }
+  return shuffled.slice(0, limit)
 }
 
 // ── Lesson-linked practice tests (unchanged — "Тесты к урокам") ─────────
@@ -220,7 +212,10 @@ export async function fetchPreviousScore(studentId: string, testId: number): Pro
 
 export interface SaveResultInput {
   studentId: string
-  testId: number
+  // null for section-only practice (fetchQuestionsBySection) — those
+  // attempts aren't tied to any practice_tests row, and the column is
+  // nullable precisely for this case rather than needing a fake FK target.
+  testId: number | null
   lessonId: string | null
   score: number
   answers: Record<number, AnswerLetter>

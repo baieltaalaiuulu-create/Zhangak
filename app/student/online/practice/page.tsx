@@ -10,7 +10,8 @@ import {
   fetchQuestions,
   fetchPreviousScore,
   fetchPracticeTopics,
-  fetchBankQuestions,
+  fetchQuestionsBySection,
+  subjectForSection,
   savePracticeResult,
   isCorrect,
   PASS_RATIO,
@@ -104,15 +105,18 @@ export default function PracticePage() {
           setLessons(allLessons)
         }
       } else if (sectionParam && topicParam) {
-        const bank = await fetchBankQuestions(sectionParam, topicParam)
-        if (bank) {
-          setTest({ id: bank.testId, title: topicParam, subject: bank.subject, time_limit_minutes: null, lesson_id: null })
-          setQuestions(bank.questions)
+        const qs = await fetchQuestionsBySection(sectionParam)
+        if (qs.length > 0) {
+          // id is a placeholder — section practice has no practice_tests row,
+          // so finishTest() below sends null for test_id instead of this.
+          setTest({ id: 0, title: topicParam, subject: subjectForSection(sectionParam), time_limit_minutes: null, lesson_id: null })
+          setQuestions(qs)
         }
-        // No cross-topic "previous score" comparison — each bank test row is
-        // shared across every topic in its subject bucket, so a raw score
-        // comparison against the last attempt (possibly a different topic,
-        // different question count) would be misleading rather than useful.
+        // No cross-topic "previous score" comparison — a section pool is
+        // shared across every topic under it, so a raw score comparison
+        // against the last attempt (possibly a different topic, different
+        // question count, different random subset) would be misleading
+        // rather than useful.
       } else {
         setTopics(await fetchPracticeTopics())
         setLoading(false)
@@ -147,7 +151,7 @@ export default function PracticePage() {
       setSaved(true)
       await savePracticeResult({
         studentId,
-        testId: test.id,
+        testId: bankMode ? null : test.id,
         lessonId: test.lesson_id,
         score: correctCount,
         answers,
