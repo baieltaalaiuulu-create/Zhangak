@@ -620,6 +620,13 @@ export interface QuestionPayload {
   option_d: string
   correct_answer: 'A' | 'B' | 'C' | 'D'
   section: string
+  // Only meaningful for standalone bank questions (see the Question Bank
+  // section below). Left undefined by the lesson-tied question form — the
+  // API route spreads payload straight into the insert/update, so omitted
+  // keys simply fall back to the column defaults (difficulty='medium',
+  // topic=null) rather than needing separate routes per question type.
+  topic?: string | null
+  difficulty?: 'easy' | 'medium' | 'hard'
 }
 
 // questions carries the same admin-only RLS write policy, so create/update/delete
@@ -652,4 +659,149 @@ export async function deleteQuestion(id: number): Promise<void> {
   })
   const data = await res.json()
   if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to delete question')
+}
+
+// ── Question Bank ("Банк вопросов" — standalone, not tied to any lesson) ──
+//
+// The bank keeps exactly one practice_test row per subject bucket
+// (lesson_id=null), matching the spec's "create a general practice_test per
+// subject if not exists". `section` is the finer-grained axis (math /
+// comparison / analogy / reading / grammar) that determines which bucket a
+// question belongs to — 'general' is excluded since it's invisible to ORT
+// scoring (see the project-wide gotcha in lib/student-data.ts) and isn't a
+// real practice topic.
+
+export const BANK_SECTION_OPTIONS = SECTION_OPTIONS.filter(s => s.value !== 'general')
+
+export const SECTION_TO_BANK_SUBJECT: Record<string, 'math' | 'kyr' | 'all'> = {
+  math: 'math',
+  comparison: 'math',
+  grammar: 'kyr',
+  analogy: 'all',
+  reading: 'all',
+}
+
+const BANK_SUBJECT_TITLES: Record<'math' | 'kyr' | 'all', string> = {
+  math: 'Банк вопросов — Математика',
+  kyr: 'Банк вопросов — Кыргыз тили',
+  all: 'Банк вопросов — Аналогия и Окуу',
+}
+
+export const DIFFICULTY_OPTIONS: { value: 'easy' | 'medium' | 'hard'; label: string }[] = [
+  { value: 'easy', label: 'Лёгкий' },
+  { value: 'medium', label: 'Средний' },
+  { value: 'hard', label: 'Сложный' },
+]
+
+// practice_tests carries the same admin-only RLS write policy as elsewhere, so
+// find-or-create for the standalone bank tests goes through
+// app/api/admin/bank-test (service-role) — mirrors callEnsurePracticeTest
+// above for lesson-linked tests.
+export async function ensureBankTest(subject: 'math' | 'kyr' | 'all'): Promise<{ id: number }> {
+  const res = await fetch('/api/admin/bank-test', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subject, title: BANK_SUBJECT_TITLES[subject] }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to ensure bank test')
+  return data.test
+}
+
+export interface BankQuestion {
+  id: number
+  question_text: string | null
+  option_a: string | null
+  option_b: string | null
+  option_c: string | null
+  option_d: string | null
+  correct_answer: string
+  section: string
+  topic: string | null
+  difficulty: string
+  subject: 'math' | 'kyr' | 'all'
+}
+
+interface BankQuestionRow {
+  id: number
+  question_text: string | null
+  option_a: string | null
+  option_b: string | null
+  option_c: string | null
+  option_d: string | null
+  correct_answer: string
+  section: string
+  topic: string | null
+  difficulty: string | null
+  practice_tests: { subject: 'math' | 'kyr' | 'all' } | null
+}
+
+export async function fetchBankQuestions(): Promise<BankQuestion[]> {
+  const { data } = await supabase
+    .from('questions')
+    .select('id, question_text, option_a, option_b, option_c, option_d, correct_answer, section, topic, difficulty, created_at, practice_tests!inner(subject, lesson_id)')
+    .is('practice_tests.lesson_id', null)
+    .order('created_at', { ascending: false })
+
+  const rows = (data ?? []) as unknown as BankQuestionRow[]
+  return rows.map(r => ({
+    id: r.id,
+    question_text: r.question_text,
+    option_a: r.option_a,
+    option_b: r.option_b,
+    option_c: r.option_c,
+    option_d: r.option_d,
+    correct_answer: r.correct_answer,
+    section: r.section,
+    topic: r.topic,
+    difficulty: r.difficulty ?? 'medium',
+    subject: r.practice_tests?.subject ?? 'all',
+  }))
+}
+
+export interface BankQuestionPayload extends QuestionPayload {
+  topic: string
+  difficulty: 'easy' | 'medium' | 'hard'
+}
+
+export async function addBankQuestion(payload: BankQuestionPayload): Promise<void> {
+  const subject = SECTION_TO_BANK_SUBJECT[payload.section]
+  if (!subject) throw new Error(`Раздел "${payload.section}" недоступен для банка вопросов`)
+  const test = await ensureBankTest(subject)
+  await addQuestion(test.id, payload, 0)
+}
+
+export interface BulkAddResult {
+  inserted: number
+  errors: string[]
+}
+
+// Sequential, per-item error isolation — a single bad row in a pasted batch
+// shouldn't sink the rest, and reuses the same service-role /api/admin/questions
+// route rather than adding a new bulk endpoint.
+export async function bulkAddBankQuestions(items: BankQuestionPayload[]): Promise<BulkAddResult> {
+  const testCache = new Map<string, number>()
+  let inserted = 0
+  const errors: string[] = []
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
+    try {
+      const subject = SECTION_TO_BANK_SUBJECT[item.section]
+      if (!subject) throw new Error(`раздел "${item.section}" недоступен`)
+
+      let testId = testCache.get(subject)
+      if (!testId) {
+        const test = await ensureBankTest(subject)
+        testId = test.id
+        testCache.set(subject, testId)
+      }
+      await addQuestion(testId, item, 0)
+      inserted++
+    } catch (e) {
+      errors.push(`#${i + 1}: ${e instanceof Error ? e.message : 'ошибка'}`)
+    }
+  }
+
+  return { inserted, errors }
 }

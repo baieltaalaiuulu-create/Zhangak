@@ -9,14 +9,15 @@ import {
   fetchPracticeTest,
   fetchQuestions,
   fetchPreviousScore,
-  fetchAvailablePracticeTests,
+  fetchPracticeTopics,
+  fetchBankQuestions,
   savePracticeResult,
   isCorrect,
   PASS_RATIO,
   type PracticeTest,
   type PracticeQuestion,
   type AnswerLetter,
-  type PracticeTestListItem,
+  type PracticeTopic,
 } from '@/lib/practice-data'
 import { fetchLessons, type Lesson } from '@/lib/lessons-data'
 import { calcStreak } from '@/lib/student-data'
@@ -24,7 +25,7 @@ import PracticeStartScreen from '@/components/student/PracticeStartScreen'
 import PracticeQuestionScreen from '@/components/student/PracticeQuestionScreen'
 import PracticeResultsScreen, { type WrongAnswer } from '@/components/student/PracticeResultsScreen'
 import PracticeErrorReview from '@/components/student/PracticeErrorReview'
-import PracticeTestCard from '@/components/student/PracticeTestCard'
+import PracticeTopicBrowser from '@/components/student/practice/PracticeTopicBrowser'
 
 type View = 'start' | 'question' | 'results' | 'review'
 
@@ -36,12 +37,12 @@ function LoadingScreen() {
   )
 }
 
-function EmptyState({ text }: { text: string }) {
+function EmptyState({ text, backHref = '/student/online/practice', backLabel = '← Назад к практике' }: { text: string; backHref?: string; backLabel?: string }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#F4F6FA] p-6 text-center">
       <p className="text-sm font-semibold text-gray-600">{text}</p>
-      <Link href="/student/online/lessons" className="text-sm font-bold text-[#1B4FD8]">
-        ← Ко всем урокам
+      <Link href={backHref} className="text-sm font-bold text-[#1B4FD8]">
+        {backLabel}
       </Link>
     </div>
   )
@@ -51,6 +52,9 @@ export default function PracticePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const lessonId = searchParams.get('lesson')
+  const sectionParam = searchParams.get('section')
+  const topicParam = searchParams.get('topic')
+  const bankMode = !lessonId && !!sectionParam && !!topicParam
 
   const [loading, setLoading] = useState(true)
   const [studentId, setStudentId] = useState<string | null>(null)
@@ -59,7 +63,7 @@ export default function PracticePage() {
   const [previousScore, setPreviousScore] = useState<number | null>(null)
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [streak, setStreak] = useState(0)
-  const [availableTests, setAvailableTests] = useState<PracticeTestListItem[]>([])
+  const [topics, setTopics] = useState<PracticeTopic[]>([])
 
   const [view, setView] = useState<View>('start')
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -85,24 +89,34 @@ export default function PracticePage() {
 
       setStudentId(user.id)
 
-      if (!lessonId) {
-        setAvailableTests(await fetchAvailablePracticeTests())
+      if (lessonId) {
+        const foundTest = await fetchPracticeTest(lessonId)
+        setTest(foundTest)
+
+        if (foundTest) {
+          const [qs, prevScore, allLessons] = await Promise.all([
+            fetchQuestions(foundTest.id),
+            fetchPreviousScore(user.id, foundTest.id),
+            fetchLessons(),
+          ])
+          setQuestions(qs)
+          setPreviousScore(prevScore)
+          setLessons(allLessons)
+        }
+      } else if (sectionParam && topicParam) {
+        const bank = await fetchBankQuestions(sectionParam, topicParam)
+        if (bank) {
+          setTest({ id: bank.testId, title: topicParam, subject: bank.subject, time_limit_minutes: null, lesson_id: null })
+          setQuestions(bank.questions)
+        }
+        // No cross-topic "previous score" comparison — each bank test row is
+        // shared across every topic in its subject bucket, so a raw score
+        // comparison against the last attempt (possibly a different topic,
+        // different question count) would be misleading rather than useful.
+      } else {
+        setTopics(await fetchPracticeTopics())
         setLoading(false)
         return
-      }
-
-      const foundTest = await fetchPracticeTest(lessonId)
-      setTest(foundTest)
-
-      if (foundTest) {
-        const [qs, prevScore, allLessons] = await Promise.all([
-          fetchQuestions(foundTest.id),
-          fetchPreviousScore(user.id, foundTest.id),
-          fetchLessons(),
-        ])
-        setQuestions(qs)
-        setPreviousScore(prevScore)
-        setLessons(allLessons)
       }
 
       const { data: allResults } = await supabase
@@ -115,7 +129,7 @@ export default function PracticePage() {
       setLoading(false)
     }
     load()
-  }, [router, lessonId])
+  }, [router, lessonId, sectionParam, topicParam])
 
   const finishTest = async () => {
     if (!test || !studentId) { setView('results'); return }
@@ -157,27 +171,20 @@ export default function PracticePage() {
 
   if (loading) return <LoadingScreen />
 
-  if (!lessonId) {
-    if (availableTests.length === 0) {
-      return <EmptyState text="Уроки скоро появятся" />
-    }
-    return (
-      <div className="min-h-screen bg-[#F4F6FA] px-4 py-6 sm:px-6">
-        <div className="mx-auto max-w-6xl">
-          <h1 className="text-xl font-bold text-[#191B23]">Практика</h1>
-          <p className="mt-1 text-sm text-gray-500">Выбери тест, чтобы закрепить пройденный урок</p>
-          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {availableTests.map(t => (
-              <PracticeTestCard key={t.id} test={t} />
-            ))}
-          </div>
-        </div>
-      </div>
-    )
+  if (!lessonId && !bankMode) {
+    return <PracticeTopicBrowser topics={topics} />
   }
 
-  if (!test) return <EmptyState text="Тест для этого урока пока недоступен" />
-  if (questions.length === 0) return <EmptyState text="В этом тесте пока нет вопросов" />
+  if (!test) {
+    return lessonId
+      ? <EmptyState text="Тест для этого урока пока недоступен" backHref="/student/online/lessons" backLabel="← Ко всем урокам" />
+      : <EmptyState text="Вопросы для этой темы ещё не добавлены" />
+  }
+  if (questions.length === 0) {
+    return lessonId
+      ? <EmptyState text="В этом тесте пока нет вопросов" backHref="/student/online/lessons" backLabel="← Ко всем урокам" />
+      : <EmptyState text="Вопросы для этой темы ещё не добавлены" />
+  }
 
   const handleStart = () => {
     setStartedAt(Date.now())
@@ -270,7 +277,7 @@ export default function PracticePage() {
         <PracticeErrorReview
           wrongAnswers={wrongAnswers}
           onBack={() => setView('results')}
-          practiceLink="/student/online/lessons"
+          practiceLink="/student/online/practice"
         />
       )}
     </div>
