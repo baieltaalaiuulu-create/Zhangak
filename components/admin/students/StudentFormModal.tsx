@@ -37,10 +37,10 @@ export default function StudentFormModal({ mode, student, courses, groups, onClo
 
   const handleSubmit = async () => {
     setError('')
-    if (!fullName.trim()) { setError('Аты-жөнүн киргизиңиз'); return }
-    if (mode === 'create' && (!email.trim() || !password.trim())) { setError('Email жана сырсөздү киргизиңиз'); return }
-    if (mode === 'create' && password.length < 6) { setError('Сырсөз кеминде 6 символ болушу керек'); return }
-    if (targetScore < MIN_TARGET_SCORE || targetScore > MAX_TARGET_SCORE) { setError(`Максат балл ${MIN_TARGET_SCORE}–${MAX_TARGET_SCORE} аралыгында болушу керек`); return }
+    if (!fullName.trim()) { setError('Введите ФИО'); return }
+    if (mode === 'create' && (!email.trim() || !password.trim())) { setError('Введите email и пароль'); return }
+    if (mode === 'create' && password.length < 6) { setError('Пароль должен быть не короче 6 символов'); return }
+    if (targetScore < MIN_TARGET_SCORE || targetScore > MAX_TARGET_SCORE) { setError(`Целевой балл должен быть в диапазоне ${MIN_TARGET_SCORE}–${MAX_TARGET_SCORE}`); return }
 
     setSaving(true)
     try {
@@ -70,7 +70,7 @@ export default function StudentFormModal({ mode, student, courses, groups, onClo
       onSaved()
       onClose()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ката кетти')
+      setError(e instanceof Error ? e.message : 'Произошла ошибка')
     } finally {
       setSaving(false)
     }
@@ -80,13 +80,13 @@ export default function StudentFormModal({ mode, student, courses, groups, onClo
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl" onClick={e => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[#191B23]">{mode === 'create' ? 'Жаңы окуучу' : 'Окуучуну түзөтүү'}</h2>
+          <h2 className="text-lg font-bold text-[#191B23]">{mode === 'create' ? 'Новый ученик' : 'Редактировать ученика'}</h2>
           <button type="button" onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-gray-50"><X size={18} /></button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-500">Аты-жөнү *</label>
+            <label className="mb-1 block text-xs font-semibold text-gray-500">ФИО *</label>
             <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Иванов Айбек"
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
           </div>
@@ -98,7 +98,7 @@ export default function StudentFormModal({ mode, student, courses, groups, onClo
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-gray-500">Максат балл</label>
+              <label className="mb-1 block text-xs font-semibold text-gray-500">Целевой балл</label>
               <input type="number" min={MIN_TARGET_SCORE} max={MAX_TARGET_SCORE} value={targetScore}
                 onChange={e => setTargetScore(Number(e.target.value))}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
@@ -113,15 +113,15 @@ export default function StudentFormModal({ mode, student, courses, groups, onClo
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-500">Сырсөз *</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Мин. 6 символ"
+                <label className="mb-1 block text-xs font-semibold text-gray-500">Пароль *</label>
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Мин. 6 символов"
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
               </div>
             </div>
           )}
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-500">Түрү</label>
+            <label className="mb-1 block text-xs font-semibold text-gray-500">Тип</label>
             <div className="flex gap-2">
               {STUDENT_TYPES.map(t => (
                 <button key={t.value} type="button" onClick={() => setStudentType(t.value)}
@@ -137,7 +137,7 @@ export default function StudentFormModal({ mode, student, courses, groups, onClo
               <label className="mb-1 block text-xs font-semibold text-gray-500">Курс</label>
               <select value={courseId} onChange={e => { setCourseId(e.target.value === '' ? '' : Number(e.target.value)); setGroupId('') }}
                 className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20">
-                <option value="">Тандаңыз</option>
+                <option value="">Выберите</option>
                 {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -145,7 +145,7 @@ export default function StudentFormModal({ mode, student, courses, groups, onClo
               <label className="mb-1 block text-xs font-semibold text-gray-500">Группа</label>
               <select value={groupId} onChange={e => setGroupId(e.target.value === '' ? '' : Number(e.target.value))}
                 className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20">
-                <option value="">Тандаңыз</option>
+                <option value="">Выберите</option>
                 {filteredGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
               </select>
             </div>
@@ -154,21 +154,21 @@ export default function StudentFormModal({ mode, student, courses, groups, onClo
           {mode === 'create' && (
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-500">Айлык баа</label>
+                <label className="mb-1 block text-xs font-semibold text-gray-500">Стоимость в месяц</label>
                 <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="5000"
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
-                <p className="mt-1 text-[10px] text-gray-400">Азырынча сакталбайт</p>
+                <p className="mt-1 text-[10px] text-gray-400">Пока не сохраняется</p>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-500">Баштапкы төлөм</label>
+                <label className="mb-1 block text-xs font-semibold text-gray-500">Первоначальный платёж</label>
                 <input type="number" value={paidAmount} onChange={e => setPaidAmount(e.target.value)} placeholder="0"
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-500">Кийинки төлөм</label>
+                <label className="mb-1 block text-xs font-semibold text-gray-500">Следующий платёж</label>
                 <input type="date" value={nextPaymentDate} onChange={e => setNextPaymentDate(e.target.value)}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
-                <p className="mt-1 text-[10px] text-gray-400">Азырынча сакталбайт</p>
+                <p className="mt-1 text-[10px] text-gray-400">Пока не сохраняется</p>
               </div>
             </div>
           )}
@@ -178,11 +178,11 @@ export default function StudentFormModal({ mode, student, courses, groups, onClo
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={handleSubmit} disabled={saving}
               className="rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60">
-              {saving ? 'Сакталууда...' : mode === 'create' ? 'Кошуу' : 'Сактоо'}
+              {saving ? 'Сохранение...' : mode === 'create' ? 'Добавить' : 'Сохранить'}
             </button>
             <button type="button" onClick={onClose}
               className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200">
-              Жокко чыгаруу
+              Отмена
             </button>
           </div>
         </div>

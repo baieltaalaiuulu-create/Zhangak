@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const supabaseAdmin = getAdminClient()
     const { title, description, subject, order_number, video_url } = await req.json()
     if (!title || !subject) {
-      return NextResponse.json({ error: 'title жана subject талап кылынат' }, { status: 400 })
+      return NextResponse.json({ error: 'title и subject обязательны' }, { status: 400 })
     }
 
     const { data, error } = await supabaseAdmin
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ lesson: data })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
@@ -46,7 +46,7 @@ export async function PATCH(req: NextRequest) {
     const supabaseAdmin = getAdminClient()
     const { id, title, description, subject, order_number, video_url } = await req.json()
     if (!id || !title || !subject) {
-      return NextResponse.json({ error: 'id, title жана subject талап кылынат' }, { status: 400 })
+      return NextResponse.json({ error: 'id, title и subject обязательны' }, { status: 400 })
     }
 
     const { error } = await supabaseAdmin
@@ -63,7 +63,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
@@ -72,7 +72,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const supabaseAdmin = getAdminClient()
     const { id } = await req.json()
-    if (!id) return NextResponse.json({ error: 'id талап кылынат' }, { status: 400 })
+    if (!id) return NextResponse.json({ error: 'id обязателен' }, { status: 400 })
 
     const { data: tests } = await supabaseAdmin.from('practice_tests').select('id').eq('lesson_id', id)
     const testIds = (tests ?? []).map(t => t.id)
@@ -86,7 +86,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

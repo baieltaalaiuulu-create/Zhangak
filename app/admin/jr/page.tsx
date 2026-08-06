@@ -13,10 +13,10 @@ import {
 type Tab = 'students' | 'tests' | 'lessons' | 'results'
 
 const TABS: { id: Tab; label: string; Icon: any }[] = [
-  { id: 'students', label: 'Окуучулар', Icon: GraduationCap },
-  { id: 'tests',    label: 'Тесттер',   Icon: FileText },
-  { id: 'lessons',  label: 'Сабактар',  Icon: BookOpen },
-  { id: 'results',  label: 'Натыйжалар', Icon: BarChart2 },
+  { id: 'students', label: 'Ученики', Icon: GraduationCap },
+  { id: 'tests',    label: 'Тесты',   Icon: FileText },
+  { id: 'lessons',  label: 'Уроки',  Icon: BookOpen },
+  { id: 'results',  label: 'Результаты', Icon: BarChart2 },
 ]
 
 const BLUE = '#1B4FD8'
@@ -77,7 +77,7 @@ export default function AdminJrPage() {
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: BG, fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ color: '#9CA3AF', fontSize: 14 }}>Жүктөлүүдө...</div>
+      <div style={{ color: '#9CA3AF', fontSize: 14 }}>Загрузка...</div>
     </div>
   )
 
@@ -90,7 +90,7 @@ export default function AdminJrPage() {
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: 14, color: '#111827', letterSpacing: '-0.3px' }}>Zhangak</div>
-            <div style={{ fontSize: 10, color: '#9CA3AF' }}>Admin кабинети</div>
+            <div style={{ fontSize: 10, color: '#9CA3AF' }}>Кабинет администратора</div>
           </div>
         </div>
       </div>
@@ -112,7 +112,7 @@ export default function AdminJrPage() {
       <div style={{ padding: '8px', borderTop: '1px solid #E8ECF0' }}>
         <button onClick={async () => { await supabase.auth.signOut(); router.push('/') }}
           style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'transparent', color: '#EF4444', fontSize: 13, fontWeight: 500, fontFamily: 'Inter, sans-serif' }}>
-          <LogOut size={16} /> Чыгуу
+          <LogOut size={16} /> Выйти
         </button>
       </div>
     </>
@@ -172,10 +172,10 @@ export default function AdminJrPage() {
               <AddStudentForm onAdded={fetchStudents} />
               <Card style={{ overflow: 'hidden', marginTop: 18 }}>
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid #E8ECF0', fontWeight: 600, fontSize: 13 }}>
-                  Окуучулар ({students.length})
+                  Ученики ({students.length})
                 </div>
                 <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
-                  <THead cols={['Аты-жөнү', 'Телефон', 'Түрү', 'Катталган']} />
+                  <THead cols={['ФИО', 'Телефон', 'Тип', 'Зарегистрирован']} />
                   <tbody>
                     {students.map((s, i) => (
                       <tr key={s.id} style={{ borderBottom: i < students.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
@@ -192,7 +192,7 @@ export default function AdminJrPage() {
                             color: s.student_type === 'online' ? '#10B981' : s.student_type === 'both' ? '#7C3AED' : BLUE,
                             borderRadius: 6, padding: '2px 9px', fontSize: 11, fontWeight: 700
                           }}>
-                            {s.student_type === 'online' ? 'Онлайн' : s.student_type === 'both' ? 'Экөө' : 'Оффлайн'}
+                            {s.student_type === 'online' ? 'Онлайн' : s.student_type === 'both' ? 'Оба' : 'Оффлайн'}
                           </span>
                         </td>
                         <td style={{ padding: '11px 16px', color: '#9CA3AF', fontSize: 12 }}>
@@ -201,7 +201,7 @@ export default function AdminJrPage() {
                       </tr>
                     ))}
                     {students.length === 0 && (
-                      <tr><td colSpan={4} style={{ padding: 28, textAlign: 'center', color: '#9CA3AF' }}>Окуучулар жок</td></tr>
+                      <tr><td colSpan={4} style={{ padding: 28, textAlign: 'center', color: '#9CA3AF' }}>Учеников нет</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -227,7 +227,7 @@ function AddStudentForm({ onAdded }: { onAdded: () => void }) {
   const [success, setSuccess] = useState('')
 
   const handleSubmit = async () => {
-    if (!form.full_name || !form.email || !form.password) { setError('Бардык талааларды толтуруңуз'); return }
+    if (!form.full_name || !form.email || !form.password) { setError('Заполните все поля'); return }
     setSaving(true); setError(''); setSuccess('')
     const res = await fetch('/api/create-user', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -235,17 +235,17 @@ function AddStudentForm({ onAdded }: { onAdded: () => void }) {
     })
     const data = await res.json()
     if (data.error) { setError(data.error) }
-    else { setSuccess('Окуучу кошулду'); setForm({ full_name: '', email: '', password: '', phone: '', student_type: 'offline' }); setShow(false); onAdded() }
+    else { setSuccess('Ученик добавлен'); setForm({ full_name: '', email: '', password: '', phone: '', student_type: 'offline' }); setShow(false); onAdded() }
     setSaving(false)
   }
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: '-0.3px' }}>Окуучулар</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: '-0.3px' }}>Ученики</h2>
         <button onClick={() => { setShow(p => !p); setError(''); setSuccess('') }}
           style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 9, padding: '9px 18px', fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'Inter, sans-serif' }}>
-          <Plus size={15} /> Окуучу кошуу
+          <Plus size={15} /> Добавить ученика
         </button>
       </div>
       {success && (
@@ -255,13 +255,13 @@ function AddStudentForm({ onAdded }: { onAdded: () => void }) {
       )}
       {show && (
         <Card style={{ padding: 20, marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 16 }}>Жаңы окуучу</div>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 16 }}>Новый ученик</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             {[
-              { label: 'АТЫ-ЖӨНҮ *', key: 'full_name', placeholder: 'Иванов Айбек', type: 'text' },
+              { label: 'ФИО *', key: 'full_name', placeholder: 'Иванов Айбек', type: 'text' },
               { label: 'ТЕЛЕФОН',     key: 'phone',     placeholder: '+996 700 000 000', type: 'text' },
               { label: 'EMAIL *',     key: 'email',     placeholder: 'user@gmail.com', type: 'email' },
-              { label: 'СЫРСӨЗ *',   key: 'password',  placeholder: 'Мин. 6 символ', type: 'password' },
+              { label: 'ПАРОЛЬ *',   key: 'password',  placeholder: 'Мин. 6 символов', type: 'password' },
             ].map(f => (
               <div key={f.key}>
                 <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>{f.label}</div>
@@ -271,9 +271,9 @@ function AddStudentForm({ onAdded }: { onAdded: () => void }) {
             ))}
           </div>
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 7 }}>СТУДЕНТ ТҮРҮ</div>
+            <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 7 }}>ТИП СТУДЕНТА</div>
             <div style={{ display: 'flex', gap: 8 }}>
-              {[{ val: 'offline', label: 'Оффлайн' }, { val: 'online', label: 'Онлайн' }, { val: 'both', label: 'Экөө тең' }].map(o => (
+              {[{ val: 'offline', label: 'Оффлайн' }, { val: 'online', label: 'Онлайн' }, { val: 'both', label: 'Оба' }].map(o => (
                 <button key={o.val} onClick={() => setForm(p => ({ ...p, student_type: o.val }))}
                   style={{ padding: '7px 16px', borderRadius: 8, border: `1.5px solid ${form.student_type === o.val ? BLUE : '#E8ECF0'}`, background: form.student_type === o.val ? '#EEF2FF' : '#fff', color: form.student_type === o.val ? BLUE : '#6B7280', fontSize: 13, fontWeight: form.student_type === o.val ? 700 : 500, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
                   {o.label}
@@ -289,11 +289,11 @@ function AddStudentForm({ onAdded }: { onAdded: () => void }) {
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={handleSubmit} disabled={saving}
               style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 9, padding: '9px 20px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Plus size={14} /> {saving ? 'Кошулууда...' : 'Кошуу'}
+              <Plus size={14} /> {saving ? 'Добавление...' : 'Добавить'}
             </button>
             <button onClick={() => setShow(false)}
               style={{ background: '#F3F4F6', color: '#6B7280', border: 'none', borderRadius: 9, padding: '9px 16px', fontWeight: 500, fontSize: 13, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-              Жокко чыгаруу
+              Отмена
             </button>
           </div>
         </Card>
@@ -319,14 +319,14 @@ function AdminTests() {
   const subjects = [
   { value: 'math', label: 'Математика' },
   { value: 'kyr',  label: 'Кыргыз тили' },
-  { value: 'all',  label: 'Толук ЖРТ (Мат + Кыр)' },
+  { value: 'all',  label: 'Полный ОРТ (Мат + Кыр)' },
 ]
   const sections = [
-    { value: 'general',    label: 'Жалпы' },
-    { value: 'comparison', label: 'Салыштыруу' },
+    { value: 'general',    label: 'Общий' },
+    { value: 'comparison', label: 'Сравнение' },
     { value: 'math',       label: 'Математика' },
     { value: 'analogy',    label: 'Аналогия' },
-    { value: 'reading',    label: 'Окуу' },
+    { value: 'reading',    label: 'Чтение' },
     { value: 'grammar',    label: 'Грамматика' },
   ]
 
@@ -354,7 +354,7 @@ function AdminTests() {
   }
 
   const deleteTest = async (id: number) => {
-    // Алгач суроолорду өчүр
+    // Сначала удаляем вопросы
     await supabase.from('questions').delete().eq('practice_test_id', id)
     await supabase.from('practice_tests').delete().eq('id', id)
     setTests(p => p.filter(t => t.id !== id))
@@ -383,10 +383,10 @@ function AdminTests() {
       practice_test_id: selectedTest.id,
       question_text: qType === 'text' ? newQ.question_text : '',
       image_url: qType === 'image' ? newQ.image_url : '',
-      option_a: newQ.option_a || 'А тилкеси чоң',
-      option_b: newQ.option_b || 'Б тилкеси чоң',
-      option_c: newQ.option_c || 'Барабар',
-      option_d: newQ.option_d || 'Аныктоо мүмкүн эмес',
+      option_a: newQ.option_a || 'Столбец А больше',
+      option_b: newQ.option_b || 'Столбец Б больше',
+      option_c: newQ.option_c || 'Равны',
+      option_d: newQ.option_d || 'Невозможно определить',
       correct_answer: newQ.correct_answer,
       section: newQ.section,
       order_num: questions.length + 1,
@@ -414,52 +414,52 @@ function AdminTests() {
         {/* Left */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <span style={{ fontWeight: 600, fontSize: 13, color: '#6B7280' }}>Тесттер ({tests.length})</span>
+            <span style={{ fontWeight: 600, fontSize: 13, color: '#6B7280' }}>Тесты ({tests.length})</span>
             <button onClick={() => setShowForm(p => !p)}
               style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 7, padding: '5px 11px', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'Inter, sans-serif' }}>
-              <Plus size={13} /> Жаңы
+              <Plus size={13} /> Новый
             </button>
           </div>
 
           {showForm && (
             <Card style={{ padding: 14, marginBottom: 10 }}>
-              <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>АТАЛЫШЫ *</div>
-              <input value={newTest.title} onChange={e => setNewTest(p => ({ ...p, title: e.target.value }))} placeholder="Тест аталышы" style={{ ...inp, marginBottom: 8 }} />
+              <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>НАЗВАНИЕ *</div>
+              <input value={newTest.title} onChange={e => setNewTest(p => ({ ...p, title: e.target.value }))} placeholder="Название теста" style={{ ...inp, marginBottom: 8 }} />
               <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>ПРЕДМЕТ</div>
               <select value={newTest.subject} onChange={e => setNewTest(p => ({ ...p, subject: e.target.value }))} style={{ ...sel, marginBottom: 8 }}>
                 {subjects.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
               <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>ТИП</div>
               <select value={newTest.type} onChange={e => setNewTest(p => ({ ...p, type: e.target.value }))} style={{ ...sel, marginBottom: 8 }}>
-                <option value="mock">Сынамык тест</option>
+                <option value="mock">Пробный тест</option>
                 <option value="practice">Практика</option>
               </select>
               {newTest.type === 'practice' && (
                 <>
-                  <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>САБАК</div>
+                  <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>УРОК</div>
                   <select value={newTest.lesson_id} onChange={e => setNewTest(p => ({ ...p, lesson_id: e.target.value }))} style={{ ...sel, marginBottom: 8 }}>
-                    <option value="">Сабак тандаңыз</option>
+                    <option value="">Выберите урок</option>
                     {lessons.map(l => <option key={l.id} value={l.id}>{l.subject === 'math' ? 'Мат' : 'Кыр'} — {l.title}</option>)}
                   </select>
                 </>
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
                 <div>
-                  <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>УБАКЫТ (мин)</div>
+                  <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>ВРЕМЯ (мин)</div>
                   <input value={newTest.time_limit_minutes} onChange={e => setNewTest(p => ({ ...p, time_limit_minutes: Number(e.target.value) }))} type="number" style={inp} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>АРАКЕТ</div>
+                  <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>ПОПЫТКИ</div>
                   <input value={newTest.max_attempts} onChange={e => setNewTest(p => ({ ...p, max_attempts: Number(e.target.value) }))} type="number" style={inp} />
                 </div>
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12, cursor: 'pointer', fontSize: 13, color: '#374151' }}>
                 <input type="checkbox" checked={newTest.is_active} onChange={e => setNewTest(p => ({ ...p, is_active: e.target.checked }))} />
-                Активдүү
+                Активен
               </label>
               <button onClick={createTest} disabled={saving}
                 style={{ width: '100%', background: BLUE, color: '#fff', border: 'none', borderRadius: 8, padding: 9, fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-                {saving ? '...' : 'Түзүү'}
+                {saving ? '...' : 'Создать'}
               </button>
             </Card>
           )}
@@ -471,7 +471,7 @@ function AdminTests() {
                   style={{ width: '100%', textAlign: 'left' as const, padding: '10px 12px', border: 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 12, color: selectedTest?.id === t.id ? BLUE : '#111827', marginBottom: 2, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.title}</div>
-                    <div style={{ fontSize: 10, color: '#9CA3AF' }}>{subjects.find(s => s.value === t.subject)?.label} · {t.type === 'mock' ? 'Сынамык' : 'Практика'}</div>
+                    <div style={{ fontSize: 10, color: '#9CA3AF' }}>{subjects.find(s => s.value === t.subject)?.label} · {t.type === 'mock' ? 'Пробный' : 'Практика'}</div>
                     {t.lesson_id && <div style={{ fontSize: 10, color: '#7C3AED', marginTop: 2 }}>{getLessonTitle(t.lesson_id)}</div>}
                   </div>
                   {/* Toggle */}
@@ -484,22 +484,22 @@ function AdminTests() {
                 <div style={{ borderTop: '1px solid #F3F4F6', padding: '5px 12px', display: 'flex', justifyContent: 'flex-end' }}>
                   {deleteConfirm === t.id ? (
                     <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-                      <span style={{ fontSize: 11, color: '#EF4444' }}>Чынбы?</span>
+                      <span style={{ fontSize: 11, color: '#EF4444' }}>Точно?</span>
                       <button onClick={() => deleteTest(t.id)}
-                        style={{ background: '#EF4444', color: '#fff', border: 'none', borderRadius: 6, padding: '3px 9px', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Ооба</button>
+                        style={{ background: '#EF4444', color: '#fff', border: 'none', borderRadius: 6, padding: '3px 9px', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Да</button>
                       <button onClick={() => setDeleteConfirm(null)}
-                        style={{ background: '#F3F4F6', color: '#6B7280', border: 'none', borderRadius: 6, padding: '3px 9px', fontSize: 11, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Жок</button>
+                        style={{ background: '#F3F4F6', color: '#6B7280', border: 'none', borderRadius: 6, padding: '3px 9px', fontSize: 11, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Нет</button>
                     </div>
                   ) : (
                     <button onClick={() => setDeleteConfirm(t.id)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontFamily: 'Inter, sans-serif' }}>
-                      <Trash2 size={12} /> Өчүрүү
+                      <Trash2 size={12} /> Удалить
                     </button>
                   )}
                 </div>
               </div>
             ))}
-            {tests.length === 0 && <div style={{ textAlign: 'center', color: '#9CA3AF', padding: 24, fontSize: 12 }}>Тест жок</div>}
+            {tests.length === 0 && <div style={{ textAlign: 'center', color: '#9CA3AF', padding: 24, fontSize: 12 }}>Тестов нет</div>}
           </div>
         </div>
 
@@ -510,23 +510,23 @@ function AdminTests() {
               <div>
                 <h3 style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>{selectedTest.title}</h3>
                 <div style={{ color: '#9CA3AF', fontSize: 12, marginTop: 2 }}>
-                  {questions.length} суроо · {selectedTest.time_limit_minutes} мин · аракет: {selectedTest.max_attempts}
+                  {questions.length} вопросов · {selectedTest.time_limit_minutes} мин · попыток: {selectedTest.max_attempts}
                   {selectedTest.lesson_id && <span style={{ color: '#7C3AED', marginLeft: 6 }}>· {getLessonTitle(selectedTest.lesson_id)}</span>}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: selectedTest.is_active ? '#10B981' : '#9CA3AF' }}>
                 {selectedTest.is_active ? <CheckCircle size={14} /> : <X size={14} />}
-                {selectedTest.is_active ? 'Активдүү' : 'Өчүрүлгөн'}
+                {selectedTest.is_active ? 'Активен' : 'Отключен'}
               </div>
             </div>
 
             <Card style={{ padding: 18, marginBottom: 14 }}>
-              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 12 }}>Жаңы суроо</div>
+              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 12 }}>Новый вопрос</div>
               <div style={{ display: 'flex', gap: 7, marginBottom: 12, flexWrap: 'wrap' as const }}>
                 {(['text','image'] as const).map(type => (
                   <button key={type} onClick={() => setQType(type)}
                     style={{ padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, background: qType === type ? BLUE : '#F3F4F6', color: qType === type ? '#fff' : '#6B7280', display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'Inter, sans-serif' }}>
-                    {type === 'text' ? <><FileText size={12} /> Текст</> : <><Image size={12} /> Сүрөт</>}
+                    {type === 'text' ? <><FileText size={12} /> Текст</> : <><Image size={12} /> Изображение</>}
                   </button>
                 ))}
                 <select value={newQ.section} onChange={e => setNewQ(p => ({ ...p, section: e.target.value }))} style={{ ...sel, width: 'auto', marginLeft: 'auto' }}>
@@ -536,15 +536,15 @@ function AdminTests() {
 
               {qType === 'text' ? (
                 <textarea value={newQ.question_text} onChange={e => setNewQ(p => ({ ...p, question_text: e.target.value }))}
-                  placeholder="Суроону жазыңыз..." rows={3} style={{ ...inp, resize: 'none' as const, marginBottom: 12 }} />
+                  placeholder="Введите вопрос..." rows={3} style={{ ...inp, resize: 'none' as const, marginBottom: 12 }} />
               ) : (
                 <div style={{ marginBottom: 12 }}>
                   <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0])} style={{ display: 'none' }} id="img-upload-jr" />
                   <label htmlFor="img-upload-jr"
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: '2px dashed #E8ECF0', borderRadius: 10, padding: 20, cursor: 'pointer', background: '#F9FAFB' }}>
-                    {uploading ? <span style={{ color: '#9CA3AF', fontSize: 13 }}>Жүктөлүүдө...</span>
+                    {uploading ? <span style={{ color: '#9CA3AF', fontSize: 13 }}>Загрузка...</span>
                       : newQ.image_url ? <img src={newQ.image_url} alt="preview" style={{ maxHeight: 90, borderRadius: 8 }} />
-                      : <><Upload size={18} color="#9CA3AF" /><span style={{ color: '#9CA3AF', fontSize: 13 }}>Сүрөт жүктөө</span></>}
+                      : <><Upload size={18} color="#9CA3AF" /><span style={{ color: '#9CA3AF', fontSize: 13 }}>Загрузить изображение</span></>}
                   </label>
                 </div>
               )}
@@ -558,17 +558,17 @@ function AdminTests() {
                     </div>
                     <input value={(newQ as any)[`option_${opt.toLowerCase()}`]}
                       onChange={e => setNewQ(p => ({ ...p, [`option_${opt.toLowerCase()}`]: e.target.value }))}
-                      placeholder={`${opt} варианты`}
+                      placeholder={`Вариант ${opt}`}
                       style={{ flex: 1, padding: '6px 8px', borderRadius: 7, border: `1px solid ${newQ.correct_answer === opt ? BLUE : '#E8ECF0'}`, background: newQ.correct_answer === opt ? '#EEF2FF' : '#F9FAFB', color: '#111827', fontSize: 12, outline: 'none', fontFamily: 'Inter, sans-serif' }} />
                   </div>
                 ))}
               </div>
               <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 10 }}>
-                Туура жооп: <strong style={{ color: BLUE }}>{newQ.correct_answer}</strong>
+                Правильный ответ: <strong style={{ color: BLUE }}>{newQ.correct_answer}</strong>
               </div>
               <button onClick={addQuestion} disabled={saving || uploading}
                 style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 9, padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'Inter, sans-serif' }}>
-                <Plus size={14} /> {saving ? '...' : 'Суроо кошуу'}
+                <Plus size={14} /> {saving ? '...' : 'Добавить вопрос'}
               </button>
             </Card>
 
@@ -603,12 +603,12 @@ function AdminTests() {
                 </Card>
               ))}
               {questions.length === 0 && (
-                <div style={{ textAlign: 'center', color: '#9CA3AF', fontSize: 13, padding: 24 }}>Суроолор жок — жогорудан кошуңуз</div>
+                <div style={{ textAlign: 'center', color: '#9CA3AF', fontSize: 13, padding: 24 }}>Вопросов нет — добавьте сверху</div>
               )}
             </div>
           </div>
         ) : (
-          <div style={{ textAlign: 'center', color: '#9CA3AF', fontSize: 13, padding: 60 }}>Тест тандаңыз</div>
+          <div style={{ textAlign: 'center', color: '#9CA3AF', fontSize: 13, padding: 60 }}>Выберите тест</div>
         )}
       </div>
     </div>
@@ -633,7 +633,7 @@ function AdminLessons() {
     setSaving(true)
     await supabase.from('practice_lessons').insert(newLesson)
     setNewLesson({ title: '', subject: 'math', description: '', video_url: '', order_number: lessons.length + 1 })
-    setShowForm(false); setSuccess('Сабак кошулду'); fetchLessons(); setSaving(false)
+    setShowForm(false); setSuccess('Урок добавлен'); fetchLessons(); setSaving(false)
   }
   const deleteLesson = async (id: string) => { await supabase.from('practice_lessons').delete().eq('id', id); fetchLessons() }
 
@@ -643,10 +643,10 @@ function AdminLessons() {
   return (
     <div className="fade">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: '-0.3px' }}>Практика сабактары</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: '-0.3px' }}>Уроки практики</h2>
         <button onClick={() => { setShowForm(p => !p); setSuccess('') }}
           style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 9, padding: '9px 18px', fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'Inter, sans-serif' }}>
-          <Plus size={15} /> Сабак кошуу
+          <Plus size={15} /> Добавить урок
         </button>
       </div>
       {success && (
@@ -656,11 +656,11 @@ function AdminLessons() {
       )}
       {showForm && (
         <Card style={{ padding: 20, marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 16 }}>Жаңы сабак</div>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 16 }}>Новый урок</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <div style={{ gridColumn: 'span 2' }}>
-              <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>АТАЛЫШЫ *</div>
-              <input value={newLesson.title} onChange={e => setNewLesson(p => ({ ...p, title: e.target.value }))} placeholder="Сабак аталышы" style={inp} />
+              <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>НАЗВАНИЕ *</div>
+              <input value={newLesson.title} onChange={e => setNewLesson(p => ({ ...p, title: e.target.value }))} placeholder="Название урока" style={inp} />
             </div>
             <div>
               <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>ПРЕДМЕТ</div>
@@ -670,26 +670,26 @@ function AdminLessons() {
               </select>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>ТАРТИБИ</div>
+              <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>ПОРЯДОК</div>
               <input value={newLesson.order_number} onChange={e => setNewLesson(p => ({ ...p, order_number: Number(e.target.value) }))} type="number" style={inp} />
             </div>
             <div style={{ gridColumn: 'span 2' }}>
-              <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>YOUTUBE ШИЛТЕМЕСИ</div>
+              <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>ССЫЛКА НА YOUTUBE</div>
               <input value={newLesson.video_url} onChange={e => setNewLesson(p => ({ ...p, video_url: e.target.value }))} placeholder="https://youtube.com/watch?v=..." style={inp} />
             </div>
             <div style={{ gridColumn: 'span 2' }}>
-              <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>СҮРӨТТӨМӨ</div>
-              <input value={newLesson.description} onChange={e => setNewLesson(p => ({ ...p, description: e.target.value }))} placeholder="Кыскача сүрөттөмө" style={inp} />
+              <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600, marginBottom: 5 }}>ОПИСАНИЕ</div>
+              <input value={newLesson.description} onChange={e => setNewLesson(p => ({ ...p, description: e.target.value }))} placeholder="Краткое описание" style={inp} />
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={addLesson} disabled={saving}
               style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 9, padding: '9px 20px', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Plus size={14} /> {saving ? 'Кошулууда...' : 'Кошуу'}
+              <Plus size={14} /> {saving ? 'Добавление...' : 'Добавить'}
             </button>
             <button onClick={() => setShowForm(false)}
               style={{ background: '#F3F4F6', color: '#6B7280', border: 'none', borderRadius: 9, padding: '9px 16px', fontWeight: 500, fontSize: 13, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-              Жокко чыгаруу
+              Отмена
             </button>
           </div>
         </Card>
@@ -706,13 +706,13 @@ function AdminLessons() {
             </div>
             <div style={{ padding: 8 }}>
               {group.data.length === 0 ? (
-                <div style={{ padding: '20px', textAlign: 'center', color: '#9CA3AF', fontSize: 13 }}>Сабак жок</div>
+                <div style={{ padding: '20px', textAlign: 'center', color: '#9CA3AF', fontSize: 13 }}>Уроков нет</div>
               ) : group.data.map((l, i) => (
                 <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 9, marginBottom: 3, background: '#F9FAFB', border: '1px solid #E8ECF0' }}>
                   <div style={{ width: 24, height: 24, background: group.bg, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: group.color, flexShrink: 0 }}>{i + 1}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 13, color: '#111827', whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.title}</div>
-                    {l.video_url && <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>YouTube видео бар</div>}
+                    {l.video_url && <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>Есть видео на YouTube</div>}
                   </div>
                   <button onClick={() => deleteLesson(l.id)}
                     style={{ background: '#FEF2F2', color: '#EF4444', border: 'none', borderRadius: 6, padding: '4px 7px', cursor: 'pointer', flexShrink: 0, display: 'flex' }}>
@@ -752,7 +752,7 @@ function AdminResults() {
 
   useEffect(() => {
     fetchAll()
-    // Polling — ар 30 секундда жаңыртат
+    // Polling — обновляет каждые 30 секунд
     const interval = setInterval(fetchAll, 30000)
     return () => clearInterval(interval)
   }, [fetchAll])
@@ -767,26 +767,26 @@ function AdminResults() {
     return { count: sResults.length, avg, best, last }
   }
 
-  if (loading) return <div style={{ color: '#9CA3AF', padding: 40, textAlign: 'center' }}>Жүктөлүүдө...</div>
+  if (loading) return <div style={{ color: '#9CA3AF', padding: 40, textAlign: 'center' }}>Загрузка...</div>
 
   return (
     <div className="fade">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap' as const, gap: 10 }}>
         <div>
-          <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: '-0.3px' }}>Натыйжалар</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: '-0.3px' }}>Результаты</h2>
           <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
-            <Clock size={11} /> Жаңырды: {lastRefresh.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}
-            <span style={{ color: '#10B981', fontSize: 10 }}>• ар 30 сек автожаңырат</span>
+            <Clock size={11} /> Обновлено: {lastRefresh.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}
+            <span style={{ color: '#10B981', fontSize: 10 }}>• автообновление каждые 30 сек</span>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <select value={selectedStudent} onChange={e => setSelectedStudent(e.target.value)} style={{ ...sel, width: 'auto' }}>
-            <option value="all">Баардык окуучулар</option>
+            <option value="all">Все ученики</option>
             {students.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
           </select>
           <button onClick={fetchAll}
             style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 9, padding: '9px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>
-            <RefreshCw size={14} /> Жаңыртуу
+            <RefreshCw size={14} /> Обновить
           </button>
         </div>
       </div>
@@ -806,22 +806,22 @@ function AdminResults() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.full_name}</div>
                     <div style={{ fontSize: 10, color: s.student_type === 'online' ? '#10B981' : '#9CA3AF' }}>
-                      {s.student_type === 'online' ? 'Онлайн' : s.student_type === 'both' ? 'Экөө' : 'Оффлайн'}
+                      {s.student_type === 'online' ? 'Онлайн' : s.student_type === 'both' ? 'Оба' : 'Оффлайн'}
                     </div>
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5 }}>
                   <div style={{ textAlign: 'center', background: '#F9FAFB', borderRadius: 7, padding: '5px 3px' }}>
                     <div style={{ fontWeight: 800, fontSize: 14, color: BLUE }}>{stats.count}</div>
-                    <div style={{ fontSize: 9, color: '#9CA3AF' }}>тест</div>
+                    <div style={{ fontSize: 9, color: '#9CA3AF' }}>тестов</div>
                   </div>
                   <div style={{ textAlign: 'center', background: '#F9FAFB', borderRadius: 7, padding: '5px 3px' }}>
                     <div style={{ fontWeight: 800, fontSize: 14, color: '#10B981' }}>{stats.avg || '—'}</div>
-                    <div style={{ fontSize: 9, color: '#9CA3AF' }}>орточо</div>
+                    <div style={{ fontSize: 9, color: '#9CA3AF' }}>среднее</div>
                   </div>
                   <div style={{ textAlign: 'center', background: '#F9FAFB', borderRadius: 7, padding: '5px 3px' }}>
                     <div style={{ fontWeight: 800, fontSize: 14, color: '#F59E0B' }}>{stats.best || '—'}</div>
-                    <div style={{ fontSize: 9, color: '#9CA3AF' }}>жогорку</div>
+                    <div style={{ fontSize: 9, color: '#9CA3AF' }}>лучший</div>
                   </div>
                 </div>
                 {stats.last && (
@@ -840,20 +840,20 @@ function AdminResults() {
       {selectedStudent !== 'all' && (
         <button onClick={() => setSelectedStudent('all')}
           style={{ background: '#F3F4F6', color: '#6B7280', border: 'none', borderRadius: 9, padding: '8px 16px', fontSize: 13, fontWeight: 500, cursor: 'pointer', marginBottom: 14, fontFamily: 'Inter, sans-serif' }}>
-          ← Баардык окуучулар
+          ← Все ученики
         </button>
       )}
 
       <Card style={{ overflow: 'hidden' }}>
         <div style={{ padding: '12px 16px', borderBottom: '1px solid #E8ECF0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontWeight: 600, fontSize: 13 }}>
-            {selectedStudent === 'all' ? 'Акыркы натыйжалар' : students.find(s => s.id === selectedStudent)?.full_name + ' — натыйжалар'}
+            {selectedStudent === 'all' ? 'Последние результаты' : students.find(s => s.id === selectedStudent)?.full_name + ' — результаты'}
           </span>
-          <span style={{ fontSize: 12, color: '#9CA3AF' }}>{filtered.length} жазуу</span>
+          <span style={{ fontSize: 12, color: '#9CA3AF' }}>{filtered.length} записей</span>
         </div>
         <div style={{ overflowX: 'auto' as const }}>
           <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse', minWidth: 600 }}>
-            <THead cols={selectedStudent === 'all' ? ['Окуучу', 'Тест', 'Мат', 'Аналогия', 'Окуу', 'Грам', 'Жалпы', 'Убакыт'] : ['Тест', 'Мат', 'Аналогия', 'Окуу', 'Грамматика', 'Жалпы', 'Убакыт']} />
+            <THead cols={selectedStudent === 'all' ? ['Ученик', 'Тест', 'Мат', 'Аналогия', 'Чтение', 'Грам', 'Общий', 'Время'] : ['Тест', 'Мат', 'Аналогия', 'Чтение', 'Грамматика', 'Общий', 'Время']} />
             <tbody>
               {filtered.slice(0, 50).map((r, i) => {
                 const test = tests.find(t => t.id === r.test_id)
@@ -883,7 +883,7 @@ function AdminResults() {
                 )
               })}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} style={{ padding: 28, textAlign: 'center', color: '#9CA3AF' }}>Натыйжалар жок</td></tr>
+                <tr><td colSpan={8} style={{ padding: 28, textAlign: 'center', color: '#9CA3AF' }}>Результатов нет</td></tr>
               )}
             </tbody>
           </table>

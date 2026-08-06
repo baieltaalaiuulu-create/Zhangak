@@ -17,17 +17,17 @@ export const SUBJECT_LABELS: Record<'math' | 'kyr', string> = {
 }
 
 export const SECTION_OPTIONS: { value: string; label: string }[] = [
-  { value: 'general', label: 'Жалпы' },
-  { value: 'comparison', label: 'Салыштыруу' },
+  { value: 'general', label: 'Общий' },
+  { value: 'comparison', label: 'Сравнение' },
   { value: 'math', label: 'Математика' },
   { value: 'analogy', label: 'Аналогия' },
-  { value: 'reading', label: 'Окуу' },
+  { value: 'reading', label: 'Чтение' },
   { value: 'grammar', label: 'Грамматика' },
 ]
 
 export const PAYMENT_METHODS: { value: string; label: string }[] = [
-  { value: 'cash', label: 'Нак акча' },
-  { value: 'transfer', label: 'Которуу' },
+  { value: 'cash', label: 'Наличные' },
+  { value: 'transfer', label: 'Перевод' },
   { value: 'elsom', label: 'Элсом' },
   { value: 'mbank', label: 'MBank' },
 ]
@@ -35,7 +35,7 @@ export const PAYMENT_METHODS: { value: string; label: string }[] = [
 export const STUDENT_TYPES: { value: string; label: string }[] = [
   { value: 'offline', label: 'Оффлайн' },
   { value: 'online', label: 'Онлайн' },
-  { value: 'both', label: 'Экөө тең' },
+  { value: 'both', label: 'Оба' },
 ]
 
 // ── Dashboard ────────────────────────────────────────────────────────────
@@ -290,7 +290,7 @@ export async function createStudent(payload: NewStudentPayload): Promise<string>
       amount: payload.initial_paid_amount,
       month: monthStr,
       status: 'paid',
-      note: 'Баштапкы төлөм',
+      note: 'Первоначальный платёж',
     })
   }
   return studentId

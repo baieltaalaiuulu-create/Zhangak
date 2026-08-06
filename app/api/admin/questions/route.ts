@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   try {
     const supabaseAdmin = getAdminClient()
     const { testId, payload, orderNum } = await req.json()
-    if (!testId || !payload) return NextResponse.json({ error: 'testId жана payload талап кылынат' }, { status: 400 })
+    if (!testId || !payload) return NextResponse.json({ error: 'testId и payload обязательны' }, { status: 400 })
 
     const { error } = await supabaseAdmin
       .from('questions')
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
@@ -35,14 +35,14 @@ export async function PATCH(req: NextRequest) {
   try {
     const supabaseAdmin = getAdminClient()
     const { id, payload } = await req.json()
-    if (!id || !payload) return NextResponse.json({ error: 'id жана payload талап кылынат' }, { status: 400 })
+    if (!id || !payload) return NextResponse.json({ error: 'id и payload обязательны' }, { status: 400 })
 
     const { error } = await supabaseAdmin.from('questions').update(payload).eq('id', id)
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
     return NextResponse.json({ success: true })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
@@ -51,14 +51,14 @@ export async function DELETE(req: NextRequest) {
   try {
     const supabaseAdmin = getAdminClient()
     const { id } = await req.json()
-    if (!id) return NextResponse.json({ error: 'id талап кылынат' }, { status: 400 })
+    if (!id) return NextResponse.json({ error: 'id обязателен' }, { status: 400 })
 
     const { error } = await supabaseAdmin.from('questions').delete().eq('id', id)
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
     return NextResponse.json({ success: true })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

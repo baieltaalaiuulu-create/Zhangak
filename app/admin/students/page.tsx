@@ -16,7 +16,7 @@ import {
 } from '@/lib/admin-data'
 
 const PAYMENT_STATUS_LABELS: Record<AdminStudent['paymentStatus'], string> = {
-  paid: 'Төлөдү', partial: 'Жарым', debt: 'Карыз',
+  paid: 'Оплачено', partial: 'Частично', debt: 'Долг',
 }
 const PAYMENT_STATUS_COLORS: Record<AdminStudent['paymentStatus'], string> = {
   paid: '#10B981', partial: '#F59E0B', debt: '#EF4444',
@@ -111,10 +111,10 @@ export default function AdminStudentsPage() {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Бардыгы', value: stats.total, color: '#1B4FD8' },
-            { label: 'Төлөдү', value: stats.paid, color: '#10B981' },
-            { label: 'Жарым', value: stats.partial, color: '#F59E0B' },
-            { label: 'Карыз', value: stats.overdue, color: '#EF4444' },
+            { label: 'Всего', value: stats.total, color: '#1B4FD8' },
+            { label: 'Оплатили', value: stats.paid, color: '#10B981' },
+            { label: 'Частично', value: stats.partial, color: '#F59E0B' },
+            { label: 'Долг', value: stats.overdue, color: '#EF4444' },
           ].map(c => (
             <div key={c.label} className="rounded-xl border border-gray-200 bg-white p-4">
               <div className="text-2xl font-extrabold" style={{ color: c.color }}>{c.value}</div>
@@ -126,25 +126,25 @@ export default function AdminStudentsPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Издөө: аты же email"
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск: имя или email"
               className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
           </div>
           <select value={courseFilter} onChange={e => setCourseFilter(e.target.value)}
             className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20">
-            <option value="">Бардык курстар</option>
+            <option value="">Все курсы</option>
             {courses.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
           </select>
           <select value={groupFilter} onChange={e => setGroupFilter(e.target.value)}
             className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20">
-            <option value="">Бардык группалар</option>
+            <option value="">Все группы</option>
             {groups.map(g => <option key={g.id} value={g.name}>{g.name}</option>)}
           </select>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
             className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20">
-            <option value="">Бардык статустар</option>
-            <option value="paid">Төлөдү</option>
-            <option value="partial">Жарым</option>
-            <option value="debt">Карыз</option>
+            <option value="">Все статусы</option>
+            <option value="paid">Оплачено</option>
+            <option value="partial">Частично</option>
+            <option value="debt">Долг</option>
           </select>
         </div>
 
@@ -153,24 +153,24 @@ export default function AdminStudentsPage() {
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
                 <th className="w-10 px-4 py-3"><input type="checkbox" checked={selected.size > 0 && selected.size === filtered.length} onChange={toggleSelectAll} /></th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Окуучу</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Ученик</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Телефон</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Группа</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Курс</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Баасы</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Төлөдү</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Карыз</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Кийинки төлөм</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Төлөм</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Цена</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Оплачено</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Долг</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Следующий платёж</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Платёж</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Статус</th>
                 <th className="w-10 px-3 py-3" />
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={12} className="px-4 py-10 text-center text-gray-400">Жүктөлүүдө...</td></tr>
+                <tr><td colSpan={12} className="px-4 py-10 text-center text-gray-400">Загрузка...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={12} className="px-4 py-10 text-center text-gray-400">Окуучулар табылган жок</td></tr>
+                <tr><td colSpan={12} className="px-4 py-10 text-center text-gray-400">Ученики не найдены</td></tr>
               ) : filtered.map((s, i) => (
                 <tr key={s.id} className={`border-b border-gray-100 last:border-0 hover:bg-gray-50 ${i % 2 === 1 ? 'bg-gray-50/40' : ''}`}>
                   <td className="px-4 py-3"><input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSelected(s.id)} /></td>
@@ -199,7 +199,7 @@ export default function AdminStudentsPage() {
                   </td>
                   <td className="px-3 py-3">
                     <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${s.blocked ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
-                      {s.blocked ? 'Бөгөттөлгөн' : 'Активдүү'}
+                      {s.blocked ? 'Заблокирован' : 'Активен'}
                     </span>
                   </td>
                   <td className="px-3 py-3">
@@ -234,8 +234,8 @@ export default function AdminStudentsPage() {
       {historyModal && <PaymentHistoryModal student={historyModal} onClose={() => setHistoryModal(null)} />}
       {deleteTarget && (
         <DeleteConfirmModal
-          title="Окуучуну өчүрүү"
-          message={`"${deleteTarget.full_name}" аккаунтун өчүрөсүзбү? Бул аракетти артка кайтаруу мүмкүн эмес.`}
+          title="Удаление ученика"
+          message={`Удалить аккаунт "${deleteTarget.full_name}"? Это действие необратимо.`}
           loading={deleting}
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}

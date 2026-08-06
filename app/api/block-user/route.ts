@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
     const { id, blocked } = await req.json()
-    if (!id) return NextResponse.json({ error: 'id талап кылынат' }, { status: 400 })
+    if (!id) return NextResponse.json({ error: 'id обязателен' }, { status: 400 })
 
     const { error } = await supabaseAdmin.auth.admin.updateUserById(id, {
       ban_duration: blocked ? '876000h' : 'none',
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

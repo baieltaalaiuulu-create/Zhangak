@@ -17,11 +17,11 @@ export default function DeleteConfirmModal({ title, message, loading, onConfirm,
         <div className="mt-5 flex gap-2">
           <button type="button" onClick={onConfirm} disabled={loading}
             className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60">
-            {loading ? 'Өчүрүлүүдө...' : 'Өчүрүү'}
+            {loading ? 'Удаление...' : 'Удалить'}
           </button>
           <button type="button" onClick={onCancel}
             className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200">
-            Жокко чыгаруу
+            Отмена
           </button>
         </div>
       </div>

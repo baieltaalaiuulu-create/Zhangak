@@ -17,14 +17,14 @@ export async function POST(req: NextRequest) {
   try {
     const supabaseAdmin = getAdminClient()
     const { studentId, groupId } = await req.json()
-    if (!studentId || !groupId) return NextResponse.json({ error: 'studentId жана groupId талап кылынат' }, { status: 400 })
+    if (!studentId || !groupId) return NextResponse.json({ error: 'studentId и groupId обязательны' }, { status: 400 })
 
     const { error } = await supabaseAdmin.from('group_students').insert({ student_id: studentId, group_id: groupId })
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
     return NextResponse.json({ success: true })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
@@ -33,14 +33,14 @@ export async function DELETE(req: NextRequest) {
   try {
     const supabaseAdmin = getAdminClient()
     const { studentId } = await req.json()
-    if (!studentId) return NextResponse.json({ error: 'studentId талап кылынат' }, { status: 400 })
+    if (!studentId) return NextResponse.json({ error: 'studentId обязателен' }, { status: 400 })
 
     const { error } = await supabaseAdmin.from('group_students').delete().eq('student_id', studentId)
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
     return NextResponse.json({ success: true })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

@@ -17,17 +17,17 @@ export default function StudentActionsMenu({ blocked, onViewProfile, onEdit, onA
   const [open, setOpen] = useState(false)
 
   const items: { label: string; icon: typeof Eye; onClick: () => void; danger?: boolean }[] = [
-    { label: 'Профилди көрүү', icon: Eye, onClick: onViewProfile },
-    { label: 'Түзөтүү', icon: Pencil, onClick: onEdit },
-    { label: 'Төлөм кошуу', icon: Wallet, onClick: onAddPayment },
-    { label: 'Төлөм тарыхы', icon: History, onClick: onPaymentHistory },
-    { label: blocked ? 'Бөгөттөн чыгаруу' : 'Бөгөттөө', icon: blocked ? CheckCircle2 : Ban, onClick: onToggleBlock },
-    { label: 'Өчүрүү', icon: Trash2, onClick: onDelete, danger: true },
+    { label: 'Посмотреть профиль', icon: Eye, onClick: onViewProfile },
+    { label: 'Редактировать', icon: Pencil, onClick: onEdit },
+    { label: 'Добавить платёж', icon: Wallet, onClick: onAddPayment },
+    { label: 'История платежей', icon: History, onClick: onPaymentHistory },
+    { label: blocked ? 'Разблокировать' : 'Заблокировать', icon: blocked ? CheckCircle2 : Ban, onClick: onToggleBlock },
+    { label: 'Удалить', icon: Trash2, onClick: onDelete, danger: true },
   ]
 
   return (
     <div className="relative">
-      <button type="button" onClick={() => setOpen(v => !v)} aria-label="Аракеттер"
+      <button type="button" onClick={() => setOpen(v => !v)} aria-label="Действия"
         className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100">
         <MoreHorizontal size={18} />
       </button>

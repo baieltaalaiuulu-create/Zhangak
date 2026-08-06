@@ -108,7 +108,7 @@ export default function BulkAddModal({ onClose, onDone }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl" onClick={e => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[#191B23]">Массалык кошуу (JSON)</h2>
+          <h2 className="text-lg font-bold text-[#191B23]">Массовое добавление (JSON)</h2>
           <button type="button" onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-gray-50"><X size={18} /></button>
         </div>
 
@@ -136,10 +136,10 @@ export default function BulkAddModal({ onClose, onDone }: Props) {
         <div className="mt-5 flex gap-2">
           <button type="button" onClick={handleSubmit} disabled={busy || !text.trim()}
             className="rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60">
-            {busy ? 'Кошулууда...' : 'Кошуу'}
+            {busy ? 'Добавление...' : 'Добавить'}
           </button>
           <button type="button" onClick={onClose} className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200">
-            Жабуу
+            Закрыть
           </button>
         </div>
       </div>

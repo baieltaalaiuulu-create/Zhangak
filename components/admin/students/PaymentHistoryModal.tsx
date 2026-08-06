@@ -19,7 +19,7 @@ interface PaymentRow {
   created_at: string
 }
 
-const STATUS_LABELS: Record<string, string> = { paid: 'Төлөдү', partial: 'Жарым', debt: 'Карыз' }
+const STATUS_LABELS: Record<string, string> = { paid: 'Оплачено', partial: 'Частично', debt: 'Долг' }
 const STATUS_COLORS: Record<string, string> = { paid: '#10B981', partial: '#F59E0B', debt: '#EF4444' }
 
 export default function PaymentHistoryModal({ student, onClose }: Props) {
@@ -36,16 +36,16 @@ export default function PaymentHistoryModal({ student, onClose }: Props) {
       <div className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl" onClick={e => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-[#191B23]">Төлөм тарыхы</h2>
+            <h2 className="text-lg font-bold text-[#191B23]">История платежей</h2>
             <p className="text-xs text-gray-400">{student.full_name}</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-gray-50"><X size={18} /></button>
         </div>
 
         {loading ? (
-          <div className="py-10 text-center text-sm text-gray-400">Жүктөлүүдө...</div>
+          <div className="py-10 text-center text-sm text-gray-400">Загрузка...</div>
         ) : payments.length === 0 ? (
-          <div className="py-10 text-center text-sm text-gray-400">Төлөмдөр жок</div>
+          <div className="py-10 text-center text-sm text-gray-400">Платежей нет</div>
         ) : (
           <div className="space-y-2">
             {payments.map(p => (

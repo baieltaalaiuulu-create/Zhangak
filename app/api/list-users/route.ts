@@ -25,7 +25,7 @@ export async function GET() {
 
     return NextResponse.json({ users })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

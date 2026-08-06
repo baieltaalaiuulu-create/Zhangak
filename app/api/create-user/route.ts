@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     const { full_name, email, password, phone, role, student_type, target_score, class_number } = await req.json()
 
     if (!full_name || !email || !password) {
-      return NextResponse.json({ error: 'Толтуруу керек: аты-жөнү, email, сырсөз' }, { status: 400 })
+      return NextResponse.json({ error: 'Обязательно заполните: ФИО, email, пароль' }, { status: 400 })
     }
 
     const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       email_confirm: true,
     })
     if (createError || !created.user) {
-      return NextResponse.json({ error: createError?.message ?? 'Колдонуучуну түзүү мүмкүн болгон жок' }, { status: 400 })
+      return NextResponse.json({ error: createError?.message ?? 'Не удалось создать пользователя' }, { status: 400 })
     }
 
     const profile: Record<string, unknown> = { id: created.user.id, full_name, role: role ?? 'student' }
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, id: created.user.id })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

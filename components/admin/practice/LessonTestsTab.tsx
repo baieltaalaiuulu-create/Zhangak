@@ -86,26 +86,26 @@ export default function LessonTestsTab() {
         <table className="w-full min-w-[860px] text-sm">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50">
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Аталышы</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Название</th>
               <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Предмет</th>
               <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Урок</th>
-              <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Суроолор</th>
-              <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Убакыт</th>
-              <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Активдүү</th>
-              <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Аракеттер</th>
+              <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Вопросы</th>
+              <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Время</th>
+              <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Активен</th>
+              <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Действия</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">Жүктөлүүдө...</td></tr>
+              <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">Загрузка...</td></tr>
             ) : tests.length === 0 ? (
-              <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">Практика тесттери табылган жок</td></tr>
+              <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">Тесты практики не найдены</td></tr>
             ) : tests.map((t, i) => (
               <tr key={t.id} className={`border-b border-gray-100 last:border-0 hover:bg-gray-50 ${i % 2 === 1 ? 'bg-gray-50/40' : ''}`}>
                 <td className="px-4 py-3 font-semibold text-[#191B23]">{t.title}</td>
                 <td className="px-3 py-3">
                   <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${t.subject === 'math' ? 'bg-[#EEF2FF] text-[#1B4FD8]' : t.subject === 'kyr' ? 'bg-[#F5F3FF] text-[#7C3AED]' : 'bg-gray-100 text-gray-500'}`}>
-                    {t.subject === 'all' ? 'Жалпы' : SUBJECT_LABELS[t.subject]}
+                    {t.subject === 'all' ? 'Общий' : SUBJECT_LABELS[t.subject]}
                   </span>
                 </td>
                 <td className="px-3 py-3 text-gray-500">
@@ -123,7 +123,7 @@ export default function LessonTestsTab() {
                     </span>
                   )}
                 </td>
-                <td className="px-3 py-3 text-gray-400">{t.timeLimitMinutes ? `${t.timeLimitMinutes} мүн` : '—'}</td>
+                <td className="px-3 py-3 text-gray-400">{t.timeLimitMinutes ? `${t.timeLimitMinutes} мин` : '—'}</td>
                 <td className="px-3 py-3">
                   <button
                     type="button"
@@ -131,7 +131,7 @@ export default function LessonTestsTab() {
                     disabled={togglingId === t.id}
                     role="switch"
                     aria-checked={t.isActive}
-                    aria-label="Активдүүлүгүн которуштуруу"
+                    aria-label="Переключить активность"
                     className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${t.isActive ? 'bg-[#1B4FD8]' : 'bg-gray-200'}`}
                   >
                     <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${t.isActive ? 'translate-x-5' : 'translate-x-0.5'}`} />
@@ -139,10 +139,10 @@ export default function LessonTestsTab() {
                 </td>
                 <td className="px-3 py-3">
                   <div className="flex items-center justify-end gap-1">
-                    <button onClick={() => openEdit(t)} aria-label="Түзөтүү" className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-[#1B4FD8]">
+                    <button onClick={() => openEdit(t)} aria-label="Редактировать" className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-[#1B4FD8]">
                       <Pencil size={15} />
                     </button>
-                    <button onClick={() => setDeleteTarget(t)} aria-label="Өчүрүү" className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500">
+                    <button onClick={() => setDeleteTarget(t)} aria-label="Удалить" className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500">
                       <Trash2 size={15} />
                     </button>
                   </div>
@@ -163,8 +163,8 @@ export default function LessonTestsTab() {
       )}
       {deleteTarget && (
         <DeleteConfirmModal
-          title="Практиканы өчүрүү"
-          message={`"${deleteTarget.title}" практика тестин жана бардык суроолорун өчүрөсүзбү? Бул аракетти артка кайтаруу мүмкүн эмес.`}
+          title="Удаление теста"
+          message={`Удалить тест практики "${deleteTarget.title}" вместе со всеми вопросами? Это действие необратимо.`}
           loading={deleting}
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}

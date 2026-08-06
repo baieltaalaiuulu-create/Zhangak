@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const supabaseAdmin = getAdminClient()
     const { title, subject, lessonId, timeLimitMinutes, maxAttempts, isActive, type, scheduledAt } = await req.json()
     if (!title || !subject) {
-      return NextResponse.json({ error: 'title жана subject талап кылынат' }, { status: 400 })
+      return NextResponse.json({ error: 'title и subject обязательны' }, { status: 400 })
     }
 
     const { data, error } = await supabaseAdmin
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ id: data.id })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
@@ -51,7 +51,7 @@ export async function PATCH(req: NextRequest) {
     const supabaseAdmin = getAdminClient()
     const body = await req.json()
     const { id } = body
-    if (!id) return NextResponse.json({ error: 'id талап кылынат' }, { status: 400 })
+    if (!id) return NextResponse.json({ error: 'id обязателен' }, { status: 400 })
 
     // Partial update — the same route serves both the full edit form and the
     // quick is_active toggle in the table, so only supplied fields are touched.
@@ -69,7 +69,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
@@ -78,7 +78,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const supabaseAdmin = getAdminClient()
     const { id } = await req.json()
-    if (!id) return NextResponse.json({ error: 'id талап кылынат' }, { status: 400 })
+    if (!id) return NextResponse.json({ error: 'id обязателен' }, { status: 400 })
 
     await supabaseAdmin.from('questions').delete().eq('practice_test_id', id)
     const { error } = await supabaseAdmin.from('practice_tests').delete().eq('id', id)
@@ -86,7 +86,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

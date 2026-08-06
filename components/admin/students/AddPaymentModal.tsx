@@ -21,7 +21,7 @@ export default function AddPaymentModal({ student, onClose, onSaved }: Props) {
   const handleSubmit = async () => {
     setError('')
     const amountNum = Number(amount)
-    if (!amountNum || amountNum <= 0) { setError('Суммасын туура киргизиңиз'); return }
+    if (!amountNum || amountNum <= 0) { setError('Введите корректную сумму'); return }
 
     setSaving(true)
     try {
@@ -29,7 +29,7 @@ export default function AddPaymentModal({ student, onClose, onSaved }: Props) {
       onSaved()
       onClose()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ката кетти')
+      setError(e instanceof Error ? e.message : 'Произошла ошибка')
     } finally {
       setSaving(false)
     }
@@ -40,7 +40,7 @@ export default function AddPaymentModal({ student, onClose, onSaved }: Props) {
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={e => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-[#191B23]">Төлөм кошуу</h2>
+            <h2 className="text-lg font-bold text-[#191B23]">Добавить платёж</h2>
             <p className="text-xs text-gray-400">{student.full_name}</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-gray-50"><X size={18} /></button>
@@ -54,7 +54,7 @@ export default function AddPaymentModal({ student, onClose, onSaved }: Props) {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-500">Ыкма</label>
+            <label className="mb-1 block text-xs font-semibold text-gray-500">Способ</label>
             <div className="grid grid-cols-2 gap-2">
               {PAYMENT_METHODS.map(m => (
                 <button key={m.value} type="button" onClick={() => setMethod(m.value)}
@@ -73,7 +73,7 @@ export default function AddPaymentModal({ student, onClose, onSaved }: Props) {
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-gray-500">Комментарий</label>
-            <textarea value={comment} onChange={e => setComment(e.target.value)} rows={2} placeholder="Кошумча маалымат"
+            <textarea value={comment} onChange={e => setComment(e.target.value)} rows={2} placeholder="Дополнительная информация"
               className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
           </div>
 
@@ -82,11 +82,11 @@ export default function AddPaymentModal({ student, onClose, onSaved }: Props) {
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={handleSubmit} disabled={saving}
               className="rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60">
-              {saving ? 'Сакталууда...' : 'Кошуу'}
+              {saving ? 'Сохранение...' : 'Добавить'}
             </button>
             <button type="button" onClick={onClose}
               className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200">
-              Жокко чыгаруу
+              Отмена
             </button>
           </div>
         </div>

@@ -22,7 +22,7 @@ export default function LessonEditModal({ lesson, onClose, onSaved }: Props) {
 
   const handleSubmit = async () => {
     setError('')
-    if (!title.trim()) { setError('Аталышын киргизиңиз'); return }
+    if (!title.trim()) { setError('Введите название'); return }
 
     setSaving(true)
     try {
@@ -40,7 +40,7 @@ export default function LessonEditModal({ lesson, onClose, onSaved }: Props) {
       onSaved()
       onClose()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ката кетти')
+      setError(e instanceof Error ? e.message : 'Произошла ошибка')
     } finally {
       setSaving(false)
     }
@@ -50,18 +50,18 @@ export default function LessonEditModal({ lesson, onClose, onSaved }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl" onClick={e => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[#191B23]">Уроктту түзөтүү</h2>
+          <h2 className="text-lg font-bold text-[#191B23]">Редактировать урок</h2>
           <button type="button" onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-gray-50"><X size={18} /></button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-500">Аталышы *</label>
+            <label className="mb-1 block text-xs font-semibold text-gray-500">Название *</label>
             <input value={title} onChange={e => setTitle(e.target.value)}
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-500">Сүрөттөмө</label>
+            <label className="mb-1 block text-xs font-semibold text-gray-500">Описание</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2}
               className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
           </div>
@@ -78,18 +78,18 @@ export default function LessonEditModal({ lesson, onClose, onSaved }: Props) {
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-gray-500">Тартиби</label>
+              <label className="mb-1 block text-xs font-semibold text-gray-500">Порядок</label>
               <input type="number" value={orderNumber} onChange={e => setOrderNumber(Number(e.target.value))}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-500">Видео шилтеме</label>
+            <label className="mb-1 block text-xs font-semibold text-gray-500">Ссылка на видео</label>
             <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..."
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
           </div>
           <label className="flex items-center gap-2 text-sm font-semibold text-gray-600">
-            <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} /> Активдүү
+            <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} /> Активен
           </label>
 
           {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">{error}</div>}
@@ -97,11 +97,11 @@ export default function LessonEditModal({ lesson, onClose, onSaved }: Props) {
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={handleSubmit} disabled={saving}
               className="rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60">
-              {saving ? 'Сакталууда...' : 'Сактоо'}
+              {saving ? 'Сохранение...' : 'Сохранить'}
             </button>
             <button type="button" onClick={onClose}
               className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200">
-              Жокко чыгаруу
+              Отмена
             </button>
           </div>
         </div>

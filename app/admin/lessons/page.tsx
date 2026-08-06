@@ -14,7 +14,7 @@ const PAGE_SIZE = 10
 type SubjectFilter = 'all' | 'math' | 'kyr'
 
 const TABS: { id: SubjectFilter; label: string; icon: typeof BookOpen }[] = [
-  { id: 'all', label: 'Бардыгы', icon: BookOpen },
+  { id: 'all', label: 'Все', icon: BookOpen },
   { id: 'math', label: 'Математика', icon: Calculator },
   { id: 'kyr', label: 'Кыргыз тили', icon: BookOpen },
 ]
@@ -86,19 +86,19 @@ export default function AdminLessonsPage() {
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
                 <th className="w-12 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">#</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Аталышы</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Название</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Предмет</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Статус</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Суроолор</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Түзүлгөн</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Аракеттер</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Вопросы</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Создан</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Действия</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">Жүктөлүүдө...</td></tr>
+                <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">Загрузка...</td></tr>
               ) : paged.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">Сабактар табылган жок</td></tr>
+                <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">Уроки не найдены</td></tr>
               ) : paged.map((l, i) => (
                 <tr key={l.id} className={`border-b border-gray-100 last:border-0 hover:bg-gray-50 ${i % 2 === 1 ? 'bg-gray-50/40' : ''}`}>
                   <td className="px-4 py-3 text-gray-400">{l.order_number}</td>
@@ -110,7 +110,7 @@ export default function AdminLessonsPage() {
                   </td>
                   <td className="px-3 py-3">
                     <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${l.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
-                      {l.status === 'active' ? 'Активдүү' : 'Долбоор'}
+                      {l.status === 'active' ? 'Активен' : 'Черновик'}
                     </span>
                   </td>
                   <td className="px-3 py-3">
@@ -122,10 +122,10 @@ export default function AdminLessonsPage() {
                   <td className="px-3 py-3 text-gray-400">{new Date(l.created_at).toLocaleDateString('ru')}</td>
                   <td className="px-3 py-3">
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => setEditTarget(l)} aria-label="Түзөтүү" className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-[#1B4FD8]">
+                      <button onClick={() => setEditTarget(l)} aria-label="Редактировать" className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-[#1B4FD8]">
                         <Pencil size={15} />
                       </button>
-                      <button onClick={() => setDeleteTarget(l)} aria-label="Өчүрүү" className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500">
+                      <button onClick={() => setDeleteTarget(l)} aria-label="Удалить" className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500">
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -154,8 +154,8 @@ export default function AdminLessonsPage() {
       {editTarget && <LessonEditModal lesson={editTarget} onClose={() => setEditTarget(null)} onSaved={load} />}
       {deleteTarget && (
         <DeleteConfirmModal
-          title="Уроктту өчүрүү"
-          message={`"${deleteTarget.title}" уроктун жана бардык суроолорун өчүрөсүзбү? Бул аракетти артка кайтаруу мүмкүн эмес.`}
+          title="Удаление урока"
+          message={`Удалить урок "${deleteTarget.title}" вместе со всеми вопросами? Это действие необратимо.`}
           loading={deleting}
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}

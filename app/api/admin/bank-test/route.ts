@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     )
     const { subject, title } = await req.json()
     if (!subject || !title) {
-      return NextResponse.json({ error: 'subject жана title талап кылынат' }, { status: 400 })
+      return NextResponse.json({ error: 'subject и title обязательны' }, { status: 400 })
     }
 
     const { data: existing, error: findError } = await supabaseAdmin
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ test: created })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

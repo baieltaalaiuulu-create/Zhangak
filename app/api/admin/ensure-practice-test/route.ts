@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     )
     const { lessonId, title, subject, setActive } = await req.json()
     if (!lessonId || !title || !subject) {
-      return NextResponse.json({ error: 'lessonId, title, subject талап кылынат' }, { status: 400 })
+      return NextResponse.json({ error: 'lessonId, title, subject обязательны' }, { status: 400 })
     }
 
     const { data: existing, error: findError } = await supabaseAdmin
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ test })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Белгисиз ката'
+    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

@@ -76,25 +76,25 @@ export default function AdminMockPage() {
           <table className="w-full min-w-[860px] text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Аталышы</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Дата/убакыт</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Узактыгы</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Суроолор</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Катталды</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Активдүү</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Аракеттер</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Название</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Дата/время</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Длительность</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Вопросы</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Зарегистрировано</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Активен</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Действия</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">Жүктөлүүдө...</td></tr>
+                <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">Загрузка...</td></tr>
               ) : sessions.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">Пробный ОРТ табылган жок</td></tr>
+                <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">Пробный ОРТ не найден</td></tr>
               ) : sessions.map((s, i) => (
                 <tr key={s.id} className={`border-b border-gray-100 last:border-0 hover:bg-gray-50 ${i % 2 === 1 ? 'bg-gray-50/40' : ''}`}>
                   <td className="px-4 py-3 font-semibold text-[#191B23]">{s.title}</td>
                   <td className="px-3 py-3 text-gray-500">{formatScheduled(s.scheduledAt)}</td>
-                  <td className="px-3 py-3 text-gray-400">{s.durationMinutes ? `${s.durationMinutes} мүн` : '—'}</td>
+                  <td className="px-3 py-3 text-gray-400">{s.durationMinutes ? `${s.durationMinutes} мин` : '—'}</td>
                   <td className="px-3 py-3">
                     <button onClick={() => router.push(`/admin/mock/${s.id}/questions`)}
                       className="flex items-center gap-1 text-gray-500 hover:text-[#1B4FD8]">
@@ -113,7 +113,7 @@ export default function AdminMockPage() {
                       disabled={togglingId === s.id}
                       role="switch"
                       aria-checked={s.isActive}
-                      aria-label="Активдүүлүгүн которуштуруу"
+                      aria-label="Переключить активность"
                       className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${s.isActive ? 'bg-[#1B4FD8]' : 'bg-gray-200'}`}
                     >
                       <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${s.isActive ? 'translate-x-5' : 'translate-x-0.5'}`} />
@@ -121,10 +121,10 @@ export default function AdminMockPage() {
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => openEdit(s)} aria-label="Түзөтүү" className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-[#1B4FD8]">
+                      <button onClick={() => openEdit(s)} aria-label="Редактировать" className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-[#1B4FD8]">
                         <Pencil size={15} />
                       </button>
-                      <button onClick={() => setDeleteTarget(s)} aria-label="Өчүрүү" className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500">
+                      <button onClick={() => setDeleteTarget(s)} aria-label="Удалить" className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500">
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -145,8 +145,8 @@ export default function AdminMockPage() {
       )}
       {deleteTarget && (
         <DeleteConfirmModal
-          title="Пробный ОРТ өчүрүү"
-          message={`"${deleteTarget.title}" пробный ОРТ жана бардык суроолорун, каттоолорун өчүрөсүзбү? Бул аракетти артка кайтаруу мүмкүн эмес.`}
+          title="Удаление пробного ОРТ"
+          message={`Удалить "${deleteTarget.title}" вместе со всеми вопросами и регистрациями? Это действие необратимо.`}
           loading={deleting}
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
