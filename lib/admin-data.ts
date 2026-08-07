@@ -878,14 +878,17 @@ export const DIFFICULTY_OPTIONS: { value: 'easy' | 'medium' | 'hard'; label: str
 ]
 
 // practice_tests carries the same admin-only RLS write policy as elsewhere, so
-// find-or-create for the standalone bank tests goes through
-// app/api/admin/bank-test (service-role) — mirrors callEnsurePracticeTest
-// above for lesson-linked tests.
+// find-or-create for the standalone bank tests goes through the same
+// service-role app/api/admin/ensure-practice-test route as lesson-linked
+// tests (callEnsurePracticeTest above) — passing lessonId: null tells it to
+// find-or-create by subject + lesson_id IS NULL instead of by lesson_id, so
+// there's exactly one bank row per subject bucket no matter which caller
+// asks for it.
 export async function ensureBankTest(subject: 'math' | 'kyr' | 'all'): Promise<{ id: number }> {
-  const res = await fetch('/api/admin/bank-test', {
+  const res = await fetch('/api/admin/ensure-practice-test', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ subject, title: BANK_SUBJECT_TITLES[subject] }),
+    body: JSON.stringify({ lessonId: null, subject, title: BANK_SUBJECT_TITLES[subject] }),
   })
   const data = await res.json()
   if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to ensure bank test')
