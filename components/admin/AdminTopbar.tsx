@@ -22,7 +22,7 @@ export default function AdminTopbar({ title, actionLabel, actionIcon: ActionIcon
   }
 
   return (
-    <header className="sticky top-0 z-20 flex h-[60px] items-center gap-3 border-b border-[#C3C6D7]/50 bg-white pl-16 pr-4 sm:px-6 lg:pl-6">
+    <header className="sticky top-0 z-20 flex h-[60px] items-center gap-3 border-b border-[#C3C6D7]/50 bg-white pl-16 pr-4 sm:px-6 lg:pl-6 print:hidden">
       <h1 className="truncate text-base font-bold text-[#191B23] sm:text-lg">{title}</h1>
       <div className="ml-auto flex items-center gap-2">
         {actionLabel && onAction && (

@@ -65,7 +65,7 @@ export default function AdminLayout({ children }: Props) {
   return (
     <div className="min-h-screen bg-[#FAF8FF]">
       <AdminSidebar />
-      <div className="lg:ml-64">{children}</div>
+      <div className="lg:ml-64 print:ml-0">{children}</div>
     </div>
   )
 }

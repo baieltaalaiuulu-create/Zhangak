@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard, BookOpen, PenLine, ListChecks, ClipboardList, Users, BarChart2, Megaphone, User, Menu, X,
+  LayoutDashboard, BookOpen, PenLine, ListChecks, ClipboardList, Users, BarChart2, Megaphone, Archive, User, Menu, X,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -15,6 +15,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/admin/questions', label: 'Вопросы', icon: PenLine },
   { href: '/admin/mock', label: 'Пробный ОРТ', icon: ClipboardList },
   { href: '/admin/students', label: 'Ученики', icon: Users },
+  { href: '/admin/archive', label: '📦 Архив', icon: Archive },
   { href: '/admin/analytics', label: 'Аналитика', icon: BarChart2 },
   { href: '/admin/announcements', label: 'Объявления', icon: Megaphone },
 ]
@@ -29,7 +30,7 @@ export default function AdminSidebar() {
         type="button"
         onClick={() => setMobileOpen(true)}
         aria-label="Открыть меню"
-        className="fixed left-4 top-3 z-30 rounded-lg border border-[#C3C6D7]/50 bg-white p-2 text-gray-500 shadow-sm lg:hidden"
+        className="fixed left-4 top-3 z-30 rounded-lg border border-[#C3C6D7]/50 bg-white p-2 text-gray-500 shadow-sm lg:hidden print:hidden"
       >
         <Menu size={20} />
       </button>
@@ -38,7 +39,7 @@ export default function AdminSidebar() {
         <div className="fixed inset-0 z-30 bg-black/30 lg:hidden" onClick={() => setMobileOpen(false)} aria-hidden="true" />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-white border-r border-[#C3C6D7]/50 transition-transform duration-200 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-white border-r border-[#C3C6D7]/50 transition-transform duration-200 lg:translate-x-0 print:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-between px-6 py-6">
           <div>
             <span className="text-lg font-extrabold tracking-tight text-[#1B4FD8]">ZHANGAK</span>
