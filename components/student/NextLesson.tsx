@@ -1,86 +1,69 @@
 import Link from 'next/link'
+import { ChevronRight } from 'lucide-react'
+
+interface LessonMini {
+  id: string
+  title: string
+  order_number: number
+}
+
+interface SubjectProgress {
+  completed: number
+  total: number
+}
 
 interface Props {
-  lesson: { id: string; title: string; subject: string; order_number: number } | null
-  progress: number // % of series completed
+  mathLesson: LessonMini | null
+  kyrLesson: LessonMini | null
+  mathProgress: SubjectProgress
+  kyrProgress: SubjectProgress
 }
 
-const SUBJECT_META: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-  math: { label: 'Математика', color: 'text-blue-600',   bg: 'bg-blue-50',   icon: '📐' },
-  kyr:  { label: 'Кыргыз тили', color: 'text-orange-600', bg: 'bg-orange-50', icon: '📘' },
+interface SubjectCardProps {
+  lesson: LessonMini | null
+  progress: SubjectProgress
+  badge: string
+  accent: string
 }
 
-export default function NextLesson({ lesson, progress }: Props) {
+function SubjectCard({ lesson, progress, badge, accent }: SubjectCardProps) {
   if (!lesson) {
     return (
-      <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-3 h-full min-h-[220px]">
-        <span className="text-4xl">🎉</span>
-        <p className="text-sm font-semibold text-gray-700 text-center">Все уроки пройдены!</p>
-        <p className="text-xs text-gray-400 text-center">Продолжайте практиковаться</p>
+      <div
+        className="flex h-[60px] items-center rounded-xl border border-gray-100 bg-white px-4"
+        style={{ borderLeft: `3px solid ${accent}` }}
+      >
+        <span className="text-xs font-semibold text-gray-700">✅ Все уроки пройдены!</span>
       </div>
     )
   }
 
-  const meta = SUBJECT_META[lesson.subject] ?? SUBJECT_META.math
-  const circumference = 2 * Math.PI * 20
-
   return (
-    <div className="rounded-2xl bg-white shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-      {/* Color stripe */}
-      <div className="h-1 bg-blue-600" />
-
-      <div className="p-5 flex flex-col flex-1 gap-4">
-        {/* Badge */}
-        <div className="flex items-center justify-between">
-          <span className={`text-xs font-semibold px-3 py-1 rounded-full ${meta.bg} ${meta.color}`}>
-            ▶ Следующий урок
-          </span>
-          {/* Progress ring */}
-          <div className="relative w-11 h-11 shrink-0">
-            <svg className="w-11 h-11 -rotate-90" viewBox="0 0 48 48">
-              <circle cx="24" cy="24" r="20" fill="none" stroke="#e5e7eb" strokeWidth="4" />
-              <circle
-                cx="24" cy="24" r="20" fill="none"
-                stroke="#1B4FD8" strokeWidth="4"
-                strokeDasharray={`${circumference}`}
-                strokeDashoffset={`${circumference * (1 - progress / 100)}`}
-                strokeLinecap="round"
-              />
-            </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-blue-700">
-              {progress}%
-            </span>
-          </div>
-        </div>
-
-        {/* Subject */}
-        <div className={`flex items-center gap-2 text-sm font-semibold ${meta.color}`}>
-          <span>{meta.icon}</span>
-          <span>{meta.label}</span>
-        </div>
-
-        {/* Title */}
-        <div className="min-w-0">
-          <h3 className="text-xl font-bold text-gray-900 leading-tight break-words">{lesson.title}</h3>
-          <p className="text-xs text-gray-400 mt-1">После урока откроется практический тест</p>
-        </div>
-
-        {/* Meta pills */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">🕐 25 мин</span>
-          <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
-            Урок {lesson.order_number}
-          </span>
-        </div>
-
-        {/* CTA */}
-        <Link
-          href={`/student/online/lessons/${lesson.id}`}
-          className="mt-auto block w-full rounded-xl bg-blue-600 py-3 text-center text-sm font-bold text-white hover:bg-blue-700 transition-colors shadow-md shadow-blue-200"
-        >
-          Начать урок →
-        </Link>
+    <Link
+      href={`/student/online/lessons/${lesson.id}`}
+      className="flex h-[60px] items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 transition-colors hover:bg-gray-50"
+      style={{ borderLeft: `3px solid ${accent}` }}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-semibold leading-tight" style={{ color: accent }}>{badge}</p>
+        <h4 className="truncate text-xs font-semibold leading-tight text-gray-900">{lesson.title}</h4>
+        <p className="text-[10px] leading-tight text-gray-400">{progress.completed}/{progress.total} уроков</p>
       </div>
+      <span
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white"
+        style={{ background: accent }}
+      >
+        <ChevronRight size={15} />
+      </span>
+    </Link>
+  )
+}
+
+export default function NextLesson({ mathLesson, kyrLesson, mathProgress, kyrProgress }: Props) {
+  return (
+    <div className="flex flex-col gap-2">
+      <SubjectCard lesson={mathLesson} progress={mathProgress} badge="📐 Математика" accent="#1B4FD8" />
+      <SubjectCard lesson={kyrLesson} progress={kyrProgress} badge="📘 Кыргыз тили" accent="#F5890A" />
     </div>
   )
 }

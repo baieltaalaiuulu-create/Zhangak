@@ -14,7 +14,7 @@ import {
   LESSON_SUBJECT_META,
   type Lesson,
 } from '@/lib/lessons-data'
-import NextLesson from '@/components/student/NextLesson'
+import UpNextLesson from '@/components/student/UpNextLesson'
 import LessonSidebarList from '@/components/student/LessonSidebarList'
 
 function getYoutubeEmbed(url: string): string {
@@ -174,7 +174,7 @@ export default function LessonDetailPage() {
 
           {/* Sidebar */}
           <div className="w-full shrink-0 space-y-5 lg:w-80">
-            <NextLesson lesson={upcoming} progress={subjectProgress} />
+            <UpNextLesson lesson={upcoming} progress={subjectProgress} />
 
             {/* Materials */}
             <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">

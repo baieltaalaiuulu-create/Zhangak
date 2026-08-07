@@ -13,7 +13,7 @@ import StreakCard    from '@/components/student/StreakCard'
 import StatsRow      from '@/components/student/StatsRow'
 import DashboardHero from '@/components/student/DashboardHero'
 import AnnouncementBanner from '@/components/student/AnnouncementBanner'
-import SubjectTrackCard from '@/components/student/SubjectTrackCard'
+import NextLesson from '@/components/student/NextLesson'
 import TodayPlanSimple from '@/components/student/TodayPlanSimple'
 
 export default function StudentOnlinePage() {
@@ -80,13 +80,20 @@ export default function StudentOnlinePage() {
           ctaHref={continueHref}
         />
 
-        {/* Two parallel subject tracks — always exactly one clear "what's
-            next" per subject, instead of one ambiguous cross-subject card. */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {data.subjectTracks.map(track => (
-            <SubjectTrackCard key={track.subject} track={track} />
-          ))}
-        </div>
+        {/* Next lesson per subject — always exactly one clear "what's next"
+            per subject, instead of one ambiguous cross-subject card. */}
+        <NextLesson
+          mathLesson={data.subjectTracks.find(t => t.subject === 'math')?.currentLesson ?? null}
+          kyrLesson={data.subjectTracks.find(t => t.subject === 'kyr')?.currentLesson ?? null}
+          mathProgress={{
+            completed: data.subjectTracks.find(t => t.subject === 'math')?.completedCount ?? 0,
+            total: data.subjectTracks.find(t => t.subject === 'math')?.totalCount ?? 0,
+          }}
+          kyrProgress={{
+            completed: data.subjectTracks.find(t => t.subject === 'kyr')?.completedCount ?? 0,
+            total: data.subjectTracks.find(t => t.subject === 'kyr')?.totalCount ?? 0,
+          }}
+        />
 
         {/* Simplified today's plan — 1 lesson + 1 practice per subject */}
         <TodayPlanSimple tracks={data.subjectTracks} />
