@@ -7,14 +7,14 @@ import { supabase } from '@/lib/supabase'
 import { getStudentDashboard, DEFAULT_TARGET_SCORE, type StudentDashboardData } from '@/lib/student-data'
 
 import HeroCard      from '@/components/student/HeroCard'
-import DailyPlan     from '@/components/student/DailyPlan'
 import SubjectCards  from '@/components/student/SubjectCards'
-import NextLesson    from '@/components/student/NextLesson'
 import AICard        from '@/components/student/AICard'
 import StreakCard    from '@/components/student/StreakCard'
 import StatsRow      from '@/components/student/StatsRow'
 import DashboardHero from '@/components/student/DashboardHero'
 import AnnouncementBanner from '@/components/student/AnnouncementBanner'
+import SubjectTrackCard from '@/components/student/SubjectTrackCard'
+import TodayPlanSimple from '@/components/student/TodayPlanSimple'
 
 export default function StudentOnlinePage() {
   const [profileName, setProfileName] = useState<string | null>(null)
@@ -62,9 +62,9 @@ export default function StudentOnlinePage() {
 
   const latestScore = data.latestScore ?? 0
   const remaining = Math.max(0, targetScore - latestScore)
-  const continueHref = data.nextLesson
-    ? `/student/online/lessons/${data.nextLesson.id}`
-    : '/student/online/lessons'
+  // Two explicit subject tracks below make "next lesson" unambiguous now,
+  // so the hero CTA no longer needs to guess which subject to jump into.
+  const continueHref = '/student/online/lessons'
 
   return (
     <div className="min-h-screen bg-[#F4F6FA]">
@@ -80,37 +80,30 @@ export default function StudentOnlinePage() {
           ctaHref={continueHref}
         />
 
-        {/* Row 1: Hero + Next Lesson */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div className="lg:col-span-2 min-w-0">
-            <HeroCard
-              latestScore={data.latestScore}
-              previousScore={data.previousScore}
-              targetScore={targetScore}
-              scoreHistory={data.scoreHistory}
-              onGoalUpdate={handleGoalUpdate}
-            />
-          </div>
-          <div className="min-w-0">
-            <NextLesson
-              lesson={data.nextLesson}
-              progress={data.nextLessonProgress}
-            />
-          </div>
+        {/* Two parallel subject tracks — always exactly one clear "what's
+            next" per subject, instead of one ambiguous cross-subject card. */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {data.subjectTracks.map(track => (
+            <SubjectTrackCard key={track.subject} track={track} />
+          ))}
         </div>
 
-        {/* Row 2: Daily Plan + Subjects */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div className="min-w-0">
-            <DailyPlan tasks={data.todayTasks} />
-          </div>
-          <div className="lg:col-span-2 min-w-0">
-            <SubjectCards
-              subjects={data.subjects}
-              comparison={{ me: latestScore, avg: 126, top: 182 }}
-            />
-          </div>
-        </div>
+        {/* Simplified today's plan — 1 lesson + 1 practice per subject */}
+        <TodayPlanSimple tracks={data.subjectTracks} />
+
+        {/* Score trend */}
+        <HeroCard
+          latestScore={data.latestScore}
+          previousScore={data.previousScore}
+          targetScore={targetScore}
+          scoreHistory={data.scoreHistory}
+          onGoalUpdate={handleGoalUpdate}
+        />
+
+        <SubjectCards
+          subjects={data.subjects}
+          comparison={{ me: latestScore, avg: 126, top: 182 }}
+        />
 
         {/* Row 3: AI + Streak */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

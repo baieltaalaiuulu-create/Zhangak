@@ -96,12 +96,15 @@ export default function LessonDetailPage() {
   }
 
   const statuses = computeLessonStatuses(allLessons, completedIds)
-  const total = allLessons.length
-  const completedCount = allLessons.filter(l => completedIds.has(l.id)).length
-  const courseProgress = total > 0 ? Math.round((completedCount / total) * 100) : 0
 
-  const currentIndex = allLessons.findIndex(l => l.id === lesson.id)
-  const upcoming = currentIndex >= 0 ? allLessons[currentIndex + 1] ?? null : null
+  // Scoped to the same subject — otherwise "next lesson" could jump from a
+  // math lesson straight into Кыргыз тили just because that's the next row
+  // in the combined, subject-sorted list.
+  const sameSubjectLessons = allLessons.filter(l => l.subject === lesson.subject)
+  const currentIndex = sameSubjectLessons.findIndex(l => l.id === lesson.id)
+  const upcoming = currentIndex >= 0 ? sameSubjectLessons[currentIndex + 1] ?? null : null
+  const subjectCompletedCount = sameSubjectLessons.filter(l => completedIds.has(l.id)).length
+  const subjectProgress = sameSubjectLessons.length > 0 ? Math.round((subjectCompletedCount / sameSubjectLessons.length) * 100) : 0
 
   const meta = LESSON_SUBJECT_META[lesson.subject]
   const embedUrl = lesson.video_url ? getYoutubeEmbed(lesson.video_url) : null
@@ -171,7 +174,7 @@ export default function LessonDetailPage() {
 
           {/* Sidebar */}
           <div className="w-full shrink-0 space-y-5 lg:w-80">
-            <NextLesson lesson={upcoming} progress={courseProgress} />
+            <NextLesson lesson={upcoming} progress={subjectProgress} />
 
             {/* Materials */}
             <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">

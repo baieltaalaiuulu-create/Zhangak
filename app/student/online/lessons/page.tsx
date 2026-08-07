@@ -108,6 +108,26 @@ export default function LessonsPage() {
 
   const visibleLessons = lessons.filter(l => filter === 'all' || l.subject === filter)
 
+  // Grouped-by-subject view (filter==='all' only) — each section tracks its
+  // own progress instead of the combined-subjects number, since "45%"
+  // across both math and kyr together doesn't tell a student how far along
+  // either one actually is.
+  const subjectGroups: { subject: LessonSubject; label: string; list: Lesson[]; completed: number; progress: number }[] =
+    (['math', 'kyr'] as LessonSubject[]).map(subject => {
+      const list = lessons.filter(l => l.subject === subject)
+      const completed = list.filter(l => completedIds.has(l.id)).length
+      return {
+        subject,
+        label: subject === 'math' ? '📐 Математика' : '📘 Кыргыз тили',
+        list,
+        completed,
+        progress: list.length > 0 ? Math.round((completed / list.length) * 100) : 0,
+      }
+    })
+  const singleSubjectProgress = filter === 'math' || filter === 'kyr'
+    ? subjectGroups.find(g => g.subject === filter)?.progress ?? courseProgress
+    : courseProgress
+
   return (
     <div className="min-h-screen bg-[#F4F6FA]">
       <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6">
@@ -148,6 +168,28 @@ export default function LessonsPage() {
           <div className="rounded-2xl border border-gray-100 bg-white p-10 text-center text-sm text-gray-400">
             Уроков по этому предмету пока нет
           </div>
+        ) : filter === 'all' ? (
+          <div className="space-y-8">
+            {subjectGroups.filter(g => g.list.length > 0).map(group => (
+              <div key={group.subject}>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <h2 className="text-lg font-bold text-gray-900">{group.label}</h2>
+                  <span className="text-sm font-semibold text-gray-500">{group.completed}/{group.list.length} уроков пройдено</span>
+                </div>
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+                  {group.list.map(lesson => (
+                    <LessonCard
+                      key={lesson.id}
+                      lesson={lesson}
+                      status={statuses[lesson.id]}
+                      questionCount={questionCounts[lesson.id] ?? 0}
+                      courseProgress={group.progress}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
             {visibleLessons.map(lesson => (
@@ -156,7 +198,7 @@ export default function LessonsPage() {
                 lesson={lesson}
                 status={statuses[lesson.id]}
                 questionCount={questionCounts[lesson.id] ?? 0}
-                courseProgress={courseProgress}
+                courseProgress={singleSubjectProgress}
               />
             ))}
           </div>

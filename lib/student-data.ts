@@ -18,13 +18,17 @@ export interface SubjectStat {
   delta: number // разница с предыдущим результатом
 }
 
-export interface DailyTask {
-  id: string | number
-  type: 'lesson' | 'practice' | 'mock' | 'homework'
-  label: string
-  sub: string
-  done: boolean
-  href: string
+// One card per subject track ("📐 Математика" / "📘 Кыргыз тили") on the
+// dashboard — each knows its own current lesson and progress instead of the
+// single cross-subject "next lesson" that used to jump between subjects.
+export interface SubjectTrack {
+  subject: 'math' | 'kyr'
+  currentLesson: { id: string; title: string; order_number: number } | null
+  completedCount: number
+  totalCount: number
+  progressPct: number
+  lessonDoneToday: boolean
+  practiceDoneToday: boolean
 }
 
 export interface StudentDashboardData {
@@ -34,9 +38,7 @@ export interface StudentDashboardData {
   scoreHistory: ScoreHistory[]
   subjects: SubjectStat[]
   streak: number
-  nextLesson: { id: string; title: string; subject: string; order_number: number } | null
-  nextLessonProgress: number // % серии пройдено
-  todayTasks: DailyTask[]
+  subjectTracks: SubjectTrack[]
   monthStats: {
     lessons: number
     questions: number
@@ -118,10 +120,11 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
     completed_at: r.completed_at,
   }))
 
-  // 3. All results for streak + today check
+  // 3. All results for streak + today check (score columns included so
+  // subjectTracks below can tell which subject today's practice touched)
   const { data: allResults } = await supabase
     .from('practice_results')
-    .select('completed_at, test_type, lesson_id')
+    .select('completed_at, test_type, lesson_id, math_raw_score, math_comparison_score, grammar_score')
     .eq('student_id', studentId)
     .not('completed_at', 'is', null)
     .order('completed_at', { ascending: false })
@@ -158,8 +161,7 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
     { subject: 'reading', current: readingCur, max: 30, delta: readingCur - readingPrev },
   ]
 
-  // 5. Next lesson
-  // Find all completed lesson_ids today and ever
+  // 5. Lessons — completion set + today's activity, feeding subjectTracks below.
   const completedLessonIds = new Set(results.map(r => r.lesson_id).filter(Boolean))
 
   const { data: allLessons } = await supabase
@@ -168,46 +170,34 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
     .order('order_number', { ascending: true })
 
   const lessons = allLessons ?? []
-  const nextLesson = lessons.find(l => !completedLessonIds.has(l.id)) ?? null
 
-  // Progress through lesson series
-  const totalLessons = lessons.length
-  const completedCount = lessons.filter(l => completedLessonIds.has(l.id)).length
-  const nextLessonProgress = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0
-
-  // 6. Today's tasks
   const todayStr = new Date().toISOString().slice(0, 10)
   const todayResults = results.filter(r => r.completed_at?.slice(0, 10) === todayStr)
   const todayLessonIds = new Set(todayResults.map(r => r.lesson_id).filter(Boolean))
-  const todayMocks = todayResults.filter(r => r.test_type === 'mock')
-  const todayPractice = todayResults.filter(r => r.test_type === 'practice')
 
-  const todayTasks: DailyTask[] = [
-    {
-      id: 'lesson',
-      type: 'lesson',
-      label: nextLesson ? `Урок — ${nextLesson.title}` : 'Видеоурок',
-      sub: '25 мин',
-      done: nextLesson ? todayLessonIds.has(nextLesson.id) : false,
-      href: nextLesson ? `/student/online/lessons/${nextLesson.id}` : '/student/online/lessons',
-    },
-    {
-      id: 'practice',
-      type: 'practice',
-      label: 'Практика — 20 вопросов',
-      sub: '30 мин',
-      done: todayPractice.length > 0,
-      href: '/student/online/practice',
-    },
-    {
-      id: 'mock',
-      type: 'mock',
-      label: 'Мини ОРТ — 40 вопросов',
-      sub: '40 мин',
-      done: todayMocks.length > 0,
-      href: '/student/online/mock',
-    },
-  ]
+  // 6. Per-subject dashboard tracks — "practice done today" is attributed by
+  // which raw-score columns a today's attempt actually touched (same
+  // approach used for the archive dossier's per-subject breakdown), since
+  // practice attempts aren't otherwise tagged with a single subject.
+  function buildTrack(subject: 'math' | 'kyr'): SubjectTrack {
+    const subjectLessons = lessons.filter(l => l.subject === subject)
+    const completed = subjectLessons.filter(l => completedLessonIds.has(l.id)).length
+    const current = subjectLessons.find(l => !completedLessonIds.has(l.id)) ?? null
+    const lessonDoneToday = subjectLessons.some(l => todayLessonIds.has(l.id))
+    const practiceDoneToday = subject === 'math'
+      ? todayResults.some(r => (r.math_raw_score ?? 0) > 0 || (r.math_comparison_score ?? 0) > 0)
+      : todayResults.some(r => (r.grammar_score ?? 0) > 0)
+    return {
+      subject,
+      currentLesson: current,
+      completedCount: completed,
+      totalCount: subjectLessons.length,
+      progressPct: subjectLessons.length > 0 ? Math.round((completed / subjectLessons.length) * 100) : 0,
+      lessonDoneToday,
+      practiceDoneToday,
+    }
+  }
+  const subjectTracks: SubjectTrack[] = [buildTrack('math'), buildTrack('kyr')]
 
   // 7. Month stats
   const monthAgo = new Date()
@@ -239,9 +229,7 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
     scoreHistory,
     subjects,
     streak,
-    nextLesson,
-    nextLessonProgress,
-    todayTasks,
+    subjectTracks,
     monthStats,
   }
 }
