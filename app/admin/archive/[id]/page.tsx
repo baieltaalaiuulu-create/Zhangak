@@ -11,7 +11,7 @@ import {
 import {
   fetchStudentDossier, type StudentDossier, type AchievementKey,
 } from '@/lib/archive-data'
-import { fetchStudentContext, sendMentorMessage, type MentorResponse } from '@/lib/ai-mentor-data'
+import { fetchStudentContext, streamMentorMessage, type MentorResponse } from '@/lib/ai-mentor-data'
 import AIMessageCard from '@/components/student/ai/AIMessageCard'
 import AITypingIndicator from '@/components/student/ai/AITypingIndicator'
 
@@ -83,15 +83,17 @@ export default function ArchiveStudentDossierPage() {
     if (!dossier) return
     setAiLoading(true)
     setAiError(null)
+    setAiResult(null)
     try {
       const ctx = await fetchStudentContext(dossier.profile.id)
-      const response = await sendMentorMessage(
+      await streamMentorMessage(
         `Проведи полный анализ успеваемости ученика ${dossier.profile.full_name} за весь период обучения и дай рекомендации на будущее.`,
         ctx,
         [],
         { page: 'profile', contextData: { archived: dossier.profile.archived } },
+        'analysis',
+        update => setAiResult({ type: update.type, title: update.title, content: update.content, actions: update.actions }),
       )
-      setAiResult(response)
     } catch (e) {
       setAiError(e instanceof Error ? e.message : 'Не удалось получить анализ')
     } finally {
@@ -376,7 +378,7 @@ export default function ArchiveStudentDossierPage() {
                 </button>
               </div>
             )}
-            {aiLoading && <AITypingIndicator />}
+            {aiLoading && !aiResult && <AITypingIndicator />}
             {aiError && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{aiError}</div>}
             {aiResult && (
               <>

@@ -7,8 +7,8 @@ import { Sparkles, X, Send, Maximize2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { fetchLessonById } from '@/lib/lessons-data'
 import {
-  fetchStudentContext, sendMentorMessage,
-  type StudentContext, type PageContext, type ChatMessage,
+  fetchStudentContext, streamMentorMessage,
+  type StudentContext, type PageContext, type ChatMessage, type MentorCardType,
 } from '@/lib/ai-mentor-data'
 import AIMessageCard from './AIMessageCard'
 import AITypingIndicator from './AITypingIndicator'
@@ -120,26 +120,30 @@ export default function AIDrawer() {
 
   const pushMessage = (msg: ChatMessage) => setMessages(prev => [...prev, msg])
 
-  const runPrompt = async (text: string, ctxOverride?: StudentContext) => {
+  const runPrompt = async (text: string, ctxOverride?: StudentContext, expectedType?: MentorCardType) => {
     const ctx = ctxOverride ?? await ensureContext()
     if (!ctx) return
     setSending(true)
     pushMessage({ id: nextMessageId(), role: 'user', content: text })
+    const assistantId = nextMessageId()
+    pushMessage({ id: assistantId, role: 'assistant', content: '' })
     try {
-      const response = await sendMentorMessage(
+      await streamMentorMessage(
         text,
         ctx,
         messages.map(m => ({ role: m.role, content: m.card ? m.card.content : m.content })),
         routeCtx?.pageContext,
+        expectedType,
+        update => {
+          setMessages(prev => prev.map(m => m.id === assistantId
+            ? { ...m, content: update.content, card: { type: update.type, title: update.title, content: update.content, actions: update.actions } }
+            : m))
+        },
       )
-      pushMessage({ id: nextMessageId(), role: 'assistant', content: response.content, card: response })
     } catch (e) {
-      pushMessage({
-        id: nextMessageId(),
-        role: 'assistant',
-        content: '',
-        card: { type: 'error', title: 'Не удалось получить ответ', content: e instanceof Error ? e.message : 'Попробуй ещё раз чуть позже.', actions: [] },
-      })
+      setMessages(prev => prev.map(m => m.id === assistantId
+        ? { ...m, card: { type: 'error', title: 'Не удалось получить ответ', content: e instanceof Error ? e.message : 'Попробуй ещё раз чуть позже.', actions: [] } }
+        : m))
     } finally {
       setSending(false)
     }
@@ -156,7 +160,7 @@ export default function AIDrawer() {
     const trigger = async () => {
       setOpen(true)
       const ctx = await ensureContext()
-      if (ctx) await runPrompt(routeCtx.autoPrompt!, ctx)
+      if (ctx) await runPrompt(routeCtx.autoPrompt!, ctx, 'analysis')
     }
     trigger()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -241,15 +245,11 @@ export default function AIDrawer() {
                 <div key={m.id} className="animate-ai-fade-in ml-8 rounded-2xl rounded-tr-sm bg-[#1B4FD8] px-4 py-2.5 text-sm text-white">
                   {m.content}
                 </div>
+              ) : m.card ? (
+                <AIMessageCard key={m.id} response={m.card} onActionClick={runPrompt} />
               ) : (
-                <AIMessageCard
-                  key={m.id}
-                  response={m.card ?? { type: 'theory', title: '', content: m.content, actions: [] }}
-                  onActionClick={runPrompt}
-                />
+                <AITypingIndicator key={m.id} />
               ))}
-
-              {sending && <AITypingIndicator />}
             </div>
 
             <div className="flex items-center gap-2 border-t border-gray-200 bg-white p-3">

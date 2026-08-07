@@ -1,24 +1,18 @@
-// Requires GEMINI_API_KEY (server-only env var, e.g. set in Vercel project settings).
+// AI provider is fully abstracted behind lib/ai-gateway.ts (active provider:
+// AI_PROVIDER env var, defaults to 'groq') — this route no longer talks to
+// any specific vendor API directly.
+//
 // Company-wide equivalent of /api/ai-mentor: that route's system prompt and
 // { type, title, content, actions } shape are built specifically around one
 // student, so aggregated analytics insights get their own small endpoint
-// rather than being shoehorned into a per-student contract. Same Gemini 2.0
-// Flash REST call, same responseSchema-constrained-JSON approach.
+// rather than being shoehorned into a per-student contract. This is a
+// one-shot (non-streaming) call — gateway.complete() with jsonMode asks the
+// provider to constrain output to valid JSON, then we parse it here.
 import { NextRequest, NextResponse } from 'next/server'
-
-const GEMINI_MODEL = 'gemini-2.0-flash'
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
+import { createAIGateway, AIGatewayError, type AIMessage } from '@/lib/ai-gateway'
 
 interface AnalyticsInsightsBody {
   stats: Record<string, unknown>
-}
-
-const INSIGHTS_SCHEMA = {
-  type: 'object',
-  properties: {
-    insights: { type: 'array', items: { type: 'string' }, minItems: 4, maxItems: 4 },
-  },
-  required: ['insights'],
 }
 
 function buildPrompt(stats: Record<string, unknown>): string {
@@ -29,43 +23,23 @@ ${JSON.stringify(stats, null, 2)}
 Дай ровно 4 кратких, конкретных инсайта на русском языке на основе этих данных —
 что идёт хорошо, что стоит улучшить, где риски, на что обратить внимание в первую
 очередь. Каждый инсайт — одно-два предложения, используй реальные числа из данных,
-не пиши абстрактно. Формат ответа: JSON { insights: string[] } — ровно 4 строки.`
+не пиши абстрактно. Ответь СТРОГО валидным JSON без markdown и без пояснений,
+ровно в этом формате: { "insights": ["...", "...", "...", "..."] } — ровно 4 строки.`
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY не настроен на сервере' }, { status: 500 })
-    }
-
     const { stats } = await req.json() as AnalyticsInsightsBody
     if (!stats) {
       return NextResponse.json({ error: 'stats обязателен' }, { status: 400 })
     }
 
-    const geminiRes = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: buildPrompt(stats) }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseSchema: INSIGHTS_SCHEMA,
-        },
-      }),
-    })
+    const messages: AIMessage[] = [
+      { role: 'user', content: buildPrompt(stats) },
+    ]
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text()
-      return NextResponse.json({ error: `Gemini API error: ${errText.slice(0, 300)}` }, { status: 502 })
-    }
-
-    const geminiData = await geminiRes.json()
-    const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined
-    if (!rawText) {
-      return NextResponse.json({ error: 'Пустой ответ от AI' }, { status: 502 })
-    }
+    const gateway = createAIGateway()
+    const rawText = await gateway.complete(messages, { type: 'analysis', jsonMode: true })
 
     let parsed: { insights: string[] }
     try {
@@ -76,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(parsed)
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
-    return NextResponse.json({ error: message }, { status: 500 })
+    const userMessage = e instanceof AIGatewayError ? e.userMessage : 'AI временно недоступен. Попробуйте позже.'
+    return NextResponse.json({ error: userMessage }, { status: 502 })
   }
 }

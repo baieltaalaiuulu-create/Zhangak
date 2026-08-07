@@ -158,20 +158,76 @@ export interface PageContext {
   contextData: Record<string, unknown>
 }
 
-export async function sendMentorMessage(
+// The API route streams plain text with a small header block first
+// (TYPE:/TITLE:/ACTIONS: lines, then a blank line, then the free-flowing
+// content) — see app/api/ai-mentor/route.ts for the exact protocol. This
+// parses that incrementally: once "\n\n" has arrived the header fields are
+// fixed, and every subsequent chunk just grows `content`. `onUpdate` fires
+// on every chunk (so the caller can render progressively) and once more
+// with `done: true` at the end.
+export interface MentorStreamUpdate {
+  type: MentorCardType
+  title: string
+  content: string
+  actions: string[]
+  done: boolean
+}
+
+const VALID_TYPES: MentorCardType[] = ['theory', 'task', 'analysis', 'plan', 'motivation', 'error']
+
+export async function streamMentorMessage(
   message: string,
   studentContext: StudentContext,
   history: ChatHistoryTurn[],
-  pageContext?: PageContext,
-): Promise<MentorResponse> {
+  pageContext: PageContext | undefined,
+  expectedType: MentorCardType | undefined,
+  onUpdate: (update: MentorStreamUpdate) => void,
+): Promise<void> {
   const res = await fetch('/api/ai-mentor', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, studentContext, history, pageContext }),
+    body: JSON.stringify({ message, studentContext, history, pageContext, expectedType }),
   })
-  const data = await res.json()
-  if (!res.ok || data.error) throw new Error(data.error ?? 'Не удалось получить ответ от AI')
-  return data as MentorResponse
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.error ?? 'Не удалось получить ответ от AI')
+  }
+  if (!res.body) throw new Error('Пустой ответ от AI')
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let headerEndIndex = -1
+  let type: MentorCardType = 'theory'
+  let title = ''
+  let actions: string[] = []
+
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+
+    if (headerEndIndex === -1) {
+      const idx = buffer.indexOf('\n\n')
+      if (idx === -1) continue
+      headerEndIndex = idx
+      const headerBlock = buffer.slice(0, idx)
+      const typeMatch = headerBlock.match(/^TYPE:\s*(\w+)/im)
+      const titleMatch = headerBlock.match(/^TITLE:\s*(.*)$/im)
+      const actionsMatch = headerBlock.match(/^ACTIONS:\s*(.*)$/im)
+      const rawType = typeMatch?.[1]?.toLowerCase() ?? ''
+      type = (VALID_TYPES as string[]).includes(rawType) ? (rawType as MentorCardType) : 'theory'
+      title = titleMatch?.[1]?.trim() ?? ''
+      actions = actionsMatch?.[1]?.trim() ? actionsMatch[1].split('|').map(a => a.trim()).filter(Boolean) : []
+    }
+
+    const content = buffer.slice(headerEndIndex + 2)
+    onUpdate({ type, title, content: content.trim(), actions, done: false })
+  }
+
+  const finalContent = headerEndIndex === -1 ? buffer.trim() : buffer.slice(headerEndIndex + 2).trim()
+  onUpdate({ type, title: title || 'Ответ AI Mentor', content: finalContent, actions, done: true })
 }
 
 // ── "Мой план" — daily plan, generated once per calendar day ────────────

@@ -13,7 +13,7 @@ import { DEFAULT_TARGET_SCORE } from '@/lib/student-data'
 import { fetchLatestMockScore, fetchScoreHistory, type ScorePoint } from '@/lib/profile-data'
 import { fetchWeakSections, fetchRecentActivity, projectScore, recommendedPracticeCount, type WeakSection, type RecentActivityItem } from '@/lib/ai-coach-data'
 import {
-  fetchStudentContext, sendMentorMessage,
+  fetchStudentContext, streamMentorMessage,
   getStoredPlan, storePlan, getCheckedPlanItems, togglePlanItem,
   type StudentContext, type ChatMessage, type MentorResponse,
 } from '@/lib/ai-mentor-data'
@@ -113,21 +113,25 @@ export default function AiMentorPage() {
     setTab('chat')
     setSending(true)
     pushMessage({ id: nextId(), role: 'user', content: text })
+    const assistantId = nextId()
+    pushMessage({ id: assistantId, role: 'assistant', content: '' })
     try {
-      const response = await sendMentorMessage(
+      await streamMentorMessage(
         text,
         studentContext,
         messages.map(m => ({ role: m.role, content: m.card ? m.card.content : m.content })),
         { page: 'dashboard', contextData: {} },
+        undefined,
+        update => {
+          setMessages(prev => prev.map(m => m.id === assistantId
+            ? { ...m, content: update.content, card: { type: update.type, title: update.title, content: update.content, actions: update.actions } }
+            : m))
+        },
       )
-      pushMessage({ id: nextId(), role: 'assistant', content: response.content, card: response })
     } catch (e) {
-      pushMessage({
-        id: nextId(),
-        role: 'assistant',
-        content: '',
-        card: { type: 'error', title: 'Не удалось получить ответ', content: e instanceof Error ? e.message : 'Попробуй ещё раз чуть позже.', actions: [] },
-      })
+      setMessages(prev => prev.map(m => m.id === assistantId
+        ? { ...m, card: { type: 'error', title: 'Не удалось получить ответ', content: e instanceof Error ? e.message : 'Попробуй ещё раз чуть позже.', actions: [] } }
+        : m))
     } finally {
       setSending(false)
     }
@@ -143,16 +147,23 @@ export default function AiMentorPage() {
   const handleGeneratePlan = async () => {
     if (!studentContext || generatingPlan) return
     setGeneratingPlan(true)
+    setPlan(null)
     try {
-      const response = await sendMentorMessage(
+      await streamMentorMessage(
         'Составь мне подробный план подготовки на сегодня — конкретные задачи с числами (сколько вопросов, по какой теме), которые можно отметить галочкой по мере выполнения.',
         studentContext,
         [],
         { page: 'dashboard', contextData: {} },
+        'plan',
+        update => {
+          const response: MentorResponse = { type: update.type, title: update.title, content: update.content, actions: update.actions }
+          setPlan(response)
+          if (update.done) {
+            storePlan(response)
+            setCheckedItems(new Set())
+          }
+        },
       )
-      storePlan(response)
-      setPlan(response)
-      setCheckedItems(new Set())
     } catch {
       setPlan({ type: 'error', title: 'Не удалось составить план', content: 'Попробуй ещё раз чуть позже.', actions: [] })
     } finally {
@@ -291,11 +302,10 @@ export default function AiMentorPage() {
                     </div>
                   ) : (
                     <div key={m.id} className="mr-10 sm:mr-24">
-                      <AIMessageCard response={m.card ?? { type: 'theory', title: '', content: m.content, actions: [] }} onActionClick={runPrompt} />
+                      {m.card ? <AIMessageCard response={m.card} onActionClick={runPrompt} /> : <AITypingIndicator />}
                     </div>
                   ))
                 )}
-                {sending && <AITypingIndicator />}
               </div>
 
               <div className="flex items-center gap-2 border-t border-gray-200 p-3">
@@ -339,7 +349,7 @@ export default function AiMentorPage() {
                 </button>
               </div>
 
-              {generatingPlan ? (
+              {generatingPlan && !plan ? (
                 <AITypingIndicator />
               ) : plan ? (
                 <AIMessageCard response={plan} checkedItems={checkedItems} onToggleItem={handleToggleItem} />

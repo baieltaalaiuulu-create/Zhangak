@@ -1,14 +1,24 @@
-// Requires GEMINI_API_KEY (server-only env var, e.g. set in Vercel project settings).
-// Talks to Gemini 2.0 Flash over its plain REST endpoint rather than pulling in
-// the @google/generative-ai SDK — this project has no AI SDK dependency yet and
-// the request/response shape needed here is small enough that raw fetch keeps
-// it that way.
-import { NextRequest, NextResponse } from 'next/server'
-
-const GEMINI_MODEL = 'gemini-2.0-flash'
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
-
-type MentorCardType = 'theory' | 'task' | 'analysis' | 'plan' | 'motivation' | 'error'
+// AI provider is fully abstracted behind lib/ai-gateway.ts (active provider:
+// AI_PROVIDER env var, defaults to 'groq') — this route no longer talks to
+// any specific vendor API directly.
+//
+// Response is now a plain-text stream instead of one-shot JSON, since Groq
+// (and every other provider here) streams token-by-token and none of them
+// offer Gemini's forced-JSON-schema constrained decoding over a streaming
+// connection. To keep the structured type/title/actions card intact, the
+// model is instructed to emit a small header block first:
+//
+//   TYPE: theory
+//   TITLE: <title>
+//   ACTIONS: action one|action two
+//
+//   <content, streams progressively after the blank line>
+//
+// The client (lib/ai-mentor-data.ts's streamMentorMessage) parses the
+// header once it's seen a "\n\n", then re-renders content as more chunks
+// arrive — see that file for the matching parser.
+import { NextRequest } from 'next/server'
+import { createAIGateway, AIGatewayError, type AIMessage, type MentorCardType } from '@/lib/ai-gateway'
 
 interface StudentContext {
   name: string
@@ -37,13 +47,10 @@ interface MentorRequestBody {
   studentContext: StudentContext
   history?: ChatTurn[]
   pageContext?: PageContext
-}
-
-interface MentorResponse {
-  type: MentorCardType
-  title: string
-  content: string
-  actions: string[]
+  // Set by callers that already know what kind of response they're asking
+  // for (the plan generator, AI Анализ) so the gateway can route straight
+  // to the "complex" model tier without relying on message length alone.
+  expectedType?: MentorCardType
 }
 
 function listOrFallback(items: string[], fallback: string): string {
@@ -64,81 +71,43 @@ function buildSystemPrompt(ctx: StudentContext, pageContext?: PageContext): stri
 Ты не просто чат — ты персональный наставник. Правила:
 - Отвечай структурированно: Теория → Пример → Совет → Действие
 - Всегда используй данные ученика, не говори абстрактно
-- Формат ответа: JSON { type: 'theory'|'task'|'analysis'|'plan'|'motivation'|'error', title: string, content: string, actions: string[] }
 - Язык: русский (или кыргызский если пишет на кыргызском)
-- Заканчивай конкретным действием`
-}
+- Заканчивай конкретным действием
 
-const MENTOR_RESPONSE_SCHEMA = {
-  type: 'object',
-  properties: {
-    type: { type: 'string', enum: ['theory', 'task', 'analysis', 'plan', 'motivation', 'error'] },
-    title: { type: 'string' },
-    content: { type: 'string' },
-    actions: { type: 'array', items: { type: 'string' } },
-  },
-  required: ['type', 'title', 'content', 'actions'],
+Формат ответа — ОБЯЗАТЕЛЬНО начни ровно с этих трёх строк, без markdown и кода:
+TYPE: theory|task|analysis|plan|motivation|error
+TITLE: короткий заголовок (без кавычек)
+ACTIONS: действие 1|действие 2|действие 3 (через "|"; если действий нет — оставь "ACTIONS:" пустым)
+
+Затем одна пустая строка, и после неё — основной текст ответа.`
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY не настроен на сервере' }, { status: 500 })
-    }
-
     const body = await req.json() as MentorRequestBody
-    const { message, studentContext, history, pageContext } = body
+    const { message, studentContext, history, pageContext, expectedType } = body
     if (!message || !studentContext) {
-      return NextResponse.json({ error: 'message и studentContext обязательны' }, { status: 400 })
+      return Response.json({ error: 'message и studentContext обязательны' }, { status: 400 })
     }
 
     const systemPrompt = buildSystemPrompt(studentContext, pageContext)
-
-    const contents = [
-      ...(history ?? []).map(turn => ({
-        role: turn.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: turn.content }],
-      })),
-      { role: 'user', parts: [{ text: message }] },
+    const messages: AIMessage[] = [
+      { role: 'system', content: systemPrompt },
+      ...(history ?? []).map(turn => ({ role: turn.role, content: turn.content }) as AIMessage),
+      { role: 'user', content: message },
     ]
 
-    const geminiRes = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseSchema: MENTOR_RESPONSE_SCHEMA,
-        },
-      }),
+    const gateway = createAIGateway()
+    const stream = await gateway.stream(messages, { type: expectedType })
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache',
+      },
     })
-
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text()
-      return NextResponse.json({ error: `Gemini API error: ${errText.slice(0, 300)}` }, { status: 502 })
-    }
-
-    const geminiData = await geminiRes.json()
-    const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined
-    if (!rawText) {
-      return NextResponse.json({ error: 'Пустой ответ от AI' }, { status: 502 })
-    }
-
-    let parsed: MentorResponse
-    try {
-      parsed = JSON.parse(rawText)
-    } catch {
-      // Fallback for the rare case the model doesn't honor responseSchema —
-      // surface the raw text as a plain card instead of failing outright.
-      parsed = { type: 'theory', title: 'Ответ AI Mentor', content: rawText, actions: [] }
-    }
-
-    return NextResponse.json(parsed)
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
-    return NextResponse.json({ error: message }, { status: 500 })
+    const userMessage = e instanceof AIGatewayError ? e.userMessage : 'AI временно недоступен. Попробуйте позже.'
+    return Response.json({ error: userMessage }, { status: 502 })
   }
 }
