@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard, BookOpen, PenLine, ClipboardList, Brain, Trophy, Settings, X,
+  LayoutDashboard, BookOpen, PenLine, ClipboardList, Brain, Trophy, GraduationCap, Settings, X,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -20,6 +20,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/student/online/practice', label: 'Практика', icon: PenLine },
   { href: '/student/online/mock', label: 'Пробный ОРТ', icon: ClipboardList },
   { href: '/student/online/ai', label: 'AI Коуч', icon: Brain },
+  { href: '/student/online/universities', label: '🎓 Университеты', icon: GraduationCap },
   { href: '/student/online/leaderboard', label: 'Рейтинг', icon: Trophy },
 ]
 
