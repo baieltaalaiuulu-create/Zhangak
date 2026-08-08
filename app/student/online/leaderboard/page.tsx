@@ -91,13 +91,13 @@ export default function LeaderboardPage() {
       <div className="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:px-6">
         <h1 className="text-xl font-bold text-[#191B23]">Рейтинг</h1>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible md:pb-0">
           {FILTERS.map(f => (
             <button
               key={f.key}
               type="button"
               onClick={() => setFilter(f.key)}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+              className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                 filter === f.key
                   ? 'bg-[#1B4FD8] text-white'
                   : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'

@@ -40,8 +40,8 @@ function Row({ entry, isMe, streak, delta }: { entry: LeaderboardEntry; isMe: bo
         </div>
       </td>
       <td className="px-4 py-3 text-sm font-bold text-[#191B23]">{entry.bestScore}</td>
-      <td className="px-4 py-3 text-sm"><DeltaCell delta={delta} /></td>
-      <td className="px-4 py-3">
+      <td className="hidden px-4 py-3 text-sm md:table-cell"><DeltaCell delta={delta} /></td>
+      <td className="hidden px-4 py-3 md:table-cell">
         <div className="flex items-center gap-1 text-sm font-semibold text-gray-500">
           <Flame size={14} className="text-orange-400" /> {streak}
         </div>
@@ -68,14 +68,14 @@ export default function LeaderboardTable({ entries, currentStudentId, streaks, d
   return (
     <div className="rounded-2xl border border-gray-200 bg-white">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[480px] border-collapse">
+        <table className="w-full border-collapse md:min-w-[480px]">
           <thead>
             <tr className="border-b border-gray-100 text-left text-xs font-semibold text-gray-400">
               <th className="px-4 py-3">#</th>
               <th className="px-4 py-3">Студент</th>
               <th className="px-4 py-3">Балл</th>
-              <th className="px-4 py-3">Изменение</th>
-              <th className="px-4 py-3">Дней подряд</th>
+              <th className="hidden px-4 py-3 md:table-cell">Изменение</th>
+              <th className="hidden px-4 py-3 md:table-cell">Дней подряд</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">

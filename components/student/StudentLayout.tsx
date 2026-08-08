@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { calcStreak, DEFAULT_TARGET_SCORE } from '@/lib/student-data'
 import StudentSidebar from './StudentSidebar'
 import StudentTopbar from './StudentTopbar'
+import BottomNav from './BottomNav'
 import NotificationPopup from './NotificationPopup'
 import AIDrawer from './ai/AIDrawer'
 
@@ -83,7 +84,7 @@ export default function StudentLayout({ children }: Props) {
     <div className="min-h-screen bg-[#FAF8FF]">
       <StudentSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} fullName={fullName} avatarUrl={avatarUrl} />
 
-      <div className="lg:ml-64">
+      <div className="md:ml-64">
         <StudentTopbar
           fullName={fullName}
           avatarUrl={avatarUrl}
@@ -91,12 +92,12 @@ export default function StudentLayout({ children }: Props) {
           targetScore={targetScore}
           level={level}
           unreadCount={unreadCount}
-          onMenuClick={() => setSidebarOpen(true)}
           onLogout={handleLogout}
         />
-        <main>{children}</main>
+        <main className="pb-16 md:pb-0">{children}</main>
       </div>
 
+      <BottomNav />
       <NotificationPopup studentId={studentId} onUnreadChange={setUnreadCount} />
       <AIDrawer />
     </div>

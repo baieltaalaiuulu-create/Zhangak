@@ -46,8 +46,8 @@ export default function CountdownTimer({ targetIso, onComplete }: Props) {
   return (
     <div className="flex gap-2 sm:gap-3">
       {units.map(u => (
-        <div key={u.label} className="min-w-[52px] rounded-xl bg-white/15 px-3 py-2 text-center sm:min-w-[64px]">
-          <div className="text-lg font-extrabold tabular-nums sm:text-xl">{String(u.value).padStart(2, '0')}</div>
+        <div key={u.label} className="min-w-[60px] rounded-xl bg-white/15 px-3 py-2 text-center sm:min-w-[64px]">
+          <div className="text-2xl font-extrabold tabular-nums sm:text-xl">{String(u.value).padStart(2, '0')}</div>
           <div className="text-[10px] uppercase tracking-wide text-blue-100">{u.label}</div>
         </div>
       ))}

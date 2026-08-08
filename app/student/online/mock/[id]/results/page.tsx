@@ -111,22 +111,22 @@ export default function MockResultsPage() {
           <AICard latestScore={result.total_score} subjects={subjects} targetScore={targetScore} />
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Link
             href="/student/online/lessons"
-            className="rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700"
+            className="w-full rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-center text-sm font-bold text-white transition-colors hover:bg-blue-700 sm:w-auto"
           >
             Следующий урок →
           </Link>
           <Link
             href="/student/online/mock"
-            className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 sm:w-auto"
           >
             <RotateCcw size={15} /> Пройти снова
           </Link>
           <button
             onClick={handleShare}
-            className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 sm:w-auto"
           >
             {shared ? <Check size={15} className="text-green-600" /> : <Share2 size={15} />}
             {shared ? 'Скопировано' : 'Поделиться'}

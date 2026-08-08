@@ -32,14 +32,14 @@ export default function StudentSidebar({ isOpen, onClose, fullName = 'Студе
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-white/5 transition-transform duration-200 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-white/5 transition-transform duration-200 md:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{ background: '#0D0D1A' }}
@@ -53,7 +53,7 @@ export default function StudentSidebar({ isOpen, onClose, fullName = 'Студе
             type="button"
             onClick={onClose}
             aria-label="Закрыть меню"
-            className="rounded-lg p-1 text-gray-400 hover:bg-white/5 lg:hidden"
+            className="rounded-lg p-1 text-gray-400 hover:bg-white/5 md:hidden"
           >
             <X size={18} />
           </button>

@@ -108,7 +108,7 @@ export default function DashboardHeroCard({ firstName, latestScore, targetScore,
       )}
 
       {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-lg">
+        <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-full bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-lg md:bottom-6">
           {toast}
         </div>
       )}

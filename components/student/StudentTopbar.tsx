@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { Search, Bell, Menu } from 'lucide-react'
+import { Search, Bell } from 'lucide-react'
 
 interface Props {
   fullName: string
@@ -10,11 +10,10 @@ interface Props {
   targetScore: number
   level: number
   unreadCount?: number
-  onMenuClick: () => void
   onLogout: () => void
 }
 
-function Pill({ children, tone = 'gray' }: { children: ReactNode; tone?: 'gray' | 'orange' | 'blue' }) {
+function Pill({ children, tone = 'gray', className = '' }: { children: ReactNode; tone?: 'gray' | 'orange' | 'blue'; className?: string }) {
   const toneClass = tone === 'orange'
     ? 'bg-orange-50 text-orange-600'
     : tone === 'blue'
@@ -22,29 +21,27 @@ function Pill({ children, tone = 'gray' }: { children: ReactNode; tone?: 'gray' 
       : 'bg-gray-50 text-gray-600'
 
   return (
-    <span className={`hidden items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold sm:inline-flex ${toneClass}`}>
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[11px] font-semibold sm:px-3 sm:text-xs ${toneClass} ${className}`}>
       {children}
     </span>
   )
 }
 
-export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore, level, unreadCount = 0, onMenuClick, onLogout }: Props) {
+export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore, level, unreadCount = 0, onLogout }: Props) {
   const [notifOpen, setNotifOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const initial = fullName?.[0]?.toUpperCase() ?? '?'
 
   return (
     <header className="sticky top-0 z-20 flex h-[60px] items-center gap-3 border-b border-[#C3C6D7]/50 bg-white px-4 sm:px-6">
-      <button
-        type="button"
-        onClick={onMenuClick}
-        aria-label="Открыть меню"
-        className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-50 lg:hidden"
-      >
-        <Menu size={20} />
-      </button>
+      {/* Logo — only needed on mobile, where the sidebar (which normally
+          carries it) is hidden in favor of the bottom nav. */}
+      <div className="flex items-center gap-2 md:hidden">
+        <span className="text-base font-extrabold tracking-tight text-[#1B4FD8]">ZHANGAK</span>
+        <span className="h-1.5 w-1.5 rounded-full" style={{ background: '#8B5CF6' }} />
+      </div>
 
-      <div className="relative hidden max-w-xs flex-1 sm:block">
+      <div className="relative hidden max-w-xs flex-1 md:block">
         <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
           type="text"
@@ -53,10 +50,10 @@ export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore
         />
       </div>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
         {streak > 0 && <Pill tone="orange">🔥 {streak} {streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'}</Pill>}
         <Pill tone="blue">🎯 {targetScore} балл</Pill>
-        <Pill>⭐ Ур. {level}</Pill>
+        <Pill className="hidden md:inline-flex">⭐ Ур. {level}</Pill>
 
         <div className="relative">
           <button
