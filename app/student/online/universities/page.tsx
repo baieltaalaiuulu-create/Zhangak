@@ -6,7 +6,10 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { DEFAULT_TARGET_SCORE } from '@/lib/student-data'
 import { fetchLatestMockScore } from '@/lib/profile-data'
-import { UNIVERSITIES, getFavoriteIds, toggleFavorite } from '@/lib/universities-data'
+import {
+  fetchUniversities, fetchCatalogStats, getFavoriteIds, toggleFavorite,
+  type University, type CatalogStats,
+} from '@/lib/universities-data'
 import UniversitiesHero from '@/components/student/universities/UniversitiesHero'
 import UniversitiesStatsRow from '@/components/student/universities/UniversitiesStatsRow'
 import UniversitiesFilters, { DEFAULT_FILTERS, type FilterState } from '@/components/student/universities/UniversitiesFilters'
@@ -32,6 +35,8 @@ export default function UniversitiesPage() {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
+  const [universities, setUniversities] = useState<University[]>([])
+  const [catalogStats, setCatalogStats] = useState<CatalogStats | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -47,8 +52,16 @@ export default function UniversitiesPage() {
       if (!profile || profile.role !== 'student') { router.push('/login'); return }
       if (profile.student_type === 'offline') { router.push('/student'); return }
 
+      const [latest, universityList, stats] = await Promise.all([
+        fetchLatestMockScore(user.id),
+        fetchUniversities(),
+        fetchCatalogStats(),
+      ])
+
       setTargetScore(profile.target_score ?? DEFAULT_TARGET_SCORE)
-      setLatestScore(await fetchLatestMockScore(user.id))
+      setLatestScore(latest)
+      setUniversities(universityList)
+      setCatalogStats(stats)
       setFavorites(getFavoriteIds())
       setLoading(false)
     }
@@ -63,7 +76,7 @@ export default function UniversitiesPage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return UNIVERSITIES.filter(u => {
+    return universities.filter(u => {
       if (showFavoritesOnly && !favorites.has(u.id)) return false
       if (q && !(u.name.toLowerCase().includes(q) || u.shortName.toLowerCase().includes(q) || u.specialties.some(s => s.name.toLowerCase().includes(q)))) return false
       if (filters.city !== 'all' && u.city !== filters.city) return false
@@ -76,11 +89,11 @@ export default function UniversitiesPage() {
       if (filters.budgetOnly && !u.budgetSeats) return false
       return true
     })
-  }, [query, filters, showFavoritesOnly, favorites])
+  }, [universities, query, filters, showFavoritesOnly, favorites])
 
-  const recommended = UNIVERSITIES.slice(0, 3)
+  const recommended = universities.slice(0, 3)
 
-  if (loading) return <LoadingScreen />
+  if (loading || !catalogStats) return <LoadingScreen />
 
   return (
     <div className="min-h-screen bg-[#F4F6FA]">
@@ -93,7 +106,7 @@ export default function UniversitiesPage() {
           onToggleFavoritesOnly={() => setShowFavoritesOnly(v => !v)}
         />
 
-        <UniversitiesStatsRow />
+        <UniversitiesStatsRow stats={catalogStats} />
 
         <AIRecommendationBar studentScore={studentScore} universities={recommended} />
 

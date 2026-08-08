@@ -1,12 +1,16 @@
-import { CATALOG_STATS } from '@/lib/universities-data'
+import type { CatalogStats } from '@/lib/universities-data'
 
-export default function UniversitiesStatsRow() {
+interface Props {
+  stats: CatalogStats
+}
+
+export default function UniversitiesStatsRow({ stats }: Props) {
   const items = [
-    { icon: '🏛', value: String(CATALOG_STATS.totalUniversities), label: 'Университета в каталоге' },
-    { icon: '📚', value: CATALOG_STATS.totalSpecialties, label: 'Активных специальностей' },
-    { icon: '🏫', value: String(CATALOG_STATS.stateUniversities), label: 'Государственных ВУЗов' },
-    { icon: '🏢', value: String(CATALOG_STATS.privateUniversities), label: 'Частных заведений' },
-    { icon: '📊', value: String(CATALOG_STATS.averagePassingScore), label: 'Средний проходной балл' },
+    { icon: '🏛', value: String(stats.totalUniversities), label: 'Университета в каталоге' },
+    { icon: '📚', value: String(stats.totalSpecialties), label: 'Активных специальностей' },
+    { icon: '🏫', value: String(stats.stateUniversities), label: 'Государственных ВУЗов' },
+    { icon: '🏢', value: String(stats.privateUniversities), label: 'Частных заведений' },
+    { icon: '📊', value: String(stats.averagePassingScore), label: 'Средний проходной балл' },
   ]
 
   return (

@@ -6,7 +6,9 @@ import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { DEFAULT_TARGET_SCORE } from '@/lib/student-data'
 import { fetchLatestMockScore } from '@/lib/profile-data'
-import { getUniversityById, getFavoriteIds, toggleFavorite, UNIVERSITIES } from '@/lib/universities-data'
+import {
+  fetchUniversityById, fetchUniversities, getFavoriteIds, toggleFavorite, type University,
+} from '@/lib/universities-data'
 import UniversityDetailHeader from '@/components/student/universities/UniversityDetailHeader'
 import SpecialtiesTable from '@/components/student/universities/SpecialtiesTable'
 import ScorePassingChart from '@/components/student/universities/ScorePassingChart'
@@ -43,6 +45,9 @@ export default function UniversityDetailPage() {
   const [studentScore, setStudentScore] = useState(0)
   const [tab, setTab] = useState<TabKey>('overview')
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
+  const [university, setUniversity] = useState<University | null>(null)
+  const [comparisonList, setComparisonList] = useState<University[]>([])
+  const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -58,13 +63,22 @@ export default function UniversityDetailPage() {
       if (!profile || profile.role !== 'student') { router.push('/login'); return }
       if (profile.student_type === 'offline') { router.push('/student'); return }
 
-      const latest = await fetchLatestMockScore(user.id)
+      const [latest, foundUniversity, allUniversities] = await Promise.all([
+        fetchLatestMockScore(user.id),
+        fetchUniversityById(params.id),
+        fetchUniversities(),
+      ])
+
+      if (!foundUniversity) { setNotFound(true); setLoading(false); return }
+
       setStudentScore(latest ?? profile.target_score ?? DEFAULT_TARGET_SCORE)
+      setUniversity(foundUniversity)
+      setComparisonList([foundUniversity, ...allUniversities.filter(u => u.id !== foundUniversity.id).slice(0, 2)])
       setFavorites(getFavoriteIds())
       setLoading(false)
     }
     init()
-  }, [router])
+  }, [router, params.id])
 
   // Arriving from a catalog card's "Сравнить" link (#comparison hash) —
   // scroll straight to the comparison table once the page has rendered.
@@ -76,15 +90,12 @@ export default function UniversityDetailPage() {
 
   if (loading) return <LoadingScreen />
 
-  const university = getUniversityById(params.id)
-  if (!university) {
+  if (notFound || !university) {
     router.push('/student/online/universities')
     return <LoadingScreen />
   }
 
   const isFavorite = favorites.has(university.id)
-  const others = UNIVERSITIES.filter(u => u.id !== university.id).slice(0, 2)
-  const comparisonList = [university, ...others]
 
   return (
     <div className="min-h-screen bg-[#F4F6FA]">

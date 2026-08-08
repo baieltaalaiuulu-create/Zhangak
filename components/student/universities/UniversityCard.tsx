@@ -40,7 +40,12 @@ export default function UniversityCard({ university: u, studentScore, isFavorite
       </button>
 
       <div className="flex items-start gap-3 pr-8">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-50 text-2xl">{u.emoji}</span>
+        {u.logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- admin-entered external logo URL, no next/image domain config
+          <img src={u.logoUrl} alt={u.shortName} className="h-11 w-11 shrink-0 rounded-xl object-cover" />
+        ) : (
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-50 text-2xl">{u.emoji}</span>
+        )}
         <div className="min-w-0">
           <h3 className="truncate text-sm font-bold text-gray-900">{u.shortName}</h3>
           <p className="text-xs text-gray-400">{u.city}</p>

@@ -1,4 +1,4 @@
-import { getProbability, LANGUAGE_LABELS, type Specialty } from '@/lib/universities-data'
+import { getProbability, type Specialty } from '@/lib/universities-data'
 
 interface Props {
   specialties: Specialty[]
@@ -36,7 +36,7 @@ export default function SpecialtiesTable({ specialties, studentScore }: Props) {
                 <td className="px-4 py-3 text-gray-500">{s.faculty}</td>
                 <td className="px-4 py-3 font-bold text-gray-700">{s.minScore}</td>
                 <td className="px-4 py-3 text-gray-500">{formatCost(s.costPerYear)}</td>
-                <td className="px-4 py-3 text-gray-500">{s.languages.map(l => LANGUAGE_LABELS[l]).join(', ')}</td>
+                <td className="px-4 py-3 text-gray-500">{s.language}</td>
                 <td className="px-4 py-3 text-gray-500">{s.form}</td>
                 <td className="px-4 py-3">
                   <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.type === 'Бюджет' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard, BookOpen, PenLine, ListChecks, ClipboardList, Users, BarChart2, Megaphone, Archive, User, Menu, X,
+  LayoutDashboard, BookOpen, PenLine, ListChecks, ClipboardList, Users, BarChart2, Megaphone, Archive, GraduationCap, User, Menu, X,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -15,6 +15,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/admin/questions', label: 'Вопросы', icon: PenLine },
   { href: '/admin/mock', label: 'Пробный ОРТ', icon: ClipboardList },
   { href: '/admin/students', label: 'Ученики', icon: Users },
+  { href: '/admin/universities', label: '🎓 Университеты', icon: GraduationCap },
   { href: '/admin/archive', label: '📦 Архив', icon: Archive },
   { href: '/admin/analytics', label: 'Аналитика', icon: BarChart2 },
   { href: '/admin/announcements', label: 'Объявления', icon: Megaphone },
