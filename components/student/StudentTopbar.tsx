@@ -14,9 +14,15 @@ interface Props {
   onLogout: () => void
 }
 
-function Pill({ children }: { children: ReactNode }) {
+function Pill({ children, tone = 'gray' }: { children: ReactNode; tone?: 'gray' | 'orange' | 'blue' }) {
+  const toneClass = tone === 'orange'
+    ? 'bg-orange-50 text-orange-600'
+    : tone === 'blue'
+      ? 'bg-[#EEF2FF] text-[#1B4FD8]'
+      : 'bg-gray-50 text-gray-600'
+
   return (
-    <span className="hidden items-center gap-1 whitespace-nowrap rounded-full bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-600 sm:inline-flex">
+    <span className={`hidden items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold sm:inline-flex ${toneClass}`}>
       {children}
     </span>
   )
@@ -42,14 +48,14 @@ export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore
         <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
           type="text"
-          placeholder="Поиск..."
+          placeholder="Поиск уроков, тем..."
           className="w-full rounded-full bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B4FD8]/20"
         />
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        {streak > 0 && <Pill>🔥 {streak}</Pill>}
-        <Pill>🎯 {targetScore}</Pill>
+        {streak > 0 && <Pill tone="orange">🔥 {streak} {streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'}</Pill>}
+        <Pill tone="blue">🎯 {targetScore} балл</Pill>
         <Pill>⭐ Ур. {level}</Pill>
 
         <div className="relative">

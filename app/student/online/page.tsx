@@ -5,20 +5,21 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getStudentDashboard, DEFAULT_TARGET_SCORE, type StudentDashboardData } from '@/lib/student-data'
+import { fetchDashboardExtras, type DashboardExtras } from '@/lib/dashboard-data'
 
-import HeroCard      from '@/components/student/HeroCard'
-import SubjectCards  from '@/components/student/SubjectCards'
-import AICard        from '@/components/student/AICard'
-import StreakCard    from '@/components/student/StreakCard'
-import StatsRow      from '@/components/student/StatsRow'
-import DashboardHero from '@/components/student/DashboardHero'
 import AnnouncementBanner from '@/components/student/AnnouncementBanner'
-import NextLesson from '@/components/student/NextLesson'
-import TodayPlanSimple from '@/components/student/TodayPlanSimple'
+import DashboardHeroCard from '@/components/student/DashboardHeroCard'
+import TodayPlanCard from '@/components/student/TodayPlanCard'
+import WeeklyProgressCard from '@/components/student/WeeklyProgressCard'
+import ActivityHeatmap from '@/components/student/ActivityHeatmap'
+import SubjectsGrid from '@/components/student/SubjectsGrid'
+import AIMentorRecommendationCard from '@/components/student/AIMentorRecommendationCard'
+import RecentAchievementsCard from '@/components/student/RecentAchievementsCard'
 
 export default function StudentOnlinePage() {
   const [profileName, setProfileName] = useState<string | null>(null)
   const [data, setData] = useState<StudentDashboardData | null>(null)
+  const [extras, setExtras] = useState<DashboardExtras | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -38,13 +39,15 @@ export default function StudentOnlinePage() {
 
       setProfileName(profile.full_name)
       const dashboard = await getStudentDashboard()
+      const dashboardExtras = await fetchDashboardExtras(user.id, dashboard.latestScore, dashboard.previousScore)
       setData(dashboard)
+      setExtras(dashboardExtras)
       setLoading(false)
     }
     checkAuth()
   }, [router])
 
-  if (loading || !data) return (
+  if (loading || !data || !extras) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F4F6FA', fontFamily: 'Inter, sans-serif' }}>
       <div style={{ color: '#9CA3AF', fontSize: 14 }}>Загрузка...</div>
     </div>
@@ -52,6 +55,7 @@ export default function StudentOnlinePage() {
 
   const firstName = (data.profile?.full_name ?? profileName ?? 'Студент').split(' ')[0]
   const targetScore = data.profile?.target_score ?? DEFAULT_TARGET_SCORE
+  const continueHref = '/student/online/lessons'
 
   const handleGoalUpdate = (newGoal: number) => {
     setData(prev => prev ? {
@@ -60,74 +64,36 @@ export default function StudentOnlinePage() {
     } : prev)
   }
 
-  const latestScore = data.latestScore ?? 0
-  const remaining = Math.max(0, targetScore - latestScore)
-  // Two explicit subject tracks below make "next lesson" unambiguous now,
-  // so the hero CTA no longer needs to guess which subject to jump into.
-  const continueHref = '/student/online/lessons'
-
   return (
     <div className="min-h-screen bg-[#F4F6FA]">
-      {/* Main grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 min-w-0">
 
         <AnnouncementBanner />
 
-        <DashboardHero
+        <DashboardHeroCard
           firstName={firstName}
-          remaining={remaining}
-          streak={data.streak}
-          ctaHref={continueHref}
-        />
-
-        {/* Next lesson per subject — always exactly one clear "what's next"
-            per subject, instead of one ambiguous cross-subject card. */}
-        <NextLesson
-          mathLesson={data.subjectTracks.find(t => t.subject === 'math')?.currentLesson ?? null}
-          kyrLesson={data.subjectTracks.find(t => t.subject === 'kyr')?.currentLesson ?? null}
-          mathProgress={{
-            completed: data.subjectTracks.find(t => t.subject === 'math')?.completedCount ?? 0,
-            total: data.subjectTracks.find(t => t.subject === 'math')?.totalCount ?? 0,
-          }}
-          kyrProgress={{
-            completed: data.subjectTracks.find(t => t.subject === 'kyr')?.completedCount ?? 0,
-            total: data.subjectTracks.find(t => t.subject === 'kyr')?.totalCount ?? 0,
-          }}
-        />
-
-        {/* Simplified today's plan — 1 lesson + 1 practice per subject */}
-        <TodayPlanSimple tracks={data.subjectTracks} />
-
-        {/* Score trend */}
-        <HeroCard
           latestScore={data.latestScore}
-          previousScore={data.previousScore}
           targetScore={targetScore}
-          scoreHistory={data.scoreHistory}
+          minutesRemaining={extras.todayPlan.minutesRemaining}
+          ctaHref={continueHref}
           onGoalUpdate={handleGoalUpdate}
         />
 
-        <SubjectCards
-          subjects={data.subjects}
-          comparison={{ me: latestScore, avg: 126, top: 182 }}
-        />
-
-        {/* Row 3: AI + Streak */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div className="lg:col-span-2 min-w-0">
-            <AICard
-              latestScore={data.latestScore}
-              subjects={data.subjects}
-              targetScore={targetScore}
-            />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          {/* Left column */}
+          <div className="space-y-5 min-w-0">
+            <TodayPlanCard plan={extras.todayPlan} />
+            <WeeklyProgressCard stats={extras.weeklyStats} />
+            <ActivityHeatmap days={extras.heatmapDays} months={extras.heatmapMonths} />
           </div>
-          <div className="min-w-0">
-            <StreakCard streak={data.streak} />
+
+          {/* Right column */}
+          <div className="space-y-5 min-w-0">
+            <SubjectsGrid subjects={extras.subjectsGrid} />
+            <AIMentorRecommendationCard recommendation={extras.aiRecommendation} />
+            <RecentAchievementsCard achievements={extras.achievements} />
           </div>
         </div>
-
-        {/* Row 4: Stats */}
-        <StatsRow stats={data.monthStats} />
 
       </div>
     </div>

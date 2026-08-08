@@ -78,7 +78,7 @@ export default function StudentLayout({ children }: Props) {
 
   return (
     <div className="min-h-screen bg-[#FAF8FF]">
-      <StudentSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <StudentSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} fullName={fullName} avatarUrl={avatarUrl} />
 
       <div className="lg:ml-64">
         <StudentTopbar
