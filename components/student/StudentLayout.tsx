@@ -15,13 +15,16 @@ interface Props {
 
 // The mock exam screen (/student/online/mock/[id], but not its /results child
 // or the /mock listing page) runs full-screen with its own dark header — no
-// sidebar/topbar chrome.
+// sidebar/topbar chrome. The AI Mentor page is the same story — it has its
+// own 3-column chat layout (dark session sidebar, topbar, analytics panel)
+// and would just be duplicated chrome under this one.
 const EXAM_ROUTE = /^\/student\/online\/mock\/[^/]+$/
+const AI_PAGE_ROUTE = /^\/student\/online\/ai/
 
 export default function StudentLayout({ children }: Props) {
   const router = useRouter()
   const pathname = usePathname()
-  const isExamScreen = EXAM_ROUTE.test(pathname ?? '')
+  const isFullScreenPage = EXAM_ROUTE.test(pathname ?? '') || AI_PAGE_ROUTE.test(pathname ?? '')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [fullName, setFullName] = useState('Студент')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -74,7 +77,7 @@ export default function StudentLayout({ children }: Props) {
     router.push('/')
   }
 
-  if (isExamScreen) return <>{children}</>
+  if (isFullScreenPage) return <>{children}</>
 
   return (
     <div className="min-h-screen bg-[#FAF8FF]">
