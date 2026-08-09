@@ -1,24 +1,17 @@
 {
-  "name": "Жангак — Подготовка к ОРТ",
-  "short_name": "Жангак",
+  "name": "ZHANGAK",
+  "short_name": "ZHANGAK",
   "description": "Онлайн подготовка к ОРТ в Кыргызстане",
-  "start_url": "/",
   "display": "standalone",
-  "background_color": "#0D0D1A",
+  "orientation": "portrait-primary",
   "theme_color": "#1B4FD8",
-  "orientation": "portrait",
+  "background_color": "#0D0D1A",
+  "start_url": "/student/online",
+  "scope": "/",
   "icons": [
-    {
-      "src": "/icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

@@ -18,7 +18,7 @@ interface Props {
   challengeHref: string
 }
 
-// Fixed 3-row checklist per the mobile spec (Урок / Практика / Задание
+// Fixed 3-row checklist per the mobile spec (Урок / Тренажёр / Задание
 // дня) — a deliberately simplified read of the same real todayPlan data
 // TodayPlanCard already shows in full on desktop, not a separate dataset.
 export default function MobileTodayChecklist({
@@ -26,18 +26,15 @@ export default function MobileTodayChecklist({
 }: Props) {
   const rows: Row[] = [
     { label: 'Урок', done: lessonDone, href: lessonHref },
-    { label: 'Практика', done: practiceDone, href: practiceHref },
+    { label: 'Тренажёр', done: practiceDone, href: practiceHref },
     { label: 'Задание дня', done: challengeDone, href: challengeHref },
   ]
   const doneCount = rows.filter(r => r.done).length
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-[#191B23]">Сегодня</h3>
-        <span className="text-xs font-semibold text-gray-400">{doneCount} из {rows.length} выполнено</span>
-      </div>
-      <div className="mt-2">
+    <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Сегодня</p>
+      <div className="mt-3">
         {rows.map(row => (
           <Link key={row.label} href={row.href} className="flex min-h-11 items-center gap-3 py-1.5">
             {row.done
@@ -49,6 +46,7 @@ export default function MobileTodayChecklist({
           </Link>
         ))}
       </div>
+      <p className="mt-2 text-xs text-gray-400">{doneCount} из {rows.length} выполнено</p>
     </div>
   )
 }

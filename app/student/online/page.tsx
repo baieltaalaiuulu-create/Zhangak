@@ -7,6 +7,14 @@ import { supabase } from '@/lib/supabase'
 import { getStudentDashboard, DEFAULT_TARGET_SCORE, type StudentDashboardData } from '@/lib/student-data'
 import { fetchDashboardExtras, type DashboardExtras } from '@/lib/dashboard-data'
 import { fetchLessons, fetchCompletedLessonIds, type Lesson } from '@/lib/lessons-data'
+import { fetchWeeklyLeaderboard, type WeeklyLeaderboardEntry } from '@/lib/weekly-leaderboard-data'
+import {
+  fetchTodayChallenge,
+  fetchChallengeCompletionCount,
+  fetchChallengeResult,
+  currentWeekStart,
+  type DailyChallenge,
+} from '@/lib/daily-challenge-data'
 
 import AnnouncementBanner from '@/components/student/AnnouncementBanner'
 import DashboardHeroCard from '@/components/student/DashboardHeroCard'
@@ -18,12 +26,22 @@ import AIMentorRecommendationCard from '@/components/student/AIMentorRecommendat
 import RecentAchievementsCard from '@/components/student/RecentAchievementsCard'
 import MobileHero from '@/components/student/mobile/MobileHero'
 import MobileTodayChecklist from '@/components/student/mobile/MobileTodayChecklist'
+import MobileDailyChallengeCard from '@/components/student/mobile/MobileDailyChallengeCard'
+import MobileLeaderboardCard from '@/components/student/mobile/MobileLeaderboardCard'
+import MobileStatsGrid from '@/components/student/mobile/MobileStatsGrid'
+
+const CHALLENGE_MIN_PER_QUESTION = 0.75
 
 export default function StudentOnlinePage() {
   const [profileName, setProfileName] = useState<string | null>(null)
   const [data, setData] = useState<StudentDashboardData | null>(null)
   const [extras, setExtras] = useState<DashboardExtras | null>(null)
   const [heroLesson, setHeroLesson] = useState<Lesson | null>(null)
+  const [leaderboardMe, setLeaderboardMe] = useState<WeeklyLeaderboardEntry | null>(null)
+  const [xpToNextRank, setXpToNextRank] = useState<number | null>(null)
+  const [todayChallenge, setTodayChallenge] = useState<DailyChallenge | null>(null)
+  const [challengeParticipants, setChallengeParticipants] = useState(0)
+  const [challengeCompleted, setChallengeCompleted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const router = useRouter()
@@ -44,10 +62,12 @@ export default function StudentOnlinePage() {
 
       setProfileName(profile.full_name)
       try {
-        const [dashboard, allLessons, completedIds] = await Promise.all([
+        const [dashboard, allLessons, completedIds, leaderboard, challenge] = await Promise.all([
           getStudentDashboard(),
           fetchLessons(),
           fetchCompletedLessonIds(user.id),
+          fetchWeeklyLeaderboard(currentWeekStart(), user.id),
+          fetchTodayChallenge(),
         ])
         const dashboardExtras = await fetchDashboardExtras(user.id, dashboard.latestScore, dashboard.previousScore)
         setData(dashboard)
@@ -56,6 +76,19 @@ export default function StudentOnlinePage() {
         // the sort order fetchLessons returns) — the mobile "continue
         // learning" hero, independent of which subject it belongs to.
         setHeroLesson(allLessons.find(l => !completedIds.has(l.id)) ?? null)
+
+        setLeaderboardMe(leaderboard.me)
+        setXpToNextRank(leaderboard.xpToNextRank)
+
+        setTodayChallenge(challenge)
+        if (challenge) {
+          const [participants, result] = await Promise.all([
+            fetchChallengeCompletionCount(challenge.id),
+            fetchChallengeResult(challenge.id, user.id),
+          ])
+          setChallengeParticipants(participants)
+          setChallengeCompleted(!!result)
+        }
       } catch {
         setLoadError(true)
       } finally {
@@ -152,10 +185,29 @@ export default function StudentOnlinePage() {
             challengeHref={challengeItem?.href ?? '/student/online/practice'}
           />
 
-          <AIMentorRecommendationCard recommendation={extras.aiRecommendation} compact />
+          {todayChallenge && (
+            <MobileDailyChallengeCard
+              questionCount={todayChallenge.question_count}
+              minutes={Math.max(5, Math.round(todayChallenge.question_count * CHALLENGE_MIN_PER_QUESTION))}
+              participantCount={challengeParticipants}
+              completed={challengeCompleted}
+              href="/student/online/practice/daily"
+            />
+          )}
+
+          {leaderboardMe && (
+            <MobileLeaderboardCard
+              rank={leaderboardMe.rank}
+              inTopTen={leaderboardMe.rank <= 10}
+              xpToNextRank={xpToNextRank}
+              href="/student/online/leaderboard"
+            />
+          )}
+
+          <MobileStatsGrid stats={extras.weeklyStats} />
 
           {/* Below the fold — secondary, less prominent */}
-          <WeeklyProgressCard stats={extras.weeklyStats} />
+          <AIMentorRecommendationCard recommendation={extras.aiRecommendation} compact />
           <ActivityHeatmap days={extras.heatmapDays} months={extras.heatmapMonths} collapsible />
           <RecentAchievementsCard achievements={extras.achievements} maxItems={2} />
         </div>

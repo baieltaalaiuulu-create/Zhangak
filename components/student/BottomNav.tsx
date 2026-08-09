@@ -28,7 +28,7 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 flex w-full items-stretch border-t border-[#C3C6D7]/50 bg-white md:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 flex w-full items-stretch border-t border-[#C3C6D7]/50 bg-white md:hidden"
       style={{ minHeight: '64px', paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {NAV_ITEMS.map(item => {
@@ -43,8 +43,8 @@ export default function BottomNav() {
             href={item.href}
             className="flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-1"
           >
-            <Icon size={24} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-[#1B4FD8]' : 'text-gray-400'} />
-            <span className={`max-w-full truncate text-[10px] font-semibold leading-none ${isActive ? 'text-[#1B4FD8]' : 'text-gray-400'}`}>
+            <Icon size={22} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-[#1B4FD8]' : 'text-gray-400'} />
+            <span className={`max-w-full truncate text-[10px] font-medium leading-none ${isActive ? 'text-[#1B4FD8]' : 'text-gray-400'}`}>
               {item.label}
             </span>
           </Link>

@@ -8,10 +8,10 @@ export interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
 }
 
-// The bottom-sheet banner's own "don't show again" flag (set on install,
+// The bottom banner's own "don't show again" flag (set on install,
 // dismiss, or once the full-screen first-login overlay has already made
 // the pitch — no need to immediately repeat it in a second surface).
-export const INSTALL_DISMISSED_KEY = 'zhangak-install-dismissed'
+export const INSTALL_DISMISSED_KEY = 'zhangak-pwa-dismissed'
 // Tracks whether the full-screen "install now" overlay has been shown at
 // least once for this browser — fires the first time a student reaches
 // the cabinet with no key set yet, not strictly tied to account age.

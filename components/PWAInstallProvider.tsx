@@ -1,7 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { usePathname } from 'next/navigation'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { type BeforeInstallPromptEvent, isIOS, isMobileUA, isStandalone, supportsInstallPrompt } from '@/lib/pwa-install'
 
 interface PWAInstallContextValue {
@@ -13,8 +12,6 @@ interface PWAInstallContextValue {
   isMobile: boolean
   /** Neither the native prompt nor iOS's manual steps apply (e.g. desktop Firefox/Safari). */
   isUnsupported: boolean
-  /** How many distinct pages have been visited this session — powers the banner's "2+ pages" trigger. */
-  pageViewCount: number
   /** Resolves 'accepted' | 'dismissed' from the native prompt, or null if there's nothing to prompt. */
   promptInstall: () => Promise<'accepted' | 'dismissed' | null>
 }
@@ -27,7 +24,6 @@ const PWAInstallContext = createContext<PWAInstallContextValue | null>(null)
 // page, first-login overlay) reads from the same live reference instead
 // of each racing to attach its own listener and possibly missing it.
 export default function PWAInstallProvider({ children }: { children: ReactNode }) {
-  const pathname = usePathname()
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   // All of these read navigator/window, which SSR never has — seeding them
   // with a lazy initializer (or calling the helpers straight in render)
@@ -41,8 +37,6 @@ export default function PWAInstallProvider({ children }: { children: ReactNode }
   const [ios, setIos] = useState(false)
   const [mobile, setMobile] = useState(false)
   const [unsupported, setUnsupported] = useState(false)
-  const [pageViewCount, setPageViewCount] = useState(1)
-  const seenPaths = useRef(new Set<string>())
 
   useEffect(() => {
     const onBeforeInstallPrompt = (e: Event) => {
@@ -75,13 +69,6 @@ export default function PWAInstallProvider({ children }: { children: ReactNode }
     }
   }, [])
 
-  // Distinct-page counter for the banner's "visited 2+ pages" trigger.
-  useEffect(() => {
-    if (!pathname || seenPaths.current.has(pathname)) return
-    seenPaths.current.add(pathname)
-    setPageViewCount(seenPaths.current.size)
-  }, [pathname])
-
   const promptInstall = useCallback(async (): Promise<'accepted' | 'dismissed' | null> => {
     if (!deferredPrompt) return null
     await deferredPrompt.prompt()
@@ -101,10 +88,9 @@ export default function PWAInstallProvider({ children }: { children: ReactNode }
       // hasn't fired yet" — beforeinstallprompt can take a moment to fire
       // even on browsers that do support it.
       isUnsupported: unsupported,
-      pageViewCount,
       promptInstall,
     }),
-    [deferredPrompt, installed, ios, mobile, unsupported, pageViewCount, promptInstall]
+    [deferredPrompt, installed, ios, mobile, unsupported, promptInstall]
   )
 
   return <PWAInstallContext.Provider value={value}>{children}</PWAInstallContext.Provider>

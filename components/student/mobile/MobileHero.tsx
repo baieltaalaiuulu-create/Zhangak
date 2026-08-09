@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { Play } from 'lucide-react'
 import { LESSON_SUBJECT_META, type Lesson } from '@/lib/lessons-data'
 
 interface Props {
@@ -48,18 +47,18 @@ export default function MobileHero({ firstName, currentScore, targetScore, heroL
       {loading ? (
         <HeroSkeleton />
       ) : heroLesson ? (
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wide text-gray-400">Продолжить обучение</p>
-          <span className={`mt-2 inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${LESSON_SUBJECT_META[heroLesson.subject].bg} ${LESSON_SUBJECT_META[heroLesson.subject].color}`}>
+        <div className="rounded-2xl bg-[#1B4FD8] p-5 text-white shadow-lg">
+          <p className="text-xs font-semibold uppercase tracking-widest opacity-80">Продолжить обучение</p>
+          <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold">
             {LESSON_SUBJECT_META[heroLesson.subject].icon} {LESSON_SUBJECT_META[heroLesson.subject].label}
           </span>
-          <h2 className="mt-2 text-lg font-bold leading-snug text-[#191B23]">{heroLesson.title}</h2>
-          <p className="mt-1 text-sm text-gray-500">~{LESSON_MINUTES} мин</p>
+          <h2 className="mt-1 text-lg font-bold leading-snug">{heroLesson.title}</h2>
+          <p className="mt-0.5 text-sm opacity-75">~{LESSON_MINUTES} мин</p>
           <Link
             href={`/student/online/lessons/${heroLesson.id}`}
-            className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#1B4FD8] text-base font-bold text-white transition-colors active:bg-blue-700"
+            className="mt-4 flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-white text-sm font-bold text-[#1B4FD8] transition-colors active:bg-gray-100"
           >
-            <Play size={18} /> Продолжить урок
+            ▶ Продолжить урок
           </Link>
         </div>
       ) : (

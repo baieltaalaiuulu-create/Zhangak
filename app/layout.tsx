@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic'
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import PWAInstallProvider from "@/components/PWAInstallProvider";
-import PWAInstallBanner from "@/components/PWAInstallBanner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -49,7 +48,6 @@ export default function RootLayout({
       <body>
         <PWAInstallProvider>
           {children}
-          <PWAInstallBanner />
         </PWAInstallProvider>
         <Script
           id="sw-register"
