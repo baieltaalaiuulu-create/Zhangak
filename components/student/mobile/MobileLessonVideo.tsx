@@ -101,10 +101,22 @@ export default function MobileLessonVideo({ videoUrl, title, watched, onWatched 
           </button>
         )}
       </div>
-      {watched && (
-        <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-green-600">
+      {watched ? (
+        <p className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-green-50 py-2.5 text-sm font-semibold text-green-600">
           <CheckCircle2 size={16} /> Видео просмотрено
         </p>
+      ) : (
+        // Manual fallback alongside the real YouTube ENDED-event auto-detect
+        // above — some mobile browsers don't reliably fire it (autoplay
+        // restrictions, backgrounding, etc.), so the student always has a
+        // way to unlock the next step themselves.
+        <button
+          type="button"
+          onClick={onWatched}
+          className="mt-3 flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-green-500 text-sm font-bold text-white transition-colors active:bg-green-600"
+        >
+          <CheckCircle2 size={16} /> Я посмотрел видео
+        </button>
       )}
     </div>
   )

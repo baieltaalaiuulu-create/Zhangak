@@ -60,9 +60,20 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                  .then(function(r) { console.log('SW ok', r.scope); })
-                  .catch(function(e) { console.log('SW fail', e); });
+                navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function(reg) {
+                  reg.addEventListener('updatefound', function() {
+                    var newSW = reg.installing;
+                    if (!newSW) return;
+                    newSW.addEventListener('statechange', function() {
+                      if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                        newSW.postMessage('skipWaiting');
+                      }
+                    });
+                  });
+                }).catch(function(e) { console.log('SW fail', e); });
+                navigator.serviceWorker.addEventListener('controllerchange', function() {
+                  window.location.reload();
+                });
               }
             `,
           }}

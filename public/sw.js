@@ -1,4 +1,4 @@
-// Zhangak service worker — basic offline support.
+// Zhangak service worker — basic offline support + auto-update.
 //
 // Deliberately simple: this app is a dynamic, auth-gated Supabase-backed
 // dashboard, not a static site, so caching stays limited to a. the offline
@@ -6,22 +6,37 @@
 // Supabase request (by hostname) or same-origin /api/* route is never
 // intercepted — those always carry live/auth data and must never be served
 // stale from cache.
+//
+// The cache name is date-stamped (today's date, UTC) rather than a fixed
+// version string — every deploy on a new day gets a fresh cache
+// automatically, no manual version bump needed. Combined with the
+// skipWaiting message handler + the registration script's
+// updatefound/controllerchange listeners in app/layout.tsx, a newly
+// deployed SW takes over and reloads the page as soon as it's installed,
+// instead of waiting for every tab to be closed first.
 
-const CACHE = 'zhangak-v3'
-const STATIC = ['/', '/offline']
+const CACHE_VERSION = 'zhangak-v' + new Date().toISOString().split('T')[0]
+const CACHE_NAME = CACHE_VERSION
 
 self.addEventListener('install', (e) => {
   self.skipWaiting()
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(STATIC)))
+  e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(['/', '/offline'])))
 })
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   )
+})
+
+// Lets the page force this waiting worker to activate immediately (see the
+// updatefound handler in app/layout.tsx) instead of sitting idle until
+// every open tab on the old version closes.
+self.addEventListener('message', (e) => {
+  if (e.data === 'skipWaiting') self.skipWaiting()
 })
 
 self.addEventListener('fetch', (e) => {
@@ -42,7 +57,7 @@ self.addEventListener('fetch', (e) => {
       caches.match(e.request).then((cached) => {
         if (cached) return cached
         return fetch(e.request).then((res) => {
-          caches.open(CACHE).then((c) => c.put(e.request, res.clone()))
+          caches.open(CACHE_NAME).then((c) => c.put(e.request, res.clone()))
           return res
         })
       })
