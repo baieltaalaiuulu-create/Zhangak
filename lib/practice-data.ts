@@ -172,6 +172,145 @@ export async function fetchQuestionsBySection(section: string, limit = BANK_QUES
   return shuffled.slice(0, limit)
 }
 
+// ── Subject-level + topic-level stats (Свободная практика overview) ─────
+
+export interface SubjectOverview {
+  subject: Exclude<SubjectTab, 'all'>
+  accuracyPct: number | null
+  questionCount: number
+}
+
+interface AnswerRow {
+  answers: Record<string, string> | null
+}
+
+interface StatQuestionRow {
+  id: number
+  section: string
+  topic: string | null
+  correct_answer: string
+}
+
+// Shared by fetchSubjectOverview and fetchTopicStats — both need the same
+// "every question the student has ever answered, decoded against the
+// current question bank" pass, just bucketed differently afterwards.
+async function fetchDecodedAnswerHistory(studentId: string): Promise<{ q: StatQuestionRow; given: string }[]> {
+  const { data: resultsRaw } = await supabase
+    .from('practice_results')
+    .select('answers')
+    .eq('student_id', studentId)
+    .not('answers', 'is', null)
+
+  const results = (resultsRaw ?? []) as AnswerRow[]
+  const questionIds = new Set<number>()
+  for (const r of results) {
+    if (!r.answers) continue
+    for (const idStr of Object.keys(r.answers)) {
+      const id = Number(idStr)
+      if (!Number.isNaN(id)) questionIds.add(id)
+    }
+  }
+  if (questionIds.size === 0) return []
+
+  const { data: questionsRaw } = await supabase
+    .from('questions')
+    .select('id, section, topic, correct_answer')
+    .in('id', Array.from(questionIds))
+
+  const byId = new Map<number, StatQuestionRow>()
+  for (const q of (questionsRaw ?? []) as StatQuestionRow[]) byId.set(q.id, q)
+
+  const decoded: { q: StatQuestionRow; given: string }[] = []
+  for (const r of results) {
+    if (!r.answers) continue
+    for (const [idStr, given] of Object.entries(r.answers)) {
+      const q = byId.get(Number(idStr))
+      if (!q || q.section === 'general') continue
+      decoded.push({ q, given: String(given) })
+    }
+  }
+  return decoded
+}
+
+function answerIsCorrect(q: StatQuestionRow, given: string): boolean {
+  return q.correct_answer?.trim().toLowerCase()[0] === given.trim().toLowerCase()[0]
+}
+
+// Reverse of SUBJECT_TAB_SECTIONS — which subject tab a raw `section` value
+// belongs under.
+function subjectTabForSection(section: string): Exclude<SubjectTab, 'all'> | null {
+  for (const [tab, sections] of Object.entries(SUBJECT_TAB_SECTIONS)) {
+    if (sections.includes(section)) return tab as Exclude<SubjectTab, 'all'>
+  }
+  return null
+}
+
+// The 4 subject cards at the top of "Свободная практика": total questions
+// available per subject, and this student's overall accuracy across their
+// history in that subject (null when they haven't attempted it yet).
+export async function fetchSubjectOverview(studentId: string): Promise<SubjectOverview[]> {
+  const [{ data: qCounts }, decoded] = await Promise.all([
+    supabase.from('questions').select('section').neq('section', 'general'),
+    fetchDecodedAnswerHistory(studentId),
+  ])
+
+  const countBySubject = new Map<Exclude<SubjectTab, 'all'>, number>()
+  for (const r of qCounts ?? []) {
+    const tab = subjectTabForSection(r.section as string)
+    if (tab) countBySubject.set(tab, (countBySubject.get(tab) ?? 0) + 1)
+  }
+
+  const tally = new Map<Exclude<SubjectTab, 'all'>, { correct: number; total: number }>()
+  for (const { q, given } of decoded) {
+    const tab = subjectTabForSection(q.section)
+    if (!tab) continue
+    const t = tally.get(tab) ?? { correct: 0, total: 0 }
+    t.total++
+    if (answerIsCorrect(q, given)) t.correct++
+    tally.set(tab, t)
+  }
+
+  return (['math', 'kyr', 'analogy', 'reading'] as const).map(subject => {
+    const t = tally.get(subject)
+    return {
+      subject,
+      accuracyPct: t && t.total > 0 ? Math.round((t.correct / t.total) * 100) : null,
+      questionCount: countBySubject.get(subject) ?? 0,
+    }
+  })
+}
+
+export interface TopicStat {
+  accuracyPct: number
+  mistakes: number
+}
+
+// Per-topic accuracy/mistake counts, keyed the same way fetchPracticeTopics
+// groups its cards (`${section}::${topic||UNTAGGED_TOPIC_LABEL}`). A caveat
+// worth flagging: practice sessions started from a topic card pull the
+// whole section's question pool (see fetchQuestionsBySection), not just
+// that topic — so this is accuracy on questions tagged with that topic
+// specifically, aggregated across whatever sessions happened to include
+// them, not a per-session "best run" figure.
+export async function fetchTopicStats(studentId: string): Promise<Map<string, TopicStat>> {
+  const decoded = await fetchDecodedAnswerHistory(studentId)
+  const tally = new Map<string, { correct: number; total: number }>()
+  for (const { q, given } of decoded) {
+    const topicLabel = q.topic?.trim() || UNTAGGED_TOPIC_LABEL
+    const key = `${q.section}::${topicLabel}`
+    const t = tally.get(key) ?? { correct: 0, total: 0 }
+    t.total++
+    if (answerIsCorrect(q, given)) t.correct++
+    tally.set(key, t)
+  }
+
+  const result = new Map<string, TopicStat>()
+  for (const [key, t] of tally.entries()) {
+    result.set(key, { accuracyPct: t.total > 0 ? Math.round((t.correct / t.total) * 100) : 0, mistakes: t.total - t.correct })
+  }
+  return result
+}
+
 // ── Lesson-linked practice tests (unchanged — "Тесты к урокам") ─────────
 
 export async function fetchPracticeTest(lessonId: string): Promise<PracticeTest | null> {

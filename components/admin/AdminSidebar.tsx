@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, BookOpen, PenLine, ListChecks, ClipboardList, Users, BarChart2, Megaphone, Archive, GraduationCap, User, Menu, X,
+  Zap, Trophy, Brain,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -14,6 +15,9 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/admin/practice', label: 'Практика', icon: ListChecks },
   { href: '/admin/questions', label: 'Вопросы', icon: PenLine },
   { href: '/admin/mock', label: 'Пробный ОРТ', icon: ClipboardList },
+  { href: '/admin/daily-challenge', label: '⚡ Daily Challenge', icon: Zap },
+  { href: '/admin/prizes', label: '🏆 Рейтинг и призы', icon: Trophy },
+  { href: '/admin/knowledge-base', label: '🧠 База знаний AI', icon: Brain },
   { href: '/admin/students', label: 'Ученики', icon: Users },
   { href: '/admin/universities', label: '🎓 Университеты', icon: GraduationCap },
   { href: '/admin/archive', label: '📦 Архив', icon: Archive },

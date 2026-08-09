@@ -9,7 +9,6 @@ import {
   fetchPracticeTest,
   fetchQuestions,
   fetchPreviousScore,
-  fetchPracticeTopics,
   fetchQuestionsBySection,
   subjectForSection,
   savePracticeResult,
@@ -18,7 +17,6 @@ import {
   type PracticeTest,
   type PracticeQuestion,
   type AnswerLetter,
-  type PracticeTopic,
 } from '@/lib/practice-data'
 import { fetchLessons, type Lesson } from '@/lib/lessons-data'
 import { calcStreak } from '@/lib/student-data'
@@ -26,7 +24,7 @@ import PracticeStartScreen from '@/components/student/PracticeStartScreen'
 import PracticeQuestionScreen from '@/components/student/PracticeQuestionScreen'
 import PracticeResultsScreen, { type WrongAnswer } from '@/components/student/PracticeResultsScreen'
 import PracticeErrorReview from '@/components/student/PracticeErrorReview'
-import PracticeTopicBrowser from '@/components/student/practice/PracticeTopicBrowser'
+import PracticeHome from '@/components/student/practice/PracticeHome'
 
 type View = 'start' | 'question' | 'results' | 'review'
 
@@ -64,7 +62,6 @@ export default function PracticePage() {
   const [previousScore, setPreviousScore] = useState<number | null>(null)
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [streak, setStreak] = useState(0)
-  const [topics, setTopics] = useState<PracticeTopic[]>([])
 
   const [view, setView] = useState<View>('start')
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -118,7 +115,6 @@ export default function PracticePage() {
         // question count, different random subset) would be misleading
         // rather than useful.
       } else {
-        setTopics(await fetchPracticeTopics())
         setLoading(false)
         return
       }
@@ -176,7 +172,7 @@ export default function PracticePage() {
   if (loading) return <LoadingScreen />
 
   if (!lessonId && !bankMode) {
-    return <PracticeTopicBrowser topics={topics} />
+    return <PracticeHome studentId={studentId} />
   }
 
   if (!test) {

@@ -18,14 +18,18 @@ interface Props {
 // or the /mock listing page) runs full-screen with its own dark header — no
 // sidebar/topbar chrome. The AI Mentor page is the same story — it has its
 // own 3-column chat layout (dark session sidebar, topbar, analytics panel)
-// and would just be duplicated chrome under this one.
+// and would just be duplicated chrome under this one. The daily-challenge
+// question flow is the same pattern again — full screen, own progress
+// header — but its /results child stays inside the normal shell (same
+// split as the mock exam vs. mock results).
 const EXAM_ROUTE = /^\/student\/online\/mock\/[^/]+$/
 const AI_PAGE_ROUTE = /^\/student\/online\/ai/
+const DAILY_CHALLENGE_ROUTE = /^\/student\/online\/practice\/daily$/
 
 export default function StudentLayout({ children }: Props) {
   const router = useRouter()
   const pathname = usePathname()
-  const isFullScreenPage = EXAM_ROUTE.test(pathname ?? '') || AI_PAGE_ROUTE.test(pathname ?? '')
+  const isFullScreenPage = EXAM_ROUTE.test(pathname ?? '') || AI_PAGE_ROUTE.test(pathname ?? '') || DAILY_CHALLENGE_ROUTE.test(pathname ?? '')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [fullName, setFullName] = useState('Студент')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
