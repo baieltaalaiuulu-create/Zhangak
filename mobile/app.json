@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Жангак",
+    "slug": "zhangak",
+    "scheme": "zhangak",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router",
+      "expo-video",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": "Разрешить Жангак использовать Face ID для быстрого входа."
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "kg.zhangak.mobile"
+    },
+    "android": {
+      "package": "kg.zhangak.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    }
+  }
+}
