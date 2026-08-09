@@ -39,7 +39,13 @@ export default function StudentSidebar({ isOpen, onClose, fullName = 'Студе
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-white/5 transition-transform duration-200 md:translate-x-0 ${
+        // hidden below md unconditionally — the mobile hamburger drawer this
+        // isOpen/translate toggle was built for is dead code (nothing ever
+        // calls setSidebarOpen(true); mobile navigation is BottomNav only),
+        // so this can't rely on isOpen to also flip display:none→flex below
+        // md without risking a Tailwind class-order specificity fight
+        // between `hidden` and `flex` in the same conditional string.
+        className={`fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-white/5 transition-transform duration-200 md:flex md:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{ background: '#0D0D1A' }}

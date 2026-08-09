@@ -5,12 +5,18 @@ import type { MetadataRoute } from 'next'
 // Replaces the old static public/manifest.json, which Chrome's PWA
 // installability check was treating unreliably (showing "Создать ярлык"
 // instead of "Установить приложение").
+//
+// start_url is '/' rather than the student dashboard: that route is
+// client-auth-gated (redirects to /login if there's no session) and was
+// causing a launch-time 404 for freshly-installed/logged-out PWA sessions
+// on some devices. '/' always renders (it's the public landing page) and
+// itself redirects a logged-in student/admin onward — see app/page.tsx.
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'ZHANGAK',
     short_name: 'ZHANGAK',
     description: 'Онлайн подготовка к ОРТ в Кыргызстане',
-    start_url: '/student/online',
+    start_url: '/',
     display: 'standalone',
     orientation: 'portrait',
     background_color: '#0D0D1A',

@@ -51,6 +51,28 @@ function StatCard({ value, suffix = '', label, color, delay }: { value: number; 
   )
 }
 
+// Shared by the mount-time session check below and the inline login form's
+// handleLogin — same role→route mapping, single source of truth.
+// `fallbackHref` is only used by handleLogin (an unrecognized-but-signed-in
+// role still lands somewhere after actively submitting the form); the
+// mount-time auto-redirect passes none, so an unrecognized role there just
+// leaves the visitor on the landing page rather than force-navigating them.
+function redirectForRole(role: string | undefined, studentType: string | undefined, router: ReturnType<typeof useRouter>, fallbackHref?: string) {
+  if (role === 'admin') router.push('/admin')
+  else if (role === 'super_admin') router.push('/admin')
+  else if (role === 'admin_jr') router.push('/admin/jr')
+  else if (role === 'teacher') router.push('/teacher')
+  else if (role === 'manager') router.push('/manager')
+  else if (role === 'director') router.push('/director')
+  else if (role === 'finance') router.push('/finance')
+  else if (role === 'math_admin') router.push('/math/admin')
+  else if (role === 'math_student') router.push('/math/student')
+  else if (role === 'math_parent') router.push('/math/parent')
+  else if (role === 'student' && studentType === 'online') router.push('/student/online')
+  else if (role === 'student') router.push('/student')
+  else if (fallbackHref) router.push(fallbackHref)
+}
+
 const ALL_RESULTS = [
   { img: '/images/result3.png', name: 'Уланбекова Каныкей', score: 221 },
   { img: '/images/result7.png', name: 'Рашидова Айдай', score: 220 },
@@ -73,6 +95,21 @@ export default function LandingPage() {
   const [activeResult, setActiveResult] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
   const router = useRouter()
+
+  // If start_url ('/') is opened by an already-logged-in visitor — most
+  // commonly the installed PWA's cold start — send them straight to their
+  // dashboard instead of making them look at the marketing page again.
+  // Deliberately silent/best-effort: any failure here just leaves the
+  // landing page showing, which is always a valid, working page.
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase.from('profiles').select('role, student_type').eq('id', user.id).single()
+      redirectForRole(profile?.role, profile?.student_type, router)
+    }
+    checkSession()
+  }, [router])
 
   useEffect(() => {
     const target = new Date('2027-05-17T09:00:00')
@@ -100,20 +137,7 @@ export default function LandingPage() {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) { setError('Туура эмес email же сырсөз'); setLoading(false); return }
   const { data: profile } = await supabase.from('profiles').select('role, student_type').eq('id', data.user.id).single()
-  const role = profile?.role
-  const type = profile?.student_type
-  if (role === 'admin') router.push('/admin')
-  else if (role === 'super_admin') router.push('/admin')
-  else if (role === 'admin_jr') router.push('/admin/jr')
-  else if (role === 'teacher') router.push('/teacher')
-  else if (role === 'manager') router.push('/manager')
-  else if (role === 'director') router.push('/director')
-  else if (role === 'finance') router.push('/finance')
-  else if (role === 'math_admin') router.push('/math/admin')
-  else if (role === 'math_student') router.push('/math/student')
-  else if (role === 'math_parent') router.push('/math/parent')
-  else if (role === 'student' && type === 'online') router.push('/student/online')
-  else router.push('/student')
+  redirectForRole(profile?.role, profile?.student_type, router, '/student')
 }
 
   const wa = 'https://wa.me/996502077326'

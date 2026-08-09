@@ -101,11 +101,20 @@ export function computeLessonStatuses(lessons: Lesson[], completedIds: Set<strin
   return statuses
 }
 
+// BUG FIX: this previously set completed_at: new Date().toISOString(), which
+// made every consumer of practice_results (fetchCompletedLessonIds, the
+// dashboard's todayPlan/streak/heatmap queries, this very page's own
+// isCompleted check) treat merely OPENING a lesson as having finished it —
+// skipping straight to the "Урок завершён!" screen instead of ever showing
+// the practice test. completed_at is null here on purpose: every one of
+// those consumers already filters with .not('completed_at', 'is', null),
+// so a "started" row is invisible to them until a real submission
+// (savePracticeResult in lib/practice-data.ts) sets completed_at for real.
 export async function markLessonStarted(studentId: string, lessonId: string): Promise<void> {
   await supabase.from('practice_results').insert({
     student_id: studentId,
     lesson_id: lessonId,
     test_type: 'practice',
-    completed_at: new Date().toISOString(),
+    completed_at: null,
   })
 }
