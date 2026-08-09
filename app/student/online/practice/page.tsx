@@ -36,7 +36,7 @@ function LoadingScreen() {
   )
 }
 
-function EmptyState({ text, backHref = '/student/online/practice', backLabel = '← Назад к практике' }: { text: string; backHref?: string; backLabel?: string }) {
+function EmptyState({ text, backHref = '/student/online/practice', backLabel = '← Назад к тренажёру' }: { text: string; backHref?: string; backLabel?: string }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#F4F6FA] p-6 text-center">
       <p className="text-sm font-semibold text-gray-600">{text}</p>

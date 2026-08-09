@@ -17,7 +17,7 @@ interface Props {
 const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/student/online', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/student/online/lessons', label: 'Уроки', icon: BookOpen },
-  { href: '/student/online/practice', label: 'Практика', icon: PenLine },
+  { href: '/student/online/practice', label: 'Тренажёр', icon: PenLine },
   { href: '/student/online/mock', label: 'Пробный ОРТ', icon: ClipboardList },
   { href: '/student/online/ai', label: 'AI Коуч', icon: Brain },
   { href: '/student/online/universities', label: '🎓 Университеты', icon: GraduationCap },
@@ -92,7 +92,7 @@ export default function StudentSidebar({ isOpen, onClose, fullName = 'Студе
             className="block w-full rounded-xl py-2.5 text-center text-sm font-bold text-white shadow-md transition-opacity hover:opacity-90"
             style={{ background: 'linear-gradient(135deg, #6C3DE0 0%, #4338CA 100%)' }}
           >
-            + Начать практику
+            + Начать тренажёр
           </Link>
           <Link
             href="/student/online/settings"

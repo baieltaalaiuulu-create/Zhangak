@@ -172,7 +172,7 @@ export async function fetchQuestionsBySection(section: string, limit = BANK_QUES
   return shuffled.slice(0, limit)
 }
 
-// ── Subject-level + topic-level stats (Свободная практика overview) ─────
+// ── Subject-level + topic-level stats (Свободный тренажёр overview) ─────
 
 export interface SubjectOverview {
   subject: Exclude<SubjectTab, 'all'>
@@ -245,7 +245,7 @@ function subjectTabForSection(section: string): Exclude<SubjectTab, 'all'> | nul
   return null
 }
 
-// The 4 subject cards at the top of "Свободная практика": total questions
+// The 4 subject cards at the top of "Свободный тренажёр": total questions
 // available per subject, and this student's overall accuracy across their
 // history in that subject (null when they haven't attempted it yet).
 export async function fetchSubjectOverview(studentId: string): Promise<SubjectOverview[]> {

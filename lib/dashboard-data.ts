@@ -14,7 +14,7 @@ export type PlanItemKind = 'lesson' | 'practice' | 'mini_mock'
 
 export interface TodayPlanItem {
   kind: PlanItemKind
-  kindLabel: string       // "Урок" | "Практика" | "Мини ОРТ"
+  kindLabel: string       // "Урок" | "Тренажёр" | "Мини ОРТ"
   subjectLabel: string    // badge text, e.g. "Математика"
   subjectColor: string    // hex accent
   title: string           // e.g. "Системы уравнений" or "Тест: ..."
@@ -194,7 +194,7 @@ export async function fetchDashboardExtras(
     },
     {
       kind: 'practice',
-      kindLabel: 'Практика',
+      kindLabel: 'Тренажёр',
       subjectLabel: SUBJECT_GRID_META.math.label,
       subjectColor: SUBJECT_GRID_META.math.color,
       title: weakMath ? `Тест: ${weakMath.label}` : 'Тест: Математика',
@@ -338,7 +338,7 @@ export async function fetchDashboardExtras(
         projectedGain: projectScore(latestScore ?? 0, primary).gain,
       }
     : {
-        text: '«Пройди пару уроков и практик — тогда я найду твои слабые темы и подскажу, с чего начать».',
+        text: '«Пройди пару уроков и позанимайся в тренажёре — тогда я найду твои слабые темы и подскажу, с чего начать».',
         projectedGain: 0,
       }
 

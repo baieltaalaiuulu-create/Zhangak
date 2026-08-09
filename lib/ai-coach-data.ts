@@ -155,7 +155,7 @@ export async function fetchRecentActivity(studentId: string, limit = 8): Promise
     return {
       id: r.id,
       type: isMock ? 'mock' : 'practice',
-      title: r.practice_tests?.title ?? (isMock ? 'Пробный ОРТ' : 'Практика'),
+      title: r.practice_tests?.title ?? (isMock ? 'Пробный ОРТ' : 'Тренажёр'),
       score: isMock ? (r.total_score ?? 0) : (r.score ?? 0),
       completedAt: r.completed_at,
     }

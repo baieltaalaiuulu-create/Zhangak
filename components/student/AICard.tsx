@@ -90,7 +90,7 @@ export default function AICard({ latestScore, subjects, targetScore }: Props) {
           href="/student/online/practice"
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-500 transition-colors"
         >
-          Начать практику →
+          Начать тренажёр →
         </Link>
       </div>
     </div>

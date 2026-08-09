@@ -33,7 +33,7 @@ export default function ProfileProgressCard({ lessonsCompleted, lessonsTotal, te
       {/* No fixed target exists for practice/mock volume — the bar reflects
           relative activity against a soft visual scale, not a real ratio. */}
       <Bar
-        label="Практика пройдена"
+        label="Тренажёр пройден"
         count={testsCompleted}
         denominator={Math.max(20, testsCompleted)}
         valueLabel={`${testsCompleted} пройдено`}

@@ -11,13 +11,13 @@ const DIFFICULTY_META: Record<PracticeTopic['difficulty'], { label: string; colo
 
 interface Props {
   topic: PracticeTopic
-  // Populated only in the "Свободная практика" free-practice grid, which
+  // Populated only in the "Свободный тренажёр" free-practice grid, which
   // has a signed-in student to compute history against; absent elsewhere.
   stat?: TopicStat
   buttonLabel?: string
 }
 
-export default function TopicCard({ topic, stat, buttonLabel = 'Начать практику' }: Props) {
+export default function TopicCard({ topic, stat, buttonLabel = 'Начать тренажёр' }: Props) {
   const meta = DIFFICULTY_META[topic.difficulty]
 
   return (

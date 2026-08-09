@@ -10,7 +10,7 @@ export default function RecentAchievementsCard({ achievements }: Props) {
       <h3 className="text-sm font-bold text-gray-900">Последние достижения</h3>
 
       {achievements.length === 0 ? (
-        <p className="mt-4 text-center text-xs text-gray-400">Пройди первый урок или практику, чтобы получить достижение!</p>
+        <p className="mt-4 text-center text-xs text-gray-400">Пройди первый урок или тренажёр, чтобы получить достижение!</p>
       ) : (
         <div className="mt-4 space-y-3">
           {achievements.map((a, i) => (

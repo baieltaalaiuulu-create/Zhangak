@@ -12,7 +12,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: '/student/online', label: 'Главная', emoji: '🏠' },
   { href: '/student/online/lessons', label: 'Уроки', emoji: '📚' },
-  { href: '/student/online/practice', label: 'Практика', emoji: '✏️' },
+  { href: '/student/online/practice', label: 'Тренажёр', emoji: '✏️' },
   { href: '/student/online/mock', label: 'ОРТ', emoji: '🎯' },
   { href: '/student/online/ai', label: 'AI', emoji: '🤖' },
   { href: '/student/online/profile', label: 'Профиль', emoji: '👤' },
@@ -40,7 +40,7 @@ export default function BottomNav() {
             className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5"
           >
             <span className={`text-lg leading-none ${isActive ? '' : 'opacity-60'}`}>{item.emoji}</span>
-            <span className={`text-[9px] font-semibold leading-none ${isActive ? 'text-[#1B4FD8]' : 'text-gray-400'}`}>
+            <span className={`max-w-full truncate text-[9px] font-semibold leading-none ${isActive ? 'text-[#1B4FD8]' : 'text-gray-400'}`}>
               {item.label}
             </span>
           </Link>

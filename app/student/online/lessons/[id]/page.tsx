@@ -22,7 +22,7 @@ function getYoutubeEmbed(url: string): string {
   return match ? `https://www.youtube.com/embed/${match[1]}` : url
 }
 
-const STEPS = ['Теория', 'Пример', 'Практика', 'Мини-тест']
+const STEPS = ['Теория', 'Пример', 'Тренажёр', 'Мини-тест']
 
 const MATERIALS = [
   { icon: '📄', label: 'Конспект' },

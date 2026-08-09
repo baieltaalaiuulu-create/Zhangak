@@ -9,7 +9,7 @@ type Tab = 'daily' | 'free'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'daily', label: '🔥 Задание дня' },
-  { id: 'free', label: '🎯 Свободная практика' },
+  { id: 'free', label: '🎯 Свободный тренажёр' },
 ]
 
 interface Props {
@@ -22,7 +22,7 @@ export default function PracticeHome({ studentId }: Props) {
   return (
     <div className="min-h-screen bg-[#F4F6FA] px-4 py-6 sm:px-6">
       <div className="mx-auto max-w-7xl">
-        <h1 className="text-xl font-bold text-[#191B23]">Практика</h1>
+        <h1 className="text-xl font-bold text-[#191B23]">Тренажёр</h1>
         <p className="mt-1 text-sm text-gray-500">Задание дня, темы для тренировки и рейтинг недели — всё в одном месте</p>
 
         <div className="mt-5 flex gap-2 overflow-x-auto pb-1">

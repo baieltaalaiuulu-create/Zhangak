@@ -158,7 +158,7 @@ export default function DailyChallengeTab({ studentId }: Props) {
                 href="/student/online/ai"
                 className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#1B4FD8] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-700"
               >
-                Начать AI-практику
+                Начать AI-тренажёр
               </a>
             </div>
           </div>

@@ -128,7 +128,7 @@ export default function FreePracticeTab({ studentId }: Props) {
               key={`${t.section}::${t.topic}`}
               topic={t}
               stat={topicStats.get(`${t.section}::${t.topic}`)}
-              buttonLabel="Практика"
+              buttonLabel="Тренажёр"
             />
           ))}
         </div>
