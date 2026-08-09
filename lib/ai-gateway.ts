@@ -37,6 +37,24 @@ export interface AIGateway {
   complete(messages: AIMessage[], options?: AICompleteOptions): Promise<string>
 }
 
+// Baseline scope guardrail applied to every AI Gateway call, regardless of
+// caller — the AI Mentor route builds its own much more detailed prompt on
+// top of this (student context, response formatting), but this is the
+// floor: it's what stops the assistant from wandering off ORT curriculum
+// even if a caller's own system prompt is ever weakened, missing, or
+// bypassed. Every current caller (AI Mentor chat, daily-challenge/knowledge
+// base question generation, analytics insights) is itself an ORT-prep task,
+// so this is compatible with all of them, not just the student chat.
+export const DEFAULT_SYSTEM_MESSAGE = `Ты — AI-репетитор для подготовки к ОРТ (ЖРТ) в Кыргызстане. Ты ПОМОГАЕШЬ ТОЛЬКО с:
+- Математикой (алгебра, геометрия, арифметика)
+- Кыргызским языком (грамматика, понимание текста, аналогии)
+- Стратегиями и советами по сдаче ОРТ
+
+Ты НИКОГДА не генерируешь и не обсуждаешь темы вне программы ОРТ (никакой ядерной физики, биологии, истории — если это не часть программы ОРТ).
+Если ученик спрашивает что-то не по теме, вежливо верни разговор к темам ОРТ — не отвечай на сам вопрос.
+Всегда отвечай на русском или кыргызском языке.
+Основывай свою помощь на реальных слабых темах ученика и его последних ошибках, если они известны.`
+
 // Thrown by every provider on any failure before/while establishing the
 // stream. `userMessage` is always Russian and safe to show directly —
 // callers should never surface `message` (the technical detail) to a user.
@@ -273,16 +291,42 @@ class GeminiGateway extends BaseAIGateway {
   }
 }
 
+// ── Default-system-message wrapper ───────────────────────────────────────
+// Prepends DEFAULT_SYSTEM_MESSAGE ahead of whatever system message(s) the
+// caller supplies, for every provider. Multiple system-role messages are
+// already handled fine downstream — the OpenAI-compatible providers just
+// forward the array as-is (the API reads them in order), and Gemini's
+// request builder concatenates every system-role message into one
+// systemInstruction (see createGeminiSSETransform's caller above).
+class GuardedAIGateway implements AIGateway {
+  constructor(private inner: AIGateway) {}
+
+  private withDefault(messages: AIMessage[]): AIMessage[] {
+    return [{ role: 'system', content: DEFAULT_SYSTEM_MESSAGE }, ...messages]
+  }
+
+  stream(messages: AIMessage[], options?: AICompleteOptions): Promise<ReadableStream<Uint8Array>> {
+    return this.inner.stream(this.withDefault(messages), options)
+  }
+
+  complete(messages: AIMessage[], options?: AICompleteOptions): Promise<string> {
+    return this.inner.complete(this.withDefault(messages), options)
+  }
+}
+
 // ── Factory ────────────────────────────────────────────────────────────
 
 export function createAIGateway(): AIGateway {
   const provider = (process.env.AI_PROVIDER || 'groq').toLowerCase()
-  switch (provider) {
-    case 'gemini': return new GeminiGateway()
-    case 'openai': return new OpenAIGateway()
-    case 'ollama': return new OllamaGateway()
-    case 'groq':
-    default:
-      return new GroqGateway()
-  }
+  const inner = (() => {
+    switch (provider) {
+      case 'gemini': return new GeminiGateway()
+      case 'openai': return new OpenAIGateway()
+      case 'ollama': return new OllamaGateway()
+      case 'groq':
+      default:
+        return new GroqGateway()
+    }
+  })()
+  return new GuardedAIGateway(inner)
 }

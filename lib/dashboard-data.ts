@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { calcStreak } from '@/lib/student-data'
 import { fetchLessons, fetchCompletedLessonIds } from '@/lib/lessons-data'
 import { fetchWeakSections, projectScore, recommendedPracticeCount, type WeakSection } from '@/lib/ai-coach-data'
+import { currentWeekStart } from '@/lib/daily-challenge-data'
 
 // Everything the redesigned dashboard (app/student/online/page.tsx) needs
 // beyond getStudentDashboard()'s base fields (profile/score/streak/subject
@@ -107,13 +108,13 @@ const ITEM_MINUTES: Record<PlanItemKind, number> = {
 
 const MIN_PER_LESSON = 25
 const MIN_PER_QUESTION = 2
-const SESSION_HOURS_ESTIMATE = 0.75
 const HEATMAP_DAYS = 91 // ~13 weeks
 
 interface ResultRow {
   completed_at: string
   test_type: string | null
   lesson_id: string | null
+  test_id: number | null
   math_raw_score: number | null
   math_comparison_score: number | null
   analogy_score: number | null
@@ -134,7 +135,7 @@ export async function fetchDashboardExtras(
   const [resultsRes, lessons, completedLessonIds, weakSections, questionsRes] = await Promise.all([
     supabase
       .from('practice_results')
-      .select('completed_at, test_type, lesson_id, math_raw_score, math_comparison_score, analogy_score, reading_score, grammar_score, answers')
+      .select('completed_at, test_type, lesson_id, test_id, math_raw_score, math_comparison_score, analogy_score, reading_score, grammar_score, answers')
       .eq('student_id', studentId)
       .not('completed_at', 'is', null)
       .order('completed_at', { ascending: false }),
@@ -147,12 +148,12 @@ export async function fetchDashboardExtras(
   const results = (resultsRes.data ?? []) as ResultRow[]
   const now = new Date()
   const todayStr = now.toISOString().slice(0, 10)
-  const weekAgo = new Date(now)
-  weekAgo.setDate(weekAgo.getDate() - 6)
-  const weekAgoStr = weekAgo.toISOString().slice(0, 10)
+  // Monday of the current week (local time) — matches weekly_leaderboard's
+  // own week_start cadence elsewhere in the app, not a rolling 7-day window.
+  const weekStartStr = currentWeekStart(now)
 
   const todayResults = results.filter(r => r.completed_at.slice(0, 10) === todayStr)
-  const weekResults = results.filter(r => r.completed_at.slice(0, 10) >= weekAgoStr)
+  const weekResults = results.filter(r => r.completed_at.slice(0, 10) >= weekStartStr)
 
   const answeredQuestionIds = new Set<number>()
   for (const r of results) {
@@ -237,15 +238,31 @@ export async function fetchDashboardExtras(
 
   // ── Weekly stats ──────────────────────────────────────────────────────
   const questionsThisWeek = weekResults.reduce((sum, r) => sum + Object.keys(r.answers ?? {}).length, 0)
-  const hoursThisWeek = Math.round(weekResults.length * SESSION_HOURS_ESTIMATE * 10) / 10
-  const activeDaysThisWeek = new Set(weekResults.map(r => r.completed_at.slice(0, 10))).size
-  const planPct = Math.min(100, Math.round((activeDaysThisWeek / 7) * 100))
+
+  // Real time spent, not a per-session guess: sum practice_tests.time_limit_minutes
+  // for this week's attempts. Bank/section-only practice (test_id null) and
+  // tests with no configured time limit contribute 0 — there's no "actual
+  // elapsed time" column on practice_results to fall back on, and a fake
+  // per-session estimate is exactly what this fix is removing.
+  const weekTestIds = Array.from(new Set(weekResults.map(r => r.test_id).filter((id): id is number => id != null)))
+  const { data: weekTestsRaw } = weekTestIds.length > 0
+    ? await supabase.from('practice_tests').select('id, time_limit_minutes').in('id', weekTestIds)
+    : { data: [] as { id: number; time_limit_minutes: number | null }[] }
+  const minutesByTestId = new Map<number, number>()
+  for (const t of weekTestsRaw ?? []) {
+    if (t.time_limit_minutes != null) minutesByTestId.set(t.id, t.time_limit_minutes)
+  }
+  const totalMinutesThisWeek = weekResults.reduce((sum, r) => sum + (r.test_id != null ? minutesByTestId.get(r.test_id) ?? 0 : 0), 0)
+  const hoursThisWeek = Math.round((totalMinutesThisWeek / 60) * 10) / 10
 
   const weeklyStats: WeeklyStats = {
     scoreDelta: latestScore != null && previousScore != null ? latestScore - previousScore : null,
     hoursThisWeek,
     questionsThisWeek,
-    planPct,
+    // Same "today's plan" completion the plan card above already computes
+    // from real done/total counts — the "План" stat tile should report the
+    // exact same number its label promises, not a different derived metric.
+    planPct: todayPlan.pct,
   }
 
   // ── Heatmap ───────────────────────────────────────────────────────────
