@@ -39,20 +39,20 @@ export default function DashboardHeroCard({ firstName, latestScore, targetScore,
   return (
     <>
       <div
-        className="relative overflow-hidden rounded-2xl p-6 text-white sm:p-8"
+        className="relative overflow-hidden rounded-2xl p-5 text-white sm:p-8"
         style={{ background: 'linear-gradient(135deg, #6C3DE0 0%, #4338CA 100%)' }}
       >
         <div className="pointer-events-none absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
 
-        <div className="relative flex flex-wrap items-center justify-between gap-8">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold sm:text-3xl">{greeting}, {firstName} 👋</h1>
+        <div className="relative flex flex-col items-start gap-8 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 w-full flex-1">
+            <h1 className="text-[22px] font-bold sm:text-3xl">{greeting}, {firstName} 👋</h1>
             <p className="mt-2 max-w-md text-sm font-medium text-white/80 sm:text-base">
               Сегодня отличный день для подготовки к ОРТ. Твоя цель близка!
             </p>
 
-            <div className="mt-5 flex flex-wrap items-center gap-2">
+            <div className="mt-5 flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold backdrop-blur-sm sm:text-sm">
                 🎯 {score} → {remaining > 0 ? `${remaining} баллов до цели` : 'цель достигнута!'}
                 <button
@@ -71,13 +71,13 @@ export default function DashboardHeroCard({ firstName, latestScore, targetScore,
 
             <a
               href={ctaHref}
-              className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#4338CA] shadow-md transition-colors hover:bg-white/90"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#4338CA] shadow-md transition-colors hover:bg-white/90 sm:mt-6 sm:inline-flex sm:w-auto"
             >
               Продолжить обучение →
             </a>
           </div>
 
-          <div className="flex shrink-0 flex-col items-center gap-2">
+          <div className="flex shrink-0 flex-col items-center gap-2 self-center sm:self-auto">
             <div className="relative h-28 w-28 sm:h-32 sm:w-32">
               <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r={ringRadius} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="8" />

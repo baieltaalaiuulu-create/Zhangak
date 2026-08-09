@@ -573,7 +573,10 @@ export default function LandingPage() {
             </div>
             <span style={{ fontWeight: '900', fontSize: '14px', color: '#fff' }}>Zhangak</span>
           </div>
-          <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>© 2025 Жангак. Бардык укуктар корголгон.</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>© 2026 Жангак. Бардык укуктар корголгон.</div>
+            <a href="/privacy" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', textDecoration: 'none', fontWeight: '600' }}>Купуялык саясаты</a>
+          </div>
           <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#93C5FD', fontSize: '13px', textDecoration: 'none', fontWeight: '600' }}>📲 +996 502 077 326</a>
         </div>
       </div>
