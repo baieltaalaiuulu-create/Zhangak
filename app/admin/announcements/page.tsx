@@ -7,9 +7,16 @@ import AdminTopbar from '@/components/admin/AdminTopbar'
 import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
 import AnnouncementFormModal from '@/components/admin/announcements/AnnouncementFormModal'
 import {
-  fetchAnnouncements, deleteAnnouncement, setAnnouncementActive,
-  type AdminAnnouncement,
+  fetchAnnouncements, deleteAnnouncement, setAnnouncementActive, ANNOUNCEMENT_TYPE_OPTIONS,
+  type AdminAnnouncement, type AnnouncementType,
 } from '@/lib/admin-data'
+
+const TYPE_BADGE: Record<AnnouncementType, string> = {
+  info: 'bg-blue-50 text-blue-600',
+  warning: 'bg-amber-50 text-amber-600',
+  promo: 'bg-purple-50 text-purple-600',
+  event: 'bg-emerald-50 text-emerald-600',
+}
 
 export default function AdminAnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<AdminAnnouncement[]>([])
@@ -64,9 +71,16 @@ export default function AdminAnnouncementsPage() {
             {announcements.map(a => (
               <div key={a.id} className="rounded-xl border border-gray-200 bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
+                  {a.image_url && (
+                    // eslint-disable-next-line @next/next/no-img-element -- Supabase Storage URL, no next/image domain config
+                    <img src={a.image_url} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-bold text-[#191B23]">{a.title}</h3>
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${TYPE_BADGE[a.type] ?? TYPE_BADGE.info}`}>
+                        {ANNOUNCEMENT_TYPE_OPTIONS.find(o => o.value === a.type)?.label ?? 'Инфо'}
+                      </span>
                       <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${a.is_active ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
                         {a.is_active ? 'Активно' : 'Отключено'}
                       </span>

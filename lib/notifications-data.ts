@@ -9,13 +9,14 @@ export interface Announcement {
   id: string
   title: string
   body: string
+  image_url: string | null
   created_at: string
 }
 
 export async function fetchActiveAnnouncements(): Promise<Announcement[]> {
   const { data } = await supabase
     .from('announcements')
-    .select('id, title, body, created_at')
+    .select('id, title, body, image_url, created_at')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
   return data ?? []
@@ -24,7 +25,7 @@ export async function fetchActiveAnnouncements(): Promise<Announcement[]> {
 // ── Popup notification queue (announcements + upcoming mock ORTs) ───────
 
 export type NotificationItem =
-  | { id: string; kind: 'announcement'; title: string; body: string }
+  | { id: string; kind: 'announcement'; title: string; body: string; imageUrl: string | null }
   | { id: string; kind: 'mock'; title: string; scheduledAt: string; sessionId: number }
 
 const UPCOMING_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
@@ -63,7 +64,7 @@ export async function fetchNotificationItems(): Promise<NotificationItem[]> {
     fetchUpcomingMockNotifications(),
   ])
   const announcementItems: NotificationItem[] = announcements.map(a => ({
-    id: `announcement:${a.id}`, kind: 'announcement', title: a.title, body: a.body,
+    id: `announcement:${a.id}`, kind: 'announcement', title: a.title, body: a.body, imageUrl: a.image_url,
   }))
   // Upcoming mocks first — a scheduled exam is more time-sensitive than a
   // general announcement.

@@ -42,42 +42,74 @@ export const STUDENT_TYPES: { value: string; label: string }[] = [
 
 export interface DashboardStats {
   totalStudents: number
+  newStudentsThisWeek: number
   activeToday: number
+  activeYesterday: number
   lessonsLoaded: number
+  newLessonsThisWeek: number
   testsCompleted: number
+  testsCompletedToday: number
 }
 
 export interface ActivityItem {
   id: number
   studentName: string
+  avatarUrl: string | null
   testTitle: string
+  type: 'mock' | 'practice'
   score: number
   completedAt: string
 }
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {
-  const todayStart = new Date()
+  const now = new Date()
+  const todayStart = new Date(now)
   todayStart.setHours(0, 0, 0, 0)
+  const yesterdayStart = new Date(todayStart)
+  yesterdayStart.setDate(yesterdayStart.getDate() - 1)
+  const weekAgo = new Date(now)
+  weekAgo.setDate(weekAgo.getDate() - 7)
 
   const [
-    { count: totalStudents },
-    { data: todayRows },
+    { data: studentRows },
     { count: lessonsLoaded },
+    { count: newLessonsThisWeek },
     { count: testsCompleted },
+    { count: testsCompletedToday },
+    authMap,
   ] = await Promise.all([
-    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
-    supabase.from('practice_results').select('student_id').gte('completed_at', todayStart.toISOString()).not('completed_at', 'is', null),
+    supabase.from('profiles').select('id, created_at').eq('role', 'student'),
     supabase.from('practice_lessons').select('*', { count: 'exact', head: true }),
+    supabase.from('practice_lessons').select('*', { count: 'exact', head: true }).gte('created_at', weekAgo.toISOString()),
     supabase.from('practice_results').select('*', { count: 'exact', head: true }).not('completed_at', 'is', null),
+    supabase.from('practice_results').select('*', { count: 'exact', head: true }).not('completed_at', 'is', null).gte('completed_at', todayStart.toISOString()),
+    fetchAuthUsers(),
   ])
 
-  const activeToday = new Set((todayRows ?? []).map(r => r.student_id)).size
+  const students = studentRows ?? []
+  const studentIds = new Set(students.map(s => s.id))
+  const newStudentsThisWeek = students.filter(s => new Date(s.created_at) >= weekAgo).length
+
+  // "Активны сегодня/вчера" — real last_sign_in_at from Supabase Auth
+  // (not derivable from `profiles`), scoped to student accounts only.
+  let activeToday = 0
+  let activeYesterday = 0
+  for (const [id, info] of authMap.entries()) {
+    if (!studentIds.has(id) || !info.lastSignInAt) continue
+    const signedIn = new Date(info.lastSignInAt)
+    if (signedIn >= todayStart) activeToday++
+    else if (signedIn >= yesterdayStart) activeYesterday++
+  }
 
   return {
-    totalStudents: totalStudents ?? 0,
+    totalStudents: students.length,
+    newStudentsThisWeek,
     activeToday,
+    activeYesterday,
     lessonsLoaded: lessonsLoaded ?? 0,
+    newLessonsThisWeek: newLessonsThisWeek ?? 0,
     testsCompleted: testsCompleted ?? 0,
+    testsCompletedToday: testsCompletedToday ?? 0,
   }
 }
 
@@ -85,24 +117,28 @@ interface ActivityRow {
   id: number
   total_score: number | null
   completed_at: string
-  test_type: string
-  profiles: { full_name: string | null } | null
+  test_type: 'mock' | 'practice'
+  profiles: { full_name: string | null; avatar_url: string | null } | null
   practice_tests: { title: string | null } | null
 }
+
+const RECENT_ACTIVITY_LIMIT = 10
 
 export async function fetchRecentActivity(): Promise<ActivityItem[]> {
   const { data } = await supabase
     .from('practice_results')
-    .select('id, total_score, completed_at, test_type, profiles(full_name), practice_tests(title)')
+    .select('id, total_score, completed_at, test_type, profiles(full_name, avatar_url), practice_tests(title)')
     .not('completed_at', 'is', null)
     .order('completed_at', { ascending: false })
-    .limit(5)
+    .limit(RECENT_ACTIVITY_LIMIT)
 
   const rows = (data ?? []) as unknown as ActivityRow[]
   return rows.map(r => ({
     id: r.id,
     studentName: r.profiles?.full_name ?? 'Студент',
-    testTitle: r.practice_tests?.title ?? (r.test_type === 'mock' ? 'Пробный ОРТ' : 'Практика'),
+    avatarUrl: r.profiles?.avatar_url ?? null,
+    testTitle: r.practice_tests?.title ?? (r.test_type === 'mock' ? 'Пробный ОРТ' : 'Тренажёр'),
+    type: r.test_type === 'mock' ? 'mock' : 'practice',
     score: Math.round(r.total_score ?? 0),
     completedAt: r.completed_at,
   }))
@@ -152,6 +188,7 @@ interface PaymentRow {
 interface AuthUserInfo {
   email: string | null
   blocked: boolean
+  lastSignInAt: string | null
 }
 
 export async function fetchAuthUsers(): Promise<Map<string, AuthUserInfo>> {
@@ -159,11 +196,12 @@ export async function fetchAuthUsers(): Promise<Map<string, AuthUserInfo>> {
   try {
     const res = await fetch('/api/list-users')
     if (!res.ok) return map
-    const data = await res.json() as { users: { id: string; email: string | null; banned_until: string | null }[] }
+    const data = await res.json() as { users: { id: string; email: string | null; banned_until: string | null; last_sign_in_at: string | null }[] }
     for (const u of data.users ?? []) {
       map.set(u.id, {
         email: u.email,
         blocked: !!u.banned_until && new Date(u.banned_until) > new Date(),
+        lastSignInAt: u.last_sign_in_at,
       })
     }
   } catch {
@@ -998,10 +1036,21 @@ export async function bulkAddBankQuestions(items: BankQuestionPayload[]): Promis
 
 // ── Announcements (/admin/announcements) ────────────────────────────────
 
+export type AnnouncementType = 'info' | 'warning' | 'promo' | 'event'
+
+export const ANNOUNCEMENT_TYPE_OPTIONS: { value: AnnouncementType; label: string }[] = [
+  { value: 'info', label: 'Инфо' },
+  { value: 'warning', label: 'Предупреждение' },
+  { value: 'promo', label: 'Промо' },
+  { value: 'event', label: 'Событие' },
+]
+
 export interface AdminAnnouncement {
   id: string
   title: string
   body: string
+  image_url: string | null
+  type: AnnouncementType
   is_active: boolean
   created_at: string
 }
@@ -1014,6 +1063,8 @@ export async function fetchAnnouncements(): Promise<AdminAnnouncement[]> {
 export interface AnnouncementPayload {
   title: string
   body: string
+  imageUrl: string | null
+  type: AnnouncementType
   isActive: boolean
 }
 

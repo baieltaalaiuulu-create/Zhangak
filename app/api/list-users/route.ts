@@ -9,7 +9,7 @@ export async function GET() {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    const users: { id: string; email: string | null; banned_until: string | null }[] = []
+    const users: { id: string; email: string | null; banned_until: string | null; last_sign_in_at: string | null }[] = []
     const perPage = 200
     let page = 1
 
@@ -17,7 +17,7 @@ export async function GET() {
       const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage })
       if (error) return NextResponse.json({ error: error.message }, { status: 400 })
       for (const u of data.users) {
-        users.push({ id: u.id, email: u.email ?? null, banned_until: u.banned_until ?? null })
+        users.push({ id: u.id, email: u.email ?? null, banned_until: u.banned_until ?? null, last_sign_in_at: u.last_sign_in_at ?? null })
       }
       if (data.users.length < perPage) break
       page++

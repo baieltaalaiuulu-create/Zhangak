@@ -30,7 +30,12 @@ export default function AnnouncementBanner() {
     <div className="space-y-2">
       {visible.map(a => (
         <div key={a.id} className="flex items-start gap-3 rounded-2xl border border-[#1B4FD8]/20 bg-[#EEF2FF] p-4">
-          <Megaphone size={18} className="mt-0.5 shrink-0 text-[#1B4FD8]" />
+          {a.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element -- Supabase Storage URL, no next/image domain config
+            <img src={a.image_url} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+          ) : (
+            <Megaphone size={18} className="mt-0.5 shrink-0 text-[#1B4FD8]" />
+          )}
           <div className="min-w-0 flex-1">
             <h3 className="text-sm font-bold text-[#191B23]">{a.title}</h3>
             <p className="mt-0.5 whitespace-pre-wrap text-sm text-gray-600">{a.body}</p>

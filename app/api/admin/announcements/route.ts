@@ -16,12 +16,12 @@ function getAdminClient() {
 export async function POST(req: NextRequest) {
   try {
     const supabaseAdmin = getAdminClient()
-    const { title, body, isActive } = await req.json()
+    const { title, body, isActive, imageUrl, type } = await req.json()
     if (!title || !body) return NextResponse.json({ error: 'title и body обязательны' }, { status: 400 })
 
     const { data, error } = await supabaseAdmin
       .from('announcements')
-      .insert({ title, body, is_active: isActive ?? true })
+      .insert({ title, body, is_active: isActive ?? true, image_url: imageUrl ?? null, type: type ?? 'info' })
       .select('id')
       .single()
     if (error || !data) return NextResponse.json({ error: error?.message ?? 'Failed to create announcement' }, { status: 400 })
@@ -46,6 +46,8 @@ export async function PATCH(req: NextRequest) {
     if (body.title !== undefined) update.title = body.title
     if (body.body !== undefined) update.body = body.body
     if (body.isActive !== undefined) update.is_active = !!body.isActive
+    if (body.imageUrl !== undefined) update.image_url = body.imageUrl
+    if (body.type !== undefined) update.type = body.type
 
     const { error } = await supabaseAdmin.from('announcements').update(update).eq('id', id)
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
