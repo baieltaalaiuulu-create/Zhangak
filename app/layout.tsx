@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import PWAInstallProvider from "@/components/PWAInstallProvider";
 import PWAInstallBanner from "@/components/PWAInstallBanner";
 import "./globals.css";
 
@@ -46,8 +47,10 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body>
-        {children}
-        <PWAInstallBanner />
+        <PWAInstallProvider>
+          {children}
+          <PWAInstallBanner />
+        </PWAInstallProvider>
         <Script
           id="sw-register"
           strategy="afterInteractive"

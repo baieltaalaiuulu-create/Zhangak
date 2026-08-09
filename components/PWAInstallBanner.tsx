@@ -1,61 +1,62 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
+import { useInstallPrompt } from './PWAInstallProvider'
+import { INSTALL_DISMISSED_KEY, FIRST_LOGIN_SHOWN_KEY } from '@/lib/pwa-install'
+import IOSInstallSteps from './IOSInstallSteps'
 
-const DISMISS_KEY = 'zhangak-pwa-install-dismissed'
-const SHOW_DELAY_MS = 30000
+const SHOW_DELAY_MS = 20000
+const PAGE_COUNT_TRIGGER = 2
+const STUDENT_ROUTE = '/student/online'
 
-// Not in lib.dom yet — Chromium-only event fired when the browser decides
-// the site is installable.
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
-}
-
-function isMobile(): boolean {
-  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-}
-
-function isAlreadyInstalled(): boolean {
-  const nav = navigator as Navigator & { standalone?: boolean }
-  return window.matchMedia('(display-mode: standalone)').matches || nav.standalone === true
-}
-
-// Small "install this as an app" nudge, mounted once in the root layout so
-// it can reach any visitor (landing page, student cabinet, admin panel).
-// Shows once, 30s after load, only on mobile browsers that haven't already
-// installed the PWA and haven't dismissed the banner before.
+// Mobile-only bottom sheet — mounted once in the root layout so it can
+// reach any visitor. Shows once per the first trigger to fire (2+ distinct
+// pages visited, 20s on site, or reaching the student cabinet), and never
+// again once dismissed, installed, or already on an unsupported/desktop
+// browser (see PWAInstallProvider for how each signal is computed).
 export default function PWAInstallBanner() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const pathname = usePathname()
+  const { isInstalled, isIOS, isMobile, promptInstall, pageViewCount } = useInstallPrompt()
   const [visible, setVisible] = useState(false)
+  const [slidUp, setSlidUp] = useState(false)
+  const shownRef = useRef(false)
 
   useEffect(() => {
-    const onBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault()
-      setDeferredPrompt(e as BeforeInstallPromptEvent)
-    }
-    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
-    return () => window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
-  }, [])
+    if (localStorage.getItem(INSTALL_DISMISSED_KEY)) return
+    if (isInstalled || !isMobile || shownRef.current) return
 
-  useEffect(() => {
-    if (localStorage.getItem(DISMISS_KEY)) return
-    if (!isMobile() || isAlreadyInstalled()) return
+    // The /student/online trigger only applies to returning visitors who've
+    // already seen the full-screen first-login overlay (FirstLoginInstallOverlay)
+    // — for a brand-new visitor reaching the cabinet for the first time, that
+    // overlay owns the moment instead of this banner popping up alongside it.
+    const seenFirstLoginOverlay = !!localStorage.getItem(FIRST_LOGIN_SHOWN_KEY)
+    const shouldShowNow = pageViewCount >= PAGE_COUNT_TRIGGER || (pathname === STUDENT_ROUTE && seenFirstLoginOverlay)
 
-    const timer = window.setTimeout(() => setVisible(true), SHOW_DELAY_MS)
+    const timer = window.setTimeout(() => {
+      if (shownRef.current) return
+      shownRef.current = true
+      setVisible(true)
+    }, shouldShowNow ? 0 : SHOW_DELAY_MS)
     return () => window.clearTimeout(timer)
-  }, [])
+  }, [isInstalled, isMobile, pageViewCount, pathname])
+
+  // Mount at translate-y-full first, then flip a frame later so the
+  // transition actually animates the slide-up instead of popping in place.
+  useEffect(() => {
+    if (!visible) return
+    const raf = requestAnimationFrame(() => setSlidUp(true))
+    return () => cancelAnimationFrame(raf)
+  }, [visible])
 
   const dismiss = () => {
-    localStorage.setItem(DISMISS_KEY, '1')
-    setVisible(false)
+    localStorage.setItem(INSTALL_DISMISSED_KEY, '1')
+    setSlidUp(false)
+    window.setTimeout(() => setVisible(false), 250)
   }
 
   const handleInstall = async () => {
-    if (!deferredPrompt) { dismiss(); return }
-    await deferredPrompt.prompt()
-    await deferredPrompt.userChoice
-    setDeferredPrompt(null)
+    await promptInstall()
     dismiss()
   }
 
@@ -63,32 +64,45 @@ export default function PWAInstallBanner() {
 
   return (
     <div
-      className="fixed inset-x-3 z-[70] flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-lg sm:hidden"
-      style={{ bottom: 'calc(80px + env(safe-area-inset-bottom))' }}
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 sm:hidden"
+      onClick={dismiss}
     >
-      {/* bottom offset clears the student BottomNav (64px + safe area) on
-          pages that have one; on pages without it this just floats a bit
-          higher above the edge, which is still fine. */}
-      <span className="shrink-0 text-2xl">📱</span>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold text-[#191B23]">Установи Жангак как приложение!</p>
-        <p className="mt-0.5 text-xs text-gray-400">Быстрый доступ прямо с экрана телефона</p>
+      <div
+        className={`w-full max-w-md rounded-t-2xl bg-white p-6 shadow-2xl transition-transform duration-300 ease-out ${slidUp ? 'translate-y-0' : 'translate-y-full'}`}
+        style={{ paddingBottom: 'calc(24px + env(safe-area-inset-bottom))' }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex flex-col items-center text-center">
+          <div className="h-16 w-16 overflow-hidden rounded-2xl shadow-sm">
+            {/* eslint-disable-next-line @next/next/no-img-element -- static PWA icon, no next/image domain config needed */}
+            <img src="/icons/icon-192.png" alt="Жангак" className="h-full w-full object-cover" />
+          </div>
+          <h2 className="mt-3 text-lg font-bold text-[#191B23]">Жангак ОРТ</h2>
+          <p className="mt-0.5 text-sm text-gray-500">Подготовка к ОРТ</p>
+
+          {isIOS ? (
+            <>
+              <IOSInstallSteps className="mt-5 w-full text-left" />
+              <button type="button" onClick={dismiss} className="mt-5 text-sm font-semibold text-gray-400">
+                Понятно
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleInstall}
+                className="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#1B4FD8] text-base font-bold text-white transition-colors active:bg-blue-700"
+              >
+                📲 Установить приложение
+              </button>
+              <button type="button" onClick={dismiss} className="mt-3 text-sm font-semibold text-gray-400">
+                Не сейчас
+              </button>
+            </>
+          )}
+        </div>
       </div>
-      <button
-        type="button"
-        onClick={handleInstall}
-        className="shrink-0 rounded-xl bg-[#1B4FD8] px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-700"
-      >
-        Установить
-      </button>
-      <button
-        type="button"
-        onClick={dismiss}
-        aria-label="Закрыть"
-        className="shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-50"
-      >
-        ✕
-      </button>
     </div>
   )
 }

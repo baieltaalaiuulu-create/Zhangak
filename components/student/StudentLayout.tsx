@@ -9,6 +9,7 @@ import StudentTopbar from './StudentTopbar'
 import BottomNav from './BottomNav'
 import NotificationPopup from './NotificationPopup'
 import AIDrawer from './ai/AIDrawer'
+import FirstLoginInstallOverlay from './FirstLoginInstallOverlay'
 
 interface Props {
   children: ReactNode
@@ -104,6 +105,7 @@ export default function StudentLayout({ children }: Props) {
       <BottomNav />
       <NotificationPopup studentId={studentId} onUnreadChange={setUnreadCount} />
       <AIDrawer />
+      <FirstLoginInstallOverlay ready={!!studentId} />
     </div>
   )
 }

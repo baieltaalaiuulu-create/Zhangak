@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import SettingsNotifications from '@/components/student/settings/SettingsNotifications'
+import SettingsInstallCard from '@/components/student/settings/SettingsInstallCard'
 import DangerZoneCard from '@/components/student/settings/DangerZoneCard'
 
 export default function SettingsPage() {
@@ -59,6 +60,7 @@ export default function SettingsPage() {
         <h1 className="text-xl font-bold text-[#191B23]">Настройки</h1>
 
         <SettingsNotifications />
+        <SettingsInstallCard />
         <DangerZoneCard onDeleteAccount={handleDeleteAccount} />
       </div>
     </div>
