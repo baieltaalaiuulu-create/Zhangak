@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import PWAInstallProvider from "@/components/PWAInstallProvider";
+import AppIntroGate from "@/components/mobile/AppIntroGate";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,14 +15,17 @@ export const metadata: Metadata = {
   description:
     "Жангак — платформа подготовки к ОРТ (ЖРТ) для школьников Кыргызстана. Курсы по математике, аналогиям, чтению и кыргызскому языку, тренажёры, пробные тесты и персональный AI-наставник.",
   keywords: ["ОРТ", "ЖРТ", "Жангак", "Кыргызстан", "подготовка к ОРТ", "пробный ОРТ", "курсы Бишкек", "ЖРТ тест"],
-  manifest: "/manifest.json",
+  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Жангак",
+    title: "ZHANGAK",
   },
   icons: {
-    apple: "/icons/icon-192.png",
+    apple: "/icons/icon-512.png",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
   },
   openGraph: {
     title: "Жангак — платформа подготовки к ОРТ (ЖРТ)",
@@ -49,15 +53,16 @@ export default function RootLayout({
         <PWAInstallProvider>
           {children}
         </PWAInstallProvider>
+        <AppIntroGate />
         <Script
           id="sw-register"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js');
-                });
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                  .then(function(r) { console.log('SW ok', r.scope); })
+                  .catch(function(e) { console.log('SW fail', e); });
               }
             `,
           }}

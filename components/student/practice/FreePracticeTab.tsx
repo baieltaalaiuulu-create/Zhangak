@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ChevronLeft, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import {
   fetchSubjectOverview, fetchPracticeTopics, fetchTopicStats,
   SUBJECT_TAB_LABELS, SUBJECT_TAB_SECTIONS, SECTION_LABELS,
@@ -11,6 +11,8 @@ import TopicCard from './TopicCard'
 
 interface Props {
   studentId: string | null
+  /** Mobile-only row-list subject picker instead of the 2-col card grid — the topic-drill screen below is unchanged either way. */
+  compact?: boolean
 }
 
 const SUBJECT_CARD_ICON: Record<Exclude<SubjectTab, 'all'>, string> = {
@@ -20,7 +22,7 @@ const SUBJECT_CARD_ICON: Record<Exclude<SubjectTab, 'all'>, string> = {
   reading: '👁',
 }
 
-export default function FreePracticeTab({ studentId }: Props) {
+export default function FreePracticeTab({ studentId, compact = false }: Props) {
   const [loading, setLoading] = useState(true)
   const [overview, setOverview] = useState<SubjectOverview[]>([])
   const [topics, setTopics] = useState<PracticeTopic[]>([])
@@ -49,6 +51,34 @@ export default function FreePracticeTab({ studentId }: Props) {
 
   // ── Subject selection screen ──────────────────────────────────────────
   if (!selectedSubject) {
+    if (compact) {
+      return (
+        <div className="space-y-3">
+          <p className="px-4 text-xs font-semibold uppercase tracking-wide text-gray-400">Свободная практика</p>
+          <div className="space-y-2 px-4">
+            {overview.map(o => (
+              <button
+                key={o.subject}
+                type="button"
+                onClick={() => setSelectedSubject(o.subject)}
+                className="flex w-full items-center gap-3 rounded-xl bg-white p-4 text-left shadow-sm"
+              >
+                <span className="text-xl">{SUBJECT_CARD_ICON[o.subject]}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-[#191B23]">{SUBJECT_TAB_LABELS[o.subject]}</p>
+                  <p className="text-xs text-gray-400">{o.questionCount} вопросов</p>
+                </div>
+                <ChevronRight size={18} className="shrink-0 text-gray-300" />
+              </button>
+            ))}
+          </div>
+          <div className="px-4">
+            <AiMentorFooterCard />
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="space-y-4">
         <div>

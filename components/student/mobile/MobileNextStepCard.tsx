@@ -5,13 +5,15 @@ import Link from 'next/link'
 interface Props {
   lessonId: string
   questionCount: number
+  /** True while the lesson has an unwatched video — the CTA renders disabled with a hint instead of being hidden. */
+  locked?: boolean
 }
 
 // Matches the 0.75 min/question estimate already used for practice minutes
 // elsewhere (lib/dashboard-data.ts's practiceMinutes calc) — not a guess.
 const MINUTES_PER_QUESTION = 0.75
 
-export default function MobileNextStepCard({ lessonId, questionCount }: Props) {
+export default function MobileNextStepCard({ lessonId, questionCount, locked = false }: Props) {
   if (questionCount === 0) {
     return (
       <div className="rounded-2xl border border-gray-100 bg-white p-5 text-center shadow-sm">
@@ -24,14 +26,28 @@ export default function MobileNextStepCard({ lessonId, questionCount }: Props) {
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <p className="text-xs font-bold uppercase tracking-wide text-gray-400">Практика</p>
-      <p className="mt-1 text-sm text-gray-500">{questionCount} вопросов • ~{minutes} минут</p>
-      <Link
-        href={`/student/online/practice?lesson=${lessonId}`}
-        className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl bg-[#1B4FD8] text-base font-bold text-white"
-      >
-        Начать практику
-      </Link>
+      <p className="text-xs font-bold uppercase tracking-wide text-gray-400">Следующий шаг</p>
+      <p className="mt-1 text-sm font-semibold text-[#191B23]">Практика</p>
+      <p className="mt-0.5 text-sm text-gray-500">{questionCount} вопросов • ~{minutes} минут • Закрепи знания</p>
+      {locked ? (
+        <>
+          <button
+            type="button"
+            disabled
+            className="mt-4 flex h-14 w-full cursor-not-allowed items-center justify-center rounded-2xl bg-gray-200 text-base font-bold text-gray-400"
+          >
+            Начать практику
+          </button>
+          <p className="mt-2 text-center text-xs font-semibold text-gray-400">Сначала посмотри видео</p>
+        </>
+      ) : (
+        <Link
+          href={`/student/online/practice?lesson=${lessonId}`}
+          className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl bg-[#1B4FD8] text-base font-bold text-white"
+        >
+          Начать практику
+        </Link>
+      )}
     </div>
   )
 }

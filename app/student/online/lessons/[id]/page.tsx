@@ -231,8 +231,12 @@ export default function LessonDetailPage() {
 
           <MobileAIHelp lessonTitle={lesson.title} />
 
-          {/* Dynamic next step */}
-          {stage === 'practice' && <MobileNextStepCard lessonId={lesson.id} questionCount={questionCount} />}
+          {/* Dynamic next step — shown (disabled + hint) even while the video
+              is still locking it, rather than hidden, so the student always
+              sees what's coming next. */}
+          {(stage === 'video' || stage === 'practice') && (
+            <MobileNextStepCard lessonId={lesson.id} questionCount={questionCount} locked={stage === 'video'} />
+          )}
           {stage === 'done' && (
             <MobileLessonCompletion
               practiceScore={practiceScore}
