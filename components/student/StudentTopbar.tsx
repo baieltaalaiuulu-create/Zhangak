@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
+import Link from 'next/link'
 import { Search, Bell } from 'lucide-react'
 
 interface Props {
@@ -95,6 +96,14 @@ export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore
               <div className="truncate border-b border-gray-100 px-2 py-2 text-xs text-gray-400">
                 {fullName}
               </div>
+              {/* Mobile-only — desktop reaches /profile via the sidebar, and
+                  the bottom nav is capped at 5 items so it lives here instead. */}
+              <Link
+                href="/student/online/profile"
+                className="mt-1 block w-full rounded-lg px-2 py-2 text-left text-sm font-semibold text-gray-600 hover:bg-gray-50 md:hidden"
+              >
+                Профиль
+              </Link>
               <button
                 type="button"
                 onClick={onLogout}

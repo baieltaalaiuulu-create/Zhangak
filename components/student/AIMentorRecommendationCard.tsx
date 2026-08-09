@@ -2,9 +2,28 @@ import type { AIRecommendation } from '@/lib/dashboard-data'
 
 interface Props {
   recommendation: AIRecommendation
+  // Mobile-only simplified variant: one line of text, smaller CTA, no
+  // gradient/projected-gain chrome. Omitted (default false) keeps the
+  // desktop card exactly as it always rendered.
+  compact?: boolean
 }
 
-export default function AIMentorRecommendationCard({ recommendation }: Props) {
+export default function AIMentorRecommendationCard({ recommendation, compact = false }: Props) {
+  if (compact) {
+    return (
+      <a
+        href="/student/online/ai"
+        className="flex min-h-11 items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white" style={{ background: 'linear-gradient(135deg, #6C3DE0 0%, #4338CA 100%)' }}>
+          🧠
+        </span>
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-700">{recommendation.text}</span>
+        <span className="shrink-0 text-sm font-bold text-[#1B4FD8]">→</span>
+      </a>
+    )
+  }
+
   return (
     <div className="rounded-2xl p-5 text-white shadow-sm" style={{ background: 'linear-gradient(135deg, #1F1B3A 0%, #0D0D1A 100%)' }}>
       <div className="flex flex-wrap items-center justify-between gap-2">

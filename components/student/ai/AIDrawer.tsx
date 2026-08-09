@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Sparkles, X, Send, Maximize2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { fetchLessonById } from '@/lib/lessons-data'
+import { AI_QUICK_ASK_EVENT, type AIQuickAskDetail } from '@/lib/ai-quick-ask'
 import {
   fetchStudentContext, streamMentorMessage,
   type StudentContext, type PageContext, type ChatMessage, type MentorCardType,
@@ -148,6 +149,22 @@ export default function AIDrawer() {
       setSending(false)
     }
   }
+
+  // Lets any page hand a pre-built question to this drawer (e.g. the mobile
+  // lesson flow's "Спросить AI" chips) without opening a second AI surface.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<AIQuickAskDetail>).detail
+      if (!detail?.text) return
+      setOpen(true)
+      runPrompt(detail.text)
+    }
+    window.addEventListener(AI_QUICK_ASK_EVENT, handler)
+    return () => window.removeEventListener(AI_QUICK_ASK_EVENT, handler)
+    // Re-subscribed whenever runPrompt's closed-over state changes so the
+    // handler always sends fresh context/history, not a stale snapshot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId, routeCtx, messages, studentContext])
 
   // Auto-open + auto-analyze on mock results — fires once per landing on
   // that page (guarded by the ref so re-renders / studentId settling don't

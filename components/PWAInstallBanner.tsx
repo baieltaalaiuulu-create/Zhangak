@@ -64,9 +64,9 @@ export default function PWAInstallBanner() {
   return (
     <div
       className="fixed inset-x-3 z-[70] flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-lg sm:hidden"
-      style={{ bottom: 'calc(76px + env(safe-area-inset-bottom))' }}
+      style={{ bottom: 'calc(80px + env(safe-area-inset-bottom))' }}
     >
-      {/* bottom offset clears the student BottomNav (60px + safe area) on
+      {/* bottom offset clears the student BottomNav (64px + safe area) on
           pages that have one; on pages without it this just floats a bit
           higher above the edge, which is still fine. */}
       <span className="shrink-0 text-2xl">📱</span>
