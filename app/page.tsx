@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { redirectForRole } from '@/lib/auth-redirect'
 
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null)
@@ -49,28 +50,6 @@ function StatCard({ value, suffix = '', label, color, delay }: { value: number; 
       <div style={{ color: '#94A3B8', fontSize: '11px', marginTop: '4px', fontWeight: '500' }}>{label}</div>
     </div>
   )
-}
-
-// Shared by the mount-time session check below and the inline login form's
-// handleLogin — same role→route mapping, single source of truth.
-// `fallbackHref` is only used by handleLogin (an unrecognized-but-signed-in
-// role still lands somewhere after actively submitting the form); the
-// mount-time auto-redirect passes none, so an unrecognized role there just
-// leaves the visitor on the landing page rather than force-navigating them.
-function redirectForRole(role: string | undefined, studentType: string | undefined, router: ReturnType<typeof useRouter>, fallbackHref?: string) {
-  if (role === 'admin') router.push('/admin')
-  else if (role === 'super_admin') router.push('/admin')
-  else if (role === 'admin_jr') router.push('/admin/jr')
-  else if (role === 'teacher') router.push('/teacher')
-  else if (role === 'manager') router.push('/manager')
-  else if (role === 'director') router.push('/director')
-  else if (role === 'finance') router.push('/finance')
-  else if (role === 'math_admin') router.push('/math/admin')
-  else if (role === 'math_student') router.push('/math/student')
-  else if (role === 'math_parent') router.push('/math/parent')
-  else if (role === 'student' && studentType === 'online') router.push('/student/online')
-  else if (role === 'student') router.push('/student')
-  else if (fallbackHref) router.push(fallbackHref)
 }
 
 const ALL_RESULTS = [
@@ -618,16 +597,16 @@ export default function LandingPage() {
               <div style={{ fontWeight: '900', fontSize: '20px', color: '#0D1E4A' }}>Кирүү</div>
               <div style={{ color: '#94A3B8', fontSize: '13px', marginTop: '4px' }}>Жангак системасына кирүү</div>
             </div>
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <form onSubmit={handleLogin} method="post" action="#" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: '#64748B', display: 'block', marginBottom: '6px' }}>Email</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@gmail.com" required
+                <label htmlFor="landing-login-email" style={{ fontSize: '12px', fontWeight: '600', color: '#64748B', display: 'block', marginBottom: '6px' }}>Email</label>
+                <input id="landing-login-email" type="email" name="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@gmail.com" required
                   style={{ width: '100%', padding: '13px 14px', borderRadius: '11px', border: '1px solid #E2E8F0', fontSize: '15px', outline: 'none', color: '#0D1E4A', background: '#FAFBFF', boxSizing: 'border-box' as const }}
                   onFocus={e => (e.target.style.borderColor = '#1B4FD8')} onBlur={e => (e.target.style.borderColor = '#E2E8F0')} />
               </div>
               <div>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: '#64748B', display: 'block', marginBottom: '6px' }}>Сырсөз</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required
+                <label htmlFor="landing-login-password" style={{ fontSize: '12px', fontWeight: '600', color: '#64748B', display: 'block', marginBottom: '6px' }}>Сырсөз</label>
+                <input id="landing-login-password" type="password" name="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required
                   style={{ width: '100%', padding: '13px 14px', borderRadius: '11px', border: '1px solid #E2E8F0', fontSize: '15px', outline: 'none', color: '#0D1E4A', background: '#FAFBFF', boxSizing: 'border-box' as const }}
                   onFocus={e => (e.target.style.borderColor = '#1B4FD8')} onBlur={e => (e.target.style.borderColor = '#E2E8F0')} />
               </div>

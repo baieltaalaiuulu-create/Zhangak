@@ -99,6 +99,11 @@ export default function Onboarding({ onDone }: Props) {
     setIndex(i => i + 1)
   }
 
+  const skip = () => {
+    onDone()
+    router.push('/login')
+  }
+
   const handleTouchStart = (e: TouchEvent) => {
     touchStartX.current = e.touches[0].clientX
   }
@@ -119,7 +124,7 @@ export default function Onboarding({ onDone }: Props) {
       onTouchEnd={handleTouchEnd}
     >
       <div className="flex justify-end">
-        <button type="button" onClick={onDone} className="text-sm font-semibold text-white/70">
+        <button type="button" onClick={skip} className="text-sm font-semibold text-white/70">
           Пропустить
         </button>
       </div>
