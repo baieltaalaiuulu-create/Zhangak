@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic'
 
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import Script from "next/script";
+import PWAInstallBanner from "@/components/PWAInstallBanner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,6 +14,15 @@ export const metadata: Metadata = {
   description:
     "Жангак — платформа подготовки к ОРТ (ЖРТ) для школьников Кыргызстана. Курсы по математике, аналогиям, чтению и кыргызскому языку, тренажёры, пробные тесты и персональный AI-наставник.",
   keywords: ["ОРТ", "ЖРТ", "Жангак", "Кыргызстан", "подготовка к ОРТ", "пробный ОРТ", "курсы Бишкек", "ЖРТ тест"],
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Жангак",
+  },
+  icons: {
+    apple: "/icons/icon-192.png",
+  },
   openGraph: {
     title: "Жангак — платформа подготовки к ОРТ (ЖРТ)",
     description:
@@ -23,6 +34,10 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#1B4FD8",
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -30,7 +45,23 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru">
-      <body>{children}</body>
+      <body>
+        {children}
+        <PWAInstallBanner />
+        <Script
+          id="sw-register"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js');
+                });
+              }
+            `,
+          }}
+        />
+      </body>
     </html>
   );
 }
