@@ -11,12 +11,17 @@ interface Props {
   wrongQuestions: WrongQuestion[]
   nextLessonHref: string | null
   onBackToLessons: () => void
+  /** True when this was a repeat run of an already-completed lesson —
+   *  swaps the "← Назад к урокам" button for "🔁 Повторить ещё раз". */
+  isRepeat?: boolean
+  /** Only used when isRepeat is true. */
+  onRepeat?: () => void
 }
 
 // Full-screen "lesson complete" step — shown after finishing the inline
 // practice quiz (STEP 2), or immediately when the lesson has no linked
 // questions to practice at all (total === 0, the simplified branch).
-export default function MobileLessonComplete({ correct, total, xp, wrongQuestions, nextLessonHref, onBackToLessons }: Props) {
+export default function MobileLessonComplete({ correct, total, xp, wrongQuestions, nextLessonHref, onBackToLessons, isRepeat = false, onRepeat }: Props) {
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0
 
   return (
@@ -69,13 +74,23 @@ export default function MobileLessonComplete({ correct, total, xp, wrongQuestion
             Следующий урок →
           </a>
         )}
-        <button
-          type="button"
-          onClick={onBackToLessons}
-          className="flex h-12 w-full items-center justify-center rounded-2xl border border-gray-200 text-sm font-bold text-gray-600"
-        >
-          ← Назад к урокам
-        </button>
+        {isRepeat ? (
+          <button
+            type="button"
+            onClick={onRepeat}
+            className="flex h-12 w-full items-center justify-center rounded-2xl border border-gray-200 text-sm font-bold text-gray-600"
+          >
+            🔁 Повторить ещё раз
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onBackToLessons}
+            className="flex h-12 w-full items-center justify-center rounded-2xl border border-gray-200 text-sm font-bold text-gray-600"
+          >
+            ← Назад к урокам
+          </button>
+        )}
       </div>
     </div>
   )

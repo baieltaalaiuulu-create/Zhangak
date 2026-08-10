@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 interface Props {
   questionCount: number
   /** True while the lesson has an unwatched video — the CTA renders disabled with a hint. */
@@ -8,6 +10,11 @@ interface Props {
   onStartPractice: () => void
   /** questionCount === 0 branch — nothing to practice, just marks the lesson done. */
   onFinishNoQuestions: () => void
+  /** True for an already-completed lesson being re-watched — swaps the
+   *  "first time" CTA for "repeat practice" + "next lesson" once unlocked. */
+  isRepeat?: boolean
+  /** Only used when isRepeat is true. */
+  nextLessonHref?: string | null
 }
 
 const MINUTES_PER_QUESTION = 1.5
@@ -15,7 +22,14 @@ const MINUTES_PER_QUESTION = 1.5
 // "Next step" card on the mobile lesson page's video step. Practice now
 // happens inline on this same page (lessonStep: 'practice') rather than
 // navigating to /student/online/practice — see MobileLessonPractice.
-export default function MobileNextStepCard({ questionCount, locked, onStartPractice, onFinishNoQuestions }: Props) {
+export default function MobileNextStepCard({
+  questionCount,
+  locked,
+  onStartPractice,
+  onFinishNoQuestions,
+  isRepeat = false,
+  nextLessonHref = null,
+}: Props) {
   const minutes = Math.ceil(questionCount * MINUTES_PER_QUESTION)
 
   if (locked) {
@@ -30,6 +44,36 @@ export default function MobileNextStepCard({ questionCount, locked, onStartPract
         >
           Начать практику
         </button>
+      </div>
+    )
+  }
+
+  if (isRepeat) {
+    return (
+      <div className="rounded-2xl border border-gray-100 bg-white p-4">
+        <p className="text-lg font-bold text-gray-900">✏️ Практика</p>
+        {questionCount > 0 ? (
+          <>
+            <p className="mt-1 text-sm text-gray-500">Пройди практику ещё раз, чтобы закрепить</p>
+            <button
+              type="button"
+              onClick={onStartPractice}
+              className="mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-[#1B4FD8] text-sm font-bold text-white transition-colors active:bg-blue-700"
+            >
+              🔁 Повторить практику
+            </button>
+          </>
+        ) : (
+          <p className="mt-1 text-sm text-gray-400">Практика недоступна</p>
+        )}
+        {nextLessonHref && (
+          <Link
+            href={nextLessonHref}
+            className="mt-3 flex h-12 w-full items-center justify-center rounded-xl border border-gray-200 text-sm font-bold text-gray-700"
+          >
+            Следующий урок →
+          </Link>
+        )}
       </div>
     )
   }

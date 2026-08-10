@@ -109,13 +109,16 @@ export default function LessonDetailPage() {
             setLessonQuestions(qs)
           }
 
-          const alreadyDone = completed.has(thisLesson.id)
-          if (alreadyDone) {
-            if (test) setPracticeScore(await fetchPreviousScore(user.id, test.id))
-            setLessonStep('complete')
-          } else {
-            setLessonStep(thisLesson.video_url ? 'video' : 'practice')
-          }
+          if (test) setPracticeScore(await fetchPreviousScore(user.id, test.id))
+
+          // Always start at the video step (or practice, for a lesson with
+          // no video) — never auto-skip to the complete screen just
+          // because the lesson was already finished in a past session.
+          // Re-watching/re-practicing an already-completed lesson is
+          // surfaced instead via the "Урок пройден" banner + repeat-mode
+          // CTAs below (isCompleted), not by hiding the video/practice
+          // steps entirely.
+          setLessonStep(thisLesson.video_url ? 'video' : 'practice')
 
           if (!startedRef.current) {
             startedRef.current = true
@@ -184,6 +187,14 @@ export default function LessonDetailPage() {
   const embedUrl = lesson.video_url ? getYoutubeEmbed(lesson.video_url) : null
   const hasVideo = !!lesson.video_url
 
+  // Drives the "already completed" banner + repeat-mode CTAs on the video
+  // and complete steps — it only ever reflects the pre-session state from
+  // fetchCompletedLessonIds (not touched again this render), so a first
+  // completion this session still lands on the "first time" complete
+  // screen (see completeStep below), and only becomes true again on the
+  // next real visit.
+  const isCompleted = completedIds.has(lesson.id)
+
   const handleAskSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!askText.trim()) return
@@ -193,6 +204,15 @@ export default function LessonDetailPage() {
   }
 
   // ── Mobile inline lesson flow handlers ──────────────────────────────────
+  // "Повторить ещё раз" on the complete screen — sends an already-completed
+  // lesson back to the video step for another pass, resetting videoWatched
+  // so the repeat-mode CTAs on that step stay gated the same way a first
+  // watch is.
+  const handleRepeat = () => {
+    setLessonStep('video')
+    setVideoWatched(false)
+  }
+
   const handleFinishNoQuestions = async () => {
     if (studentId && lesson) {
       await savePracticeResult({ studentId, testId: null, lessonId: lesson.id, score: 0, answers: {} })
@@ -273,6 +293,16 @@ export default function LessonDetailPage() {
               <div className="w-11 shrink-0" aria-hidden="true" />
             </div>
 
+            {isCompleted && (
+              <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 p-3">
+                <span className="text-lg text-green-500">✓</span>
+                <div>
+                  <div className="text-sm font-semibold text-green-700">Урок пройден</div>
+                  <div className="text-xs text-green-600">Можешь посмотреть ещё раз</div>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-4 px-4 py-4">
               <h1 className="text-xl font-bold leading-snug text-[#191B23]">{lesson.title}</h1>
 
@@ -287,6 +317,8 @@ export default function LessonDetailPage() {
                 locked={hasVideo && !videoWatched}
                 onStartPractice={() => setLessonStep('practice')}
                 onFinishNoQuestions={handleFinishNoQuestions}
+                isRepeat={isCompleted}
+                nextLessonHref={upcoming ? `/student/online/lessons/${upcoming.id}` : null}
               />
 
               {/* Ask teacher — collapsed, moved to the bottom */}
@@ -321,6 +353,8 @@ export default function LessonDetailPage() {
             wrongQuestions={completeStats.wrongQuestions}
             nextLessonHref={upcoming ? `/student/online/lessons/${upcoming.id}` : null}
             onBackToLessons={() => router.push('/student/online/lessons')}
+            isRepeat={isCompleted}
+            onRepeat={handleRepeat}
           />
         )}
       </div>
