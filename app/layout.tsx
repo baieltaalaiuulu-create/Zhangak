@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import PWAInstallProvider from "@/components/PWAInstallProvider";
+import ResourceHints from "@/components/ResourceHints";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -49,6 +50,7 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body>
+        <ResourceHints />
         <PWAInstallProvider>
           {children}
         </PWAInstallProvider>

@@ -181,6 +181,7 @@ export default function LessonsPage() {
             {currentLesson && (
               <Link
                 href={`/student/online/lessons/${currentLesson.id}`}
+                prefetch={true}
                 className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl bg-[#1B4FD8] text-base font-bold text-white"
               >
                 Продолжить обучение →

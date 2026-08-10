@@ -34,7 +34,7 @@ export default function MobileLessonRow({ lesson, status, onLockedTap }: Props) 
 
   if (status === 'done') {
     return (
-      <Link href={`/student/online/lessons/${lesson.id}`} className="flex min-h-[72px] w-full items-center gap-3 px-3 py-3">
+      <Link href={`/student/online/lessons/${lesson.id}`} prefetch={true} className="flex min-h-[72px] w-full items-center gap-3 px-3 py-3">
         <CheckCircle2 size={22} className="shrink-0 text-green-600" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -51,6 +51,7 @@ export default function MobileLessonRow({ lesson, status, onLockedTap }: Props) 
   return (
     <Link
       href={`/student/online/lessons/${lesson.id}`}
+      prefetch={true}
       className="flex min-h-[88px] w-full items-center gap-3 border-l-4 border-l-[#1B4FD8] bg-[#EEF2FF]/50 px-3 py-3"
     >
       <PlayCircle size={22} className="shrink-0 text-[#1B4FD8]" />

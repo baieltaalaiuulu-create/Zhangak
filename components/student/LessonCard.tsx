@@ -100,7 +100,7 @@ export default function LessonCard({ lesson, status, questionCount, courseProgre
   }
 
   return (
-    <Link href={`/student/online/lessons/${lesson.id}`} className="block h-full">
+    <Link href={`/student/online/lessons/${lesson.id}`} prefetch={true} className="block h-full">
       {body}
     </Link>
   )

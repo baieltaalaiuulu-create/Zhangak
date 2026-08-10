@@ -91,6 +91,11 @@ export interface DashboardExtras {
   subjectsGrid: SubjectGridItem[]
   aiRecommendation: AIRecommendation
   achievements: Achievement[]
+  // Already computed internally (see the fetchCompletedLessonIds call
+  // below) — exposed so callers with their own "first incomplete lesson"
+  // logic (app/student/online/page.tsx's mobile hero) can reuse it
+  // instead of issuing their own identical practice_results query.
+  completedLessonIds: Set<string>
 }
 
 export const SUBJECT_GRID_META: Record<GridSubjectKey, { label: string; color: string }> = {
@@ -384,5 +389,6 @@ export async function fetchDashboardExtras(
     subjectsGrid,
     aiRecommendation,
     achievements,
+    completedLessonIds,
   }
 }

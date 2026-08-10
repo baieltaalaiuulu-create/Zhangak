@@ -3,10 +3,11 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import nextDynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { getStudentDashboard, DEFAULT_TARGET_SCORE, type StudentDashboardData } from '@/lib/student-data'
 import { fetchDashboardExtras, type DashboardExtras } from '@/lib/dashboard-data'
-import { fetchLessons, fetchCompletedLessonIds, type Lesson } from '@/lib/lessons-data'
+import { fetchLessons, type Lesson } from '@/lib/lessons-data'
 import { fetchWeeklyLeaderboard, type WeeklyLeaderboardEntry } from '@/lib/weekly-leaderboard-data'
 import {
   fetchTodayChallenge,
@@ -20,15 +21,30 @@ import AnnouncementBanner from '@/components/student/AnnouncementBanner'
 import DashboardHeroCard from '@/components/student/DashboardHeroCard'
 import TodayPlanCard from '@/components/student/TodayPlanCard'
 import WeeklyProgressCard from '@/components/student/WeeklyProgressCard'
-import ActivityHeatmap from '@/components/student/ActivityHeatmap'
 import SubjectsGrid from '@/components/student/SubjectsGrid'
-import AIMentorRecommendationCard from '@/components/student/AIMentorRecommendationCard'
 import RecentAchievementsCard from '@/components/student/RecentAchievementsCard'
 import MobileHero from '@/components/student/mobile/MobileHero'
 import MobileTodayChecklist from '@/components/student/mobile/MobileTodayChecklist'
 import MobileDailyChallengeCard from '@/components/student/mobile/MobileDailyChallengeCard'
 import MobileLeaderboardCard from '@/components/student/mobile/MobileLeaderboardCard'
 import MobileStatsGrid from '@/components/student/mobile/MobileStatsGrid'
+
+// Both below-the-fold on mobile (last 3 sections) and secondary/non-CTA on
+// desktop — deferred out of the initial JS bundle rather than pulled in
+// eagerly with everything above it. ssr:false because both are pure
+// client-rendered cards fed by props already computed before render (no
+// server-render benefit, and it keeps their own internal useState from
+// running through hydration). AIRecommendationCard in the literal spec
+// doesn't exist in this codebase; AIMentorRecommendationCard is the real
+// component that fills that role here.
+const ActivityHeatmap = nextDynamic(() => import('@/components/student/ActivityHeatmap'), {
+  ssr: false,
+  loading: () => <div className="h-32 animate-pulse rounded-2xl bg-gray-100" />,
+})
+const AIMentorRecommendationCard = nextDynamic(() => import('@/components/student/AIMentorRecommendationCard'), {
+  ssr: false,
+  loading: () => null,
+})
 
 const CHALLENGE_MIN_PER_QUESTION = 0.75
 
@@ -62,20 +78,29 @@ export default function StudentOnlinePage() {
 
       setProfileName(profile.full_name)
       try {
-        const [dashboard, allLessons, completedIds, leaderboard, challenge] = await Promise.all([
-          getStudentDashboard(),
+        // fetchDashboardExtras only depends on getStudentDashboard's score
+        // fields, not on any of the other calls below — chained off that
+        // one promise (not awaited separately) so it runs in the same wave
+        // as everything else instead of only starting once the whole batch
+        // below has already resolved, which used to add a full extra
+        // round-trip to every dashboard load.
+        const dashboardPromise = getStudentDashboard()
+        const [dashboard, allLessons, leaderboard, challenge, dashboardExtras] = await Promise.all([
+          dashboardPromise,
           fetchLessons(),
-          fetchCompletedLessonIds(user.id),
           fetchWeeklyLeaderboard(currentWeekStart(), user.id),
           fetchTodayChallenge(),
+          dashboardPromise.then(d => fetchDashboardExtras(user.id, d.latestScore, d.previousScore)),
         ])
-        const dashboardExtras = await fetchDashboardExtras(user.id, dashboard.latestScore, dashboard.previousScore)
         setData(dashboard)
         setExtras(dashboardExtras)
         // First incomplete lesson overall, ordered by order_number (already
         // the sort order fetchLessons returns) — the mobile "continue
         // learning" hero, independent of which subject it belongs to.
-        setHeroLesson(allLessons.find(l => !completedIds.has(l.id)) ?? null)
+        // Reuses dashboardExtras.completedLessonIds (already computed
+        // inside fetchDashboardExtras) instead of this page issuing its
+        // own separate, identical fetchCompletedLessonIds query.
+        setHeroLesson(allLessons.find(l => !dashboardExtras.completedLessonIds.has(l.id)) ?? null)
 
         setLeaderboardMe(leaderboard.me)
         setXpToNextRank(leaderboard.xpToNextRank)
@@ -117,19 +142,18 @@ export default function StudentOnlinePage() {
     return (
       <div className="min-h-screen bg-[#F4F6FA]">
         <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6">
-          {/* Mobile skeleton */}
-          <div className="block space-y-4 md:hidden">
+          {/* Mobile skeleton — roughly mirrors the real section stack
+              (hero, checklist, challenge/leaderboard, stats) instead of
+              just 2-3 generic blocks, so the layout settles with less jank
+              once the real data replaces it. */}
+          <div className="block space-y-3 md:hidden">
             <div className="animate-pulse space-y-2">
-              <div className="h-6 w-40 rounded bg-gray-200" />
-              <div className="h-4 w-48 rounded bg-gray-200" />
-              <div className="h-2 w-full rounded-full bg-gray-200" />
+              <div className="h-6 w-48 rounded bg-gray-200" />
+              <div className="h-4 w-32 rounded bg-gray-200" />
             </div>
-            <div className="animate-pulse rounded-2xl border border-gray-100 bg-white p-5">
-              <div className="h-3 w-36 rounded bg-gray-100" />
-              <div className="mt-3 h-5 w-3/4 rounded bg-gray-100" />
-              <div className="mt-4 h-14 w-full rounded-2xl bg-gray-100" />
-            </div>
-            <div className="h-32 animate-pulse rounded-2xl border border-gray-100 bg-white" />
+            <div className="h-40 animate-pulse rounded-2xl bg-gray-200" />
+            <div className="h-32 animate-pulse rounded-2xl bg-gray-200" />
+            <div className="h-24 animate-pulse rounded-2xl bg-gray-200" />
           </div>
           {/* Desktop skeleton */}
           <div className="hidden md:block">
