@@ -292,21 +292,6 @@ export default function LandingPage() {
             <div className="hero-btns" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ background: '#1B4FD8', color: '#fff', borderRadius: '14px', padding: '14px 28px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 8px 28px rgba(27,79,216,0.32)', transition: 'all 0.2s', display: 'inline-block' }}>📲 Жазылуу</a>
               <button onClick={() => setShowLogin(true)} className="cta-btn" style={{ background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s' }}>Кирүү →</button>
-              {/* Sized/styled to match the two buttons above rather than the
-                  literal fixed h-14/w-full treatment, so the row stays
-                  visually consistent — .hero-btns' own mobile media query
-                  (above) already stretches every child to full width on
-                  small screens, so nothing is lost there. isUnsupported
-                  hides it entirely for browsers with no install path at
-                  all (desktop Firefox/Safari) rather than showing a dead
-                  button, matching SettingsInstallCard's handling. */}
-              {!isUnsupported && (
-                isInstalled ? (
-                  <a href="/student/online" className="cta-btn" style={{ background: '#22C55E', color: '#fff', borderRadius: '14px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', boxShadow: '0 8px 28px rgba(34,197,94,0.32)' }}>✓ Ачуу — Открыть приложение</a>
-                ) : (
-                  <button onClick={handleInstall} className="cta-btn" style={{ background: '#F8FAFF', color: '#1B4FD8', border: '1px solid #BFDBFE', borderRadius: '14px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s' }}>📲 Колдонмону орнот</button>
-                )
-              )}
             </div>
             <div className="hero-stats" style={{ display: 'flex', gap: '28px', marginTop: '36px', paddingTop: '28px', borderTop: '1px solid #E2E8F0', flexWrap: 'wrap' }}>
               {[{ n: '9000+', l: 'Ийгиликтүү бүтүрүүчү', c: '#1B4FD8' }, { n: '221', l: 'Эң жогорку балл', c: '#1B4FD8' }, { n: '3', l: 'Деңгээл', c: '#F59E0B' }].map(s => (
@@ -357,52 +342,6 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
-
-      {/* INSTALL APP */}
-      <section className="py-10 px-4 bg-[#0D0D1A]">
-        <div className="max-w-sm mx-auto text-center">
-
-          <div className="flex items-center justify-center gap-3 mb-3">
-            {/* eslint-disable-next-line @next/next/no-img-element -- static PWA icon, matches the rest of this page's raw <img> convention */}
-            <img src="/icons/icon-192.png" className="w-12 h-12 rounded-xl shadow-lg" alt="Zhangak" />
-            <div className="text-left">
-              <div className="text-white font-bold text-lg">Жангак</div>
-              <div className="text-gray-400 text-xs">ОРТ Дайындыгы</div>
-            </div>
-          </div>
-
-          <p className="text-gray-400 text-sm mb-5">
-            Телефонуңа орнот — App Store жана Google Play керек эмес
-          </p>
-
-          {/* isUnsupported (no install path at all — desktop Firefox/Safari)
-              isn't in the literal spec, but silently showing a button that
-              does nothing on click would be worse than this page's other
-              two install surfaces (hero row, iOS guide), which already
-              handle it the same way. */}
-          {isUnsupported ? (
-            <p className="text-gray-500 text-xs">Ачык браузериңде орнотуу мүмкүн эмес — Chrome колдон</p>
-          ) : !isInstalled ? (
-            <button onClick={handleInstall}
-              className="w-full h-14 bg-[#1B4FD8] text-white font-bold rounded-2xl text-base flex items-center justify-center gap-2">
-              <span>📲</span>
-              <span>Колдонмону орнот</span>
-            </button>
-          ) : (
-            <a
-              href="/student/online"
-              className="w-full h-14 bg-green-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg"
-            >
-              <span>✓</span>
-              <span>Ачуу — Открыть приложение</span>
-            </a>
-          )}
-
-          <p className="text-gray-600 text-xs mt-3">
-            Android: Chrome → Меню → Орнот • iPhone: Safari → Бөлүшүү → Башкы экран
-          </p>
-        </div>
-      </section>
 
       {/* STATS */}
       <div className="s-pad section-pad-lg" style={{ padding: '48px 32px', background: '#F5F8FF' }}>
@@ -661,6 +600,48 @@ export default function LandingPage() {
           <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#93C5FD', fontSize: '13px', textDecoration: 'none', fontWeight: '600' }}>📲 +996 502 077 326</a>
         </div>
       </div>
+
+      {/* INSTALL APP — last section on the page, after the footer: clean,
+          minimal, single CTA rather than its own dark full-bleed block.
+          isUnsupported (no install path at all — desktop Firefox/Safari)
+          isn't in the literal spec, but the alternative is a button that
+          silently does nothing on click since there's no native prompt to
+          trigger there. */}
+      <section className="py-8 px-4 border-t border-gray-100 bg-white">
+        <div className="max-w-sm mx-auto">
+
+          <div className="flex items-center gap-3 mb-4">
+            {/* eslint-disable-next-line @next/next/no-img-element -- static PWA icon, matches this page's raw <img> convention */}
+            <img src="/icons/icon-192.png"
+              className="w-12 h-12 rounded-xl shadow-sm"
+              alt="Zhangak" />
+            <div>
+              <div className="font-bold text-gray-900">Жангак</div>
+              <div className="text-xs text-gray-400">Телефонго орнот</div>
+            </div>
+          </div>
+
+          {isUnsupported ? (
+            <p className="text-center text-xs text-gray-400">Орнотуу үчүн Chrome колдон</p>
+          ) : !isInstalled ? (
+            <button
+              onClick={handleInstall}
+              className="w-full h-12 bg-[#1B4FD8] text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2">
+              📲 Колдонмону орнот
+            </button>
+          ) : (
+            <a
+              href="/student/online"
+              className="w-full h-12 bg-[#1B4FD8] text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2">
+              ▶ Ачуу — Открыть приложение
+            </a>
+          )}
+
+          <p className="text-center text-xs text-gray-400 mt-2">
+            Android: Chrome → Меню → Орнот
+          </p>
+        </div>
+      </section>
 
       {/* iOS INSTALL GUIDE — iOS never fires beforeinstallprompt (Safari,
           and any browser shell on iOS since they all run on WebKit, only
