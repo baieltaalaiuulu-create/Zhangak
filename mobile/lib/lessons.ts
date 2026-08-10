@@ -57,20 +57,32 @@ export async function fetchCompletedLessonIds(studentId: string): Promise<Set<st
   return new Set((data ?? []).map(r => r.lesson_id as string))
 }
 
-// One lesson site-wide is 'current' — the first the student hasn't
-// completed yet, by order_number. Matches the same rule the web app uses
-// (lib/lessons-data.ts computeLessonStatuses) so both agree.
+// Per-subject unlock, same rule the web app uses (lib/lessons-data.ts
+// computeLessonStatuses) so both agree: each subject's first lesson is
+// always open, and each next lesson unlocks once the previous lesson in
+// that same subject is completed. (Bug fixed alongside the web version —
+// treating the whole cross-subject, order_number-sorted list as one
+// sequence left one subject's second lesson locked as soon as the other
+// subject's first lesson became "current".)
 export function computeLessonStatuses(lessons: PracticeLesson[], completedIds: Set<string>): Record<string, LessonStatus> {
   const statuses: Record<string, LessonStatus> = {}
-  let foundCurrent = false
+  const bySubject = new Map<LessonSubject, PracticeLesson[]>()
   for (const lesson of lessons) {
-    if (completedIds.has(lesson.id)) {
-      statuses[lesson.id] = 'done'
-    } else if (!foundCurrent) {
-      statuses[lesson.id] = 'current'
-      foundCurrent = true
-    } else {
-      statuses[lesson.id] = 'locked'
+    const group = bySubject.get(lesson.subject)
+    if (group) group.push(lesson)
+    else bySubject.set(lesson.subject, [lesson])
+  }
+  for (const group of bySubject.values()) {
+    let foundCurrent = false
+    for (const lesson of group) {
+      if (completedIds.has(lesson.id)) {
+        statuses[lesson.id] = 'done'
+      } else if (!foundCurrent) {
+        statuses[lesson.id] = 'current'
+        foundCurrent = true
+      } else {
+        statuses[lesson.id] = 'locked'
+      }
     }
   }
   return statuses

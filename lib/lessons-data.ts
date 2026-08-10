@@ -82,20 +82,35 @@ export async function fetchQuestionCounts(lessonIds: string[]): Promise<Record<s
   return counts
 }
 
-// One lesson site-wide is 'current' — the first one (by order_number) the
-// student hasn't completed yet. Matches the "next lesson" logic already
-// used by the dashboard (lib/student-data.ts), so both pages agree.
+// BUG FIX: this used to walk `lessons` as one flat, cross-subject sequence
+// (fetchLessons() sorts only by order_number, so math and kyr rows are
+// interleaved) and mark a single site-wide "current" lesson, locking
+// everything after it — including the *first* lesson of whichever subject
+// didn't happen to own that slot. Finishing math lesson 1 would flip the
+// pointer to kyr lesson 1 and leave math lesson 2 stuck 'locked' forever,
+// which is exactly the "stays locked after completing first lesson" bug.
+// Each subject now unlocks independently: first lesson of every subject is
+// always open, and each subsequent lesson unlocks only once the previous
+// lesson in that same subject is completed.
 export function computeLessonStatuses(lessons: Lesson[], completedIds: Set<string>): Record<string, LessonStatus> {
   const statuses: Record<string, LessonStatus> = {}
-  let foundCurrent = false
+  const bySubject = new Map<LessonSubject, Lesson[]>()
   for (const lesson of lessons) {
-    if (completedIds.has(lesson.id)) {
-      statuses[lesson.id] = 'done'
-    } else if (!foundCurrent) {
-      statuses[lesson.id] = 'current'
-      foundCurrent = true
-    } else {
-      statuses[lesson.id] = 'locked'
+    const group = bySubject.get(lesson.subject)
+    if (group) group.push(lesson)
+    else bySubject.set(lesson.subject, [lesson])
+  }
+  for (const group of bySubject.values()) {
+    let foundCurrent = false
+    for (const lesson of group) {
+      if (completedIds.has(lesson.id)) {
+        statuses[lesson.id] = 'done'
+      } else if (!foundCurrent) {
+        statuses[lesson.id] = 'current'
+        foundCurrent = true
+      } else {
+        statuses[lesson.id] = 'locked'
+      }
     }
   }
   return statuses
