@@ -11,11 +11,13 @@ import type { MetadataRoute } from 'next'
 // /landing) and not the student dashboard ('/student/online', which is
 // client-auth-gated and 404-risk-prone on a cold PWA start). '/' always
 // renders instantly (a splash, no data dependency) and decides — session
-// → dashboard, no session + mobile/PWA + onboarding seen → /login, no
-// session + mobile/PWA + first run → /onboarding, no session + desktop →
-// /landing — see app/page.tsx. (Previously start_url pointed at a
-// dedicated /launch route that did the same job; that route has been
-// deleted now that '/' handles it directly.)
+// → dashboard; no session, running as the installed PWA (display-mode
+// check, not viewport width — a phone visiting in Chrome is still a
+// browser visit) + onboarding seen → /login, + first run → /onboarding;
+// no session in a regular browser → /landing — see app/page.tsx.
+// (Previously start_url pointed at a dedicated /launch route that did the
+// same job; that route has been deleted now that '/' handles it
+// directly.)
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'ZHANGAK',

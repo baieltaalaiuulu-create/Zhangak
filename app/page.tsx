@@ -22,9 +22,13 @@ const DOT_DELAYS_MS = [0, 150, 300]
 //    forever. Same reasoning that used to live on app/launch/page.tsx,
 //    which this route replaces and fully supersedes — deleted alongside
 //    this change since nothing points at it anymore.
-//  - no session, mobile viewport or installed PWA -> onboarding (first
-//    run) or /login (onboarding already seen)
-//  - no session, desktop browser -> /landing
+//  - no session, running as the installed PWA -> onboarding (first run) or
+//    /login (onboarding already seen)
+//  - no session, opened in a regular browser (Chrome etc., any screen
+//    size) -> /landing. Gated on display-mode alone, not viewport width —
+//    a phone opening the site in Chrome is still a browser visit and
+//    should see the marketing page, not get funneled into app-only
+//    onboarding just because the screen is narrow.
 export default function RootPage() {
   const router = useRouter()
 
@@ -32,7 +36,6 @@ export default function RootPage() {
     const check = async () => {
       try {
         const isPWA = window.matchMedia('(display-mode: standalone)').matches
-        const isMobile = window.innerWidth < 768
         const { data: { session } } = await supabase.auth.getSession()
 
         if (session) {
@@ -45,7 +48,7 @@ export default function RootPage() {
           return
         }
 
-        if (isPWA || isMobile) {
+        if (isPWA) {
           const done = localStorage.getItem(ONBOARDING_KEY)
           router.replace(done ? '/login' : '/onboarding')
         } else {
