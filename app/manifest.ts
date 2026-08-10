@@ -6,17 +6,18 @@ import type { MetadataRoute } from 'next'
 // installability check was treating unreliably (showing "Создать ярлык"
 // instead of "Установить приложение").
 //
-// start_url is '/' rather than the student dashboard: that route is
-// client-auth-gated (redirects to /login if there's no session) and was
-// causing a launch-time 404 for freshly-installed/logged-out PWA sessions
-// on some devices. '/' always renders (it's the public landing page) and
-// itself redirects a logged-in student/admin onward — see app/page.tsx.
+// start_url is the dedicated /launch route, not the marketing landing page
+// ('/') and not the student dashboard ('/student/online', which is
+// client-auth-gated and 404-risk-prone on a cold PWA start). '/launch'
+// always renders instantly (a splash, no data dependency) and decides —
+// session → dashboard, no session + onboarding seen → /login, no session +
+// first run → /onboarding — see app/launch/page.tsx.
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'ZHANGAK',
     short_name: 'ZHANGAK',
     description: 'Онлайн подготовка к ОРТ в Кыргызстане',
-    start_url: '/',
+    start_url: '/launch',
     display: 'standalone',
     orientation: 'portrait',
     background_color: '#0D0D1A',
