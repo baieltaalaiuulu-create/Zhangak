@@ -16,6 +16,16 @@ export const INSTALL_DISMISSED_KEY = 'zhangak-pwa-dismissed'
 // least once for this browser — fires the first time a student reaches
 // the cabinet with no key set yet, not strictly tied to account age.
 export const FIRST_LOGIN_SHOWN_KEY = 'zhangak-first-login-shown'
+// Set once the native install prompt is accepted (or 'appinstalled'
+// fires) and never cleared. isStandalone() alone only tells you whether
+// *this particular tab* is currently running as the installed app — a
+// visitor who already installed but is back looking at a normal browser
+// tab (e.g. the landing page, to check something) would report false
+// there and get shown "Установить" again for no reason. This flag is
+// what lets every install surface (landing page, settings card, banner)
+// show "Открыть приложение" instead once it's known to be installed,
+// regardless of which context the visitor is looking at it from.
+export const INSTALLED_KEY = 'zhangak-pwa-installed'
 
 export function isIOS(): boolean {
   if (typeof navigator === 'undefined') return false

@@ -302,7 +302,7 @@ export default function LandingPage() {
                   button, matching SettingsInstallCard's handling. */}
               {!isUnsupported && (
                 isInstalled ? (
-                  <span className="cta-btn" style={{ background: '#F0FDF4', color: '#16A34A', border: '1px solid #BBF7D0', borderRadius: '14px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', display: 'inline-flex', alignItems: 'center' }}>✓ Установлено</span>
+                  <a href="/student/online" className="cta-btn" style={{ background: '#22C55E', color: '#fff', borderRadius: '14px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', boxShadow: '0 8px 28px rgba(34,197,94,0.32)' }}>✓ Ачуу — Открыть приложение</a>
                 ) : (
                   <button onClick={handleInstall} className="cta-btn" style={{ background: '#F8FAFF', color: '#1B4FD8', border: '1px solid #BFDBFE', borderRadius: '14px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s' }}>📲 Колдонмону орнот</button>
                 )
@@ -384,15 +384,18 @@ export default function LandingPage() {
             <p className="text-gray-500 text-xs">Ачык браузериңде орнотуу мүмкүн эмес — Chrome колдон</p>
           ) : !isInstalled ? (
             <button onClick={handleInstall}
-              className="w-full h-14 bg-[#1B4FD8] text-white font-bold rounded-2xl text-base shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+              className="w-full h-14 bg-[#1B4FD8] text-white font-bold rounded-2xl text-base flex items-center justify-center gap-2">
               <span>📲</span>
               <span>Колдонмону орнот</span>
             </button>
           ) : (
-            <div className="w-full h-14 bg-green-500/20 text-green-400 font-bold rounded-2xl flex items-center justify-center gap-2 border border-green-500/30">
+            <a
+              href="/student/online"
+              className="w-full h-14 bg-green-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg"
+            >
               <span>✓</span>
-              <span>Колдонмо орнотулду</span>
-            </div>
+              <span>Ачуу — Открыть приложение</span>
+            </a>
           )}
 
           <p className="text-gray-600 text-xs mt-3">

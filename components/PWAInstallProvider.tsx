@@ -1,12 +1,12 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { type BeforeInstallPromptEvent, isIOS, isMobileUA, isStandalone, supportsInstallPrompt } from '@/lib/pwa-install'
+import { type BeforeInstallPromptEvent, INSTALLED_KEY, isIOS, isMobileUA, isStandalone, supportsInstallPrompt } from '@/lib/pwa-install'
 
 interface PWAInstallContextValue {
   /** True once the browser has fired beforeinstallprompt and it hasn't been consumed yet. */
   canPrompt: boolean
-  /** True once installed (from display-mode, or reactively from the appinstalled event). */
+  /** True once installed — from display-mode, the appinstalled event, or a persisted flag from a past install (see INSTALLED_KEY), whichever fires first. */
   isInstalled: boolean
   isIOS: boolean
   isMobile: boolean
@@ -45,6 +45,7 @@ export default function PWAInstallProvider({ children }: { children: ReactNode }
     }
     const onInstalled = () => {
       setInstalled(true)
+      localStorage.setItem(INSTALLED_KEY, 'true')
       setDeferredPrompt(null)
     }
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
@@ -56,7 +57,11 @@ export default function PWAInstallProvider({ children }: { children: ReactNode }
     const timer = window.setTimeout(() => {
       const standalone = isStandalone()
       const iosNow = isIOS()
-      setInstalled(standalone)
+      // Persisted flag OR'd in alongside the live display-mode check — a
+      // visitor who already installed but is looking at a normal browser
+      // tab right now (isStandalone() false there) should still see
+      // "already installed" rather than the install pitch again.
+      setInstalled(standalone || localStorage.getItem(INSTALLED_KEY) === 'true')
       setIos(iosNow)
       setMobile(isMobileUA())
       setUnsupported(!standalone && !iosNow && !supportsInstallPrompt())
@@ -74,7 +79,10 @@ export default function PWAInstallProvider({ children }: { children: ReactNode }
     await deferredPrompt.prompt()
     const { outcome } = await deferredPrompt.userChoice
     setDeferredPrompt(null)
-    if (outcome === 'accepted') setInstalled(true)
+    if (outcome === 'accepted') {
+      setInstalled(true)
+      localStorage.setItem(INSTALLED_KEY, 'true')
+    }
     return outcome
   }, [deferredPrompt])
 
