@@ -62,7 +62,10 @@ export default function PrivacyPage() {
   return (
     <div style={{ background: '#fff', minHeight: '100vh', fontFamily: 'Inter, -apple-system, sans-serif', color: '#0D1E4A' }}>
       <div style={{ maxWidth: '760px', margin: '0 auto', padding: '56px 24px 80px' }}>
-        <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#1B4FD8', fontSize: '13px', fontWeight: 700, textDecoration: 'none', marginBottom: '28px' }}>
+        {/* /landing, not '/' — '/' is now the root smart router (splash +
+            auth check), not the marketing page itself, so a direct link
+            meant to show that content has to name it explicitly. */}
+        <Link href="/landing" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#1B4FD8', fontSize: '13px', fontWeight: 700, textDecoration: 'none', marginBottom: '28px' }}>
           ← На главную
         </Link>
 

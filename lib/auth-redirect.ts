@@ -1,9 +1,9 @@
 import type { useRouter } from 'next/navigation'
 
-// Shared by app/page.tsx's mount-time session check + inline login modal,
-// app/login/page.tsx's dedicated login form, and app/launch/page.tsx's PWA
-// entry point — one source of truth for where each role lands after
-// authenticating.
+// Shared by app/page.tsx's root smart-router, app/landing/page.tsx's
+// mount-time session check + inline login modal, and app/login/page.tsx's
+// dedicated login form — one source of truth for where each role lands
+// after authenticating.
 // `fallbackHref` is only used after an active login submission (an
 // unrecognized-but-signed-in role still lands somewhere); a passive
 // mount-time auto-redirect passes none, so an unrecognized role there just
@@ -11,7 +11,7 @@ import type { useRouter } from 'next/navigation'
 //
 // Uses router.replace rather than router.push everywhere: every call site
 // is an auto-redirect away from a page that shouldn't be revisited via the
-// back button (landing/login/launch once already authenticated), so the
+// back button (root/landing/login once already authenticated), so the
 // entry itself shouldn't linger in history.
 export function redirectForRole(
   role: string | undefined,

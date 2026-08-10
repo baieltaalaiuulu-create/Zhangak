@@ -60,9 +60,9 @@ const slides: Slide[] = [
 ]
 
 // Dedicated onboarding route (was a root-layout overlay before) — reached
-// only from app/launch/page.tsx on a first run with no session. Marks
-// itself done and replaces to /login on finish, either via the last
-// slide's "Начать" or the skip button.
+// only from app/page.tsx's root smart router, on a first run with no
+// session. Marks itself done and replaces to /login on finish, either via
+// the last slide's "Начать" or the skip button.
 export default function OnboardingPage() {
   const [current, setCurrent] = useState(0)
   const router = useRouter()

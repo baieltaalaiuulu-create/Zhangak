@@ -55,10 +55,10 @@ export default function MobileHero({ firstName, currentScore, targetScore, heroL
           <h2 className="mt-1 text-lg font-bold leading-snug">{heroLesson.title}</h2>
           <p className="mt-0.5 text-sm opacity-75">~{LESSON_MINUTES} мин</p>
           <Link
-            href={`/student/online/lessons/${heroLesson.id}`}
+            href="/student/online/lessons"
             className="mt-4 flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-white text-sm font-bold text-[#1B4FD8] transition-colors active:bg-gray-100"
           >
-            ▶ Продолжить урок
+            ▶ Перейти к урокам
           </Link>
         </div>
       ) : (
