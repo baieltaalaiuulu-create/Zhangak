@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { redirectForRole } from '@/lib/auth-redirect'
+import { useInstallPrompt } from '@/components/PWAInstallProvider'
 
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null)
@@ -73,7 +74,22 @@ export default function LandingPage() {
   const [scrollY, setScrollY] = useState(0)
   const [activeResult, setActiveResult] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showIOSGuide, setShowIOSGuide] = useState(false)
   const router = useRouter()
+
+  // Reuses the app-wide install state (components/PWAInstallProvider,
+  // mounted once in the root layout) instead of each surface capturing its
+  // own beforeinstallprompt listener — that event only ever fires once per
+  // page load, so a second local listener here would race the provider's
+  // and could miss it. isUnsupported covers browsers with no install path
+  // at all (desktop Firefox/Safari) — same handling as
+  // components/student/settings/SettingsInstallCard.tsx.
+  const { isInstalled, isIOS, isUnsupported, promptInstall } = useInstallPrompt()
+
+  const handleInstall = async () => {
+    if (isIOS) { setShowIOSGuide(true); return }
+    await promptInstall()
+  }
 
   // app/page.tsx (the root route, '/') already redirects a logged-in
   // visitor away before this page ever renders — this is a secondary
@@ -276,6 +292,21 @@ export default function LandingPage() {
             <div className="hero-btns" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ background: '#1B4FD8', color: '#fff', borderRadius: '14px', padding: '14px 28px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 8px 28px rgba(27,79,216,0.32)', transition: 'all 0.2s', display: 'inline-block' }}>📲 Жазылуу</a>
               <button onClick={() => setShowLogin(true)} className="cta-btn" style={{ background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s' }}>Кирүү →</button>
+              {/* Sized/styled to match the two buttons above rather than the
+                  literal fixed h-14/w-full treatment, so the row stays
+                  visually consistent — .hero-btns' own mobile media query
+                  (above) already stretches every child to full width on
+                  small screens, so nothing is lost there. isUnsupported
+                  hides it entirely for browsers with no install path at
+                  all (desktop Firefox/Safari) rather than showing a dead
+                  button, matching SettingsInstallCard's handling. */}
+              {!isUnsupported && (
+                isInstalled ? (
+                  <span className="cta-btn" style={{ background: '#F0FDF4', color: '#16A34A', border: '1px solid #BBF7D0', borderRadius: '14px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', display: 'inline-flex', alignItems: 'center' }}>✓ Установлено</span>
+                ) : (
+                  <button onClick={handleInstall} className="cta-btn" style={{ background: '#F8FAFF', color: '#1B4FD8', border: '1px solid #BFDBFE', borderRadius: '14px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s' }}>📲 Установить приложение</button>
+                )
+              )}
             </div>
             <div className="hero-stats" style={{ display: 'flex', gap: '28px', marginTop: '36px', paddingTop: '28px', borderTop: '1px solid #E2E8F0', flexWrap: 'wrap' }}>
               {[{ n: '9000+', l: 'Ийгиликтүү бүтүрүүчү', c: '#1B4FD8' }, { n: '221', l: 'Эң жогорку балл', c: '#1B4FD8' }, { n: '3', l: 'Деңгээл', c: '#F59E0B' }].map(s => (
@@ -326,6 +357,52 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      {/* INSTALL APP */}
+      <section className="py-12 px-4 bg-[#0D0D1A] text-white text-center">
+        <h2 className="text-2xl font-bold mb-2">📱 Установи Жангак</h2>
+        <p className="text-gray-400 text-sm mb-6">
+          Работает как приложение — без App Store и Google Play
+        </p>
+
+        <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto mb-6">
+          <div className="bg-white/10 rounded-xl p-3 text-center">
+            <div className="text-2xl mb-1">⚡</div>
+            <div className="text-xs text-gray-300">Быстро открывается</div>
+          </div>
+          <div className="bg-white/10 rounded-xl p-3 text-center">
+            <div className="text-2xl mb-1">📵</div>
+            <div className="text-xs text-gray-300">Работает офлайн</div>
+          </div>
+          <div className="bg-white/10 rounded-xl p-3 text-center">
+            <div className="text-2xl mb-1">🔔</div>
+            <div className="text-xs text-gray-300">Уведомления</div>
+          </div>
+          <div className="bg-white/10 rounded-xl p-3 text-center">
+            <div className="text-2xl mb-1">🆓</div>
+            <div className="text-xs text-gray-300">Бесплатно</div>
+          </div>
+        </div>
+
+        {isUnsupported ? (
+          <p className="text-sm text-gray-400">Открой эту страницу в Chrome, чтобы установить</p>
+        ) : isInstalled ? (
+          <div className="w-full max-w-xs h-14 bg-green-500/20 text-green-400 font-bold rounded-2xl text-base mx-auto flex items-center justify-center border border-green-500/30">
+            ✓ Приложение установлено
+          </div>
+        ) : (
+          <button
+            onClick={handleInstall}
+            className="w-full max-w-xs h-14 bg-[#1B4FD8] text-white font-bold rounded-2xl text-base mx-auto block"
+          >
+            📲 Установить приложение
+          </button>
+        )}
+
+        <p className="text-xs text-gray-500 mt-3">
+          Android: Chrome • iPhone: Safari → Поделиться → На экран домой
+        </p>
+      </section>
 
       {/* STATS */}
       <div className="s-pad section-pad-lg" style={{ padding: '48px 32px', background: '#F5F8FF' }}>
@@ -584,6 +661,41 @@ export default function LandingPage() {
           <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#93C5FD', fontSize: '13px', textDecoration: 'none', fontWeight: '600' }}>📲 +996 502 077 326</a>
         </div>
       </div>
+
+      {/* iOS INSTALL GUIDE — iOS never fires beforeinstallprompt (Safari,
+          and any browser shell on iOS since they all run on WebKit, only
+          support installing via the manual Share-sheet flow), so
+          handleInstall opens this instead of calling promptInstall(). */}
+      {showIOSGuide && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end"
+          onClick={() => setShowIOSGuide(false)}>
+          <div className="bg-white w-full rounded-t-3xl p-6 pb-10"
+            onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-center mb-4">
+              Установить на iPhone
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-[#1B4FD8] rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">1</div>
+                <p className="text-sm text-gray-700 pt-1">Нажми кнопку <strong>Поделиться</strong> внизу Safari (квадрат со стрелкой ↑)</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-[#1B4FD8] rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">2</div>
+                <p className="text-sm text-gray-700 pt-1">Прокрути вниз и выбери <strong>&quot;На экран «Домой»&quot;</strong></p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-[#1B4FD8] rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">3</div>
+                <p className="text-sm text-gray-700 pt-1">Нажми <strong>&quot;Добавить&quot;</strong> в правом верхнем углу</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowIOSGuide(false)}
+              className="w-full h-12 bg-[#1B4FD8] text-white font-bold rounded-xl mt-6">
+              Понятно
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* LOGIN MODAL */}
       {showLogin && (
