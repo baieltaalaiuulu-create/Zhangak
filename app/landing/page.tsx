@@ -304,7 +304,7 @@ export default function LandingPage() {
                 isInstalled ? (
                   <span className="cta-btn" style={{ background: '#F0FDF4', color: '#16A34A', border: '1px solid #BBF7D0', borderRadius: '14px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', display: 'inline-flex', alignItems: 'center' }}>✓ Установлено</span>
                 ) : (
-                  <button onClick={handleInstall} className="cta-btn" style={{ background: '#F8FAFF', color: '#1B4FD8', border: '1px solid #BFDBFE', borderRadius: '14px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s' }}>📲 Установить приложение</button>
+                  <button onClick={handleInstall} className="cta-btn" style={{ background: '#F8FAFF', color: '#1B4FD8', border: '1px solid #BFDBFE', borderRadius: '14px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s' }}>📲 Колдонмону орнот</button>
                 )
               )}
             </div>
@@ -359,49 +359,46 @@ export default function LandingPage() {
       </div>
 
       {/* INSTALL APP */}
-      <section className="py-12 px-4 bg-[#0D0D1A] text-white text-center">
-        <h2 className="text-2xl font-bold mb-2">📱 Установи Жангак</h2>
-        <p className="text-gray-400 text-sm mb-6">
-          Работает как приложение — без App Store и Google Play
-        </p>
+      <section className="py-10 px-4 bg-[#0D0D1A]">
+        <div className="max-w-sm mx-auto text-center">
 
-        <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto mb-6">
-          <div className="bg-white/10 rounded-xl p-3 text-center">
-            <div className="text-2xl mb-1">⚡</div>
-            <div className="text-xs text-gray-300">Быстро открывается</div>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            {/* eslint-disable-next-line @next/next/no-img-element -- static PWA icon, matches the rest of this page's raw <img> convention */}
+            <img src="/icons/icon-192.png" className="w-12 h-12 rounded-xl shadow-lg" alt="Zhangak" />
+            <div className="text-left">
+              <div className="text-white font-bold text-lg">Жангак</div>
+              <div className="text-gray-400 text-xs">ОРТ Дайындыгы</div>
+            </div>
           </div>
-          <div className="bg-white/10 rounded-xl p-3 text-center">
-            <div className="text-2xl mb-1">📵</div>
-            <div className="text-xs text-gray-300">Работает офлайн</div>
-          </div>
-          <div className="bg-white/10 rounded-xl p-3 text-center">
-            <div className="text-2xl mb-1">🔔</div>
-            <div className="text-xs text-gray-300">Уведомления</div>
-          </div>
-          <div className="bg-white/10 rounded-xl p-3 text-center">
-            <div className="text-2xl mb-1">🆓</div>
-            <div className="text-xs text-gray-300">Бесплатно</div>
-          </div>
+
+          <p className="text-gray-400 text-sm mb-5">
+            Телефонуңа орнот — App Store жана Google Play керек эмес
+          </p>
+
+          {/* isUnsupported (no install path at all — desktop Firefox/Safari)
+              isn't in the literal spec, but silently showing a button that
+              does nothing on click would be worse than this page's other
+              two install surfaces (hero row, iOS guide), which already
+              handle it the same way. */}
+          {isUnsupported ? (
+            <p className="text-gray-500 text-xs">Ачык браузериңде орнотуу мүмкүн эмес — Chrome колдон</p>
+          ) : !isInstalled ? (
+            <button onClick={handleInstall}
+              className="w-full h-14 bg-[#1B4FD8] text-white font-bold rounded-2xl text-base shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+              <span>📲</span>
+              <span>Колдонмону орнот</span>
+            </button>
+          ) : (
+            <div className="w-full h-14 bg-green-500/20 text-green-400 font-bold rounded-2xl flex items-center justify-center gap-2 border border-green-500/30">
+              <span>✓</span>
+              <span>Колдонмо орнотулду</span>
+            </div>
+          )}
+
+          <p className="text-gray-600 text-xs mt-3">
+            Android: Chrome → Меню → Орнот • iPhone: Safari → Бөлүшүү → Башкы экран
+          </p>
         </div>
-
-        {isUnsupported ? (
-          <p className="text-sm text-gray-400">Открой эту страницу в Chrome, чтобы установить</p>
-        ) : isInstalled ? (
-          <div className="w-full max-w-xs h-14 bg-green-500/20 text-green-400 font-bold rounded-2xl text-base mx-auto flex items-center justify-center border border-green-500/30">
-            ✓ Приложение установлено
-          </div>
-        ) : (
-          <button
-            onClick={handleInstall}
-            className="w-full max-w-xs h-14 bg-[#1B4FD8] text-white font-bold rounded-2xl text-base mx-auto block"
-          >
-            📲 Установить приложение
-          </button>
-        )}
-
-        <p className="text-xs text-gray-500 mt-3">
-          Android: Chrome • iPhone: Safari → Поделиться → На экран домой
-        </p>
       </section>
 
       {/* STATS */}
