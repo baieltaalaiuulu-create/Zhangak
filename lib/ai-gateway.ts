@@ -2,7 +2,9 @@
 // analytics insights) goes through here instead of hitting a provider's API
 // directly, so swapping providers is a one-line env var change instead of a
 // grep-and-replace across every route. Active provider: AI_PROVIDER
-// ('groq' | 'gemini' | 'openai' | 'ollama'), defaults to 'groq'.
+// ('deepseek' | 'groq' | 'gemini' | 'openai' | 'ollama'), defaults to
+// 'groq'. DeepSeek routes ordinary requests to V4 Flash and analysis/plans
+// to V4 Pro with thinking enabled.
 //
 // All providers speak the same two methods:
 //   - stream(messages, options)   → Promise<ReadableStream<Uint8Array>> of
@@ -74,6 +76,11 @@ const ERR_RATE_LIMIT = 'Слишком много запросов. Подожд
 // "Complex" = analysis/plan generation, or just a long message — these get
 // routed to the bigger model; everything else gets the fast/cheap one.
 const COMPLEXITY_LENGTH_THRESHOLD = 200
+
+function boundedPositiveInteger(raw: string | undefined, fallback: number, maximum: number): number {
+  const parsed = Number(raw)
+  return Number.isInteger(parsed) && parsed > 0 && parsed <= maximum ? parsed : fallback
+}
 
 function isComplex(messages: AIMessage[], options?: AICompleteOptions): boolean {
   if (options?.type === 'analysis' || options?.type === 'plan') return true
@@ -170,6 +177,12 @@ abstract class OpenAICompatibleGateway extends BaseAIGateway {
   protected abstract complexModel: string
   protected abstract providerLabel: string
 
+  protected requestExtras(model: string, options?: AICompleteOptions): Record<string, unknown> {
+    void model
+    void options
+    return {}
+  }
+
   async stream(messages: AIMessage[], options?: AICompleteOptions): Promise<ReadableStream<Uint8Array>> {
     const model = isComplex(messages, options) ? this.complexModel : this.simpleModel
     return this.request(model, messages, options)
@@ -191,6 +204,7 @@ abstract class OpenAICompatibleGateway extends BaseAIGateway {
           messages: messages.map(m => ({ role: m.role, content: m.content })),
           stream: true,
           ...(options?.jsonMode ? { response_format: { type: 'json_object' } } : {}),
+          ...this.requestExtras(model, options),
         }),
         signal: controller.signal,
       })
@@ -205,6 +219,37 @@ abstract class OpenAICompatibleGateway extends BaseAIGateway {
     if (!res.body) throw new AIGatewayError(`${this.providerLabel} response has no body`, ERR_API)
 
     return res.body.pipeThrough(createOpenAICompatibleSSETransform())
+  }
+}
+
+// DeepSeek V4 supports both fast non-thinking responses and deliberate
+// reasoning through the same OpenAI-compatible endpoint. Keep the model
+// aliases configurable so an operator can roll forward without a code
+// release, while using the current official names as safe defaults.
+class DeepSeekGateway extends OpenAICompatibleGateway {
+  protected baseUrl = (process.env.DEEPSEEK_BASE_URL ?? 'https://api.deepseek.com').replace(/\/$/, '')
+  protected apiKey = process.env.DEEPSEEK_API_KEY ?? null
+  protected simpleModel = process.env.DEEPSEEK_FAST_MODEL ?? 'deepseek-v4-flash'
+  protected complexModel = process.env.DEEPSEEK_REASONING_MODEL ?? 'deepseek-v4-pro'
+  protected providerLabel = 'DeepSeek'
+
+  protected requestExtras(model: string): Record<string, unknown> {
+    const complex = model === this.complexModel
+    return complex
+      ? {
+          thinking: { type: 'enabled' },
+          reasoning_effort: 'high',
+          max_tokens: boundedPositiveInteger(process.env.DEEPSEEK_REASONING_MAX_TOKENS, 2_400, 8_000),
+        }
+      : {
+          thinking: { type: 'disabled' },
+          max_tokens: boundedPositiveInteger(process.env.DEEPSEEK_FAST_MAX_TOKENS, 1_200, 4_000),
+        }
+  }
+
+  async stream(messages: AIMessage[], options?: AICompleteOptions): Promise<ReadableStream<Uint8Array>> {
+    if (!this.apiKey) throw new AIGatewayError('DEEPSEEK_API_KEY missing', ERR_API)
+    return super.stream(messages, options)
   }
 }
 
@@ -309,7 +354,11 @@ class GeminiGateway extends BaseAIGateway {
 // request builder concatenates every system-role message into one
 // systemInstruction (see createGeminiSSETransform's caller above).
 class GuardedAIGateway implements AIGateway {
-  constructor(private inner: AIGateway) {}
+  private inner: AIGateway
+
+  constructor(inner: AIGateway) {
+    this.inner = inner
+  }
 
   private withDefault(messages: AIMessage[]): AIMessage[] {
     return [{ role: 'system', content: DEFAULT_SYSTEM_MESSAGE }, ...messages]
@@ -330,6 +379,7 @@ export function createAIGateway(): AIGateway {
   const provider = (process.env.AI_PROVIDER || 'groq').toLowerCase()
   const inner = (() => {
     switch (provider) {
+      case 'deepseek': return new DeepSeekGateway()
       case 'gemini': return new GeminiGateway()
       case 'openai': return new OpenAIGateway()
       case 'ollama': return new OllamaGateway()
