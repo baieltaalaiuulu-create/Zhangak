@@ -30,6 +30,7 @@ const protectedRoutes = {
   'app/api/delete-own-account/route.ts': ownAccountGuard(),
   'app/api/delete-user/route.ts': roleGuard('ACCOUNT_MANAGER_ROLES'),
   'app/api/list-users/route.ts': roleGuard('ACCOUNT_MANAGER_ROLES'),
+  'app/api/practice/route.ts': bearerGuard(),
 }
 
 function adminGuard(helper = 'requireAdminApi') {

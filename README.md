@@ -28,6 +28,8 @@ The web app is available at `http://localhost:3000`.
 ```sh
 npm run typecheck
 npm run check:security
+npm run test:unit
+npm run check:learning-boundary
 npm run check:emoji
 npm run audit:prod
 npm run build
@@ -71,3 +73,6 @@ opened to users.
 - Private Supabase and AI keys are runtime-only environment variables.
 - Direct browser access to Supabase is still governed by RLS; a versioned,
   auditable schema/RLS baseline is the next blocking platform milestone.
+- The phase-2 trusted-practice API contract is implemented but remains
+  fail-closed until its atomic Supabase functions pass the live-schema recovery
+  and database tests described in [`docs/database/practice-submission.md`](docs/database/practice-submission.md).

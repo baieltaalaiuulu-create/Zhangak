@@ -45,6 +45,12 @@ jobs:
       - name: Check API security invariants
         run: npm run check:security
 
+      - name: Test trusted learning contracts
+        run: npm run test:unit
+
+      - name: Check learning trust boundary
+        run: npm run check:learning-boundary
+
       - name: Reject corrupted SQL migrations
         run: npm run check:migrations
 
