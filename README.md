@@ -33,6 +33,7 @@ npm run check:learning-boundary
 npm run check:student-mobile-ux
 npm run check:university-journey
 npm run check:offline-student-journey
+npm run check:teacher-journey
 npm run check:emoji
 npm run audit:prod
 npm run build

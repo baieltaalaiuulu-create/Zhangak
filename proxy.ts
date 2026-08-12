@@ -15,6 +15,7 @@ const ADMIN_PAGE_PREFIXES = ['/admin', '/director', '/finance', '/manager', '/te
 const PLATFORM_PAGE_PREFIXES = ['/student', '/onboarding', '/offline', '/math/student', '/math/parent']
 const ADMIN_API_PREFIXES = [
   '/api/admin',
+  '/api/teacher',
   '/api/block-user',
   '/api/create-user',
   '/api/delete-user',

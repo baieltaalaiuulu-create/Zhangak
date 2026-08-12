@@ -26,6 +26,7 @@ export const CONTENT_ADMIN_ROLES = [...FULL_ADMIN_ROLES, 'admin_jr'] as const sa
 export const ACCOUNT_CREATOR_ROLES = [...FULL_ADMIN_ROLES, 'admin_jr', 'math_admin'] as const satisfies readonly AccountRole[]
 export const ACCOUNT_MANAGER_ROLES = [...FULL_ADMIN_ROLES, 'math_admin'] as const satisfies readonly AccountRole[]
 export const STUDENT_ROLES = ['student'] as const satisfies readonly AccountRole[]
+export const TEACHER_ROLES = ['teacher'] as const satisfies readonly AccountRole[]
 
 const ACCOUNT_ROLE_SET = new Set<string>(ACCOUNT_ROLES)
 

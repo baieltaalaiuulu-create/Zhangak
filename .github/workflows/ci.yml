@@ -60,6 +60,9 @@ jobs:
       - name: Check offline student journey invariants
         run: npm run check:offline-student-journey
 
+      - name: Check teacher journey invariants
+        run: npm run check:teacher-journey
+
       - name: Reject corrupted SQL migrations
         run: npm run check:migrations
 

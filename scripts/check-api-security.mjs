@@ -32,6 +32,7 @@ const protectedRoutes = {
   'app/api/list-users/route.ts': roleGuard('ACCOUNT_MANAGER_ROLES'),
   'app/api/offline-student/route.ts': roleGuard('STUDENT_ROLES'),
   'app/api/practice/route.ts': bearerGuard(),
+  'app/api/teacher/route.ts': roleGuard('TEACHER_ROLES'),
 }
 
 function adminGuard(helper = 'requireAdminApi') {
@@ -271,6 +272,8 @@ async function checkRoleMatrix() {
     assertArray('CONTENT_ADMIN_ROLES', resolveRoleArray(source, 'CONTENT_ADMIN_ROLES'), ['super_admin', 'admin', 'admin_jr'])
     assertArray('ACCOUNT_CREATOR_ROLES', resolveRoleArray(source, 'ACCOUNT_CREATOR_ROLES'), ['super_admin', 'admin', 'admin_jr', 'math_admin'])
     assertArray('ACCOUNT_MANAGER_ROLES', resolveRoleArray(source, 'ACCOUNT_MANAGER_ROLES'), ['super_admin', 'admin', 'math_admin'])
+    assertArray('STUDENT_ROLES', resolveRoleArray(source, 'STUDENT_ROLES'), ['student'])
+    assertArray('TEACHER_ROLES', resolveRoleArray(source, 'TEACHER_ROLES'), ['teacher'])
 
     const canCreate = extractPurePermissionFunction(source, 'canCreateAccount')
     const canManage = extractPurePermissionFunction(source, 'canManageAccount')
