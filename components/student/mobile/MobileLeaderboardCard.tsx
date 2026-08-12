@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { Trophy } from 'lucide-react'
 
 interface Props {
   rank: number
@@ -12,10 +13,10 @@ interface Props {
 export default function MobileLeaderboardCard({ rank, inTopTen, xpToNextRank, href }: Props) {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-      <p className="text-sm font-bold text-[#191B23]">🏆 Ты на #{rank} месте</p>
+      <p className="flex items-center gap-2 text-sm font-bold text-[#191B23]"><Trophy size={18} className="text-amber-500" aria-hidden="true" /> Ты на #{rank} месте</p>
       <p className="mt-1 text-xs text-gray-500">
         {inTopTen
-          ? 'Ты в ТОП-10! 🎉'
+          ? 'Ты в ТОП-10!'
           : xpToNextRank != null
             ? `До ТОП-10: ${xpToNextRank} XP`
             : 'Зарабатывай XP, чтобы попасть в топ'}

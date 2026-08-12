@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, Search, Pin, Trash2 } from 'lucide-react'
+import { Flame, Plus, Search, Pin, Trash2 } from 'lucide-react'
 import type { ChatSession } from '@/lib/ai-chat-data'
 
 interface Props {
@@ -157,7 +157,7 @@ export default function ChatSidebar({
           <p className="text-[10px] text-gray-500">{xp} XP</p>
         </div>
         {streak > 0 && (
-          <span className="shrink-0 text-xs font-bold text-orange-400">🔥 {streak}</span>
+          <span className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-orange-400"><Flame size={13} aria-hidden="true" /> {streak}</span>
         )}
       </div>
     </aside>

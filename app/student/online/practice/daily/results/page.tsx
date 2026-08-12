@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Sparkles, RotateCcw, TrendingUp } from 'lucide-react'
+import { BrainCircuit, Calculator, CheckCircle2, Eye, Flame, Languages, Sparkles, RotateCcw, TrendingUp, type LucideIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import {
   fetchTodayChallenge, fetchChallengeQuestions, fetchChallengeResult, fetchChallengeStreak,
@@ -17,6 +17,13 @@ const SUBJECT_TO_SECTION: Record<ChallengeSubject, string> = {
   kyr: 'grammar',
   analogy: 'analogy',
   reading: 'reading',
+}
+
+const SUBJECT_ICON: Record<ChallengeSubject, LucideIcon> = {
+  math: Calculator,
+  kyr: Languages,
+  analogy: BrainCircuit,
+  reading: Eye,
 }
 
 function LoadingScreen() {
@@ -99,7 +106,10 @@ export default function DailyChallengeResultsPage() {
     <div className="min-h-screen bg-[#FAF8FF] px-4 py-8 sm:px-6">
       <div className="mx-auto max-w-xl">
         <div className="rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm sm:p-8">
-          <h1 className="text-xl font-extrabold text-[#191B23] sm:text-2xl">🎉 Задание дня выполнено!</h1>
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-50 text-green-600">
+            <CheckCircle2 size={30} aria-hidden="true" />
+          </span>
+          <h1 className="mt-3 text-xl font-extrabold text-[#191B23] sm:text-2xl">Задание дня выполнено!</h1>
 
           <div className="relative mx-auto mt-6 h-32 w-32">
             <svg className="h-full w-full -rotate-90" viewBox="0 0 120 120">
@@ -122,7 +132,8 @@ export default function DailyChallengeResultsPage() {
               +{xp} XP за прохождение
             </span>
             <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-1.5 text-sm font-bold text-red-500">
-              🔥 Серия: {streak} {streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'} подряд
+              <Flame size={15} aria-hidden="true" />
+              Серия: {streak} {streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'} подряд
             </span>
           </div>
 
@@ -138,9 +149,10 @@ export default function DailyChallengeResultsPage() {
               <h2 className="text-sm font-bold text-gray-900">Ошибки по предметам</h2>
               {errorGroups.map(g => {
                 const meta = SUBJECT_META[g.subject]
+                const SubjectIcon = SUBJECT_ICON[g.subject]
                 return (
                   <div key={g.subject} className="flex items-center justify-between rounded-xl bg-gray-50 px-3.5 py-2.5 text-sm">
-                    <span className="font-semibold text-gray-700">{meta.icon} {meta.label}</span>
+                    <span className="inline-flex items-center gap-2 font-semibold text-gray-700"><SubjectIcon size={16} aria-hidden="true" /> {meta.label}</span>
                     <span className="text-gray-500">
                       {g.count} {g.count === 1 ? 'ошибка' : 'ошибки'}{g.topics.length > 0 ? ` (${g.topics.join(', ')})` : ''}
                     </span>
@@ -149,8 +161,12 @@ export default function DailyChallengeResultsPage() {
               })}
               {cleanSubjects.length > 0 && (
                 <div className="flex items-center justify-between rounded-xl bg-green-50 px-3.5 py-2.5 text-sm">
-                  <span className="font-semibold text-green-700">
-                    {cleanSubjects.map(s => SUBJECT_META[s].icon).join(' ')} {cleanSubjects.map(s => SUBJECT_META[s].label).join(' & ')}
+                  <span className="inline-flex flex-wrap items-center gap-1.5 font-semibold text-green-700">
+                    {cleanSubjects.map(subject => {
+                      const SubjectIcon = SUBJECT_ICON[subject]
+                      return <SubjectIcon key={subject} size={15} aria-hidden="true" />
+                    })}
+                    {cleanSubjects.map(s => SUBJECT_META[s].label).join(' & ')}
                   </span>
                   <span className="font-semibold text-green-600">Без ошибок ✓</span>
                 </div>

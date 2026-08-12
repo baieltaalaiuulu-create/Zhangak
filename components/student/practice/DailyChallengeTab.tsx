@@ -2,15 +2,22 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Flame, Users, Trophy, Sparkles } from 'lucide-react'
+import { BrainCircuit, Calculator, CalendarClock, Eye, Flame, Languages, Users, Trophy, Sparkles, type LucideIcon } from 'lucide-react'
 import {
   fetchTodayChallenge, fetchChallengeQuestions, fetchChallengeResult, fetchChallengeCompletionCount,
   fetchBestAccuracy, fetchChallengeStreak, fetchWeakTopic, loadDailyProgress,
-  SUBJECT_META, type DailyChallenge, type DailyChallengeQuestion, type WeakTopicInfo,
+  SUBJECT_META, type ChallengeSubject, type DailyChallenge, type DailyChallengeQuestion, type WeakTopicInfo,
 } from '@/lib/daily-challenge-data'
 
 interface Props {
   studentId: string | null
+}
+
+const SUBJECT_ICON: Record<ChallengeSubject, LucideIcon> = {
+  math: Calculator,
+  kyr: Languages,
+  analogy: BrainCircuit,
+  reading: Eye,
 }
 
 function LoadingCard() {
@@ -68,7 +75,7 @@ export default function DailyChallengeTab({ studentId }: Props) {
   if (!challenge) {
     return (
       <div className="rounded-2xl border border-gray-100 bg-white p-10 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-50 text-2xl">🔥</div>
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-50 text-orange-500"><CalendarClock size={24} aria-hidden="true" /></div>
         <p className="text-sm font-bold text-gray-700">Задание дня скоро появится</p>
         <p className="mt-1 text-xs text-gray-400">Загляни чуть позже — новое задание публикуется каждый день</p>
       </div>
@@ -92,7 +99,7 @@ export default function DailyChallengeTab({ studentId }: Props) {
         style={{ background: 'linear-gradient(135deg, #F5890A 0%, #EA580C 60%, #C2410C 100%)' }}
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-extrabold sm:text-xl">🔥 Задание дня — {dateLabel}</h2>
+          <h2 className="flex items-center gap-2 text-lg font-extrabold sm:text-xl"><Flame size={20} aria-hidden="true" /> Задание дня — {dateLabel}</h2>
           <span className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-bold backdrop-blur-sm">
             +{challenge.xp_reward} XP за завершение
           </span>
@@ -106,10 +113,12 @@ export default function DailyChallengeTab({ studentId }: Props) {
 
         <div className="mt-4 flex flex-wrap gap-2">
           {Array.from(subjectCounts.entries()).map(([subject, count]) => {
-            const meta = SUBJECT_META[subject as keyof typeof SUBJECT_META]
+            const typedSubject = subject as ChallengeSubject
+            const meta = SUBJECT_META[typedSubject]
+            const SubjectIcon = SUBJECT_ICON[typedSubject]
             return (
               <span key={subject} className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold backdrop-blur-sm">
-                {meta?.icon} {meta?.label} — {count}
+                <SubjectIcon size={14} aria-hidden="true" /> {meta?.label} — {count}
               </span>
             )
           })}

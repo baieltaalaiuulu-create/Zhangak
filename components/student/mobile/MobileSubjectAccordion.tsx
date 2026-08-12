@@ -1,10 +1,10 @@
 'use client'
 
-import { ChevronDown } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { ChevronDown } from 'lucide-react'
 
 interface Props {
-  icon: string
+  icon: ReactNode
   label: string
   completed: number
   total: number
@@ -23,7 +23,7 @@ export default function MobileSubjectAccordion({ icon, label, completed, total, 
         onClick={onToggle}
         className="flex min-h-11 w-full items-center gap-3 px-4 py-3.5 text-left"
       >
-        <span className="shrink-0 text-lg">{icon}</span>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#1B4FD8]">{icon}</span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center justify-between gap-2">
             <span className="text-sm font-bold text-[#191B23]">{label}</span>

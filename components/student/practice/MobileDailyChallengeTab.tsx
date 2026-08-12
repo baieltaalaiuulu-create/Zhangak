@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ArrowRight, CalendarClock } from 'lucide-react'
 import {
   fetchTodayChallenge, fetchChallengeQuestions, fetchChallengeResult, loadDailyProgress,
   SUBJECT_META, type DailyChallenge, type DailyChallengeQuestion,
@@ -19,7 +20,7 @@ function LoadingCard() {
   )
 }
 
-// Compact mobile-only card for the "🔥 Задание дня" tab — same real data as
+// Compact mobile-only card for the daily challenge tab — same real data as
 // the desktop DailyChallengeTab (lib/daily-challenge-data.ts), just laid
 // out per the mobile spec instead of the desktop gradient hero.
 export default function MobileDailyChallengeTab({ studentId }: Props) {
@@ -57,7 +58,9 @@ export default function MobileDailyChallengeTab({ studentId }: Props) {
   if (!challenge) {
     return (
       <div className="mx-4 mt-3 rounded-2xl border border-gray-100 bg-white p-8 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-50 text-2xl">🔥</div>
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-50 text-orange-500">
+          <CalendarClock size={24} aria-hidden="true" />
+        </div>
         <p className="text-sm font-bold text-gray-700">Задание дня скоро появится</p>
         <p className="mt-1 text-xs text-gray-400">Загляни чуть позже</p>
       </div>
@@ -70,7 +73,7 @@ export default function MobileDailyChallengeTab({ studentId }: Props) {
 
   const subjectLabels = Array.from(new Set(questions.map(q => SUBJECT_META[q.subject]?.label).filter(Boolean)))
 
-  const ctaLabel = completed ? 'Посмотреть результат' : progressCount > 0 ? 'Продолжить →' : 'Начать задание дня →'
+  const ctaLabel = completed ? 'Посмотреть результат' : progressCount > 0 ? 'Продолжить' : 'Начать задание дня'
   const ctaHref = completed ? '/student/online/practice/daily/results' : '/student/online/practice/daily'
 
   return (
@@ -94,9 +97,10 @@ export default function MobileDailyChallengeTab({ studentId }: Props) {
       <button
         type="button"
         onClick={() => router.push(ctaHref)}
-        className="mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-white text-sm font-bold text-orange-500"
+        className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-orange-600"
       >
         {ctaLabel}
+        <ArrowRight size={17} aria-hidden="true" />
       </button>
     </div>
   )

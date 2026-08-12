@@ -4,16 +4,14 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import nextDynamic from 'next/dynamic'
+import { RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { getStudentDashboard, DEFAULT_TARGET_SCORE, type StudentDashboardData } from '@/lib/student-data'
 import { fetchDashboardExtras, type DashboardExtras } from '@/lib/dashboard-data'
 import { fetchLessons, type Lesson } from '@/lib/lessons-data'
-import { fetchWeeklyLeaderboard, type WeeklyLeaderboardEntry } from '@/lib/weekly-leaderboard-data'
 import {
   fetchTodayChallenge,
-  fetchChallengeCompletionCount,
   fetchChallengeResult,
-  currentWeekStart,
   type DailyChallenge,
 } from '@/lib/daily-challenge-data'
 
@@ -25,13 +23,9 @@ import SubjectsGrid from '@/components/student/SubjectsGrid'
 import RecentAchievementsCard from '@/components/student/RecentAchievementsCard'
 import MobileHero from '@/components/student/mobile/MobileHero'
 import MobileTodayChecklist from '@/components/student/mobile/MobileTodayChecklist'
-import MobileDailyChallengeCard from '@/components/student/mobile/MobileDailyChallengeCard'
-import MobileLeaderboardCard from '@/components/student/mobile/MobileLeaderboardCard'
-import MobileStatsGrid from '@/components/student/mobile/MobileStatsGrid'
 
-// Both below-the-fold on mobile (last 3 sections) and secondary/non-CTA on
-// desktop — deferred out of the initial JS bundle rather than pulled in
-// eagerly with everything above it. ssr:false because both are pure
+// Secondary desktop cards are deferred out of the initial JS bundle rather
+// than pulled in eagerly with everything above it. ssr:false because both are pure
 // client-rendered cards fed by props already computed before render (no
 // server-render benefit, and it keeps their own internal useState from
 // running through hydration). AIRecommendationCard in the literal spec
@@ -46,17 +40,12 @@ const AIMentorRecommendationCard = nextDynamic(() => import('@/components/studen
   loading: () => null,
 })
 
-const CHALLENGE_MIN_PER_QUESTION = 0.75
-
 export default function StudentOnlinePage() {
   const [profileName, setProfileName] = useState<string | null>(null)
   const [data, setData] = useState<StudentDashboardData | null>(null)
   const [extras, setExtras] = useState<DashboardExtras | null>(null)
   const [heroLesson, setHeroLesson] = useState<Lesson | null>(null)
-  const [leaderboardMe, setLeaderboardMe] = useState<WeeklyLeaderboardEntry | null>(null)
-  const [xpToNextRank, setXpToNextRank] = useState<number | null>(null)
   const [todayChallenge, setTodayChallenge] = useState<DailyChallenge | null>(null)
-  const [challengeParticipants, setChallengeParticipants] = useState(0)
   const [challengeCompleted, setChallengeCompleted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
@@ -85,10 +74,9 @@ export default function StudentOnlinePage() {
         // below has already resolved, which used to add a full extra
         // round-trip to every dashboard load.
         const dashboardPromise = getStudentDashboard()
-        const [dashboard, allLessons, leaderboard, challenge, dashboardExtras] = await Promise.all([
+        const [dashboard, allLessons, challenge, dashboardExtras] = await Promise.all([
           dashboardPromise,
           fetchLessons(),
-          fetchWeeklyLeaderboard(currentWeekStart(), user.id),
           fetchTodayChallenge(),
           dashboardPromise.then(d => fetchDashboardExtras(user.id, d.latestScore, d.previousScore)),
         ])
@@ -102,16 +90,9 @@ export default function StudentOnlinePage() {
         // own separate, identical fetchCompletedLessonIds query.
         setHeroLesson(allLessons.find(l => !dashboardExtras.completedLessonIds.has(l.id)) ?? null)
 
-        setLeaderboardMe(leaderboard.me)
-        setXpToNextRank(leaderboard.xpToNextRank)
-
         setTodayChallenge(challenge)
         if (challenge) {
-          const [participants, result] = await Promise.all([
-            fetchChallengeCompletionCount(challenge.id),
-            fetchChallengeResult(challenge.id, user.id),
-          ])
-          setChallengeParticipants(participants)
+          const result = await fetchChallengeResult(challenge.id, user.id)
           setChallengeCompleted(!!result)
         }
       } catch {
@@ -132,7 +113,8 @@ export default function StudentOnlinePage() {
           onClick={() => window.location.reload()}
           className="flex min-h-11 items-center gap-1.5 rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white"
         >
-          ↻ Попробовать ещё раз
+          <RefreshCw size={16} aria-hidden="true" />
+          Попробовать ещё раз
         </button>
       </div>
     )
@@ -142,10 +124,7 @@ export default function StudentOnlinePage() {
     return (
       <div className="min-h-screen bg-[#F4F6FA]">
         <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6">
-          {/* Mobile skeleton — roughly mirrors the real section stack
-              (hero, checklist, challenge/leaderboard, stats) instead of
-              just 2-3 generic blocks, so the layout settles with less jank
-              once the real data replaces it. */}
+          {/* Mobile skeleton mirrors the intentionally short daily route. */}
           <div className="block space-y-3 md:hidden">
             <div className="animate-pulse space-y-2">
               <div className="h-6 w-48 rounded bg-gray-200" />
@@ -153,7 +132,6 @@ export default function StudentOnlinePage() {
             </div>
             <div className="h-40 animate-pulse rounded-2xl bg-gray-200" />
             <div className="h-32 animate-pulse rounded-2xl bg-gray-200" />
-            <div className="h-24 animate-pulse rounded-2xl bg-gray-200" />
           </div>
           {/* Desktop skeleton */}
           <div className="hidden md:block">
@@ -182,13 +160,14 @@ export default function StudentOnlinePage() {
     : null
   const lessonDoneToday = heroLesson ? (heroSubjectTrack?.lessonDoneToday ?? false) : true
   const practiceItem = extras.todayPlan.items.find(i => i.kind === 'practice')
-  const challengeItem = extras.todayPlan.items.find(i => i.kind === 'mini_mock')
 
   return (
     <div className="min-h-screen bg-[#F4F6FA]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 min-w-0">
 
-        <AnnouncementBanner />
+        <div className="hidden md:block">
+          <AnnouncementBanner />
+        </div>
 
         {/* ============ MOBILE (< 768px) ============ */}
         <div className="block space-y-5 md:hidden">
@@ -205,35 +184,9 @@ export default function StudentOnlinePage() {
             lessonHref={heroLesson ? `/student/online/lessons/${heroLesson.id}` : '/student/online/lessons'}
             practiceDone={practiceItem?.done ?? false}
             practiceHref={practiceItem?.href ?? '/student/online/practice'}
-            challengeDone={challengeItem?.done ?? false}
-            challengeHref={challengeItem?.href ?? '/student/online/practice'}
+            challengeDone={todayChallenge ? challengeCompleted : false}
+            challengeHref="/student/online/practice/daily"
           />
-
-          {todayChallenge && (
-            <MobileDailyChallengeCard
-              questionCount={todayChallenge.question_count}
-              minutes={Math.max(5, Math.round(todayChallenge.question_count * CHALLENGE_MIN_PER_QUESTION))}
-              participantCount={challengeParticipants}
-              completed={challengeCompleted}
-              href="/student/online/practice/daily"
-            />
-          )}
-
-          {leaderboardMe && (
-            <MobileLeaderboardCard
-              rank={leaderboardMe.rank}
-              inTopTen={leaderboardMe.rank <= 10}
-              xpToNextRank={xpToNextRank}
-              href="/student/online/leaderboard"
-            />
-          )}
-
-          <MobileStatsGrid stats={extras.weeklyStats} />
-
-          {/* Below the fold — secondary, less prominent */}
-          <AIMentorRecommendationCard recommendation={extras.aiRecommendation} compact />
-          <ActivityHeatmap days={extras.heatmapDays} months={extras.heatmapMonths} collapsible />
-          <RecentAchievementsCard achievements={extras.achievements} maxItems={2} />
         </div>
 
         {/* ============ DESKTOP (>= 768px) — unchanged ============ */}

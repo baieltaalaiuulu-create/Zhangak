@@ -51,6 +51,9 @@ jobs:
       - name: Check learning trust boundary
         run: npm run check:learning-boundary
 
+      - name: Check student mobile UX invariants
+        run: npm run check:student-mobile-ux
+
       - name: Reject corrupted SQL migrations
         run: npm run check:migrations
 

@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
-import { Search, Bell } from 'lucide-react'
+import { Bell, Flame, Search, Star, Target } from 'lucide-react'
 
 interface Props {
   fullName: string
@@ -52,16 +52,27 @@ export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore
       </div>
 
       <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-        {streak > 0 && <Pill tone="orange">🔥 {streak} {streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'}</Pill>}
-        <Pill tone="blue">🎯 {targetScore} балл</Pill>
-        <Pill className="hidden md:inline-flex">⭐ Ур. {level}</Pill>
+        {streak > 0 && (
+          <Pill tone="orange" className="hidden md:inline-flex">
+            <Flame size={14} aria-hidden="true" />
+            {streak} {streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'}
+          </Pill>
+        )}
+        <Pill tone="blue" className="hidden md:inline-flex">
+          <Target size={14} aria-hidden="true" />
+          {targetScore} балл
+        </Pill>
+        <Pill className="hidden md:inline-flex">
+          <Star size={14} aria-hidden="true" />
+          Ур. {level}
+        </Pill>
 
         <div className="relative">
           <button
             type="button"
             onClick={() => setNotifOpen(v => !v)}
             aria-label="Уведомления"
-            className="relative rounded-full p-2 text-gray-500 hover:bg-gray-50"
+            className="relative flex min-h-11 min-w-11 items-center justify-center rounded-full text-gray-500 hover:bg-gray-50"
           >
             <Bell size={18} />
             {unreadCount > 0 && (
@@ -82,7 +93,7 @@ export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore
             type="button"
             onClick={() => setMenuOpen(v => !v)}
             aria-label="Меню профиля"
-            className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#1B4FD8] text-xs font-bold text-white"
+            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[#1B4FD8] text-xs font-bold text-white"
           >
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL, no next/image domain config in this project

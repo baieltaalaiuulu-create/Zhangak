@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
+import { BrainCircuit, Calculator, ChevronLeft, ChevronRight, Eye, Languages, Sparkles, type LucideIcon } from 'lucide-react'
 import {
   fetchSubjectOverview, fetchPracticeTopics, fetchTopicStats,
   SUBJECT_TAB_LABELS, SUBJECT_TAB_SECTIONS, SECTION_LABELS,
@@ -15,11 +15,16 @@ interface Props {
   compact?: boolean
 }
 
-const SUBJECT_CARD_ICON: Record<Exclude<SubjectTab, 'all'>, string> = {
-  math: '📐',
-  kyr: '📘',
-  analogy: '🧠',
-  reading: '👁',
+const SUBJECT_CARD_ICON: Record<Exclude<SubjectTab, 'all'>, LucideIcon> = {
+  math: Calculator,
+  kyr: Languages,
+  analogy: BrainCircuit,
+  reading: Eye,
+}
+
+function SubjectIcon({ subject, size = 20 }: { subject: Exclude<SubjectTab, 'all'>; size?: number }) {
+  const Icon = SUBJECT_CARD_ICON[subject]
+  return <Icon size={size} aria-hidden="true" />
 }
 
 export default function FreePracticeTab({ studentId, compact = false }: Props) {
@@ -63,7 +68,9 @@ export default function FreePracticeTab({ studentId, compact = false }: Props) {
                 onClick={() => setSelectedSubject(o.subject)}
                 className="flex w-full items-center gap-3 rounded-xl bg-white p-4 text-left shadow-sm"
               >
-                <span className="text-xl">{SUBJECT_CARD_ICON[o.subject]}</span>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#1B4FD8]">
+                  <SubjectIcon subject={o.subject} />
+                </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold text-[#191B23]">{SUBJECT_TAB_LABELS[o.subject]}</p>
                   <p className="text-xs text-gray-400">{o.questionCount} вопросов</p>
@@ -93,7 +100,9 @@ export default function FreePracticeTab({ studentId, compact = false }: Props) {
               onClick={() => setSelectedSubject(o.subject)}
               className="flex flex-col items-start rounded-2xl border border-gray-200 bg-white p-4 text-left transition-colors hover:border-[#1B4FD8]/40 hover:bg-blue-50/30"
             >
-              <span className="text-2xl">{SUBJECT_CARD_ICON[o.subject]}</span>
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-[#1B4FD8]">
+                <SubjectIcon subject={o.subject} size={21} />
+              </span>
               <span className="mt-2 text-sm font-bold text-[#191B23]">{SUBJECT_TAB_LABELS[o.subject]}</span>
               <span className="mt-1 text-xs text-gray-400">{o.questionCount} вопросов</span>
               {o.accuracyPct !== null && (
@@ -127,7 +136,8 @@ export default function FreePracticeTab({ studentId, compact = false }: Props) {
       </button>
 
       <h2 className="text-base font-bold text-gray-900">
-        {SUBJECT_CARD_ICON[selectedSubject]} {SUBJECT_TAB_LABELS[selectedSubject]}
+        <span className="mr-2 inline-flex align-middle text-[#1B4FD8]"><SubjectIcon subject={selectedSubject} /></span>
+        {SUBJECT_TAB_LABELS[selectedSubject]}
       </h2>
 
       {sections.length > 1 && (

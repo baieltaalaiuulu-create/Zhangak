@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { ArrowLeft, ArrowRight, BookOpen, Calculator, Languages, RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import {
   fetchLessons,
@@ -28,8 +29,8 @@ const TOAST_DURATION_MS = 2500
 // have subject 'math' | 'kyr' (see lib/lessons-data.ts), so this is the
 // full, permanent set of sections rather than a dynamic list.
 const SECTIONS: { subject: LessonSubject; label: string }[] = [
-  { subject: 'math', label: '📐 Математика' },
-  { subject: 'kyr', label: '📘 Кыргыз тили' },
+  { subject: 'math', label: 'Математика' },
+  { subject: 'kyr', label: 'Кыргыз тили' },
 ]
 
 export default function LessonsPage() {
@@ -112,7 +113,8 @@ export default function LessonsPage() {
           onClick={() => window.location.reload()}
           className="flex min-h-11 items-center gap-1.5 rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white"
         >
-          ↻ Попробовать ещё раз
+          <RefreshCw size={16} aria-hidden="true" />
+          Попробовать ещё раз
         </button>
       </div>
     )
@@ -159,14 +161,18 @@ export default function LessonsPage() {
   return (
     <div className="min-h-screen bg-[#F4F6FA]">
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6">
-        <Link href="/student/online" className="text-sm font-semibold text-gray-500 hover:text-gray-700">
-          ← В кабинет
+        <Link href="/student/online" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-700">
+          <ArrowLeft size={16} aria-hidden="true" />
+          На главную
         </Link>
 
         {/* ============ MOBILE (< 768px) ============ */}
         <div className="block space-y-4 md:hidden">
           <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-            <h1 className="text-lg font-bold text-[#191B23]">📚 Мои уроки</h1>
+            <div className="flex items-center gap-2">
+              <BookOpen size={22} className="text-[#1B4FD8]" aria-hidden="true" />
+              <h1 className="text-lg font-bold text-[#191B23]">Мои уроки</h1>
+            </div>
             <p className="mt-1 text-sm text-gray-500">Пройдено {completedCount}/{total}</p>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
               <div className="h-full rounded-full bg-[#1B4FD8] transition-all duration-700" style={{ width: `${overallPct}%` }} />
@@ -184,7 +190,8 @@ export default function LessonsPage() {
                 prefetch={true}
                 className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl bg-[#1B4FD8] text-base font-bold text-white"
               >
-                Продолжить обучение →
+                Продолжить обучение
+                <ArrowRight size={19} className="ml-2" aria-hidden="true" />
               </Link>
             )}
           </div>
@@ -198,7 +205,9 @@ export default function LessonsPage() {
               {sections.filter(s => s.list.length > 0).map(section => (
                 <MobileSubjectAccordion
                   key={section.subject}
-                  icon={LESSON_SUBJECT_META[section.subject].icon}
+                  icon={section.subject === 'math'
+                    ? <Calculator size={21} aria-hidden="true" />
+                    : <Languages size={21} aria-hidden="true" />}
                   label={LESSON_SUBJECT_META[section.subject].label}
                   completed={section.completed}
                   total={section.list.length}

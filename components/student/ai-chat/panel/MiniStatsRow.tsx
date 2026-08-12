@@ -1,3 +1,4 @@
+import { Flame } from 'lucide-react'
 import type { MiniStats } from '@/lib/ai-chat-panel-data'
 
 interface Props {
@@ -19,7 +20,7 @@ export default function MiniStatsRow({ stats }: Props) {
         <div className="text-[10px] text-gray-400">Задач</div>
       </div>
       <div>
-        <div className="text-sm font-extrabold text-orange-500">🔥 {stats.streak}</div>
+        <div className="inline-flex items-center gap-1 text-sm font-extrabold text-orange-500"><Flame size={14} aria-hidden="true" /> {stats.streak}</div>
         <div className="text-[10px] text-gray-400">Серия</div>
       </div>
       <div>

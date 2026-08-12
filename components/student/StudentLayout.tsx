@@ -18,10 +18,10 @@ interface Props {
 
 // The mock exam screen (/student/online/mock/[id], but not its /results child
 // or the /mock listing page) runs full-screen with its own dark header — no
-// sidebar/topbar chrome. The AI Mentor page is the same story — it has its
-// own 3-column chat layout (dark session sidebar, topbar, analytics panel)
-// and would just be duplicated chrome under this one. The daily-challenge
-// question flow is the same pattern again — full screen, own progress
+// sidebar/topbar chrome. AI Mentor keeps its own 3-column chat layout (dark
+// session sidebar, topbar, analytics panel), while retaining BottomNav on
+// mobile because AI is one of the five primary destinations. The daily-challenge
+// question flow is full screen with its own progress
 // header — but its /results child stays inside the normal shell (same
 // split as the mock exam vs. mock results).
 const EXAM_ROUTE = /^\/student\/online\/mock\/[^/]+$/
@@ -31,7 +31,8 @@ const DAILY_CHALLENGE_ROUTE = /^\/student\/online\/practice\/daily$/
 export default function StudentLayout({ children }: Props) {
   const router = useRouter()
   const pathname = usePathname()
-  const isFullScreenPage = EXAM_ROUTE.test(pathname ?? '') || AI_PAGE_ROUTE.test(pathname ?? '') || DAILY_CHALLENGE_ROUTE.test(pathname ?? '')
+  const isAiPage = AI_PAGE_ROUTE.test(pathname ?? '')
+  const isImmersivePage = EXAM_ROUTE.test(pathname ?? '') || DAILY_CHALLENGE_ROUTE.test(pathname ?? '')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [fullName, setFullName] = useState('Студент')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -84,7 +85,18 @@ export default function StudentLayout({ children }: Props) {
     router.push('/')
   }
 
-  if (isFullScreenPage) return <>{children}</>
+  if (isImmersivePage) return <>{children}</>
+
+  // AI keeps its focused chat shell, but the five-item mobile navigation
+  // remains available just like it does on the other primary destinations.
+  if (isAiPage) {
+    return (
+      <>
+        {children}
+        <BottomNav />
+      </>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#FAF8FF]">

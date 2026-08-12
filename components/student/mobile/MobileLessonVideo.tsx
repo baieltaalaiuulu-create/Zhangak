@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { CheckCircle2, Play } from 'lucide-react'
+import { CheckCircle2, Play, Video } from 'lucide-react'
 
 interface Props {
   videoUrl: string
@@ -72,7 +72,7 @@ export default function MobileLessonVideo({ videoUrl, title, watched, onWatched 
     return (
       <div className="flex aspect-video items-center justify-center rounded-2xl bg-gray-900 text-center text-gray-400">
         <div>
-          <div className="mb-2 text-4xl">🎬</div>
+          <Video size={36} className="mx-auto mb-2" aria-hidden="true" />
           <p className="text-sm">Видео скоро появится</p>
         </div>
       </div>

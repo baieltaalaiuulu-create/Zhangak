@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { BookOpenText, CalendarDays, SearchCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { DEFAULT_TARGET_SCORE } from '@/lib/student-data'
 import { fetchLatestMockScore } from '@/lib/profile-data'
@@ -36,7 +37,7 @@ interface ChatMessage {
 let idCounter = 0
 function nextId(): string { idCounter += 1; return `m${idCounter}` }
 
-const AUTO_GREETING_PROMPT = 'Поприветствуй меня как мой персональный AI-наставник по подготовке к ОРТ. Кратко перечисли мои последние данные: последний балл ОРТ, сколько баллов осталось до цели, и оцени вероятность достижения цели в процентах. Затем дай 2-3 конкретные рекомендации на сегодня, основываясь на моих слабых темах и последних ошибках. Заверши тёплым вопросом о том, с чего начать. Будь кратким, дружелюбным, используй эмодзи умеренно.'
+const AUTO_GREETING_PROMPT = 'Поприветствуй меня как мой персональный AI-наставник по подготовке к ОРТ. Кратко перечисли мои последние данные: последний балл ОРТ, сколько баллов осталось до цели, и оцени вероятность достижения цели в процентах. Затем дай 2-3 конкретные рекомендации на сегодня, основываясь на моих слабых темах и последних ошибках. Заверши тёплым вопросом о том, с чего начать. Будь кратким, дружелюбным и не используй эмодзи.'
 
 function LoadingScreen() {
   return (
@@ -237,18 +238,15 @@ export default function AiMentorChatPage() {
   const showIntro = messages.length <= 1
 
   const quickStartItems = [
-    { icon: '📋', label: 'Объяснить тему', action: () => sendMessage('Объясни мне одну из тем, где у меня больше всего ошибок, простым языком с примером.') },
-    { icon: '✏️', label: 'Создать тренажёр', action: () => sendMessage('Составь для меня короткий тренажёр из вопросов по моей самой слабой теме.', 'task') },
-    { icon: '🎯', label: 'Разобрать ошибки', action: () => sendMessage('Разбери подробно мои последние ошибки и объясни, как их избежать.', 'analysis') },
-    { icon: '⭐', label: 'Подготовить к ОРТ', action: () => sendMessage('Дай мне общий совет, как лучше готовиться к ОРТ учитывая мой текущий результат.', 'analysis') },
-    { icon: '📅', label: 'Составить план', action: () => sendMessage('Составь мне подробный план подготовки на сегодня.', 'plan') },
-    { icon: '🎓', label: 'Выбор университета', action: () => router.push('/student/online/universities') },
+    { icon: <BookOpenText size={19} aria-hidden="true" />, label: 'Объяснить тему', action: () => sendMessage('Объясни мне одну из тем, где у меня больше всего ошибок, простым языком с примером.') },
+    { icon: <SearchCheck size={19} aria-hidden="true" />, label: 'Разобрать ошибку', action: () => sendMessage('Разбери подробно мои последние ошибки и объясни, как их избежать.', 'analysis') },
+    { icon: <CalendarDays size={19} aria-hidden="true" />, label: 'Составить план', action: () => sendMessage('Составь мне подробный план подготовки на сегодня.', 'plan') },
   ]
 
   const todayGoalLabel = [panelData.weakestLabel, panelData.secondWeakestLabel].filter(Boolean).join(' + ')
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F4F6FA]">
+    <div className="flex h-[calc(100dvh-64px-env(safe-area-inset-bottom))] overflow-hidden bg-[#F4F6FA] md:h-screen">
       {/* Left sidebar — desktop */}
       <div className="hidden lg:block lg:w-[260px] lg:shrink-0">
         <ChatSidebar
@@ -306,19 +304,21 @@ export default function AiMentorChatPage() {
             <div className="flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-6">
               {showIntro && (
                 <>
-                  <ChatHeroCard
-                    firstName={firstName}
-                    todayGoalLabel={todayGoalLabel}
-                    targetScore={targetScore}
-                    remaining={panelData.goal.remaining}
-                    probabilityPct={panelData.goal.pct}
-                    minutesTodayLabel={panelData.miniStats.minutesToday >= 60 ? `${Math.floor(panelData.miniStats.minutesToday / 60)}ч ${panelData.miniStats.minutesToday % 60}м` : `${panelData.miniStats.minutesToday}м`}
-                    tasksDoneToday={panelData.miniStats.tasksDoneToday}
-                    tasksGoalToday={panelData.miniStats.tasksGoalToday}
-                    latestMockScore={latestScore}
-                    continueHref="/student/online/lessons"
-                    onReviewErrors={() => sendMessage('Разбери подробно мои последние ошибки и объясни, как их избежать.', 'analysis')}
-                  />
+                  <div className="hidden sm:block">
+                    <ChatHeroCard
+                      firstName={firstName}
+                      todayGoalLabel={todayGoalLabel}
+                      targetScore={targetScore}
+                      remaining={panelData.goal.remaining}
+                      probabilityPct={panelData.goal.pct}
+                      minutesTodayLabel={panelData.miniStats.minutesToday >= 60 ? `${Math.floor(panelData.miniStats.minutesToday / 60)}ч ${panelData.miniStats.minutesToday % 60}м` : `${panelData.miniStats.minutesToday}м`}
+                      tasksDoneToday={panelData.miniStats.tasksDoneToday}
+                      tasksGoalToday={panelData.miniStats.tasksGoalToday}
+                      latestMockScore={latestScore}
+                      continueHref="/student/online/lessons"
+                      onReviewErrors={() => sendMessage('Разбери подробно мои последние ошибки и объясни, как их избежать.', 'analysis')}
+                    />
+                  </div>
                   <QuickStartGrid items={quickStartItems} />
                 </>
               )}

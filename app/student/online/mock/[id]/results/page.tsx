@@ -73,7 +73,7 @@ export default function MockResultsPage() {
 
   const handleShare = async () => {
     if (!result) return
-    const text = `Я набрал ${result.total_score} из 245 баллов на пробном ОРТ в ZHANGAK! 🎯`
+    const text = `Я набрал ${result.total_score} из 245 баллов на пробном ОРТ в ZHANGAK!`
     if (navigator.share) {
       try { await navigator.share({ text }); return } catch { /* user cancelled */ }
     }

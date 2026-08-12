@@ -30,7 +30,7 @@ import MobileAIHelp from '@/components/student/mobile/MobileAIHelp'
 import MobileNextStepCard from '@/components/student/mobile/MobileNextStepCard'
 import MobileLessonPractice, { type LessonAnswerEntry } from '@/components/student/mobile/MobileLessonPractice'
 import MobileLessonComplete from '@/components/student/mobile/MobileLessonComplete'
-import { ChevronDown } from 'lucide-react'
+import { Calculator, ChevronDown, FileText, Languages, PencilLine, Sigma, Video, type LucideIcon } from 'lucide-react'
 
 function getYoutubeEmbed(url: string): string {
   const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)
@@ -41,10 +41,10 @@ const STEPS = ['Теория', 'Пример', 'Тренажёр', 'Мини-т�
 const XP_PER_CORRECT = 10
 const XP_NO_QUESTIONS = 50
 
-const MATERIALS = [
-  { icon: '📄', label: 'Конспект' },
-  { icon: '🧮', label: 'Формулы' },
-  { icon: '✏️', label: 'ДЗ' },
+const MATERIALS: { icon: LucideIcon; label: string }[] = [
+  { icon: FileText, label: 'Конспект' },
+  { icon: Sigma, label: 'Формулы' },
+  { icon: PencilLine, label: 'ДЗ' },
 ]
 
 type LessonStep = 'video' | 'practice' | 'complete'
@@ -184,6 +184,7 @@ export default function LessonDetailPage() {
   const subjectProgress = sameSubjectLessons.length > 0 ? Math.round((subjectCompletedCount / sameSubjectLessons.length) * 100) : 0
 
   const meta = LESSON_SUBJECT_META[lesson.subject]
+  const SubjectIcon = lesson.subject === 'math' ? Calculator : Languages
   const embedUrl = lesson.video_url ? getYoutubeEmbed(lesson.video_url) : null
   const hasVideo = !!lesson.video_url
 
@@ -381,7 +382,7 @@ export default function LessonDetailPage() {
                   />
                 ) : (
                   <div className="text-center text-gray-400">
-                    <div className="mb-2 text-4xl">🎬</div>
+                    <Video size={36} className="mx-auto mb-2" aria-hidden="true" />
                     <p className="text-sm">Видео скоро появится</p>
                   </div>
                 )}
@@ -390,7 +391,7 @@ export default function LessonDetailPage() {
               {/* Title block */}
               <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
                 <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${meta.bg} ${meta.color}`}>
-                  {meta.icon} {meta.label}
+                  <SubjectIcon size={14} aria-hidden="true" /> {meta.label}
                 </span>
                 <h1 className="mt-3 text-xl font-bold leading-snug text-gray-900">{lesson.title}</h1>
                 {lesson.description && (
@@ -422,15 +423,18 @@ export default function LessonDetailPage() {
               <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                 <h3 className="mb-3 text-sm font-bold text-gray-900">Материалы</h3>
                 <div className="flex flex-col gap-2">
-                  {MATERIALS.map(m => (
-                    <button
-                      key={m.label}
-                      type="button"
-                      className="flex items-center gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5 text-left text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100"
-                    >
-                      <span>{m.icon}</span> {m.label}
-                    </button>
-                  ))}
+                  {MATERIALS.map(m => {
+                    const MaterialIcon = m.icon
+                    return (
+                      <button
+                        key={m.label}
+                        type="button"
+                        className="flex items-center gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5 text-left text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100"
+                      >
+                        <MaterialIcon size={17} aria-hidden="true" /> {m.label}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { ArrowRight, PencilLine, RotateCcw } from 'lucide-react'
 
 interface Props {
   questionCount: number
@@ -35,7 +36,7 @@ export default function MobileNextStepCard({
   if (locked) {
     return (
       <div className="rounded-2xl border border-gray-100 bg-white p-4">
-        <p className="text-lg font-bold text-gray-400">✏️ Практика</p>
+        <p className="flex items-center gap-2 text-lg font-bold text-gray-400"><PencilLine size={20} aria-hidden="true" /> Практика</p>
         <p className="mt-1 text-sm text-gray-400">{questionCount} вопросов • Сначала посмотри видео</p>
         <button
           type="button"
@@ -51,16 +52,17 @@ export default function MobileNextStepCard({
   if (isRepeat) {
     return (
       <div className="rounded-2xl border border-gray-100 bg-white p-4">
-        <p className="text-lg font-bold text-gray-900">✏️ Практика</p>
+        <p className="flex items-center gap-2 text-lg font-bold text-gray-900"><PencilLine size={20} className="text-[#1B4FD8]" aria-hidden="true" /> Практика</p>
         {questionCount > 0 ? (
           <>
             <p className="mt-1 text-sm text-gray-500">Пройди практику ещё раз, чтобы закрепить</p>
             <button
               type="button"
               onClick={onStartPractice}
-              className="mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-[#1B4FD8] text-sm font-bold text-white transition-colors active:bg-blue-700"
+              className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4FD8] px-4 text-sm font-bold text-white transition-colors active:bg-blue-700"
             >
-              🔁 Повторить практику
+              <RotateCcw size={17} aria-hidden="true" />
+              Повторить практику
             </button>
           </>
         ) : (
@@ -69,9 +71,10 @@ export default function MobileNextStepCard({
         {nextLessonHref && (
           <Link
             href={nextLessonHref}
-            className="mt-3 flex h-12 w-full items-center justify-center rounded-xl border border-gray-200 text-sm font-bold text-gray-700"
+            className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 text-sm font-bold text-gray-700"
           >
-            Следующий урок →
+            Следующий урок
+            <ArrowRight size={17} aria-hidden="true" />
           </Link>
         )}
       </div>
@@ -81,14 +84,15 @@ export default function MobileNextStepCard({
   if (questionCount === 0) {
     return (
       <div className="rounded-2xl border border-gray-100 bg-white p-4">
-        <p className="text-lg font-bold text-gray-900">✏️ Практика</p>
+        <p className="flex items-center gap-2 text-lg font-bold text-gray-900"><PencilLine size={20} className="text-[#1B4FD8]" aria-hidden="true" /> Практика</p>
         <p className="mt-1 text-sm text-gray-400">Практика недоступна</p>
         <button
           type="button"
           onClick={onFinishNoQuestions}
-          className="mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-[#1B4FD8] text-sm font-bold text-white transition-colors active:bg-blue-700"
+          className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4FD8] px-4 text-sm font-bold text-white transition-colors active:bg-blue-700"
         >
-          Завершить урок →
+          Завершить урок
+          <ArrowRight size={17} aria-hidden="true" />
         </button>
       </div>
     )
@@ -96,14 +100,15 @@ export default function MobileNextStepCard({
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-4">
-      <p className="text-lg font-bold text-gray-900">✏️ Практика</p>
+      <p className="flex items-center gap-2 text-lg font-bold text-gray-900"><PencilLine size={20} className="text-[#1B4FD8]" aria-hidden="true" /> Практика</p>
       <p className="mt-1 text-sm text-gray-500">{questionCount} вопросов • ~{minutes} мин</p>
       <button
         type="button"
         onClick={onStartPractice}
-        className="mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-[#1B4FD8] text-sm font-bold text-white transition-colors active:bg-blue-700"
+        className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4FD8] px-4 text-sm font-bold text-white transition-colors active:bg-blue-700"
       >
-        Начать практику →
+        Начать практику
+        <ArrowRight size={17} aria-hidden="true" />
       </button>
     </div>
   )
