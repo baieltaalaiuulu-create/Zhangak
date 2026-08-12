@@ -1,4 +1,3 @@
-import { supabase } from '@/lib/supabase'
 import { authenticatedFetch } from '@/lib/authenticated-fetch'
 
 // Admin CRUD for the universities catalog (/admin/universities and
@@ -31,13 +30,17 @@ export interface AdminUniversity {
 }
 
 export async function fetchAdminUniversities(): Promise<AdminUniversity[]> {
-  const { data } = await supabase.from('universities').select('*').order('created_at', { ascending: false })
-  return (data ?? []) as AdminUniversity[]
+  const response = await authenticatedFetch('/api/admin/universities')
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error ?? 'Не удалось загрузить университеты')
+  return (data.universities ?? []) as AdminUniversity[]
 }
 
 export async function fetchAdminUniversityById(id: string): Promise<AdminUniversity | null> {
-  const { data } = await supabase.from('universities').select('*').eq('id', id).maybeSingle()
-  return (data as AdminUniversity) ?? null
+  const response = await authenticatedFetch(`/api/admin/universities?id=${encodeURIComponent(id)}`)
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error ?? 'Не удалось загрузить университет')
+  return (data.universities?.[0] as AdminUniversity | undefined) ?? null
 }
 
 export interface UniversityPayload {
@@ -115,12 +118,10 @@ export interface AdminSpecialty {
 }
 
 export async function fetchAdminSpecialties(universityId: string): Promise<AdminSpecialty[]> {
-  const { data } = await supabase
-    .from('university_specialties')
-    .select('*')
-    .eq('university_id', universityId)
-    .order('name', { ascending: true })
-  return (data ?? []) as AdminSpecialty[]
+  const response = await authenticatedFetch(`/api/admin/university-specialties?universityId=${encodeURIComponent(universityId)}`)
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error ?? 'Не удалось загрузить специальности')
+  return (data.specialties ?? []) as AdminSpecialty[]
 }
 
 export interface SpecialtyPayload {

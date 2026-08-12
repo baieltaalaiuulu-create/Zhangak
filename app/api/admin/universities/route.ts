@@ -5,6 +5,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminApi } from '@/lib/api-auth'
+import { JsonBodyError, readJsonObject } from '@/lib/server-json'
 
 function getAdminClient() {
   return createClient(
@@ -56,13 +57,53 @@ function mapPayload(body: UniversityPayload): Record<string, unknown> {
   return row
 }
 
+function isOptionalScore(value: unknown): boolean {
+  return value === undefined || value === null || (Number.isInteger(value) && Number(value) >= 0 && Number(value) <= 245)
+}
+
+function isOptionalMoney(value: unknown): boolean {
+  return value === undefined || value === null || (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100_000_000)
+}
+
+function validatePayload(body: UniversityPayload): string | null {
+  if (body.name !== undefined && (typeof body.name !== 'string' || !body.name.trim() || body.name.length > 200)) return 'Некорректное название'
+  if (body.city !== undefined && (typeof body.city !== 'string' || !body.city.trim() || body.city.length > 100)) return 'Некорректный город'
+  if (body.type !== undefined && body.type !== 'government' && body.type !== 'private') return 'Некорректный тип университета'
+  if (!isOptionalScore(body.minScore) || !isOptionalScore(body.avgScore)) return 'Балл должен быть от 0 до 245'
+  if (!isOptionalMoney(body.tuitionMin) || !isOptionalMoney(body.tuitionMax)) return 'Некорректная стоимость'
+  if (body.rating !== undefined && body.rating !== null && (typeof body.rating !== 'number' || body.rating < 0 || body.rating > 5)) return 'Рейтинг должен быть от 0 до 5'
+  if (body.websiteUrl && (!/^https?:\/\//i.test(body.websiteUrl) || body.websiteUrl.length > 500)) return 'Некорректная ссылка на сайт'
+  if (body.logoUrl && (!/^https?:\/\//i.test(body.logoUrl) || body.logoUrl.length > 1000)) return 'Некорректная ссылка на логотип'
+  if (body.languages !== undefined && (!Array.isArray(body.languages) || body.languages.length > 10 || body.languages.some(language => typeof language !== 'string' || language.length > 50))) return 'Некорректный список языков'
+  return null
+}
+
+export async function GET(req: NextRequest) {
+  const authError = await requireAdminApi(req)
+  if (authError) return authError
+
+  try {
+    const supabaseAdmin = getAdminClient()
+    const id = req.nextUrl.searchParams.get('id')
+    let query = supabaseAdmin.from('universities').select('*').order('created_at', { ascending: false })
+    if (id) query = query.eq('id', id)
+    const { data, error } = await query
+    if (error) return NextResponse.json({ error: 'Не удалось загрузить университеты' }, { status: 503 })
+    return NextResponse.json({ universities: data ?? [] })
+  } catch {
+    return NextResponse.json({ error: 'Сервис временно недоступен' }, { status: 503 })
+  }
+}
+
 export async function POST(req: NextRequest) {
   const authError = await requireAdminApi(req)
   if (authError) return authError
 
   try {
     const supabaseAdmin = getAdminClient()
-    const body = await req.json() as UniversityPayload
+    const body = await readJsonObject(req) as UniversityPayload
+    const validationError = validatePayload(body)
+    if (validationError) return NextResponse.json({ error: validationError }, { status: 400 })
     if (!body.name || !body.city || !body.type) {
       return NextResponse.json({ error: 'name, city и type обязательны' }, { status: 400 })
     }
@@ -72,12 +113,12 @@ export async function POST(req: NextRequest) {
       .insert(mapPayload(body))
       .select('id')
       .single()
-    if (error || !data) return NextResponse.json({ error: error?.message ?? 'Failed to create university' }, { status: 400 })
+    if (error || !data) return NextResponse.json({ error: 'Не удалось создать университет' }, { status: 400 })
 
     return NextResponse.json({ id: data.id })
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
-    return NextResponse.json({ error: message }, { status: 500 })
+  } catch (error) {
+    if (error instanceof JsonBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
+    return NextResponse.json({ error: 'Сервис временно недоступен' }, { status: 503 })
   }
 }
 
@@ -87,17 +128,19 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const supabaseAdmin = getAdminClient()
-    const body = await req.json() as UniversityPayload & { id?: string }
+    const body = await readJsonObject(req) as UniversityPayload & { id?: string }
+    const validationError = validatePayload(body)
+    if (validationError) return NextResponse.json({ error: validationError }, { status: 400 })
     const { id } = body
     if (!id) return NextResponse.json({ error: 'id обязателен' }, { status: 400 })
 
     const { error } = await supabaseAdmin.from('universities').update(mapPayload(body)).eq('id', id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+    if (error) return NextResponse.json({ error: 'Не удалось обновить университет' }, { status: 400 })
 
     return NextResponse.json({ success: true })
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
-    return NextResponse.json({ error: message }, { status: 500 })
+  } catch (error) {
+    if (error instanceof JsonBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
+    return NextResponse.json({ error: 'Сервис временно недоступен' }, { status: 503 })
   }
 }
 
@@ -107,17 +150,17 @@ export async function DELETE(req: NextRequest) {
 
   try {
     const supabaseAdmin = getAdminClient()
-    const { id } = await req.json()
+    const { id } = await readJsonObject(req)
     if (!id) return NextResponse.json({ error: 'id обязателен' }, { status: 400 })
 
     // ON DELETE CASCADE on university_specialties/university_advantages
     // takes care of their rows.
     const { error } = await supabaseAdmin.from('universities').delete().eq('id', id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+    if (error) return NextResponse.json({ error: 'Не удалось удалить университет' }, { status: 400 })
 
     return NextResponse.json({ success: true })
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
-    return NextResponse.json({ error: message }, { status: 500 })
+  } catch (error) {
+    if (error instanceof JsonBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
+    return NextResponse.json({ error: 'Сервис временно недоступен' }, { status: 503 })
   }
 }

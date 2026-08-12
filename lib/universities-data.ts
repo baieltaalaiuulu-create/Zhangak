@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase'
+export { getAdmissionProbability as getProbability } from '@/lib/university-matching'
+export type { AdmissionProbability as Probability, ProbabilityLevel } from '@/lib/university-matching'
 
 // Universities catalog — backed by Supabase (`universities`,
 // `university_specialties`, `university_advantages`; RLS disabled on all
@@ -63,21 +65,21 @@ export const GENERIC_ADMISSION_DOCUMENTS = [
   'Заявление на имя ректора',
 ]
 
-export const GENERIC_ADMISSION_DEADLINE = 'Стандартный приём документов в вузы Кыргызстана: середина июня – конец августа. Точные даты уточняй в приёмной комиссии выбранного университета.'
+export const GENERIC_ADMISSION_DEADLINE = 'Точные сроки приёма пока не загружены. Проверь актуальные даты на официальном сайте университета или в его приёмной комиссии.'
 
 export interface Specialty {
   id: string
   name: string
   faculty: string
-  minScore: number
-  costPerYear: number | null // null = free
+  minScore: number | null
+  costPerYear: number | null
   language: string
   form: string
   type: string
 }
 
 export interface Advantage {
-  icon: string
+  iconKey: 'education' | 'international' | 'career' | 'campus'
   title: string
   description: string
 }
@@ -86,13 +88,12 @@ export interface University {
   id: string
   name: string
   shortName: string
-  emoji: string
   logoUrl: string | null
   city: City
   type: UniversityType
-  minScore: number
+  minScore: number | null
   avgScore: number | null
-  costFrom: number | null // null = free
+  costFrom: number | null // null = стоимость не опубликована
   costMax: number | null
   specialtyCount: number
   rating: number
@@ -168,8 +169,8 @@ function mapSpecialty(row: SpecialtyRow): Specialty {
     id: row.id,
     name: row.name,
     faculty: row.faculty ?? '',
-    minScore: row.min_score ?? 0,
-    costPerYear: row.tuition && row.tuition > 0 ? row.tuition : null,
+    minScore: row.min_score,
+    costPerYear: row.tuition,
     language: row.language ?? '',
     form: row.form ?? 'Очная',
     type: row.type ?? 'Бюджет',
@@ -177,7 +178,15 @@ function mapSpecialty(row: SpecialtyRow): Specialty {
 }
 
 function mapAdvantage(row: AdvantageRow): Advantage {
-  return { icon: row.icon ?? '', title: row.title ?? '', description: row.description ?? '' }
+  const text = `${row.icon ?? ''} ${row.title ?? ''}`.toLowerCase()
+  const iconKey: Advantage['iconKey'] = /междунар|international|язык|обмен/.test(text)
+    ? 'international'
+    : /карьер|работ|практик|стаж/.test(text)
+      ? 'career'
+      : /кампус|общежит|библиот|инфраструкт/.test(text)
+        ? 'campus'
+        : 'education'
+  return { iconKey, title: row.title ?? '', description: row.description ?? '' }
 }
 
 function mapUniversity(row: UniversityRow, specialtyRows: SpecialtyRow[], advantageRows: AdvantageRow[]): University {
@@ -188,13 +197,12 @@ function mapUniversity(row: UniversityRow, specialtyRows: SpecialtyRow[], advant
     id: row.id,
     name: row.name,
     shortName: row.name,
-    emoji: row.type === 'government' ? '🏛' : '🏢',
     logoUrl: row.logo_url,
     city: row.city,
     type: row.type === 'government' ? 'state' : 'private',
-    minScore: row.min_score ?? 0,
+    minScore: row.min_score,
     avgScore: row.avg_score,
-    costFrom: row.tuition_min && row.tuition_min > 0 ? row.tuition_min : null,
+    costFrom: row.tuition_min,
     costMax: row.tuition_max,
     specialtyCount: row.total_specialties ?? specialties.length,
     rating: row.rating ?? 0,
@@ -239,27 +247,31 @@ export async function fetchUniversities(filters: UniversityFilters = {}): Promis
   if (filters.dormitoryOnly) query = query.eq('dormitory', true)
   if (filters.budgetOnly) query = query.eq('budget_places', true)
 
-  const { data: universityRows } = await query.order('rating', { ascending: false })
+  const { data: universityRows, error: universitiesError } = await query.order('rating', { ascending: false })
+  if (universitiesError) throw new Error('Не удалось загрузить каталог университетов')
   const universities = (universityRows ?? []) as UniversityRow[]
   if (universities.length === 0) return []
 
   const ids = universities.map(u => u.id)
-  const [{ data: specialtyRows }, { data: advantageRows }] = await Promise.all([
+  const [{ data: specialtyRows, error: specialtiesError }, { data: advantageRows, error: advantagesError }] = await Promise.all([
     supabase.from('university_specialties').select('*').in('university_id', ids),
     supabase.from('university_advantages').select('*').in('university_id', ids),
   ])
+  if (specialtiesError || advantagesError) throw new Error('Не удалось загрузить данные университетов')
 
   return universities.map(u => mapUniversity(u, (specialtyRows ?? []) as SpecialtyRow[], (advantageRows ?? []) as AdvantageRow[]))
 }
 
 export async function fetchUniversityById(id: string): Promise<University | null> {
-  const { data: universityRow } = await supabase.from('universities').select('*').eq('id', id).maybeSingle()
+  const { data: universityRow, error: universityError } = await supabase.from('universities').select('*').eq('id', id).eq('is_active', true).maybeSingle()
+  if (universityError) throw new Error('Не удалось загрузить университет')
   if (!universityRow) return null
 
-  const [{ data: specialtyRows }, { data: advantageRows }] = await Promise.all([
+  const [{ data: specialtyRows, error: specialtiesError }, { data: advantageRows, error: advantagesError }] = await Promise.all([
     supabase.from('university_specialties').select('*').eq('university_id', id),
     supabase.from('university_advantages').select('*').eq('university_id', id),
   ])
+  if (specialtiesError || advantagesError) throw new Error('Не удалось загрузить данные университета')
 
   return mapUniversity(universityRow as UniversityRow, (specialtyRows ?? []) as SpecialtyRow[], (advantageRows ?? []) as AdvantageRow[])
 }
@@ -276,7 +288,8 @@ export interface CatalogStats {
 }
 
 export async function fetchCatalogStats(): Promise<CatalogStats> {
-  const { data } = await supabase.from('universities').select('type, min_score, total_specialties').eq('is_active', true)
+  const { data, error } = await supabase.from('universities').select('type, min_score, total_specialties').eq('is_active', true)
+  if (error) throw new Error('Не удалось загрузить статистику каталога')
   const rows = data ?? []
 
   const scores = rows.map(r => r.min_score).filter((s): s is number => s != null)
@@ -290,43 +303,31 @@ export async function fetchCatalogStats(): Promise<CatalogStats> {
   }
 }
 
-// ── Admission probability ────────────────────────────────────────────────
-
-export type ProbabilityLevel = 'high' | 'medium' | 'low'
-
-export interface Probability {
-  level: ProbabilityLevel
-  label: string
-  pointsNeeded: number
-}
-
-export function getProbability(studentScore: number, minScore: number): Probability {
-  if (studentScore >= minScore + 20) return { level: 'high', label: 'Высокая вероятность', pointsNeeded: 0 }
-  if (studentScore >= minScore) return { level: 'medium', label: 'Средняя вероятность', pointsNeeded: 0 }
-  return { level: 'low', label: 'Низкая вероятность', pointsNeeded: minScore - studentScore }
-}
-
 // ── Favorites ("Мои университеты") — localStorage only, same pattern as
 // the AI Mentor's daily-plan cache (lib/ai-mentor-data.ts) and dismissed
 // announcement banners (lib/notifications-data.ts); no DB table for this. ──
 
 const FAVORITES_KEY = 'zhangak_university_favorites'
 
-export function getFavoriteIds(): Set<string> {
+function favoritesKey(studentId: string): string {
+  return `${FAVORITES_KEY}:${studentId}`
+}
+
+export function getFavoriteIds(studentId: string): Set<string> {
   if (typeof window === 'undefined') return new Set()
   try {
-    const raw = window.localStorage.getItem(FAVORITES_KEY)
+    const raw = window.localStorage.getItem(favoritesKey(studentId))
     return new Set(raw ? (JSON.parse(raw) as string[]) : [])
   } catch {
     return new Set()
   }
 }
 
-export function toggleFavorite(id: string): Set<string> {
-  const favorites = getFavoriteIds()
+export function toggleFavorite(studentId: string, id: string): Set<string> {
+  const favorites = getFavoriteIds(studentId)
   if (favorites.has(id)) favorites.delete(id); else favorites.add(id)
   if (typeof window !== 'undefined') {
-    window.localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favorites]))
+    window.localStorage.setItem(favoritesKey(studentId), JSON.stringify([...favorites]))
   }
   return favorites
 }

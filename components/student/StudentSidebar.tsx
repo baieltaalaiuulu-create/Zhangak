@@ -20,7 +20,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/student/online/practice', label: 'Тренажёр', icon: PenLine },
   { href: '/student/online/mock', label: 'Пробный ОРТ', icon: ClipboardList },
   { href: '/student/online/ai', label: 'AI Коуч', icon: Brain },
-  { href: '/student/online/universities', label: '🎓 Университеты', icon: GraduationCap },
+  { href: '/student/online/universities', label: 'Университеты', icon: GraduationCap },
   { href: '/student/online/leaderboard', label: 'Рейтинг', icon: Trophy },
 ]
 

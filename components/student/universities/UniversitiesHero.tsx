@@ -1,6 +1,6 @@
 'use client'
 
-import { Search } from 'lucide-react'
+import { GraduationCap, Heart, Search } from 'lucide-react'
 
 interface Props {
   query: string
@@ -19,7 +19,7 @@ export default function UniversitiesHero({ query, onQueryChange, showFavoritesOn
         style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
 
       <div className="relative">
-        <h1 className="text-2xl font-bold sm:text-3xl">🎓 Найдите университет своей мечты</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-bold sm:text-3xl"><GraduationCap size={28} aria-hidden="true" /> Найдите университет своей мечты</h1>
         <p className="mt-2 max-w-xl text-sm font-medium text-white/80 sm:text-base">
           Исследуйте университеты Кыргызстана, сравнивайте специальности и узнайте, сколько баллов ОРТ нужно для поступления.
         </p>
@@ -37,18 +37,20 @@ export default function UniversitiesHero({ query, onQueryChange, showFavoritesOn
         <div className="mt-4 flex flex-wrap gap-2">
           <a
             href="#catalog"
-            className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-[#4338CA] shadow-md transition-colors hover:bg-white/90"
+            className="inline-flex min-h-11 items-center rounded-full bg-white px-5 py-2.5 text-sm font-bold text-[#4338CA] shadow-md transition-colors hover:bg-white/90"
           >
             Найти университет
           </a>
           <button
             type="button"
             onClick={onToggleFavoritesOnly}
-            className={`rounded-full px-5 py-2.5 text-sm font-bold transition-colors ${
+            aria-pressed={showFavoritesOnly}
+            className={`inline-flex min-h-11 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-colors ${
               showFavoritesOnly ? 'bg-white text-[#4338CA]' : 'bg-white/15 text-white hover:bg-white/25'
             }`}
           >
-            ♥ Мои университеты
+            <Heart size={16} fill={showFavoritesOnly ? 'currentColor' : 'none'} aria-hidden="true" />
+            Мои университеты
           </button>
         </div>
       </div>

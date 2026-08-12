@@ -1,8 +1,8 @@
 'use client'
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { BookOpenText, CalendarDays, SearchCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { DEFAULT_TARGET_SCORE } from '@/lib/student-data'
@@ -49,6 +49,9 @@ function LoadingScreen() {
 
 export default function AiMentorChatPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const initialPromptRef = useRef(searchParams.get('prompt')?.trim().slice(0, 800) || null)
+  const initialPromptConsumedRef = useRef(false)
   const [loading, setLoading] = useState(true)
   const [studentId, setStudentId] = useState<string | null>(null)
   const [fullName, setFullName] = useState('Студент')
@@ -129,9 +132,11 @@ export default function AiMentorChatPage() {
 
     let finalContent = ''
     let finalActions: string[] = []
+    const initialPrompt = !initialPromptConsumedRef.current ? initialPromptRef.current : null
+    initialPromptConsumedRef.current = true
     try {
       await streamMentorMessage(
-        AUTO_GREETING_PROMPT, studentContext, [], { page: 'dashboard', contextData: {} }, undefined,
+        initialPrompt ?? AUTO_GREETING_PROMPT, studentContext, [], { page: 'dashboard', contextData: {} }, initialPrompt ? 'plan' : undefined,
         update => {
           setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: update.content, actions: update.actions } : m))
           if (update.done) { finalContent = update.content; finalActions = update.actions }

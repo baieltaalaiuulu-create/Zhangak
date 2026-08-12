@@ -23,23 +23,14 @@ export default function AdminUniversitySpecialtiesPage() {
   const [university, setUniversity] = useState<AdminUniversity | null>(null)
   const [specialties, setSpecialties] = useState<AdminSpecialty[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [formTarget, setFormTarget] = useState<{ specialty?: AdminSpecialty } | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AdminSpecialty | null>(null)
   const [deleting, setDeleting] = useState(false)
 
   const load = async () => {
-    const [uni, specs] = await Promise.all([
-      fetchAdminUniversityById(params.id),
-      fetchAdminSpecialties(params.id),
-    ])
-    if (!uni) { router.push('/admin/universities'); return }
-    setUniversity(uni)
-    setSpecialties(specs)
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    const init = async () => {
+    setLoadError(null)
+    try {
       const [uni, specs] = await Promise.all([
         fetchAdminUniversityById(params.id),
         fetchAdminSpecialties(params.id),
@@ -47,11 +38,34 @@ export default function AdminUniversitySpecialtiesPage() {
       if (!uni) { router.push('/admin/universities'); return }
       setUniversity(uni)
       setSpecialties(specs)
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Не удалось загрузить специальности')
+    } finally {
       setLoading(false)
     }
-    init()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id])
+  }
+
+  useEffect(() => {
+    let cancelled = false
+    const init = async () => {
+      try {
+        const [uni, specs] = await Promise.all([
+          fetchAdminUniversityById(params.id),
+          fetchAdminSpecialties(params.id),
+        ])
+        if (cancelled) return
+        if (!uni) { router.push('/admin/universities'); return }
+        setUniversity(uni)
+        setSpecialties(specs)
+      } catch (error) {
+        if (!cancelled) setLoadError(error instanceof Error ? error.message : 'Не удалось загрузить специальности')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    void init()
+    return () => { cancelled = true }
+  }, [params.id, router])
 
   const handleDelete = async () => {
     if (!deleteTarget) return
@@ -81,6 +95,11 @@ export default function AdminUniversitySpecialtiesPage() {
 
         {loading ? (
           <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-400">Загрузка...</div>
+        ) : loadError ? (
+          <div className="rounded-xl border border-red-100 bg-white p-8 text-center">
+            <p className="text-sm font-semibold text-red-600">{loadError}</p>
+            <button type="button" onClick={load} className="mt-4 min-h-11 rounded-xl bg-[#1B4FD8] px-5 text-sm font-bold text-white">Повторить</button>
+          </div>
         ) : specialties.length === 0 ? (
           <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-400">Специальностей пока нет</div>
         ) : (

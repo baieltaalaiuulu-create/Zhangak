@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Pencil, Trash2, ListChecks, Star } from 'lucide-react'
+import { Building2, Plus, Pencil, School, Trash2, ListChecks, Star } from 'lucide-react'
 import AdminTopbar from '@/components/admin/AdminTopbar'
 import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
 import UniversityFormModal from '@/components/admin/universities/UniversityFormModal'
@@ -21,23 +21,37 @@ function formatCost(min: number | null, max: number | null): string {
 export default function AdminUniversitiesPage() {
   const [universities, setUniversities] = useState<AdminUniversity[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [formTarget, setFormTarget] = useState<{ university?: AdminUniversity } | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AdminUniversity | null>(null)
   const [deleting, setDeleting] = useState(false)
 
   const load = async () => {
-    const data = await fetchAdminUniversities()
-    setUniversities(data)
-    setLoading(false)
+    setLoadError(null)
+    try {
+      const data = await fetchAdminUniversities()
+      setUniversities(data)
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Не удалось загрузить университеты')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
+    let cancelled = false
     const init = async () => {
-      const data = await fetchAdminUniversities()
-      setUniversities(data)
-      setLoading(false)
+      try {
+        const data = await fetchAdminUniversities()
+        if (!cancelled) setUniversities(data)
+      } catch (error) {
+        if (!cancelled) setLoadError(error instanceof Error ? error.message : 'Не удалось загрузить университеты')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
-    init()
+    void init()
+    return () => { cancelled = true }
   }, [])
 
   const handleToggleActive = async (u: AdminUniversity) => {
@@ -89,6 +103,11 @@ export default function AdminUniversitiesPage() {
 
         {loading ? (
           <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-400">Загрузка...</div>
+        ) : loadError ? (
+          <div className="rounded-xl border border-red-100 bg-white p-8 text-center">
+            <p className="text-sm font-semibold text-red-600">{loadError}</p>
+            <button type="button" onClick={load} className="mt-4 min-h-11 rounded-xl bg-[#1B4FD8] px-5 text-sm font-bold text-white">Повторить</button>
+          </div>
         ) : universities.length === 0 ? (
           <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-400">Университетов пока нет</div>
         ) : (
@@ -116,8 +135,8 @@ export default function AdminUniversitiesPage() {
                           // eslint-disable-next-line @next/next/no-img-element -- admin-entered external logo URL, no next/image domain config
                           <img src={u.logo_url} alt={u.name} className="h-8 w-8 shrink-0 rounded-lg object-cover" />
                         ) : (
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-base">
-                            {u.type === 'government' ? '🏛' : '🏢'}
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-gray-500">
+                            {u.type === 'government' ? <School size={17} aria-hidden="true" /> : <Building2 size={17} aria-hidden="true" />}
                           </span>
                         )}
                         <span className="font-semibold text-[#191B23]">{u.name}</span>

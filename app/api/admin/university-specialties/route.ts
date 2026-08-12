@@ -4,6 +4,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminApi } from '@/lib/api-auth'
+import { JsonBodyError, readJsonObject } from '@/lib/server-json'
 
 function getAdminClient() {
   return createClient(
@@ -39,13 +40,47 @@ function mapPayload(body: SpecialtyPayload): Record<string, unknown> {
   return row
 }
 
+function validatePayload(body: SpecialtyPayload): string | null {
+  if (body.universityId !== undefined && (typeof body.universityId !== 'string' || !body.universityId || body.universityId.length > 100)) return 'Некорректный universityId'
+  if (body.name !== undefined && (typeof body.name !== 'string' || !body.name.trim() || body.name.length > 200)) return 'Некорректное название'
+  if (body.minScore !== undefined && body.minScore !== null && (!Number.isInteger(body.minScore) || body.minScore < 0 || body.minScore > 245)) return 'Балл должен быть от 0 до 245'
+  if (body.tuition !== undefined && body.tuition !== null && (typeof body.tuition !== 'number' || !Number.isFinite(body.tuition) || body.tuition < 0 || body.tuition > 100_000_000)) return 'Некорректная стоимость'
+  for (const value of [body.faculty, body.language, body.form, body.type]) {
+    if (value !== undefined && value !== null && (typeof value !== 'string' || value.length > 200)) return 'Некорректное текстовое поле'
+  }
+  return null
+}
+
+export async function GET(req: NextRequest) {
+  const authError = await requireAdminApi(req)
+  if (authError) return authError
+
+  const universityId = req.nextUrl.searchParams.get('universityId')
+  if (!universityId) return NextResponse.json({ error: 'universityId обязателен' }, { status: 400 })
+
+  try {
+    const supabaseAdmin = getAdminClient()
+    const { data, error } = await supabaseAdmin
+      .from('university_specialties')
+      .select('*')
+      .eq('university_id', universityId)
+      .order('name', { ascending: true })
+    if (error) return NextResponse.json({ error: 'Не удалось загрузить специальности' }, { status: 503 })
+    return NextResponse.json({ specialties: data ?? [] })
+  } catch {
+    return NextResponse.json({ error: 'Сервис временно недоступен' }, { status: 503 })
+  }
+}
+
 export async function POST(req: NextRequest) {
   const authError = await requireAdminApi(req)
   if (authError) return authError
 
   try {
     const supabaseAdmin = getAdminClient()
-    const body = await req.json() as SpecialtyPayload
+    const body = await readJsonObject(req) as SpecialtyPayload
+    const validationError = validatePayload(body)
+    if (validationError) return NextResponse.json({ error: validationError }, { status: 400 })
     if (!body.universityId || !body.name) {
       return NextResponse.json({ error: 'universityId и name обязательны' }, { status: 400 })
     }
@@ -55,12 +90,12 @@ export async function POST(req: NextRequest) {
       .insert(mapPayload(body))
       .select('id')
       .single()
-    if (error || !data) return NextResponse.json({ error: error?.message ?? 'Failed to create specialty' }, { status: 400 })
+    if (error || !data) return NextResponse.json({ error: 'Не удалось создать специальность' }, { status: 400 })
 
     return NextResponse.json({ id: data.id })
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
-    return NextResponse.json({ error: message }, { status: 500 })
+  } catch (error) {
+    if (error instanceof JsonBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
+    return NextResponse.json({ error: 'Сервис временно недоступен' }, { status: 503 })
   }
 }
 
@@ -70,17 +105,19 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const supabaseAdmin = getAdminClient()
-    const body = await req.json() as SpecialtyPayload & { id?: string }
+    const body = await readJsonObject(req) as SpecialtyPayload & { id?: string }
+    const validationError = validatePayload(body)
+    if (validationError) return NextResponse.json({ error: validationError }, { status: 400 })
     const { id } = body
     if (!id) return NextResponse.json({ error: 'id обязателен' }, { status: 400 })
 
     const { error } = await supabaseAdmin.from('university_specialties').update(mapPayload(body)).eq('id', id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+    if (error) return NextResponse.json({ error: 'Не удалось обновить специальность' }, { status: 400 })
 
     return NextResponse.json({ success: true })
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
-    return NextResponse.json({ error: message }, { status: 500 })
+  } catch (error) {
+    if (error instanceof JsonBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
+    return NextResponse.json({ error: 'Сервис временно недоступен' }, { status: 503 })
   }
 }
 
@@ -90,15 +127,15 @@ export async function DELETE(req: NextRequest) {
 
   try {
     const supabaseAdmin = getAdminClient()
-    const { id } = await req.json()
+    const { id } = await readJsonObject(req)
     if (!id) return NextResponse.json({ error: 'id обязателен' }, { status: 400 })
 
     const { error } = await supabaseAdmin.from('university_specialties').delete().eq('id', id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+    if (error) return NextResponse.json({ error: 'Не удалось удалить специальность' }, { status: 400 })
 
     return NextResponse.json({ success: true })
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'Неизвестная ошибка'
-    return NextResponse.json({ error: message }, { status: 500 })
+  } catch (error) {
+    if (error instanceof JsonBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
+    return NextResponse.json({ error: 'Сервис временно недоступен' }, { status: 503 })
   }
 }

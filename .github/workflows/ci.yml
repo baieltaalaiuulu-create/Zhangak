@@ -54,6 +54,9 @@ jobs:
       - name: Check student mobile UX invariants
         run: npm run check:student-mobile-ux
 
+      - name: Check university journey invariants
+        run: npm run check:university-journey
+
       - name: Reject corrupted SQL migrations
         run: npm run check:migrations
 
