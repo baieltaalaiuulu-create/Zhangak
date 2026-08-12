@@ -58,12 +58,15 @@ Server setup, atomic activation, health checks, and rollback are documented in
 ## Domains
 
 - `zhangak.com` — public marketing website
-- `platform.zhangak.com` — student learning platform (planned split)
-- `admin.zhangak.com` — administration (planned split)
+- `platform.zhangak.com` — student learning platform and installable PWA
+- `admin.zhangak.com` — administration and staff workspaces
 
-Until the split is implemented, only the canonical public origin should be
-indexed. Platform and admin hosts must use HTTPS and `noindex` before they are
-opened to users.
+The host boundary is enforced by `proxy.ts`. Browser page requests are
+redirected to the correct host; wrong-host API writes return 404 instead of
+redirecting bearer tokens or request bodies. Only the marketing origin is
+indexable. Platform and admin return `X-Robots-Tag: noindex` and disallow all
+crawlers in their host-specific `robots.txt`. The service worker and web app
+manifest are exposed only by the platform surface.
 
 ## Security model
 

@@ -1,6 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /admin/
-Disallow: /student/
-
-Sitemap: https://zhangak.com/sitemap.xml

@@ -20,12 +20,12 @@ const CACHE_NAME = CACHE_VERSION
 
 self.addEventListener('install', (e) => {
   self.skipWaiting()
-  // '/' is the manifest's start_url (the PWA's actual cold-start entry
-  // point) — precached alongside '/landing' (its no-session/desktop
-  // fallback destination) and '/offline' so a launch while offline still
+  // '/' is the platform manifest's start_url (the PWA's cold-start entry
+  // point) — precached alongside '/login' and '/offline' so a launch while
+  // offline still
   // gets a real, working screen instead of falling straight through to
   // the offline fallback.
-  e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(['/', '/landing', '/offline'])))
+  e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(['/', '/login', '/offline'])))
 })
 
 self.addEventListener('activate', (e) => {

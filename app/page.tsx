@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { redirectForRole } from '@/lib/auth-redirect'
+import { isDedicatedPlatformHost } from '@/lib/site-hosts'
 
 const ONBOARDING_KEY = 'zhangak-onboarding-done'
 const DOT_DELAYS_MS = [0, 150, 300]
@@ -36,6 +37,7 @@ export default function RootPage() {
     const check = async () => {
       try {
         const isPWA = window.matchMedia('(display-mode: standalone)').matches
+        const isPlatformHost = isDedicatedPlatformHost(window.location.hostname)
         const { data: { session } } = await supabase.auth.getSession()
 
         if (session) {
@@ -48,7 +50,7 @@ export default function RootPage() {
           return
         }
 
-        if (isPWA) {
+        if (isPWA || isPlatformHost) {
           const done = localStorage.getItem(ONBOARDING_KEY)
           router.replace(done ? '/login' : '/onboarding')
         } else {

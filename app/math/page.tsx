@@ -2,8 +2,22 @@
 export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
+import {
+  Brain,
+  Building2,
+  ChartNoAxesColumnIncreasing,
+  LogIn,
+  MessageCircle,
+  Phone,
+  Ruler,
+  Star,
+  Target,
+  type LucideIcon,
+} from 'lucide-react'
+import { PLATFORM_ORIGIN } from '@/lib/site-hosts'
+
+const PLATFORM_LOGIN_HREF = process.env.NODE_ENV === 'production' ? `${PLATFORM_ORIGIN}/login` : '/login'
 
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null)
@@ -31,11 +45,11 @@ const GRADES = [
   { grade: '8-класс', color: '#7C3AED', bg: '#F5F3FF', topics: ['Квадраттык теңдемелер', 'Функциялар жана графиктер', 'Квадраттык тамыр', 'Теорема Пифагора', 'Координаттык плоскость'] },
 ]
 
-const WHY = [
-  { icon: '🏗️', title: 'Күчтүү фундамент', desc: 'Математиканын базасын бекем өздөштүрүү — жогорку класстарда жеңүүнүн ачкычы.' },
-  { icon: '🧠', title: 'Логикалык ой', desc: 'Математика болгону эсептөө эмес — дүйнөнү туура талдоого үйрөтөт.' },
-  { icon: '📈', title: 'Мектептеги баалар', desc: 'Курстан кийин математикадан баалары жогорулайт.' },
-  { icon: '🎯', title: 'ЖРТга даярдык', desc: '8-класстан баштап ЖРТнын математика бөлүмүнө даярдануу.' },
+const WHY: { Icon: LucideIcon; title: string; desc: string }[] = [
+  { Icon: Building2, title: 'Күчтүү фундамент', desc: 'Математиканын базасын бекем өздөштүрүү — жогорку класстарда жеңүүнүн ачкычы.' },
+  { Icon: Brain, title: 'Логикалык ой', desc: 'Математика болгону эсептөө эмес — дүйнөнү туура талдоого үйрөтөт.' },
+  { Icon: ChartNoAxesColumnIncreasing, title: 'Мектептеги баалар', desc: 'Курстан кийин математикадан баалары жогорулайт.' },
+  { Icon: Target, title: 'ЖРТга даярдык', desc: '8-класстан баштап ЖРТнын математика бөлүмүнө даярдануу.' },
 ]
 
 const HOW = [
@@ -55,40 +69,20 @@ const FAQS = [
 
 export default function MathPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const [showLogin, setShowLogin] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loginLoading, setLoginLoading] = useState(false)
-  const [loginError, setLoginError] = useState('')
   const [scrollY, setScrollY] = useState(0)
-  const router = useRouter()
 
   useEffect(() => {
-    const onScroll = () => setScrollY(window.scrollY)
+    const onScroll = () => {
+      setScrollY(window.scrollY)
+      if (window.scrollY > 10) setMenuOpen(false)
+    }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  useEffect(() => { if (scrollY > 10) setMenuOpen(false) }, [scrollY])
-
   const wa = 'https://wa.me/996708584613'
   const navScrolled = scrollY > 40
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoginLoading(true); setLoginError('')
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) { setLoginError('Туура эмес email же сырсөз'); setLoginLoading(false); return }
-    const { data: prof } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
-    const role = prof?.role
-    if (role === 'math_admin') router.push('/math/admin')
-    else if (role === 'math_parent') router.push('/math/parent')
-    else if (role === 'math_student') router.push('/math/student')
-    else if (role === 'admin') router.push('/admin')
-    else if (role === 'student') router.push('/student')
-    else router.push('/math/student')
-  }
 
   return (
     <div style={{ background: '#fff', minHeight: '100vh', fontFamily: 'Inter, -apple-system, sans-serif', color: '#0D1E4A', overflowX: 'hidden' }}>
@@ -150,7 +144,7 @@ export default function MathPage() {
 
       {/* BANNER */}
       <div style={{ background: 'linear-gradient(90deg,#1B4FD8,#3B82F6,#7C3AED,#1B4FD8)', backgroundSize: '300% 100%', animation: 'gradientShift 5s ease infinite', padding: '9px 16px', textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#fff' }}>
-        📐 Жаңгак Math — 6-7-8 класстар үчүн
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Ruler size={14} aria-hidden="true" /> Жаңгак Math — 6-7-8 класстар үчүн</span>
         <span className="banner-text-extra"> · Бишкек · Онлайн/Оффлайн</span>
         <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#fff', marginLeft: '10px', background: 'rgba(255,255,255,0.22)', padding: '3px 10px', borderRadius: '20px', fontWeight: '800', textDecoration: 'none', fontSize: '11px' }}>Жазылуу →</a>
       </div>
@@ -168,12 +162,12 @@ export default function MathPage() {
 
           <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div className="switcher" style={{ display: 'flex', background: '#F1F5F9', borderRadius: '12px', padding: '4px', gap: '4px' }}>
-              <button onClick={() => router.push('/')} style={{ padding: '6px 14px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '600', cursor: 'pointer', background: 'transparent', color: '#64748B' }}>ЖРТ</button>
+              <Link href="/" style={{ padding: '6px 14px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '600', cursor: 'pointer', background: 'transparent', color: '#64748B', textDecoration: 'none' }}>ЖРТ</Link>
               <button style={{ padding: '6px 14px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '700', cursor: 'pointer', background: '#1B4FD8', color: '#fff' }}>Math</button>
             </div>
-            <button onClick={() => setShowLogin(true)} style={{ background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '8px 16px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>Кирүү</button>
+            <a href={PLATFORM_LOGIN_HREF} style={{ background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '8px 16px', fontWeight: '600', fontSize: '13px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><LogIn size={15} aria-hidden="true" /> Кирүү</a>
             <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ background: '#1B4FD8', color: '#fff', borderRadius: '10px', padding: '8px 16px', fontWeight: '800', fontSize: '13px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s', boxShadow: '0 4px 14px rgba(27,79,216,0.3)' }}>
-              📲 Жазылуу
+              <MessageCircle size={15} aria-hidden="true" /> Жазылуу
             </a>
           </div>
 
@@ -188,12 +182,12 @@ export default function MathPage() {
         {menuOpen && (
           <div className="mobile-menu" style={{ background: '#fff', borderTop: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px', animation: 'slideDown 0.2s ease' }}>
             <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: '12px', padding: '4px', gap: '4px' }}>
-              <button onClick={() => { router.push('/'); setMenuOpen(false) }} style={{ flex: 1, padding: '9px', borderRadius: '9px', border: 'none', fontSize: '14px', fontWeight: '600', cursor: 'pointer', background: 'transparent', color: '#64748B' }}>ЖРТ</button>
+              <Link href="/" onClick={() => setMenuOpen(false)} style={{ flex: 1, padding: '9px', borderRadius: '9px', border: 'none', fontSize: '14px', fontWeight: '600', cursor: 'pointer', background: 'transparent', color: '#64748B', textAlign: 'center', textDecoration: 'none' }}>ЖРТ</Link>
               <button style={{ flex: 1, padding: '9px', borderRadius: '9px', border: 'none', fontSize: '14px', fontWeight: '700', cursor: 'pointer', background: '#1B4FD8', color: '#fff' }}>Math</button>
             </div>
-            <button onClick={() => { setShowLogin(true); setMenuOpen(false) }} style={{ width: '100%', background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '13px', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Кирүү</button>
-            <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ display: 'block', textAlign: 'center', background: '#1B4FD8', color: '#fff', borderRadius: '12px', padding: '13px', fontWeight: '800', fontSize: '14px', textDecoration: 'none', boxShadow: '0 4px 14px rgba(27,79,216,0.3)' }}>
-              📲 WhatsAppка жазылуу
+            <a href={PLATFORM_LOGIN_HREF} onClick={() => setMenuOpen(false)} style={{ width: '100%', background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '13px', fontWeight: '600', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}><LogIn size={17} aria-hidden="true" /> Кирүү</a>
+            <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', textAlign: 'center', background: '#1B4FD8', color: '#fff', borderRadius: '12px', padding: '13px', fontWeight: '800', fontSize: '14px', textDecoration: 'none', boxShadow: '0 4px 14px rgba(27,79,216,0.3)' }}>
+              <MessageCircle size={17} aria-hidden="true" /> WhatsAppка жазылуу
             </a>
           </div>
         )}
@@ -208,7 +202,7 @@ export default function MathPage() {
           {/* Left */}
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#EEF2FF', border: '1px solid #BFDBFE', borderRadius: '20px', padding: '7px 14px', marginBottom: '24px' }}>
-              <span style={{ fontSize: '14px' }}>📐</span>
+              <Ruler size={16} aria-hidden="true" style={{ color: '#1B4FD8' }} />
               <span style={{ color: '#1B4FD8', fontSize: '13px', fontWeight: '700' }}>6 · 7 · 8-класстар үчүн</span>
             </div>
             <h1 className="hero-title" style={{ fontSize: 'clamp(32px,5vw,58px)', fontWeight: '900', lineHeight: '1.07', marginBottom: '20px', letterSpacing: '-2px', color: '#0D1E4A' }}>
@@ -221,8 +215,8 @@ export default function MathPage() {
             </p>
             <div className="hero-btns" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
-                style={{ background: '#1B4FD8', color: '#fff', borderRadius: '14px', padding: '14px 28px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 8px 28px rgba(27,79,216,0.3)', transition: 'all 0.2s', display: 'inline-block' }}>
-                📲 Жазылуу
+                style={{ background: '#1B4FD8', color: '#fff', borderRadius: '14px', padding: '14px 28px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 8px 28px rgba(27,79,216,0.3)', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                <MessageCircle size={18} aria-hidden="true" /> Жазылуу
               </a>
               <a href="#grades" className="cta-btn"
                 style={{ background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', textDecoration: 'none', transition: 'all 0.2s', display: 'inline-block' }}>
@@ -284,12 +278,12 @@ export default function MathPage() {
             </div>
           </Reveal>
           <div className="why-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px' }}>
-            {WHY.map((w, i) => (
+            {WHY.map(({ Icon, title, desc }, i) => (
               <Reveal key={i} delay={i * 70}>
                 <div className="why-card" style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '18px', padding: '22px', height: '100%', transition: 'all 0.3s' }}>
-                  <div className="why-icon" style={{ fontSize: '28px', marginBottom: '12px' }}>{w.icon}</div>
-                  <div className="why-title" style={{ fontWeight: '800', fontSize: '14px', color: '#0D1E4A', marginBottom: '8px', lineHeight: '1.3' }}>{w.title}</div>
-                  <div className="why-desc" style={{ fontSize: '13px', color: '#64748B', lineHeight: '1.65' }}>{w.desc}</div>
+                  <div className="why-icon" style={{ marginBottom: '12px', color: '#1B4FD8' }}><Icon size={28} strokeWidth={1.8} aria-hidden="true" /></div>
+                  <div className="why-title" style={{ fontWeight: '800', fontSize: '14px', color: '#0D1E4A', marginBottom: '8px', lineHeight: '1.3' }}>{title}</div>
+                  <div className="why-desc" style={{ fontSize: '13px', color: '#64748B', lineHeight: '1.65' }}>{desc}</div>
                 </div>
               </Reveal>
             ))}
@@ -312,7 +306,7 @@ export default function MathPage() {
             {GRADES.map((g, i) => (
               <Reveal key={i} delay={i * 90}>
                 <div className="grade-card" style={{ background: g.featured ? g.bg : '#FAFBFF', border: g.featured ? `2px solid ${g.color}` : '1px solid #E2E8F0', borderRadius: '22px', overflow: 'hidden', height: '100%', transition: 'all 0.3s', boxShadow: g.featured ? `0 6px 28px ${g.color}22` : 'none', position: 'relative' }}>
-                  {g.featured && <div style={{ position: 'absolute', top: '14px', right: '14px', background: g.color, color: '#fff', fontSize: '10px', fontWeight: '900', padding: '3px 10px', borderRadius: '20px' }}>⭐ Популярдуу</div>}
+                  {g.featured && <div style={{ position: 'absolute', top: '14px', right: '14px', background: g.color, color: '#fff', fontSize: '10px', fontWeight: '900', padding: '3px 10px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '5px' }}><Star size={11} aria-hidden="true" /> Популярдуу</div>}
                   <div style={{ height: '4px', background: `linear-gradient(90deg,${g.color},transparent)` }} />
                   <div style={{ padding: '24px' }}>
                     <span style={{ background: `${g.color}22`, color: g.color, borderRadius: '8px', padding: '5px 14px', fontSize: '13px', fontWeight: '900', display: 'inline-block', marginBottom: '18px' }}>{g.grade}</span>
@@ -328,7 +322,7 @@ export default function MathPage() {
                     </div>
                     <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
                       style={{ display: 'block', textAlign: 'center', background: g.color, color: '#fff', borderRadius: '11px', padding: '12px', fontSize: '13px', fontWeight: '800', textDecoration: 'none', transition: 'all 0.2s', boxShadow: `0 4px 14px ${g.color}33` }}>
-                      📲 Жазылуу
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px' }}><MessageCircle size={16} aria-hidden="true" /> Жазылуу</span>
                     </a>
                   </div>
                 </div>
@@ -401,7 +395,7 @@ export default function MathPage() {
         <div style={{ position: 'absolute', top: '10%', right: '5%', fontSize: '160px', opacity: 0.04, fontWeight: '900', color: '#fff', pointerEvents: 'none' }}>∑</div>
         <Reveal>
           <div style={{ maxWidth: '560px', margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-            <div style={{ fontSize: '44px', marginBottom: '16px' }}>📐</div>
+            <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'center' }}><Ruler size={48} strokeWidth={1.8} aria-hidden="true" style={{ color: '#fff' }} /></div>
             <h2 className="cta-title" style={{ fontSize: 'clamp(26px,4vw,42px)', fontWeight: '900', letterSpacing: '-1px', marginBottom: '14px', color: '#fff', lineHeight: '1.1' }}>
               Балаңыздын<br /><span style={{ color: '#BFDBFE' }}>математикасын бекемдейли</span>
             </h2>
@@ -409,8 +403,8 @@ export default function MathPage() {
               Жазылуу үчүн WhatsAppка жазыңыз — биз байланышып, бардык маалыматты беребиз.
             </p>
             <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
-              style={{ display: 'inline-block', background: '#fff', color: '#1B4FD8', borderRadius: '14px', padding: '15px 40px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 10px 36px rgba(0,0,0,0.18)', transition: 'all 0.2s' }}>
-              📲 WhatsAppка жазуу
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#fff', color: '#1B4FD8', borderRadius: '14px', padding: '15px 40px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 10px 36px rgba(0,0,0,0.18)', transition: 'all 0.2s' }}>
+              <MessageCircle size={18} aria-hidden="true" /> WhatsAppка жазуу
             </a>
           </div>
         </Reveal>
@@ -426,44 +420,10 @@ export default function MathPage() {
             <span style={{ fontWeight: '900', fontSize: '14px', color: '#fff' }}>Zhangak</span>
             <span style={{ fontWeight: '800', fontSize: '11px', color: '#93C5FD', background: 'rgba(147,197,253,0.15)', padding: '2px 7px', borderRadius: '5px' }}>Math</span>
           </div>
-          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>© 2025 Жангак Math</div>
-          <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#93C5FD', fontSize: '13px', textDecoration: 'none', fontWeight: '600' }}>📲 +996 708 584 613</a>
+          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>© 2026 Жангак Math</div>
+          <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#93C5FD', fontSize: '13px', textDecoration: 'none', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Phone size={15} aria-hidden="true" /> +996 708 584 613</a>
         </div>
       </div>
-
-      {/* LOGIN MODAL */}
-      {showLogin && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(12px)', padding: '16px' }}
-          onClick={e => { if (e.target === e.currentTarget) setShowLogin(false) }}>
-          <div style={{ background: '#fff', borderRadius: '24px', padding: '36px 28px', width: '100%', maxWidth: '400px', position: 'relative', boxShadow: '0 20px 72px rgba(0,0,0,0.2)' }}>
-            <button onClick={() => setShowLogin(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: '#F8FAFF', border: '1px solid #E2E8F0', width: '30px', height: '30px', borderRadius: '50%', fontSize: '14px', cursor: 'pointer', color: '#64748B' }}>✕</button>
-            <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-              <div style={{ width: '42px', height: '42px', background: '#1B4FD8', borderRadius: '11px', margin: '0 auto 12px', overflow: 'hidden' }}>
-                <img src="/images/logo.png" alt="Z" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-              <div style={{ fontWeight: '900', fontSize: '20px', color: '#0D1E4A' }}>Кирүү</div>
-              <div style={{ color: '#94A3B8', fontSize: '13px', marginTop: '4px' }}>Жангак Math системасына</div>
-            </div>
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: '#64748B', display: 'block', marginBottom: '6px' }}>Email</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@gmail.com" required
-                  style={{ width: '100%', padding: '13px 14px', borderRadius: '11px', border: '1px solid #E2E8F0', fontSize: '15px', outline: 'none', color: '#0D1E4A', background: '#FAFBFF', boxSizing: 'border-box' as const }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: '#64748B', display: 'block', marginBottom: '6px' }}>Сырсөз</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required
-                  style={{ width: '100%', padding: '13px 14px', borderRadius: '11px', border: '1px solid #E2E8F0', fontSize: '15px', outline: 'none', color: '#0D1E4A', background: '#FAFBFF', boxSizing: 'border-box' as const }} />
-              </div>
-              {loginError && <div style={{ background: '#FEF2F2', color: '#EF4444', padding: '10px 14px', borderRadius: '10px', fontSize: '13px', textAlign: 'center' }}>{loginError}</div>}
-              <button type="submit" disabled={loginLoading}
-                style={{ background: '#1B4FD8', color: '#fff', border: 'none', borderRadius: '12px', padding: '14px', fontWeight: '900', fontSize: '15px', cursor: 'pointer', marginTop: '4px' }}>
-                {loginLoading ? 'Кирүүдө...' : 'Кирүү →'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

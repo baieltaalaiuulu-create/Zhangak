@@ -59,4 +59,47 @@ Verify the externally routed service after any change:
 curl --fail --silent https://zhangak.com/api/health
 ```
 
+## Domain split
+
+`deploy/nginx/zhangak.conf` serves one immutable Next.js release through three
+HTTPS hosts:
+
+- `zhangak.com` for the public, indexable marketing website;
+- `platform.zhangak.com` for student/parent accounts and the PWA;
+- `admin.zhangak.com` for staff workspaces.
+
+All three A records must resolve to the VPS before requesting a certificate.
+Install the tracked config only after confirming that the existing
+`/etc/letsencrypt/live/zhangak.com` certificate path is present. Extend that
+certificate with the two subdomains and let Certbot validate through Nginx:
+
+```sh
+sudo certbot --nginx --cert-name zhangak.com \
+  -d zhangak.com \
+  -d platform.zhangak.com \
+  -d admin.zhangak.com
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Do not add `www.zhangak.com` to the certificate or Nginx names until its DNS
+record exists. After deployment, verify redirects, surface isolation, noindex,
+the PWA manifest, and the certificate names:
+
+```sh
+curl -I https://zhangak.com/
+curl -I https://zhangak.com/student/online
+curl -I https://platform.zhangak.com/
+curl -I https://admin.zhangak.com/
+curl -I https://platform.zhangak.com/robots.txt
+curl -I https://admin.zhangak.com/robots.txt
+curl -I https://platform.zhangak.com/platform.webmanifest
+openssl s_client -connect 127.0.0.1:443 -servername platform.zhangak.com </dev/null
+```
+
+Authentication storage remains origin-scoped: student accounts sign in on the
+platform host and staff accounts sign in on the admin host. The login page
+rejects a valid account on the wrong workspace and signs that local session
+back out; tokens are not shared through the parent marketing domain.
+
 A successful response contains only `status` and `releaseSha`; it never exposes configuration or credentials.

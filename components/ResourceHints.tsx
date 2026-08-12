@@ -21,10 +21,5 @@ export default function ResourceHints() {
   // the file host it immediately points to would miss most of the benefit.
   ReactDOM.preconnect('https://fonts.googleapis.com')
   ReactDOM.preconnect('https://fonts.gstatic.com', { crossOrigin: 'anonymous' })
-  // api.groq.com is only ever called server-side (lib/ai-gateway.ts, from
-  // API routes) — the browser never contacts it directly, so this hint is
-  // inert today. Harmless to keep for whenever/if that changes.
-  ReactDOM.prefetchDNS('https://api.groq.com')
-
   return null
 }

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { AlertCircle, Eye, EyeOff, LoaderCircle, LogIn, MessageCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { redirectForRole } from '@/lib/auth-redirect'
+import { siteSurfaceForHost, workspaceSurfaceForRole } from '@/lib/site-hosts'
 
 // A real, dedicated /login route — until now this URL was only ever a
 // target: ~16 pages across the app call router.push('/login') when an
@@ -23,6 +24,20 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [checkingSession, setCheckingSession] = useState(true)
 
+  const rejectWrongWorkspace = async (role: string | undefined): Promise<boolean> => {
+    const currentSurface = siteSurfaceForHost(window.location.hostname)
+    const expectedSurface = workspaceSurfaceForRole(role)
+    if (!expectedSurface || (currentSurface !== 'admin' && currentSurface !== 'platform') || currentSurface === expectedSurface) {
+      return false
+    }
+
+    await supabase.auth.signOut({ scope: 'local' })
+    setError(expectedSurface === 'admin'
+      ? 'Бул кызматкер аккаунту. admin.zhangak.com дарегинен кириңиз.'
+      : 'Бул окуучу аккаунту. platform.zhangak.com дарегинен кириңиз.')
+    return true
+  }
+
   // Already logged in (e.g. a saved-credential auto-navigation, or a stale
   // bookmark) — skip the form entirely and go straight to the dashboard.
   useEffect(() => {
@@ -30,6 +45,7 @@ export default function LoginPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setCheckingSession(false); return }
       const { data: profile } = await supabase.from('profiles').select('role, student_type').eq('id', user.id).single()
+      if (await rejectWrongWorkspace(profile?.role)) { setCheckingSession(false); return }
       redirectForRole(profile?.role, profile?.student_type, router)
       setCheckingSession(false)
     }
@@ -47,6 +63,10 @@ export default function LoginPage() {
       return
     }
     const { data: profile } = await supabase.from('profiles').select('role, student_type').eq('id', data.user.id).single()
+    if (await rejectWrongWorkspace(profile?.role)) {
+      setLoading(false)
+      return
+    }
     redirectForRole(profile?.role, profile?.student_type, router, '/student')
     // Deliberately no setLoading(false) here — the page navigates away on
     // success, so leaving the button in its loading/disabled state avoids

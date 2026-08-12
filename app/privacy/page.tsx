@@ -4,6 +4,7 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: 'Политика конфиденциальности',
   description: 'Политика конфиденциальности платформы Жангак: какие данные мы собираем, как их используем и храним, и какие права есть у пользователей.',
+  alternates: { canonical: 'https://zhangak.com/privacy' },
 }
 
 const SECTIONS: { title: string; body: string[] }[] = [
@@ -65,7 +66,7 @@ export default function PrivacyPage() {
         {/* /landing, not '/' — '/' is now the root smart router (splash +
             auth check), not the marketing page itself, so a direct link
             meant to show that content has to name it explicitly. */}
-        <Link href="/landing" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#1B4FD8', fontSize: '13px', fontWeight: 700, textDecoration: 'none', marginBottom: '28px' }}>
+        <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#1B4FD8', fontSize: '13px', fontWeight: 700, textDecoration: 'none', marginBottom: '28px' }}>
           ← На главную
         </Link>
 

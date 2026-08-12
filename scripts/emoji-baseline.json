@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "total": 285,
+  "total": 245,
   "roots": ["app", "components", "lib", "public"],
   "files": {
     "app/admin/archive/page.tsx": 1,
@@ -9,10 +9,10 @@
     "app/api/admin/daily-challenge/generate/route.ts": 1,
     "app/director/page.tsx": 23,
     "app/finance/page.tsx": 16,
-    "app/landing/page.tsx": 27,
+    "app/landing/page.tsx": 1,
     "app/manager/page.tsx": 23,
     "app/math/admin/page.tsx": 9,
-    "app/math/page.tsx": 15,
+    "app/math/page.tsx": 1,
     "app/math/parent/page.tsx": 6,
     "app/math/student/page.tsx": 10,
     "app/offline/page.tsx": 1,

@@ -2,10 +2,26 @@
 export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
-import { redirectForRole } from '@/lib/auth-redirect'
-import { useInstallPrompt } from '@/components/PWAInstallProvider'
+import {
+  Clock3,
+  ExternalLink,
+  Flame,
+  LogIn,
+  MonitorSmartphone,
+  Map,
+  MapPin,
+  MessageCircle,
+  Phone,
+  Rocket,
+  Star,
+  Trophy,
+  Users,
+} from 'lucide-react'
+import { PLATFORM_ORIGIN } from '@/lib/site-hosts'
+
+const PLATFORM_LOGIN_HREF = process.env.NODE_ENV === 'production' ? `${PLATFORM_ORIGIN}/login` : '/login'
+const MATH_HREF = '/math'
+const PLATFORM_HOME_HREF = process.env.NODE_ENV === 'production' ? PLATFORM_ORIGIN : '/'
 
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null)
@@ -64,48 +80,11 @@ const ALL_RESULTS = [
 ]
 
 export default function LandingPage() {
-  const [showLogin, setShowLogin] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [timeLeft, setTimeLeft] = useState({ months: 0, hours: 0, minutes: 0, seconds: 0 })
   const [scrollY, setScrollY] = useState(0)
   const [activeResult, setActiveResult] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [showIOSGuide, setShowIOSGuide] = useState(false)
-  const router = useRouter()
-
-  // Reuses the app-wide install state (components/PWAInstallProvider,
-  // mounted once in the root layout) instead of each surface capturing its
-  // own beforeinstallprompt listener — that event only ever fires once per
-  // page load, so a second local listener here would race the provider's
-  // and could miss it. isUnsupported covers browsers with no install path
-  // at all (desktop Firefox/Safari) — same handling as
-  // components/student/settings/SettingsInstallCard.tsx.
-  const { isInstalled, isIOS, isUnsupported, promptInstall } = useInstallPrompt()
-
-  const handleInstall = async () => {
-    if (isIOS) { setShowIOSGuide(true); return }
-    await promptInstall()
-  }
-
-  // app/page.tsx (the root route, '/') already redirects a logged-in
-  // visitor away before this page ever renders — this is a secondary
-  // safety net for a direct bookmark/link straight to /landing while
-  // already signed in. Deliberately silent/best-effort: any failure here
-  // just leaves the landing page showing, which is always a valid,
-  // working page.
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data: profile } = await supabase.from('profiles').select('role, student_type').eq('id', user.id).single()
-      redirectForRole(profile?.role, profile?.student_type, router)
-    }
-    checkSession()
-  }, [router])
 
   useEffect(() => {
     const target = new Date('2027-05-17T09:00:00')
@@ -128,14 +107,6 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
- const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault(); setLoading(true); setError('')
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) { setError('Туура эмес email же сырсөз'); setLoading(false); return }
-  const { data: profile } = await supabase.from('profiles').select('role, student_type').eq('id', data.user.id).single()
-  redirectForRole(profile?.role, profile?.student_type, router, '/student')
-}
-
   const wa = 'https://wa.me/996502077326'
   const navScrolled = scrollY > 40
 
@@ -144,7 +115,7 @@ export default function LandingPage() {
     { q: 'Жангактын жетишкендиктери кандай?', a: '9000+ ийгиликтүү бүтүрүүчү. Эң жогорку натыйжа — 221 балл.' },
     { q: 'Кайсы класстын окуучулары жазыла алат?', a: '10 жана 11-класстын окуучулары. ЖРТга кайра даярданып жаткандар да жазыла алат.' },
     { q: 'Курс канча турат?', a: 'Баа жөнүндө WhatsAppта сурасаңыз болот.' },
-    { q: 'Курс онлайн же оффлайн?', a: 'Оффлайн — Бишкек, Горький көчөсү 108. Онлайн платформа жакында.' },
+    { q: 'Курс онлайн же оффлайн?', a: 'Эки формат тең бар: оффлайн — Бишкек, Горький көчөсү 108; онлайн — Жангак платформасында.' },
     { q: 'Бир сабак канча убакыт?', a: '3 саат: Математика 50 мин + Кыргыз тили 50 мин + Чтение 50 мин + 20 мин оюн.' },
   ]
 
@@ -218,8 +189,8 @@ export default function LandingPage() {
 
       {/* BANNER */}
       <div style={{ background: 'linear-gradient(90deg,#1B4FD8,#2563EB,#3B82F6,#1B4FD8)', backgroundSize: '300% 100%', animation: 'gradientShift 4s ease infinite', padding: '9px 16px', textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#fff' }}>
-        🔥 ЖАЙКЫ ЖРТ ИНТЕНСИВИ — 1-июлдан · 7 000 сом
-        <span className="banner-extra"> · Белек: Алматыга саякат ✈️</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Flame size={14} aria-hidden="true" /> ЖРТ 2027 — ЖАҢЫ ТОПТОРГО КАБЫЛ АЛУУ</span>
+        <span className="banner-extra"> · Онлайн жана Бишкекте</span>
         <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#fff', marginLeft: '10px', textDecoration: 'none', background: 'rgba(255,255,255,0.22)', padding: '3px 10px', borderRadius: '20px', fontWeight: '800', fontSize: '11px' }}>Жазылуу →</a>
       </div>
 
@@ -238,10 +209,10 @@ export default function LandingPage() {
           <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: '12px', padding: '4px', gap: '4px' }}>
               <button style={{ padding: '6px 14px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '700', cursor: 'pointer', background: '#1B4FD8', color: '#fff' }}>ЖРТ</button>
-              <button onClick={() => router.push('/math')} style={{ padding: '6px 14px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '600', cursor: 'pointer', background: 'transparent', color: '#64748B' }}>Math</button>
+              <a href={MATH_HREF} style={{ padding: '6px 14px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '600', cursor: 'pointer', background: 'transparent', color: '#64748B', textDecoration: 'none' }}>Math</a>
             </div>
-            <button onClick={() => setShowLogin(true)} style={{ background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '8px 16px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>Кирүү</button>
-            <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ background: '#1B4FD8', color: '#fff', borderRadius: '10px', padding: '8px 16px', fontWeight: '800', fontSize: '13px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s', boxShadow: '0 4px 14px rgba(27,79,216,0.3)' }}>📲 Жазылуу</a>
+            <a href={PLATFORM_LOGIN_HREF} style={{ background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '8px 16px', fontWeight: '600', fontSize: '13px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><LogIn size={15} aria-hidden="true" /> Кирүү</a>
+            <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ background: '#1B4FD8', color: '#fff', borderRadius: '10px', padding: '8px 16px', fontWeight: '800', fontSize: '13px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s', boxShadow: '0 4px 14px rgba(27,79,216,0.3)' }}><MessageCircle size={15} aria-hidden="true" /> Жазылуу</a>
           </div>
 
           {/* Mobile burger */}
@@ -258,10 +229,10 @@ export default function LandingPage() {
           <div className="mobile-menu" style={{ background: '#fff', borderTop: '1px solid #E2E8F0', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '10px', animation: 'slideDown 0.2s ease' }}>
             <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: '12px', padding: '4px', gap: '4px' }}>
               <button style={{ flex: 1, padding: '9px', borderRadius: '9px', border: 'none', fontSize: '14px', fontWeight: '700', cursor: 'pointer', background: '#1B4FD8', color: '#fff' }}>ЖРТ</button>
-              <button onClick={() => { router.push('/math'); setMenuOpen(false) }} style={{ flex: 1, padding: '9px', borderRadius: '9px', border: 'none', fontSize: '14px', fontWeight: '600', cursor: 'pointer', background: 'transparent', color: '#64748B' }}>Math</button>
+              <a href={MATH_HREF} onClick={() => setMenuOpen(false)} style={{ flex: 1, padding: '9px', borderRadius: '9px', border: 'none', fontSize: '14px', fontWeight: '600', cursor: 'pointer', background: 'transparent', color: '#64748B', textAlign: 'center', textDecoration: 'none' }}>Math</a>
             </div>
-            <button onClick={() => { setShowLogin(true); setMenuOpen(false) }} style={{ width: '100%', background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '13px', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Кирүү</button>
-            <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ display: 'block', textAlign: 'center', background: '#1B4FD8', color: '#fff', borderRadius: '12px', padding: '13px', fontWeight: '800', fontSize: '14px', textDecoration: 'none', boxShadow: '0 4px 14px rgba(27,79,216,0.3)' }}>📲 Жазылуу</a>
+            <a href={PLATFORM_LOGIN_HREF} onClick={() => setMenuOpen(false)} style={{ width: '100%', background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '13px', fontWeight: '600', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}><LogIn size={17} aria-hidden="true" /> Кирүү</a>
+            <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', textAlign: 'center', background: '#1B4FD8', color: '#fff', borderRadius: '12px', padding: '13px', fontWeight: '800', fontSize: '14px', textDecoration: 'none', boxShadow: '0 4px 14px rgba(27,79,216,0.3)' }}><MessageCircle size={17} aria-hidden="true" /> Жазылуу</a>
           </div>
         )}
       </nav>
@@ -278,7 +249,7 @@ export default function LandingPage() {
           {/* Left */}
           <div style={{ flex: 1 }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#EEF2FF', border: '1px solid #BFDBFE', borderRadius: '20px', padding: '7px 14px', marginBottom: '20px' }}>
-              <span style={{ fontSize: '13px' }}>🏆</span>
+              <Trophy size={15} aria-hidden="true" style={{ color: '#1B4FD8' }} />
               <span style={{ color: '#1B4FD8', fontSize: '12px', fontWeight: '700' }}>9000+ Ийгиликтүү бүтүрүүчү</span>
               <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', animation: 'pulse 2s ease infinite', flexShrink: 0 }} />
             </div>
@@ -290,8 +261,8 @@ export default function LandingPage() {
               Жангак 10-11-класстын окуучуларын ЖРТга инновациялык методика менен даярдайт.
             </p>
             <div className="hero-btns" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ background: '#1B4FD8', color: '#fff', borderRadius: '14px', padding: '14px 28px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 8px 28px rgba(27,79,216,0.32)', transition: 'all 0.2s', display: 'inline-block' }}>📲 Жазылуу</a>
-              <button onClick={() => setShowLogin(true)} className="cta-btn" style={{ background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s' }}>Кирүү →</button>
+              <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ background: '#1B4FD8', color: '#fff', borderRadius: '14px', padding: '14px 28px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 8px 28px rgba(27,79,216,0.32)', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px' }}><MessageCircle size={18} aria-hidden="true" /> Жазылуу</a>
+              <a href={PLATFORM_LOGIN_HREF} className="cta-btn" style={{ background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '14px 28px', fontWeight: '700', fontSize: '15px', textDecoration: 'none', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px' }}><LogIn size={18} aria-hidden="true" /> Кирүү</a>
             </div>
             <div className="hero-stats" style={{ display: 'flex', gap: '28px', marginTop: '36px', paddingTop: '28px', borderTop: '1px solid #E2E8F0', flexWrap: 'wrap' }}>
               {[{ n: '9000+', l: 'Ийгиликтүү бүтүрүүчү', c: '#1B4FD8' }, { n: '221', l: 'Эң жогорку балл', c: '#1B4FD8' }, { n: '3', l: 'Деңгээл', c: '#F59E0B' }].map(s => (
@@ -359,22 +330,22 @@ export default function LandingPage() {
           <div className="intensive-wrap" style={{ maxWidth: '1200px', margin: '0 auto', background: 'linear-gradient(135deg,#FEF3C7,#FEF9E7)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '22px', padding: '28px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
             <div>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '20px', padding: '5px 12px', marginBottom: '14px' }}>
-                <span style={{ color: '#D97706', fontSize: '12px', fontWeight: '700' }}>🔥 ЖАЙКЫ ИНТЕНСИВ 2026</span>
+                <span style={{ color: '#D97706', fontSize: '12px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Flame size={14} aria-hidden="true" /> ЖРТ 2027 · ЖАҢЫ ТОПТОР</span>
               </div>
               <h3 style={{ fontSize: 'clamp(16px,2.5vw,22px)', fontWeight: '900', marginBottom: '14px', lineHeight: '1.3', color: '#0D1E4A' }}>
-                1 айда ЖРТга даярдан жана <span style={{ color: '#D97706' }}>Алматыга бар! ✈️</span>
+                Өз деңгээлиңе ылайык топ менен <span style={{ color: '#D97706' }}>системалуу даярдан</span>
               </h3>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                {[['📅', '1-июлдан'], ['💰', '7 000 сом'], ['📍', 'Горький 108']].map(([icon, text]) => (
+                {[{ Icon: Users, text: '10–11 класс' }, { Icon: MonitorSmartphone, text: 'Онлайн/оффлайн' }, { Icon: MapPin, text: 'Горький 108' }].map(({ Icon, text }) => (
                   <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#64748B', background: '#fff', borderRadius: '9px', padding: '5px 10px', border: '1px solid #E2E8F0' }}>
-                    <span>{icon}</span><span>{text}</span>
+                    <Icon size={14} aria-hidden="true" /><span>{text}</span>
                   </div>
                 ))}
               </div>
             </div>
             <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn intensive-btn"
               style={{ background: 'linear-gradient(135deg,#F59E0B,#EF4444)', color: '#fff', borderRadius: '14px', padding: '15px 28px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', textAlign: 'center', flexShrink: 0, boxShadow: '0 8px 28px rgba(245,158,11,0.28)', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
-              📲 Азыр жазылуу<br /><span style={{ fontSize: '10px', opacity: 0.9 }}>Орундар чектелүү!</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px' }}><MessageCircle size={17} aria-hidden="true" /> Азыр жазылуу</span><br /><span style={{ fontSize: '10px', opacity: 0.9 }}>Орундар чектелүү!</span>
             </a>
           </div>
         </Reveal>
@@ -419,7 +390,7 @@ export default function LandingPage() {
             {courses.map((c, i) => (
               <Reveal key={c.level} delay={i * 90}>
                 <div className="course-card" style={{ background: c.featured ? '#F0F5FF' : '#FAFBFF', border: c.featured ? `2px solid ${c.color}` : '1px solid #E2E8F0', borderRadius: '22px', overflow: 'hidden', height: '100%', transition: 'all 0.3s', position: 'relative', boxShadow: c.featured ? `0 6px 28px ${c.glow}` : 'none' }}>
-                  {c.featured && <div style={{ position: 'absolute', top: '14px', right: '14px', background: c.color, color: '#fff', fontSize: '10px', fontWeight: '900', padding: '3px 10px', borderRadius: '20px' }}>⭐ Эң популярдуу</div>}
+                  {c.featured && <div style={{ position: 'absolute', top: '14px', right: '14px', background: c.color, color: '#fff', fontSize: '10px', fontWeight: '900', padding: '3px 10px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '5px' }}><Star size={11} aria-hidden="true" /> Эң популярдуу</div>}
                   <div style={{ height: '4px', background: `linear-gradient(90deg,${c.color},transparent)` }} />
                   <div style={{ padding: '24px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
@@ -440,7 +411,7 @@ export default function LandingPage() {
                     <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '18px' }}>
                       <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
                         style={{ display: 'block', textAlign: 'center', background: c.color, color: '#fff', borderRadius: '11px', padding: '12px', fontSize: '13px', fontWeight: '800', textDecoration: 'none', transition: 'all 0.2s', boxShadow: `0 4px 14px ${c.glow}` }}>
-                        📲 Баа жөнүндө сурануу
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px' }}><MessageCircle size={16} aria-hidden="true" /> Баа жөнүндө сурануу</span>
                       </a>
                     </div>
                   </div>
@@ -470,7 +441,7 @@ export default function LandingPage() {
                   onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}>
                   <img src={r.img} alt={r.name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }} />
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(5,12,31,1) 0%,transparent 55%)' }} />
-                  {i === 0 && <div style={{ position: 'absolute', top: '10px', left: '10px', background: '#1B4FD8', color: '#fff', fontSize: '9px', fontWeight: '900', padding: '3px 8px', borderRadius: '20px' }}>🏆 Эң жогорку</div>}
+                  {i === 0 && <div style={{ position: 'absolute', top: '10px', left: '10px', background: '#1B4FD8', color: '#fff', fontSize: '9px', fontWeight: '900', padding: '3px 8px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '4px' }}><Trophy size={10} aria-hidden="true" /> Эң жогорку</div>}
                   <div style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px' }}>
                     <div style={{ fontWeight: '900', fontSize: '24px', color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>{r.score}</div>
                     <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', marginTop: '3px', fontWeight: '500' }}>{r.name}</div>
@@ -501,9 +472,9 @@ export default function LandingPage() {
                   <div style={{ fontWeight: '900', fontSize: '16px', color: '#0D1E4A', marginBottom: '3px' }}>Жангак офиси</div>
                   <div style={{ color: '#94A3B8', fontSize: '12px' }}>Бишкек, Кыргызстан</div>
                 </div>
-                {[['📍', 'Дарек', 'Горький 108'], ['🕙', 'Убакыт', 'Дүй–Жума: 9–19'], ['📲', 'Телефон', '+996 502 077 326']].map(([icon, label, value]) => (
+                {[{ Icon: MapPin, label: 'Дарек', value: 'Горький 108' }, { Icon: Clock3, label: 'Убакыт', value: 'Дүй–Жума: 9–19' }, { Icon: Phone, label: 'Телефон', value: '+996 502 077 326' }].map(({ Icon, label, value }) => (
                   <div key={label} style={{ display: 'flex', gap: '10px' }}>
-                    <div style={{ width: '32px', height: '32px', background: '#EEF2FF', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>{icon}</div>
+                    <div style={{ width: '32px', height: '32px', background: '#EEF2FF', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FD8', flexShrink: 0 }}><Icon size={16} aria-hidden="true" /></div>
                     <div>
                       <div style={{ fontSize: '10px', color: '#94A3B8', marginBottom: '1px' }}>{label}</div>
                       <div style={{ fontSize: '12px', fontWeight: '600', color: '#0D1E4A' }}>{value}</div>
@@ -512,7 +483,7 @@ export default function LandingPage() {
                 ))}
                 <a href="https://go.2gis.com/VQjcS" target="_blank" rel="noopener noreferrer" className="cta-btn"
                   style={{ background: '#1B4FD8', color: '#fff', borderRadius: '11px', padding: '11px', fontWeight: '700', fontSize: '12px', textDecoration: 'none', textAlign: 'center', marginTop: 'auto', transition: 'all 0.2s' }}>
-                  🗺 2GIS-те ачуу →
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Map size={15} aria-hidden="true" /> 2GIS-те ачуу</span>
                 </a>
               </div>
             </div>
@@ -551,7 +522,7 @@ export default function LandingPage() {
             <div style={{ textAlign: 'center', marginTop: '32px' }}>
               <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
                 style={{ display: 'inline-block', background: '#1B4FD8', color: '#fff', borderRadius: '13px', padding: '13px 28px', fontWeight: '800', fontSize: '14px', textDecoration: 'none', boxShadow: '0 8px 28px rgba(27,79,216,0.24)', transition: 'all 0.2s' }}>
-                📲 WhatsAppта суроо берүү
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px' }}><MessageCircle size={17} aria-hidden="true" /> WhatsAppта суроо берүү</span>
               </a>
             </div>
           </Reveal>
@@ -563,7 +534,7 @@ export default function LandingPage() {
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '500px', height: '500px', background: 'radial-gradient(circle,rgba(255,255,255,0.07) 0%,transparent 70%)', pointerEvents: 'none' }} />
         <Reveal>
           <div style={{ maxWidth: '560px', margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-            <div style={{ fontSize: '44px', marginBottom: '20px', animation: 'wobble 3s ease infinite' }}>🚀</div>
+            <div style={{ marginBottom: '20px', animation: 'wobble 3s ease infinite', display: 'flex', justifyContent: 'center' }}><Rocket size={48} strokeWidth={1.8} aria-hidden="true" style={{ color: '#fff' }} /></div>
             <h2 style={{ fontSize: 'clamp(26px,4vw,44px)', fontWeight: '900', letterSpacing: '-1.5px', marginBottom: '14px', lineHeight: '1.1', color: '#fff' }}>
               Келечегиңди<br /><span style={{ color: '#BFDBFE' }}>бүгүн баштагыз</span>
             </h2>
@@ -572,13 +543,13 @@ export default function LandingPage() {
             </p>
             <div className="cta-final-btns" style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
-                style={{ background: '#fff', color: '#1B4FD8', borderRadius: '14px', padding: '15px 36px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 10px 36px rgba(0,0,0,0.18)', transition: 'all 0.2s', display: 'inline-block' }}>
-                📲 Жазылуу
+                style={{ background: '#fff', color: '#1B4FD8', borderRadius: '14px', padding: '15px 36px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 10px 36px rgba(0,0,0,0.18)', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                <MessageCircle size={18} aria-hidden="true" /> Жазылуу
               </a>
-              <button onClick={() => setShowLogin(true)} className="cta-btn"
-                style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '14px', padding: '15px 36px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s' }}>
-                Кирүү →
-              </button>
+              <a href={PLATFORM_LOGIN_HREF} className="cta-btn"
+                style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '14px', padding: '15px 36px', fontWeight: '700', fontSize: '15px', textDecoration: 'none', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                <LogIn size={18} aria-hidden="true" /> Кирүү
+              </a>
             </div>
           </div>
         </Reveal>
@@ -597,126 +568,27 @@ export default function LandingPage() {
             <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>© 2026 Жангак. Бардык укуктар корголгон.</div>
             <a href="/privacy" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', textDecoration: 'none', fontWeight: '600' }}>Купуялык саясаты</a>
           </div>
-          <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#93C5FD', fontSize: '13px', textDecoration: 'none', fontWeight: '600' }}>📲 +996 502 077 326</a>
+          <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#93C5FD', fontSize: '13px', textDecoration: 'none', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Phone size={15} aria-hidden="true" /> +996 502 077 326</a>
         </div>
       </div>
 
-      {/* INSTALL APP — last section on the page, after the footer: clean,
-          minimal, single CTA rather than its own dark full-bleed block.
-          isUnsupported (no install path at all — desktop Firefox/Safari)
-          isn't in the literal spec, but the alternative is a button that
-          silently does nothing on click since there's no native prompt to
-          trigger there. */}
+      {/* PWA installation belongs to platform.zhangak.com. The marketing
+          origin only links there, so it never installs a service worker or
+          stores an authentication session of its own. */}
       <section className="py-8 px-4 border-t border-gray-100 bg-white">
-        <div className="max-w-sm mx-auto">
-
+        <div className="max-w-sm mx-auto rounded-2xl border border-blue-100 bg-blue-50 p-4">
           <div className="flex items-center gap-3 mb-4">
-            {/* eslint-disable-next-line @next/next/no-img-element -- static PWA icon, matches this page's raw <img> convention */}
-            <img src="/icons/icon-192.png"
-              className="w-12 h-12 rounded-xl shadow-sm"
-              alt="Zhangak" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-[#1B4FD8] shadow-sm"><ExternalLink size={22} aria-hidden="true" /></div>
             <div>
-              <div className="font-bold text-gray-900">Жангак</div>
-              <div className="text-xs text-gray-400">Телефонго орнот</div>
+              <div className="font-bold text-gray-900">Онлайн платформа</div>
+              <div className="text-xs text-gray-500">Сабактарыңды жана прогрессти ач</div>
             </div>
           </div>
-
-          {isUnsupported ? (
-            <p className="text-center text-xs text-gray-400">Орнотуу үчүн Chrome колдон</p>
-          ) : !isInstalled ? (
-            <button
-              onClick={handleInstall}
-              className="w-full h-12 bg-[#1B4FD8] text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2">
-              📲 Колдонмону орнот
-            </button>
-          ) : (
-            <a
-              href="/student/online"
-              className="w-full h-12 bg-[#1B4FD8] text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2">
-              ▶ Ачуу — Открыть приложение
-            </a>
-          )}
-
-          <p className="text-center text-xs text-gray-400 mt-2">
-            Android: Chrome → Меню → Орнот
-          </p>
+          <a href={PLATFORM_HOME_HREF} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4FD8] px-4 text-sm font-semibold text-white">
+            Платформаны ачуу <ExternalLink size={17} aria-hidden="true" />
+          </a>
         </div>
       </section>
-
-      {/* iOS INSTALL GUIDE — iOS never fires beforeinstallprompt (Safari,
-          and any browser shell on iOS since they all run on WebKit, only
-          support installing via the manual Share-sheet flow), so
-          handleInstall opens this instead of calling promptInstall(). */}
-      {showIOSGuide && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-end"
-          onClick={() => setShowIOSGuide(false)}>
-          <div className="bg-white w-full rounded-t-3xl p-6 pb-10"
-            onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-center mb-4">
-              Установить на iPhone
-            </h3>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-[#1B4FD8] rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">1</div>
-                <p className="text-sm text-gray-700 pt-1">Нажми кнопку <strong>Поделиться</strong> внизу Safari (квадрат со стрелкой ↑)</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-[#1B4FD8] rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">2</div>
-                <p className="text-sm text-gray-700 pt-1">Прокрути вниз и выбери <strong>&quot;На экран «Домой»&quot;</strong></p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-[#1B4FD8] rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">3</div>
-                <p className="text-sm text-gray-700 pt-1">Нажми <strong>&quot;Добавить&quot;</strong> в правом верхнем углу</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowIOSGuide(false)}
-              className="w-full h-12 bg-[#1B4FD8] text-white font-bold rounded-xl mt-6">
-              Понятно
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* LOGIN MODAL */}
-      {showLogin && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.68)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(14px)', padding: '16px' }}
-          onClick={e => { if (e.target === e.currentTarget) setShowLogin(false) }}>
-          <div style={{ background: '#fff', borderRadius: '24px', padding: '36px 28px', width: '100%', maxWidth: '400px', position: 'relative', boxShadow: '0 20px 72px rgba(0,0,0,0.2)', animation: 'bounceIn 0.35s cubic-bezier(.22,1,.36,1) both' }}>
-            <button onClick={() => setShowLogin(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: '#F8FAFF', border: '1px solid #E2E8F0', width: '30px', height: '30px', borderRadius: '50%', fontSize: '14px', cursor: 'pointer', color: '#64748B' }}>✕</button>
-            <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-              <div style={{ width: '42px', height: '42px', background: '#1B4FD8', borderRadius: '11px', margin: '0 auto 12px', overflow: 'hidden' }}>
-                <img src="/images/logo.png" alt="Z" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-              <div style={{ fontWeight: '900', fontSize: '20px', color: '#0D1E4A' }}>Кирүү</div>
-              <div style={{ color: '#94A3B8', fontSize: '13px', marginTop: '4px' }}>Жангак системасына кирүү</div>
-            </div>
-            <form onSubmit={handleLogin} method="post" action="#" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label htmlFor="landing-login-email" style={{ fontSize: '12px', fontWeight: '600', color: '#64748B', display: 'block', marginBottom: '6px' }}>Email</label>
-                <input id="landing-login-email" type="email" name="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@gmail.com" required
-                  style={{ width: '100%', padding: '13px 14px', borderRadius: '11px', border: '1px solid #E2E8F0', fontSize: '15px', outline: 'none', color: '#0D1E4A', background: '#FAFBFF', boxSizing: 'border-box' as const }}
-                  onFocus={e => (e.target.style.borderColor = '#1B4FD8')} onBlur={e => (e.target.style.borderColor = '#E2E8F0')} />
-              </div>
-              <div>
-                <label htmlFor="landing-login-password" style={{ fontSize: '12px', fontWeight: '600', color: '#64748B', display: 'block', marginBottom: '6px' }}>Сырсөз</label>
-                <input id="landing-login-password" type="password" name="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required
-                  style={{ width: '100%', padding: '13px 14px', borderRadius: '11px', border: '1px solid #E2E8F0', fontSize: '15px', outline: 'none', color: '#0D1E4A', background: '#FAFBFF', boxSizing: 'border-box' as const }}
-                  onFocus={e => (e.target.style.borderColor = '#1B4FD8')} onBlur={e => (e.target.style.borderColor = '#E2E8F0')} />
-              </div>
-              {error && <div style={{ background: '#FEF2F2', color: '#EF4444', padding: '10px 14px', borderRadius: '10px', fontSize: '13px', textAlign: 'center', border: '1px solid #FECACA' }}>{error}</div>}
-              <button type="submit" disabled={loading} className="cta-btn"
-                style={{ background: '#1B4FD8', color: '#fff', border: 'none', borderRadius: '11px', padding: '14px', fontWeight: '900', fontSize: '15px', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, transition: 'all 0.2s', marginTop: '4px' }}>
-                {loading ? 'Кирүүдө...' : 'Кирүү →'}
-              </button>
-            </form>
-            <div style={{ textAlign: 'center', marginTop: '18px' }}>
-              <span style={{ color: '#94A3B8', fontSize: '13px' }}>Аккаунт жокпу? </span>
-              <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#1B4FD8', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>📲 Жазылуу</a>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
