@@ -4,6 +4,7 @@
 // instead of the anon-key client.
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireContentAdminApi } from '@/lib/api-auth'
 
 function getAdminClient() {
   return createClient(
@@ -14,6 +15,9 @@ function getAdminClient() {
 }
 
 export async function POST(req: NextRequest) {
+  const authError = await requireContentAdminApi(req)
+  if (authError) return authError
+
   try {
     const supabaseAdmin = getAdminClient()
     const { title, subject, lessonId, timeLimitMinutes, maxAttempts, isActive, type, scheduledAt } = await req.json()
@@ -47,6 +51,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const authError = await requireContentAdminApi(req)
+  if (authError) return authError
+
   try {
     const supabaseAdmin = getAdminClient()
     const body = await req.json()
@@ -75,6 +82,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const authError = await requireContentAdminApi(req)
+  if (authError) return authError
+
   try {
     const supabaseAdmin = getAdminClient()
     const { id } = await req.json()

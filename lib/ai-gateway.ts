@@ -177,6 +177,8 @@ abstract class OpenAICompatibleGateway extends BaseAIGateway {
 
   protected async request(model: string, messages: AIMessage[], options?: AICompleteOptions): Promise<ReadableStream<Uint8Array>> {
     let res: Response
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 20_000)
     try {
       res = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
@@ -190,9 +192,12 @@ abstract class OpenAICompatibleGateway extends BaseAIGateway {
           stream: true,
           ...(options?.jsonMode ? { response_format: { type: 'json_object' } } : {}),
         }),
+        signal: controller.signal,
       })
     } catch {
       throw new AIGatewayError(`network error contacting ${this.providerLabel}`, ERR_NETWORK)
+    } finally {
+      clearTimeout(timeout)
     }
 
     if (res.status === 429) throw new AIGatewayError(`${this.providerLabel} rate limited`, ERR_RATE_LIMIT)
@@ -273,14 +278,19 @@ class GeminiGateway extends BaseAIGateway {
     if (systemText) body.systemInstruction = { parts: [{ text: systemText }] }
 
     let res: Response
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 20_000)
     try {
       res = await fetch(`${this.baseUrl}/${this.model}:streamGenerateContent?alt=sse&key=${this.apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: controller.signal,
       })
     } catch {
       throw new AIGatewayError('network error contacting Gemini', ERR_NETWORK)
+    } finally {
+      clearTimeout(timeout)
     }
 
     if (res.status === 429) throw new AIGatewayError('Gemini rate limited', ERR_RATE_LIMIT)

@@ -2,6 +2,7 @@
 // the rest of /api/admin/*.
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdminApi } from '@/lib/api-auth'
 
 function getAdminClient() {
   return createClient(
@@ -22,6 +23,9 @@ interface PrizeInput {
 // (week_start, place) so re-saving the form updates in place instead of
 // creating duplicate rows.
 export async function POST(req: NextRequest) {
+  const authError = await requireAdminApi(req)
+  if (authError) return authError
+
   try {
     const supabaseAdmin = getAdminClient()
     const { weekStart, prizes } = await req.json() as { weekStart: string; prizes: PrizeInput[] }

@@ -3,6 +3,7 @@
 // through this service-role route — same convention as the rest of app/api/admin/*.
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdminApi } from '@/lib/api-auth'
 
 function getAdminClient() {
   return createClient(
@@ -39,6 +40,9 @@ function mapPayload(body: SpecialtyPayload): Record<string, unknown> {
 }
 
 export async function POST(req: NextRequest) {
+  const authError = await requireAdminApi(req)
+  if (authError) return authError
+
   try {
     const supabaseAdmin = getAdminClient()
     const body = await req.json() as SpecialtyPayload
@@ -61,6 +65,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const authError = await requireAdminApi(req)
+  if (authError) return authError
+
   try {
     const supabaseAdmin = getAdminClient()
     const body = await req.json() as SpecialtyPayload & { id?: string }
@@ -78,6 +85,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const authError = await requireAdminApi(req)
+  if (authError) return authError
+
   try {
     const supabaseAdmin = getAdminClient()
     const { id } = await req.json()

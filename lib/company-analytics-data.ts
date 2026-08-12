@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { DEFAULT_TARGET_SCORE } from '@/lib/student-data'
+import { authenticatedFetch } from '@/lib/authenticated-fetch'
 
 // "Academic year" — Kyrgyz school year runs September→August, so a
 // registration in e.g. March 2026 belongs to the 2025-2026 year, not
@@ -169,7 +170,7 @@ export async function fetchCompanyAnalytics(yearFilter: string | null): Promise<
 // ── AI Insights ───────────────────────────────────────────────────────────
 
 export async function fetchAnalyticsInsights(stats: Record<string, unknown>): Promise<string[]> {
-  const res = await fetch('/api/admin/analytics-insights', {
+  const res = await authenticatedFetch('/api/admin/analytics-insights', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ stats }),

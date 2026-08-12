@@ -4,6 +4,7 @@
 // removing a student's group goes through this service-role route instead.
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdminApi } from '@/lib/api-auth'
 
 function getAdminClient() {
   return createClient(
@@ -14,6 +15,9 @@ function getAdminClient() {
 }
 
 export async function POST(req: NextRequest) {
+  const authError = await requireAdminApi(req)
+  if (authError) return authError
+
   try {
     const supabaseAdmin = getAdminClient()
     const { studentId, groupId } = await req.json()
@@ -30,6 +34,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const authError = await requireAdminApi(req)
+  if (authError) return authError
+
   try {
     const supabaseAdmin = getAdminClient()
     const { studentId } = await req.json()

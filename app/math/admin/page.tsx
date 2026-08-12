@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { authenticatedFetch } from '@/lib/authenticated-fetch'
 
 type Tab = 'students' | 'parents' | 'lessons' | 'tests' | 'results'
 
@@ -58,7 +59,7 @@ export default function MathAdminPage() {
   const flash = (text: string) => { setMsg(text); setTimeout(() => setMsg(''), 3000) }
 
   const createUser = async (body: object) => {
-    const res = await fetch('/api/create-user', {
+    const res = await authenticatedFetch('/api/create-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -68,7 +69,7 @@ export default function MathAdminPage() {
 
   const deleteUser = async (id: string, name: string) => {
     if (!confirm(`${name} өчүрүлсүнбү?`)) return
-    const res = await fetch('/api/delete-user', {
+    const res = await authenticatedFetch('/api/delete-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),

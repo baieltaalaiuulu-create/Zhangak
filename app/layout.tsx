@@ -7,7 +7,7 @@ import ResourceHints from "@/components/ResourceHints";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://zhangak.kg"),
+  metadataBase: new URL("https://zhangak.com"),
   title: {
     default: "Жангак — платформа подготовки к ОРТ (ЖРТ) в Кыргызстане",
     template: "%s | Жангак",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     title: "Жангак — платформа подготовки к ОРТ (ЖРТ)",
     description:
       "Жангак готовит школьников Кыргызстана к ОРТ (ЖРТ): курсы, тренажёры, пробные тесты и AI-наставник.",
-    url: "https://zhangak.kg",
+    url: "https://zhangak.com",
     siteName: "Жангак",
     locale: "ru_RU",
     type: "website",

@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin/
 Disallow: /student/
 
-Sitemap: https://zhangak.kg/sitemap.xml
+Sitemap: https://zhangak.com/sitemap.xml

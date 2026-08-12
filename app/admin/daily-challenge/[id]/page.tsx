@@ -11,6 +11,7 @@ import {
   fetchChallengeById, fetchChallengeQuestions, SUBJECT_META, optionText,
   type DailyChallenge, type DailyChallengeQuestion, type ChallengeSubject, type AnswerLetter,
 } from '@/lib/daily-challenge-data'
+import { authenticatedFetch } from '@/lib/authenticated-fetch'
 
 const SUBJECTS: ChallengeSubject[] = ['math', 'kyr', 'analogy', 'reading']
 const LETTERS: AnswerLetter[] = ['A', 'B', 'C', 'D']
@@ -71,7 +72,7 @@ export default function DailyChallengeEditorPage() {
 
   const patchQuestion = async (id: string, payload: Partial<DailyChallengeQuestion>) => {
     setQuestions(prev => prev.map(q => q.id === id ? { ...q, ...payload } : q))
-    await fetch('/api/admin/daily-challenge/questions', {
+    await authenticatedFetch('/api/admin/daily-challenge/questions', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, payload }),
@@ -80,7 +81,7 @@ export default function DailyChallengeEditorPage() {
 
   const handleAdd = async () => {
     const nextOrder = (questions[questions.length - 1]?.order_num ?? 0) + 1
-    const res = await fetch('/api/admin/daily-challenge/questions', {
+    const res = await authenticatedFetch('/api/admin/daily-challenge/questions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ challengeId, payload: blankQuestion(challengeId, nextOrder), orderNum: nextOrder }),
@@ -96,7 +97,7 @@ export default function DailyChallengeEditorPage() {
     if (!active) return
     setReplacing(true)
     try {
-      const res = await fetch('/api/admin/daily-challenge/generate', {
+      const res = await authenticatedFetch('/api/admin/daily-challenge/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ replaceQuestionId: active.id }),
@@ -111,7 +112,7 @@ export default function DailyChallengeEditorPage() {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      await fetch('/api/admin/daily-challenge/questions', {
+      await authenticatedFetch('/api/admin/daily-challenge/questions', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: deleteTarget.id }),
@@ -126,7 +127,7 @@ export default function DailyChallengeEditorPage() {
   const saveDraft = async () => {
     if (!challenge) return
     setSaving(true)
-    await fetch('/api/admin/daily-challenge', {
+    await authenticatedFetch('/api/admin/daily-challenge', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: challenge.id, status: challenge.status === 'published' ? 'published' : 'draft' }),
@@ -137,7 +138,7 @@ export default function DailyChallengeEditorPage() {
   const publish = async () => {
     if (!challenge) return
     setPublishing(true)
-    await fetch('/api/admin/daily-challenge', {
+    await authenticatedFetch('/api/admin/daily-challenge', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: challenge.id, status: 'published' }),

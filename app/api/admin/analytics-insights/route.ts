@@ -10,6 +10,7 @@
 // provider to constrain output to valid JSON, then we parse it here.
 import { NextRequest, NextResponse } from 'next/server'
 import { createAIGateway, AIGatewayError, type AIMessage } from '@/lib/ai-gateway'
+import { FULL_ADMIN_ROLES, requireRoleAuth } from '@/lib/api-auth'
 
 interface AnalyticsInsightsBody {
   stats: Record<string, unknown>
@@ -28,6 +29,9 @@ ${JSON.stringify(stats, null, 2)}
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireRoleAuth(req, FULL_ADMIN_ROLES)
+  if (!auth.authorized) return auth.response
+
   try {
     const { stats } = await req.json() as AnalyticsInsightsBody
     if (!stats) {

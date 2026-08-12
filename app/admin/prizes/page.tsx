@@ -7,6 +7,7 @@ import AdminTopbar from '@/components/admin/AdminTopbar'
 import { supabase } from '@/lib/supabase'
 import { currentWeekStart } from '@/lib/daily-challenge-data'
 import { fetchPrizesForWeek, fetchPrizeHistory, type WeeklyPrize, type PrizeHistoryRow } from '@/lib/weekly-leaderboard-data'
+import { authenticatedFetch } from '@/lib/authenticated-fetch'
 
 interface PrizeDraft {
   place: 1 | 2 | 3
@@ -74,7 +75,7 @@ export default function AdminPrizesPage() {
     setSaving(true)
     setSaved(false)
     try {
-      const res = await fetch('/api/admin/prizes', {
+      const res = await authenticatedFetch('/api/admin/prizes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

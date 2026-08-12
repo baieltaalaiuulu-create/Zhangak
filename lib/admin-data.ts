@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { DEFAULT_TARGET_SCORE } from '@/lib/student-data'
+import { authenticatedFetch } from '@/lib/authenticated-fetch'
 
 // ── Suggested schema additions (NOT applied — run manually if desired) ─────
 // ALTER TABLE profiles ADD COLUMN price integer;
@@ -194,7 +195,7 @@ interface AuthUserInfo {
 export async function fetchAuthUsers(): Promise<Map<string, AuthUserInfo>> {
   const map = new Map<string, AuthUserInfo>()
   try {
-    const res = await fetch('/api/list-users')
+    const res = await authenticatedFetch('/api/list-users')
     if (!res.ok) return map
     const data = await res.json() as { users: { id: string; email: string | null; banned_until: string | null; last_sign_in_at: string | null }[] }
     for (const u of data.users ?? []) {
@@ -270,7 +271,7 @@ export async function fetchStudents(): Promise<AdminStudent[]> {
 // so assignment goes through app/api/admin/group-students (service-role) instead
 // of the anon client.
 export async function assignStudentGroup(studentId: string, groupId: number): Promise<void> {
-  const res = await fetch('/api/admin/group-students', {
+  const res = await authenticatedFetch('/api/admin/group-students', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ studentId, groupId }),
@@ -280,7 +281,7 @@ export async function assignStudentGroup(studentId: string, groupId: number): Pr
 }
 
 export async function removeStudentGroup(studentId: string): Promise<void> {
-  const res = await fetch('/api/admin/group-students', {
+  const res = await authenticatedFetch('/api/admin/group-students', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ studentId }),
@@ -301,7 +302,7 @@ export interface NewStudentPayload {
 }
 
 export async function createStudent(payload: NewStudentPayload): Promise<string> {
-  const res = await fetch('/api/create-user', {
+  const res = await authenticatedFetch('/api/create-user', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -357,7 +358,7 @@ export async function addPayment(payload: NewPaymentPayload): Promise<void> {
 }
 
 export async function setStudentBlocked(id: string, blocked: boolean): Promise<void> {
-  const res = await fetch('/api/block-user', {
+  const res = await authenticatedFetch('/api/block-user', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, blocked }),
@@ -367,7 +368,7 @@ export async function setStudentBlocked(id: string, blocked: boolean): Promise<v
 }
 
 export async function resetStudentPassword(id: string, password: string): Promise<void> {
-  const res = await fetch('/api/admin/reset-password', {
+  const res = await authenticatedFetch('/api/admin/reset-password', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, password }),
@@ -379,7 +380,7 @@ export async function resetStudentPassword(id: string, password: string): Promis
 export async function deleteStudent(id: string): Promise<void> {
   await removeStudentGroup(id)
   await supabase.from('payments').delete().eq('student_id', id)
-  const res = await fetch('/api/delete-user', {
+  const res = await authenticatedFetch('/api/delete-user', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id }),
@@ -462,7 +463,7 @@ export interface LessonForTest { id: string; title: string; subject: 'math' | 'k
 // find-or-create (and the active-flag toggle below) go through a server-side
 // route using the service-role key instead — see app/api/admin/ensure-practice-test.
 async function callEnsurePracticeTest(lesson: LessonForTest, setActive?: boolean): Promise<{ id: number; is_active: boolean }> {
-  const res = await fetch('/api/admin/ensure-practice-test', {
+  const res = await authenticatedFetch('/api/admin/ensure-practice-test', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ lessonId: lesson.id, title: lesson.title, subject: lesson.subject, setActive }),
@@ -488,7 +489,7 @@ export interface NewLessonPayload {
 // so create/update/delete go through app/api/admin/lessons (service-role) instead
 // of writing directly with the anon-key client.
 export async function createLesson(payload: NewLessonPayload, activate: boolean): Promise<string> {
-  const res = await fetch('/api/admin/lessons', {
+  const res = await authenticatedFetch('/api/admin/lessons', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -507,7 +508,7 @@ export async function createLesson(payload: NewLessonPayload, activate: boolean)
 export interface UpdateLessonPayload extends NewLessonPayload { id: string }
 
 export async function updateLesson(payload: UpdateLessonPayload): Promise<void> {
-  const res = await fetch('/api/admin/lessons', {
+  const res = await authenticatedFetch('/api/admin/lessons', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -521,7 +522,7 @@ export async function setLessonActive(lesson: LessonForTest, active: boolean): P
 }
 
 export async function deleteLesson(id: string): Promise<void> {
-  const res = await fetch('/api/admin/lessons', {
+  const res = await authenticatedFetch('/api/admin/lessons', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id }),
@@ -601,7 +602,7 @@ export interface PracticeTestPayload {
 // (service-role) instead of the anon client — see lib/admin-data.ts's Lessons
 // section above for the identical pattern.
 export async function createPracticeTest(payload: PracticeTestPayload): Promise<void> {
-  const res = await fetch('/api/admin/practice-tests', {
+  const res = await authenticatedFetch('/api/admin/practice-tests', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -611,7 +612,7 @@ export async function createPracticeTest(payload: PracticeTestPayload): Promise<
 }
 
 export async function updatePracticeTest(id: number, payload: PracticeTestPayload): Promise<void> {
-  const res = await fetch('/api/admin/practice-tests', {
+  const res = await authenticatedFetch('/api/admin/practice-tests', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, ...payload }),
@@ -621,7 +622,7 @@ export async function updatePracticeTest(id: number, payload: PracticeTestPayloa
 }
 
 export async function setPracticeTestActive(id: number, isActive: boolean): Promise<void> {
-  const res = await fetch('/api/admin/practice-tests', {
+  const res = await authenticatedFetch('/api/admin/practice-tests', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, isActive }),
@@ -631,7 +632,7 @@ export async function setPracticeTestActive(id: number, isActive: boolean): Prom
 }
 
 export async function deletePracticeTest(id: number): Promise<void> {
-  const res = await fetch('/api/admin/practice-tests', {
+  const res = await authenticatedFetch('/api/admin/practice-tests', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id }),
@@ -718,7 +719,7 @@ export interface MockSessionPayload {
 }
 
 export async function createMockSession(payload: MockSessionPayload): Promise<number> {
-  const res = await fetch('/api/admin/practice-tests', {
+  const res = await authenticatedFetch('/api/admin/practice-tests', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -738,7 +739,7 @@ export async function createMockSession(payload: MockSessionPayload): Promise<nu
 }
 
 export async function updateMockSession(id: number, payload: MockSessionPayload): Promise<void> {
-  const res = await fetch('/api/admin/practice-tests', {
+  const res = await authenticatedFetch('/api/admin/practice-tests', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -805,7 +806,7 @@ export interface QuestionPayload {
 // questions carries the same admin-only RLS write policy, so create/update/delete
 // go through app/api/admin/questions (service-role) instead of the anon client.
 export async function addQuestion(testId: number, payload: QuestionPayload, orderNum: number): Promise<void> {
-  const res = await fetch('/api/admin/questions', {
+  const res = await authenticatedFetch('/api/admin/questions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ testId, payload, orderNum }),
@@ -815,7 +816,7 @@ export async function addQuestion(testId: number, payload: QuestionPayload, orde
 }
 
 export async function updateQuestion(id: number, payload: QuestionPayload): Promise<void> {
-  const res = await fetch('/api/admin/questions', {
+  const res = await authenticatedFetch('/api/admin/questions', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, payload }),
@@ -825,7 +826,7 @@ export async function updateQuestion(id: number, payload: QuestionPayload): Prom
 }
 
 export async function deleteQuestion(id: number): Promise<void> {
-  const res = await fetch('/api/admin/questions', {
+  const res = await authenticatedFetch('/api/admin/questions', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id }),
@@ -923,7 +924,7 @@ export const DIFFICULTY_OPTIONS: { value: 'easy' | 'medium' | 'hard'; label: str
 // there's exactly one bank row per subject bucket no matter which caller
 // asks for it.
 export async function ensureBankTest(subject: 'math' | 'kyr' | 'all'): Promise<{ id: number }> {
-  const res = await fetch('/api/admin/ensure-practice-test', {
+  const res = await authenticatedFetch('/api/admin/ensure-practice-test', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ lessonId: null, subject, title: BANK_SUBJECT_TITLES[subject] }),
@@ -1069,7 +1070,7 @@ export interface AnnouncementPayload {
 }
 
 export async function createAnnouncement(payload: AnnouncementPayload): Promise<void> {
-  const res = await fetch('/api/admin/announcements', {
+  const res = await authenticatedFetch('/api/admin/announcements', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -1079,7 +1080,7 @@ export async function createAnnouncement(payload: AnnouncementPayload): Promise<
 }
 
 export async function updateAnnouncement(id: string, payload: AnnouncementPayload): Promise<void> {
-  const res = await fetch('/api/admin/announcements', {
+  const res = await authenticatedFetch('/api/admin/announcements', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, ...payload }),
@@ -1089,7 +1090,7 @@ export async function updateAnnouncement(id: string, payload: AnnouncementPayloa
 }
 
 export async function setAnnouncementActive(id: string, isActive: boolean): Promise<void> {
-  const res = await fetch('/api/admin/announcements', {
+  const res = await authenticatedFetch('/api/admin/announcements', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, isActive }),
@@ -1099,7 +1100,7 @@ export async function setAnnouncementActive(id: string, isActive: boolean): Prom
 }
 
 export async function deleteAnnouncement(id: string): Promise<void> {
-  const res = await fetch('/api/admin/announcements', {
+  const res = await authenticatedFetch('/api/admin/announcements', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id }),

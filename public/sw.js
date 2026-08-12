@@ -7,15 +7,15 @@
 // intercepted — those always carry live/auth data and must never be served
 // stale from cache.
 //
-// The cache name is date-stamped (today's date, UTC) rather than a fixed
-// version string — every deploy on a new day gets a fresh cache
-// automatically, no manual version bump needed. Combined with the
+// The build pipeline replaces this placeholder with the immutable Git SHA,
+// so every release gets its own cache even when multiple deploys share a day.
+// This needs no manual version bump. Combined with the
 // skipWaiting message handler + the registration script's
 // updatefound/controllerchange listeners in app/layout.tsx, a newly
 // deployed SW takes over and reloads the page as soon as it's installed,
 // instead of waiting for every tab to be closed first.
 
-const CACHE_VERSION = 'zhangak-v' + new Date().toISOString().split('T')[0]
+const CACHE_VERSION = 'zhangak-v__ZHANGAK_RELEASE_SHA__'
 const CACHE_NAME = CACHE_VERSION
 
 self.addEventListener('install', (e) => {

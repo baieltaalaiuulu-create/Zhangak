@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Zhangak
 
-## Getting Started
+Zhangak is an educational platform for students in Kyrgyzstan: ORT preparation,
+practice, mock exams, progress analytics, administration, and separate math and
+offline-school workspaces.
 
-First, run the development server:
+The canonical source is this Git repository. Production releases must be built
+from one clean commit and identified by that commit SHA; do not deploy files by
+copying an uncommitted working directory.
 
-```bash
+## Local development
+
+Requirements:
+
+- Node.js `22.22.2` (see `.node-version`)
+- npm `10.9.7`
+- a local `.env.local` based on `.env.example`
+
+```sh
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The web app is available at `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Required checks
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```sh
+npm run typecheck
+npm run check:security
+npm run check:emoji
+npm run audit:prod
+npm run build
+```
 
-## Learn More
+`npm run lint` currently exposes inherited quality debt and is being reduced in
+stages. CI prevents new security, emoji, and production-dependency regressions.
 
-To learn more about Next.js, take a look at the following resources:
+## Production release
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The Next.js build uses standalone output. Build and package only a clean commit:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```sh
+GIT_SHA=$(git rev-parse HEAD) npm run build
+ZHANGAK_RELEASE_SHA=$(git rev-parse HEAD) npm run package:standalone
+npm run smoke:standalone
+```
 
-## Deploy on Vercel
+The packager copies `public` and `.next/static`, stamps the service-worker cache
+with the release SHA, and creates `.next/standalone/release.json`. Runtime secrets
+remain outside the artifact.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Server setup, atomic activation, health checks, and rollback are documented in
+[`deploy/README.md`](deploy/README.md).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Domains
+
+- `zhangak.com` — public marketing website
+- `platform.zhangak.com` — student learning platform (planned split)
+- `admin.zhangak.com` — administration (planned split)
+
+Until the split is implemented, only the canonical public origin should be
+indexed. Platform and admin hosts must use HTTPS and `noindex` before they are
+opened to users.
+
+## Security model
+
+- Browser calls to protected same-origin APIs use a Supabase Bearer token.
+- API authorization reads the current role from the server-side `profiles` row.
+- Role permissions are capability-specific and deny by default.
+- Private Supabase and AI keys are runtime-only environment variables.
+- Direct browser access to Supabase is still governed by RLS; a versioned,
+  auditable schema/RLS baseline is the next blocking platform milestone.

@@ -2,18 +2,29 @@
   "name": "zhangak",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.9.7+sha512.8f7a2a3d9166ca5fb857e35c26e076c4c0e7050d1cbd55a17dbc27d10d826cdb6f7baabdb6050b5b13f2ee0ed3a7f85d46bb99b1647d13b0921fcd0793f7439c",
+  "engines": {
+    "node": "22.22.2"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit --incremental false",
+    "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "check:security": "node scripts/check-api-security.mjs",
+    "check:emoji": "node scripts/check-emoji.mjs",
+    "check:client-secrets": "node scripts/check-client-secrets.mjs",
+    "package:standalone": "node scripts/package-standalone.mjs",
+    "smoke:standalone": "node scripts/smoke-standalone.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "lucide-react": "^1.21.0",
     "mammoth": "^1.12.0",
-    "next": "16.2.9",
+    "next": "16.3.0",
     "next-themes": "^0.4.6",
     "pdf-parse": "^2.4.5",
     "react": "19.2.4",
@@ -26,7 +37,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.9",
+    "eslint-config-next": "16.3.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

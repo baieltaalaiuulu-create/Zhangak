@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import AdminSidebar from './AdminSidebar'
 
@@ -9,14 +9,13 @@ interface Props {
   children: ReactNode
 }
 
-// Every staff role that belongs in /admin — students are bounced to their
-// own dashboard, anything else falls through to the login page rather than
-// silently getting admin access.
-const ADMIN_ROLES = new Set(['admin', 'super_admin', 'admin_jr', 'director', 'finance', 'manager', 'math_admin'])
+const FULL_ADMIN_ROLES = new Set(['admin', 'super_admin'])
 
 export default function AdminLayout({ children }: Props) {
   const router = useRouter()
+  const pathname = usePathname()
   const [checked, setChecked] = useState(false)
+  const [isJuniorAdmin, setIsJuniorAdmin] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -47,20 +46,31 @@ export default function AdminLayout({ children }: Props) {
 
       if (profile.role === 'student') { router.push('/student/online'); return }
 
-      if (!ADMIN_ROLES.has(profile.role)) { router.push('/'); return }
+      if (profile.role === 'admin_jr') {
+        const isJuniorArea = pathname === '/admin/jr' || pathname.startsWith('/admin/jr/')
+        if (!isJuniorArea) { router.replace('/admin/jr'); return }
+        setIsJuniorAdmin(true)
+        setChecked(true)
+        return
+      }
 
+      if (!FULL_ADMIN_ROLES.has(profile.role)) { router.push('/'); return }
+
+      setIsJuniorAdmin(false)
       setChecked(true)
     }
     checkAuth()
 
     return () => { cancelled = true }
-  }, [router])
+  }, [pathname, router])
 
   if (!checked) return (
     <div className="flex min-h-screen items-center justify-center bg-[#FAF8FF]">
       <div className="text-sm text-gray-400">Загрузка...</div>
     </div>
   )
+
+  if (isJuniorAdmin) return <>{children}</>
 
   return (
     <div className="min-h-screen bg-[#FAF8FF]">

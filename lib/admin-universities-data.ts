@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { authenticatedFetch } from '@/lib/authenticated-fetch'
 
 // Admin CRUD for the universities catalog (/admin/universities and
 // /admin/universities/[id]/specialties). Kept in its own file rather than
@@ -59,7 +60,7 @@ export interface UniversityPayload {
 }
 
 export async function createUniversity(payload: UniversityPayload): Promise<void> {
-  const res = await fetch('/api/admin/universities', {
+  const res = await authenticatedFetch('/api/admin/universities', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -69,7 +70,7 @@ export async function createUniversity(payload: UniversityPayload): Promise<void
 }
 
 export async function updateUniversity(id: string, payload: UniversityPayload): Promise<void> {
-  const res = await fetch('/api/admin/universities', {
+  const res = await authenticatedFetch('/api/admin/universities', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, ...payload }),
@@ -79,7 +80,7 @@ export async function updateUniversity(id: string, payload: UniversityPayload): 
 }
 
 export async function setUniversityActive(id: string, isActive: boolean): Promise<void> {
-  const res = await fetch('/api/admin/universities', {
+  const res = await authenticatedFetch('/api/admin/universities', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, isActive }),
@@ -89,7 +90,7 @@ export async function setUniversityActive(id: string, isActive: boolean): Promis
 }
 
 export async function deleteUniversity(id: string): Promise<void> {
-  const res = await fetch('/api/admin/universities', {
+  const res = await authenticatedFetch('/api/admin/universities', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id }),
@@ -134,7 +135,7 @@ export interface SpecialtyPayload {
 }
 
 export async function createSpecialty(payload: SpecialtyPayload): Promise<void> {
-  const res = await fetch('/api/admin/university-specialties', {
+  const res = await authenticatedFetch('/api/admin/university-specialties', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -144,7 +145,7 @@ export async function createSpecialty(payload: SpecialtyPayload): Promise<void> 
 }
 
 export async function updateSpecialty(id: string, payload: SpecialtyPayload): Promise<void> {
-  const res = await fetch('/api/admin/university-specialties', {
+  const res = await authenticatedFetch('/api/admin/university-specialties', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, ...payload }),
@@ -154,7 +155,7 @@ export async function updateSpecialty(id: string, payload: SpecialtyPayload): Pr
 }
 
 export async function deleteSpecialty(id: string): Promise<void> {
-  const res = await fetch('/api/admin/university-specialties', {
+  const res = await authenticatedFetch('/api/admin/university-specialties', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id }),

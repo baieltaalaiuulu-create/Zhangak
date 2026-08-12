@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { ACCOUNT_MANAGER_ROLES, authorizeAccountManagement, requireRoleAuth } from '@/lib/api-auth'
 
 export async function POST(req: NextRequest) {
+  const auth = await requireRoleAuth(req, ACCOUNT_MANAGER_ROLES)
+  if (!auth.authorized) return auth.response
+
   try {
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,6 +14,10 @@ export async function POST(req: NextRequest) {
     )
     const { id, blocked } = await req.json()
     if (!id) return NextResponse.json({ error: 'id обязателен' }, { status: 400 })
+    if (id === auth.user.id) return NextResponse.json({ error: 'Нельзя заблокировать собственный аккаунт' }, { status: 400 })
+    if (!auth.role) return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
+    const authorizationError = await authorizeAccountManagement(auth.admin, auth.role, id)
+    if (authorizationError) return authorizationError
 
     const { error } = await supabaseAdmin.auth.admin.updateUserById(id, {
       ban_duration: blocked ? '876000h' : 'none',

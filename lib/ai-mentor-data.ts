@@ -3,6 +3,7 @@ import { calcStreak, DEFAULT_TARGET_SCORE } from '@/lib/student-data'
 import { fetchLatestMockScore, fetchLearningProgress } from '@/lib/profile-data'
 import { fetchWeakSections, fetchRecentActivity, type WeakSection } from '@/lib/ai-coach-data'
 import { SECTION_LABELS } from '@/lib/practice-data'
+import { authenticatedFetch } from '@/lib/authenticated-fetch'
 
 // ── Student context (fed to the /api/ai-mentor system prompt) ───────────
 
@@ -183,10 +184,13 @@ export async function streamMentorMessage(
   expectedType: MentorCardType | undefined,
   onUpdate: (update: MentorStreamUpdate) => void,
 ): Promise<void> {
-  const res = await fetch('/api/ai-mentor', {
+  void studentContext
+  const res = await authenticatedFetch('/api/ai-mentor', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, studentContext, history, pageContext, expectedType }),
+    // The server derives trusted student metrics from the bearer identity.
+    // studentContext remains a caller parameter for local UI rendering only.
+    body: JSON.stringify({ message, history, pageContext, expectedType }),
   })
 
   if (!res.ok) {
@@ -229,4 +233,3 @@ export async function streamMentorMessage(
   const finalContent = headerEndIndex === -1 ? buffer.trim() : buffer.slice(headerEndIndex + 2).trim()
   onUpdate({ type, title: title || 'Ответ AI Mentor', content: finalContent, actions, done: true })
 }
-

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { UploadCloud, RefreshCw, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import AdminTopbar from '@/components/admin/AdminTopbar'
 import { supabase } from '@/lib/supabase'
+import { authenticatedFetch } from '@/lib/authenticated-fetch'
 
 interface KnowledgeFile {
   id: string
@@ -65,7 +66,7 @@ export default function AdminKnowledgeBasePage() {
       const form = new FormData()
       form.append('file', file)
       form.append('subject', subject)
-      const res = await fetch('/api/admin/knowledge-base', { method: 'POST', body: form })
+      const res = await authenticatedFetch('/api/admin/knowledge-base', { method: 'POST', body: form })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Не удалось загрузить файл')
       if (data.error) setError(data.error)
@@ -85,7 +86,7 @@ export default function AdminKnowledgeBasePage() {
   const handleReprocess = async (id: string) => {
     setReprocessingId(id)
     try {
-      await fetch('/api/admin/knowledge-base', {
+      await authenticatedFetch('/api/admin/knowledge-base', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),

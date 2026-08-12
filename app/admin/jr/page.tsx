@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { authenticatedFetch } from '@/lib/authenticated-fetch'
 import {
   GraduationCap, FileText, BookOpen, LogOut, Menu,
   Plus, Trash2, CheckCircle, AlertCircle, Upload,
@@ -229,7 +230,7 @@ function AddStudentForm({ onAdded }: { onAdded: () => void }) {
   const handleSubmit = async () => {
     if (!form.full_name || !form.email || !form.password) { setError('Заполните все поля'); return }
     setSaving(true); setError(''); setSuccess('')
-    const res = await fetch('/api/create-user', {
+    const res = await authenticatedFetch('/api/create-user', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, role: 'student' })
     })
@@ -339,31 +340,43 @@ function AdminTests() {
   const createTest = async () => {
     if (!newTest.title) return
     setSaving(true)
-    const insertData: any = {
-      title: newTest.title, subject: newTest.subject, type: newTest.type,
-      time_limit_minutes: newTest.time_limit_minutes, max_attempts: newTest.max_attempts,
-      is_active: newTest.is_active,
-    }
-    if (newTest.type === 'practice' && newTest.lesson_id) {
-      insertData.lesson_id = newTest.lesson_id
-    }
-    const { data } = await supabase.from('practice_tests').insert(insertData).select().single()
-    if (data) { setTests(p => [...p, data]); selectTest(data) }
+    const res = await authenticatedFetch('/api/admin/practice-tests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: newTest.title,
+        subject: newTest.subject,
+        type: newTest.type,
+        timeLimitMinutes: newTest.time_limit_minutes,
+        maxAttempts: newTest.max_attempts,
+        isActive: newTest.is_active,
+        lessonId: newTest.type === 'practice' ? newTest.lesson_id : null,
+      }),
+    })
+    if (res.ok) await fetchTests()
     setNewTest({ title: '', subject: 'math', type: 'mock', time_limit_minutes: 90, max_attempts: 1, is_active: false, lesson_id: '' })
     setShowForm(false); setSaving(false)
   }
 
   const deleteTest = async (id: number) => {
-    // Сначала удаляем вопросы
-    await supabase.from('questions').delete().eq('practice_test_id', id)
-    await supabase.from('practice_tests').delete().eq('id', id)
+    const res = await authenticatedFetch('/api/admin/practice-tests', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    if (!res.ok) return
     setTests(p => p.filter(t => t.id !== id))
     if (selectedTest?.id === id) { setSelectedTest(null); setQuestions([]) }
     setDeleteConfirm(null)
   }
 
   const toggleActive = async (test: any) => {
-    await supabase.from('practice_tests').update({ is_active: !test.is_active }).eq('id', test.id)
+    const res = await authenticatedFetch('/api/admin/practice-tests', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: test.id, isActive: !test.is_active }),
+    })
+    if (!res.ok) return
     setTests(p => p.map(t => t.id === test.id ? { ...t, is_active: !t.is_active } : t))
     if (selectedTest?.id === test.id) setSelectedTest((p: any) => ({ ...p, is_active: !p.is_active }))
   }
@@ -379,19 +392,25 @@ function AdminTests() {
   const addQuestion = async () => {
     if (!selectedTest) return
     setSaving(true)
-    const { error } = await supabase.from('questions').insert({
-      practice_test_id: selectedTest.id,
-      question_text: qType === 'text' ? newQ.question_text : '',
-      image_url: qType === 'image' ? newQ.image_url : '',
-      option_a: newQ.option_a || 'Столбец А больше',
-      option_b: newQ.option_b || 'Столбец Б больше',
-      option_c: newQ.option_c || 'Равны',
-      option_d: newQ.option_d || 'Невозможно определить',
-      correct_answer: newQ.correct_answer,
-      section: newQ.section,
-      order_num: questions.length + 1,
+    const res = await authenticatedFetch('/api/admin/questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        testId: selectedTest.id,
+        orderNum: questions.length + 1,
+        payload: {
+          question_text: qType === 'text' ? newQ.question_text : '',
+          image_url: qType === 'image' ? newQ.image_url : '',
+          option_a: newQ.option_a || 'Столбец А больше',
+          option_b: newQ.option_b || 'Столбец Б больше',
+          option_c: newQ.option_c || 'Равны',
+          option_d: newQ.option_d || 'Невозможно определить',
+          correct_answer: newQ.correct_answer,
+          section: newQ.section,
+        },
+      }),
     })
-    if (!error) {
+    if (res.ok) {
       setNewQ({ question_text: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'A', image_url: '', section: 'general' })
       await fetchQuestions(selectedTest.id)
     }
@@ -399,7 +418,12 @@ function AdminTests() {
   }
 
   const deleteQuestion = async (id: number) => {
-    await supabase.from('questions').delete().eq('id', id)
+    const res = await authenticatedFetch('/api/admin/questions', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    if (!res.ok) return
     if (selectedTest) await fetchQuestions(selectedTest.id)
   }
 
@@ -631,11 +655,23 @@ function AdminLessons() {
   const addLesson = async () => {
     if (!newLesson.title) return
     setSaving(true)
-    await supabase.from('practice_lessons').insert(newLesson)
+    const res = await authenticatedFetch('/api/admin/lessons', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newLesson),
+    })
+    if (!res.ok) { setSaving(false); return }
     setNewLesson({ title: '', subject: 'math', description: '', video_url: '', order_number: lessons.length + 1 })
     setShowForm(false); setSuccess('Урок добавлен'); fetchLessons(); setSaving(false)
   }
-  const deleteLesson = async (id: string) => { await supabase.from('practice_lessons').delete().eq('id', id); fetchLessons() }
+  const deleteLesson = async (id: string) => {
+    const res = await authenticatedFetch('/api/admin/lessons', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    if (res.ok) fetchLessons()
+  }
 
   const mathLessons = lessons.filter(l => l.subject === 'math')
   const kyrLessons  = lessons.filter(l => l.subject === 'kyr')

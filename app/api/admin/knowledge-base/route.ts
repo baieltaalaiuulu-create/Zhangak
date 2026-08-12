@@ -12,6 +12,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAIGateway } from '@/lib/ai-gateway'
+import { requireAdminApi } from '@/lib/api-auth'
 
 function getAdminClient() {
   return createClient(
@@ -114,6 +115,9 @@ async function generateFromText(text: string, subject: Subject): Promise<Generat
 }
 
 export async function POST(req: NextRequest) {
+  const authError = await requireAdminApi(req)
+  if (authError) return authError
+
   const supabaseAdmin = getAdminClient()
   let fileRecordId: string | null = null
 
@@ -183,6 +187,9 @@ export async function POST(req: NextRequest) {
 // Re-process an already-uploaded file (the "Обновить" action) — re-reads
 // the stored file from the bucket rather than requiring a fresh upload.
 export async function PATCH(req: NextRequest) {
+  const authError = await requireAdminApi(req)
+  if (authError) return authError
+
   const supabaseAdmin = getAdminClient()
   let fileId: string | undefined
   try {

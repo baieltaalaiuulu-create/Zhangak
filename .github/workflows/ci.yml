@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-public-anon-placeholder
+      PRIVATE_SECRET_CANARY: zhangak-ci-private-canary-57c09e99d2f14b3da8bc
+      SUPABASE_SERVICE_ROLE_KEY: zhangak-ci-private-canary-57c09e99d2f14b3da8bc
+      REQUIRE_PRIVATE_SECRET_CANARY: "1"
+      GIT_SHA: ${{ github.sha }}
+      ZHANGAK_RELEASE_SHA: ${{ github.sha }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22.22.2
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.2
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Check types
+        run: npm run typecheck
+
+      - name: Check API security invariants
+        run: npm run check:security
+
+      - name: Prevent emoji debt regressions
+        run: npm run check:emoji
+
+      - name: Audit production dependencies
+        run: npm run audit:prod
+
+      - name: Build production application
+        run: npm run build
+
+      - name: Scan browser bundles for private secrets
+        run: npm run check:client-secrets
+
+      - name: Package standalone release
+        run: npm run package:standalone
+
+      - name: Smoke-test standalone release
+        run: npm run smoke:standalone
+
+      - name: Upload standalone release
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhangak-standalone-${{ github.sha }}
+          path: .next/standalone
+          if-no-files-found: error
+          retention-days: 7

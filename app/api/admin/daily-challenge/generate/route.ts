@@ -8,6 +8,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAIGateway } from '@/lib/ai-gateway'
+import { requireAdminApi } from '@/lib/api-auth'
 
 function getAdminClient() {
   return createClient(
@@ -116,6 +117,9 @@ async function generateQuestions(count: number, subjects: Subject[], difficulty:
 }
 
 export async function POST(req: NextRequest) {
+  const authError = await requireAdminApi(req)
+  if (authError) return authError
+
   try {
     const body = await req.json()
     const {

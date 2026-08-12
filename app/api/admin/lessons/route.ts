@@ -4,6 +4,7 @@
 // so lesson create/update/delete go through this service-role route instead.
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireContentAdminApi } from '@/lib/api-auth'
 
 function getAdminClient() {
   return createClient(
@@ -14,6 +15,9 @@ function getAdminClient() {
 }
 
 export async function POST(req: NextRequest) {
+  const authError = await requireContentAdminApi(req)
+  if (authError) return authError
+
   try {
     const supabaseAdmin = getAdminClient()
     const { title, description, subject, order_number, video_url } = await req.json()
@@ -42,6 +46,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const authError = await requireContentAdminApi(req)
+  if (authError) return authError
+
   try {
     const supabaseAdmin = getAdminClient()
     const { id, title, description, subject, order_number, video_url } = await req.json()
@@ -69,6 +76,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const authError = await requireContentAdminApi(req)
+  if (authError) return authError
+
   try {
     const supabaseAdmin = getAdminClient()
     const { id } = await req.json()

@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { ACCOUNT_CREATOR_ROLES, canCreateAccount, isAccountRole, requireRoleAuth } from '@/lib/api-auth'
 
 export async function POST(req: NextRequest) {
+  const auth = await requireRoleAuth(req, ACCOUNT_CREATOR_ROLES)
+  if (!auth.authorized) return auth.response
+
   try {
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,6 +18,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Обязательно заполните: ФИО, email, пароль' }, { status: 400 })
     }
 
+    const targetRole = role ?? 'student'
+    if (!isAccountRole(targetRole)) {
+      return NextResponse.json({ error: 'Недопустимая роль' }, { status: 400 })
+    }
+    if (!auth.role || !canCreateAccount(auth.role, targetRole)) {
+      return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
+    }
+
     const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -23,7 +35,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: createError?.message ?? 'Не удалось создать пользователя' }, { status: 400 })
     }
 
-    const profile: Record<string, unknown> = { id: created.user.id, full_name, role: role ?? 'student' }
+    const profile: Record<string, unknown> = { id: created.user.id, full_name, role: targetRole }
     if (phone) profile.phone = phone
     if (student_type) profile.student_type = student_type
     if (target_score) profile.target_score = target_score
