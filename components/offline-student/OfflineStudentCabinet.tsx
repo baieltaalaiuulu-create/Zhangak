@@ -1,0 +1,414 @@
+'use client'
+
+import Link from 'next/link'
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import { useMemo, useState, type TouchEvent } from 'react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  CalendarDays,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  CircleDashed,
+  ClipboardCheck,
+  Clock3,
+  FileText,
+  GraduationCap,
+  Home,
+  Info,
+  LogOut,
+  Menu,
+  PenLine,
+  PlayCircle,
+  Target,
+  TrendingUp,
+  UserRoundCheck,
+  X,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react'
+
+import { supabase } from '@/lib/supabase'
+import {
+  activeHomework,
+  attendanceSummary,
+  nextScheduledLesson,
+  scoreGap,
+  type AttendanceState,
+  type OfflineGrade,
+  type OfflineHomework,
+  type OfflineLesson,
+  type OfflineStudentDashboard,
+} from '@/lib/offline-student-contract'
+
+type Section = 'home' | 'schedule' | 'attendance' | 'materials' | 'practice' | 'progress' | 'homework'
+
+const SECTIONS: { id: Section; label: string; shortLabel: string; icon: LucideIcon }[] = [
+  { id: 'home', label: 'Главная', shortLabel: 'Главная', icon: Home },
+  { id: 'schedule', label: 'Расписание', shortLabel: 'Расписание', icon: CalendarDays },
+  { id: 'attendance', label: 'Посещаемость', shortLabel: 'Посещения', icon: UserRoundCheck },
+  { id: 'materials', label: 'Материалы', shortLabel: 'Материалы', icon: FileText },
+  { id: 'practice', label: 'Практика', shortLabel: 'Практика', icon: PenLine },
+  { id: 'progress', label: 'Мой прогресс', shortLabel: 'Прогресс', icon: TrendingUp },
+  { id: 'homework', label: 'Домашние задания', shortLabel: 'Задания', icon: ClipboardCheck },
+]
+
+const ATTENDANCE_META: Record<AttendanceState, { label: string; color: string; bg: string; icon: LucideIcon }> = {
+  present: { label: 'Был', color: 'text-emerald-700', bg: 'bg-emerald-50', icon: CheckCircle2 },
+  late: { label: 'Опоздал', color: 'text-amber-700', bg: 'bg-amber-50', icon: Clock3 },
+  absent: { label: 'Пропустил', color: 'text-red-700', bg: 'bg-red-50', icon: XCircle },
+  pending: { label: 'Не отмечено', color: 'text-slate-500', bg: 'bg-slate-100', icon: CircleDashed },
+}
+
+const dateTime = new Intl.DateTimeFormat('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+const dateOnly = new Intl.DateTimeFormat('ru', { day: 'numeric', month: 'long' })
+
+function formatDate(value: string | null, withTime = true): string {
+  if (!value) return 'Время не назначено'
+  const dateOnlyValue = /^\d{4}-\d{2}-\d{2}$/.test(value)
+  const date = new Date(dateOnlyValue ? `${value}T00:00:00` : value)
+  if (dateOnlyValue) withTime = false
+  return Number.isFinite(date.getTime()) ? (withTime ? dateTime.format(date) : dateOnly.format(date)) : 'Дата не указана'
+}
+
+function SectionTitle({ title, description }: { title: string; description: string }) {
+  return (
+    <div>
+      <h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{title}</h1>
+      <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
+    </div>
+  )
+}
+
+function EmptyState({ icon: Icon, title, text }: { icon: LucideIcon; title: string; text: string }) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#1B4FD8]">
+        <Icon size={24} aria-hidden="true" />
+      </span>
+      <h2 className="mt-4 text-base font-extrabold text-slate-900">{title}</h2>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">{text}</p>
+    </div>
+  )
+}
+
+function AttendanceBadge({ state }: { state: AttendanceState }) {
+  const meta = ATTENDANCE_META[state]
+  const Icon = meta.icon
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${meta.bg} ${meta.color}`}>
+      <Icon size={14} aria-hidden="true" />
+      {meta.label}
+    </span>
+  )
+}
+
+function LessonRow({ lesson }: { lesson: OfflineLesson }) {
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Урок {lesson.lessonNumber}</p>
+          <h3 className="mt-1 font-extrabold text-slate-900">{lesson.title}</h3>
+        </div>
+        <AttendanceBadge state={lesson.attendance} />
+      </div>
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs font-medium text-slate-500">
+        <span className="inline-flex items-center gap-1.5"><CalendarDays size={14} aria-hidden="true" />{formatDate(lesson.startsAt)}</span>
+        {lesson.durationMinutes != null && <span className="inline-flex items-center gap-1.5"><Clock3 size={14} aria-hidden="true" />{lesson.durationMinutes} мин</span>}
+        {lesson.isTest && <span className="inline-flex items-center gap-1.5"><ClipboardCheck size={14} aria-hidden="true" />Контрольная</span>}
+      </div>
+      {lesson.topics.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {lesson.topics.map(topic => <span key={topic} className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{topic}</span>)}
+        </div>
+      )}
+    </article>
+  )
+}
+
+function HomeworkCard({ item }: { item: OfflineHomework }) {
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.completed ? 'bg-emerald-50 text-emerald-600' : 'bg-violet-50 text-violet-600'}`}>
+          {item.completed ? <CheckCircle2 size={20} aria-hidden="true" /> : <ClipboardCheck size={20} aria-hidden="true" />}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold text-slate-400">{item.lessonTitle}</p>
+          <h3 className="mt-1 font-extrabold text-slate-900">{item.title}</h3>
+          {item.description && <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">{item.description}</p>}
+          <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+            <Clock3 size={14} aria-hidden="true" />
+            {item.completed ? 'Выполнено' : item.dueAt ? `Срок: ${formatDate(item.dueAt)}` : 'Срок не указан'}
+          </p>
+        </div>
+      </div>
+    </article>
+  )
+}
+
+function GradeCard({ grade }: { grade: OfflineGrade }) {
+  const scores = [
+    ['Математика', grade.math],
+    ['Аналогия', grade.analogy],
+    ['Окуу', grade.reading],
+    ['Кыргыз тили', grade.grammar],
+  ].filter((entry): entry is [string, number] => typeof entry[1] === 'number')
+
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="font-extrabold text-slate-900">{grade.lessonTitle}</h3>
+        {grade.total != null && <span className="rounded-xl bg-blue-50 px-3 py-1.5 text-sm font-black text-[#1B4FD8]">{grade.total}</span>}
+      </div>
+      {scores.length > 0 ? (
+        <dl className="mt-3 grid grid-cols-2 gap-2">
+          {scores.map(([label, score]) => (
+            <div key={label} className="rounded-xl bg-slate-50 p-3">
+              <dt className="text-xs text-slate-500">{label}</dt>
+              <dd className="mt-1 text-lg font-black text-slate-900">{score}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : <p className="mt-3 text-sm text-slate-500">Оценка пока не опубликована.</p>}
+    </article>
+  )
+}
+
+function HomeSection({ dashboard, goTo }: { dashboard: OfflineStudentDashboard; goTo: (section: Section) => void }) {
+  const next = nextScheduledLesson(dashboard.lessons)
+  const pendingHomework = activeHomework(dashboard.homework)
+  const summary = attendanceSummary(dashboard.lessons)
+
+  return (
+    <div className="space-y-5">
+      <SectionTitle title={`Салам, ${dashboard.profile.fullName.split(' ')[0]}`} description={dashboard.group ? `${dashboard.group.name}${dashboard.group.courseName ? ` • ${dashboard.group.courseName}` : ''}` : 'Офлайн-кабинет ученика'} />
+
+      {!dashboard.group && <EmptyState icon={GraduationCap} title="Группа ещё не назначена" text="Администратор добавит тебя в учебную группу. После этого здесь появятся уроки, посещаемость и задания." />}
+
+      {dashboard.group && (
+        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+          <section className="rounded-3xl bg-[#132B66] p-5 text-white shadow-lg shadow-blue-950/10 sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-200">Следующий урок</p>
+            {next ? (
+              <>
+                <h2 className="mt-3 text-2xl font-black">{next.title}</h2>
+                <div className="mt-3 space-y-2 text-sm text-blue-100">
+                  <p className="flex items-center gap-2"><CalendarDays size={16} aria-hidden="true" />{formatDate(next.startsAt)}</p>
+                  {dashboard.group.teacherName && <p className="flex items-center gap-2"><GraduationCap size={16} aria-hidden="true" />{dashboard.group.teacherName}</p>}
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="mt-3 text-xl font-black">Точное расписание пока не опубликовано</h2>
+                <p className="mt-2 text-sm leading-6 text-blue-100">Можно посмотреть программу курса и уже отмеченные занятия.</p>
+              </>
+            )}
+            <button type="button" onClick={() => goTo('schedule')} className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-[#132B66]">
+              Открыть расписание <ArrowRight size={16} aria-hidden="true" />
+            </button>
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Посещаемость</p>
+            <div className="mt-3 flex items-end gap-2">
+              <span className="text-4xl font-black text-slate-950">{summary.rate == null ? '—' : `${summary.rate}%`}</span>
+              <span className="pb-1 text-sm font-semibold text-slate-500">за отмеченные уроки</span>
+            </div>
+            <p className="mt-3 text-sm text-slate-500">Был: {summary.present} • Опоздал: {summary.late} • Пропустил: {summary.absent}</p>
+            <button type="button" onClick={() => goTo('attendance')} className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#1B4FD8]">
+              Подробнее <ArrowRight size={16} aria-hidden="true" />
+            </button>
+          </section>
+        </div>
+      )}
+
+      <section>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Домашнее задание</p>
+            <h2 className="mt-1 text-lg font-black text-slate-900">Что сделать дальше</h2>
+          </div>
+          <button type="button" onClick={() => goTo('homework')} className="min-h-11 text-sm font-bold text-[#1B4FD8]">Все задания</button>
+        </div>
+        {pendingHomework[0] ? <HomeworkCard item={pendingHomework[0]} /> : <EmptyState icon={ClipboardCheck} title="Активных заданий нет" text="Новое домашнее задание появится здесь после публикации учителем." />}
+      </section>
+    </div>
+  )
+}
+
+function ScheduleSection({ lessons }: { lessons: OfflineLesson[] }) {
+  const [page, setPage] = useState(0)
+  const pageSize = 5
+  const totalPages = Math.max(1, Math.ceil(lessons.length / pageSize))
+  const visible = lessons.slice(page * pageSize, page * pageSize + pageSize)
+
+  const move = (delta: number) => setPage(current => Math.min(totalPages - 1, Math.max(0, current + delta)))
+  const swipe = useSwipe(move)
+
+  return (
+    <div className="space-y-5" {...swipe}>
+      <SectionTitle title="Расписание" description="Листай влево и вправо, чтобы перейти к следующей части программы." />
+      {lessons.length === 0 ? <EmptyState icon={CalendarDays} title="Расписание ещё не готово" text="Когда администратор назначит курс, уроки появятся здесь." /> : (
+        <>
+          <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+            <button type="button" onClick={() => move(-1)} disabled={page === 0} aria-label="Предыдущие уроки" className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-600 disabled:opacity-30"><ChevronLeft size={20} /></button>
+            <p className="text-sm font-bold text-slate-700">Уроки {page * pageSize + 1}–{Math.min(lessons.length, (page + 1) * pageSize)} из {lessons.length}</p>
+            <button type="button" onClick={() => move(1)} disabled={page === totalPages - 1} aria-label="Следующие уроки" className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-600 disabled:opacity-30"><ChevronRight size={20} /></button>
+          </div>
+          {!lessons.some(lesson => lesson.startsAt) && (
+            <div className="flex gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm leading-6 text-blue-800">
+              <Info className="mt-0.5 shrink-0" size={18} aria-hidden="true" />
+              <p>В базе есть порядок уроков, но нет точного времени и кабинетов. Мы не показываем выдуманное расписание.</p>
+            </div>
+          )}
+          <div className="space-y-3">{visible.map(lesson => <LessonRow key={lesson.id} lesson={lesson} />)}</div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function AttendanceSection({ lessons }: { lessons: OfflineLesson[] }) {
+  const summary = attendanceSummary(lessons)
+  const recorded = lessons.filter(lesson => lesson.attendance !== 'pending')
+  return (
+    <div className="space-y-5">
+      <SectionTitle title="Посещаемость" description="Здесь только отметки, внесённые учителем. Ученик не может их менять." />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          ['Посещаемость', summary.rate == null ? '—' : `${summary.rate}%`, UserRoundCheck],
+          ['Был', String(summary.present), CheckCircle2],
+          ['Опоздал', String(summary.late), Clock3],
+          ['Пропустил', String(summary.absent), XCircle],
+        ].map(([label, value, RawIcon]) => {
+          const Icon = RawIcon as LucideIcon
+          return <div key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><Icon size={19} className="text-[#1B4FD8]" /><p className="mt-3 text-2xl font-black text-slate-950">{String(value)}</p><p className="mt-1 text-xs font-semibold text-slate-500">{String(label)}</p></div>
+        })}
+      </div>
+      {recorded.length === 0 ? <EmptyState icon={UserRoundCheck} title="Отметок пока нет" text="После занятия учитель отметит присутствие, опоздание или пропуск." /> : <div className="space-y-3">{recorded.map(lesson => <LessonRow key={lesson.id} lesson={lesson} />)}</div>}
+    </div>
+  )
+}
+
+function MaterialsSection({ lessons, available }: { lessons: OfflineLesson[]; available: boolean }) {
+  const topicLessons = lessons.filter(lesson => lesson.topics.length > 0)
+  return (
+    <div className="space-y-5">
+      <SectionTitle title="Материалы" description="Темы курса доступны для просмотра. Файлы появятся после подключения безопасного хранилища." />
+      {!available && <div className="flex gap-3 rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm leading-6 text-amber-900"><Info className="mt-0.5 shrink-0" size={18} /><p>В текущей подтверждённой схеме нет отдельного источника учебных файлов. Поэтому кабинет не показывает фиктивные PDF и видео.</p></div>}
+      {topicLessons.length === 0 ? <EmptyState icon={FileText} title="Материалы ещё не добавлены" text="Учитель или администратор опубликует темы и файлы курса." /> : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {topicLessons.map(lesson => <article key={lesson.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600"><BookOpen size={20} /></span><p className="mt-3 text-xs font-bold text-slate-400">Урок {lesson.lessonNumber}</p><h2 className="mt-1 font-extrabold text-slate-900">{lesson.title}</h2><ul className="mt-3 space-y-2 text-sm text-slate-600">{lesson.topics.map(topic => <li key={topic} className="flex items-start gap-2"><FileText size={15} className="mt-0.5 shrink-0 text-slate-400" />{topic}</li>)}</ul></article>)}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PracticeSection({ canUseOnline }: { canUseOnline: boolean }) {
+  return (
+    <div className="space-y-5">
+      <SectionTitle title="Практика" description="Ученик решает задания в общем тренажёре — отдельные копии результатов не создаются." />
+      {canUseOnline ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Link href="/student/online/practice" className="rounded-3xl bg-orange-500 p-5 text-white shadow-lg shadow-orange-500/15"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15"><PenLine size={22} /></span><h2 className="mt-4 text-xl font-black">Свободная практика</h2><p className="mt-2 text-sm leading-6 text-orange-50">Выбери предмет и тему, затем решай в своём темпе.</p><span className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-orange-600">Открыть <ArrowRight size={16} /></span></Link>
+          <Link href="/student/online/practice/daily" className="rounded-3xl bg-[#1B4FD8] p-5 text-white shadow-lg shadow-blue-700/15"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15"><CalendarDays size={22} /></span><h2 className="mt-4 text-xl font-black">Задание дня</h2><p className="mt-2 text-sm leading-6 text-blue-50">Короткая ежедневная тренировка по опубликованным вопросам.</p><span className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-[#1B4FD8]">Начать <PlayCircle size={17} /></span></Link>
+        </div>
+      ) : <EmptyState icon={PenLine} title="Онлайн-тренажёр не подключён к аккаунту" text="Обратись к администратору, чтобы включить тип обучения «оба». Офлайн-данные при этом сохранятся." />}
+    </div>
+  )
+}
+
+function ProgressSection({ dashboard }: { dashboard: OfflineStudentDashboard }) {
+  const gap = scoreGap(dashboard.progress)
+  return (
+    <div className="space-y-5">
+      <SectionTitle title="Мой прогресс" description="ОРТ-прогноз берётся только из последнего завершённого пробного теста, оценки — из кабинета учителя." />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-3xl bg-[#132B66] p-5 text-white"><Target size={22} className="text-blue-200" /><p className="mt-4 text-xs font-bold uppercase tracking-wide text-blue-200">Последний ОРТ</p><p className="mt-1 text-3xl font-black">{dashboard.progress.latestOrtScore ?? '—'}</p></div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><GraduationCap size={22} className="text-violet-600" /><p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">Цель</p><p className="mt-1 text-3xl font-black text-slate-950">{dashboard.progress.targetScore ?? '—'}</p></div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><TrendingUp size={22} className="text-emerald-600" /><p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">До цели</p><p className="mt-1 text-3xl font-black text-slate-950">{gap ?? '—'}</p></div>
+      </div>
+      {dashboard.grades.length === 0 ? <EmptyState icon={ClipboardCheck} title="Оценки ещё не опубликованы" text="После контрольной учитель внесёт результаты, и они появятся здесь." /> : <div className="grid gap-3 lg:grid-cols-2">{dashboard.grades.map(grade => <GradeCard key={grade.lessonId} grade={grade} />)}</div>}
+    </div>
+  )
+}
+
+function HomeworkSection({ homework }: { homework: OfflineHomework[] }) {
+  const active = homework.filter(item => !item.completed)
+  const completed = homework.filter(item => item.completed)
+  return (
+    <div className="space-y-5">
+      <SectionTitle title="Домашние задания" description="Просматривай задания и сроки. Отметку о сдаче вносит учитель — формы редактирования здесь нет." />
+      {homework.length === 0 ? <EmptyState icon={ClipboardCheck} title="Заданий пока нет" text="После публикации учителем новое задание появится в этом разделе." /> : (
+        <>
+          <section><h2 className="mb-3 text-sm font-black uppercase tracking-wide text-slate-500">Нужно сделать</h2>{active.length > 0 ? <div className="space-y-3">{active.map(item => <HomeworkCard key={item.id} item={item} />)}</div> : <p className="rounded-2xl bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">Все опубликованные задания выполнены.</p>}</section>
+          {completed.length > 0 && <section><h2 className="mb-3 text-sm font-black uppercase tracking-wide text-slate-500">Выполненные</h2><div className="space-y-3">{completed.map(item => <HomeworkCard key={item.id} item={item} />)}</div></section>}
+        </>
+      )}
+    </div>
+  )
+}
+
+function useSwipe(onMove: (delta: number) => void) {
+  const [startX, setStartX] = useState<number | null>(null)
+  return {
+    onTouchStart: (event: TouchEvent) => setStartX(event.touches[0]?.clientX ?? null),
+    onTouchEnd: (event: TouchEvent) => {
+      if (startX == null) return
+      const endX = event.changedTouches[0]?.clientX ?? startX
+      const distance = endX - startX
+      if (Math.abs(distance) >= 70) onMove(distance < 0 ? 1 : -1)
+      setStartX(null)
+    },
+  }
+}
+
+export default function OfflineStudentCabinet({ dashboard }: { dashboard: OfflineStudentDashboard }) {
+  const router = useRouter()
+  const [section, setSection] = useState<Section>('home')
+  const [menuOpen, setMenuOpen] = useState(false)
+  const sectionIndex = SECTIONS.findIndex(item => item.id === section)
+  const swipe = useSwipe(delta => {
+    if (section === 'schedule') return
+    const nextIndex = Math.min(SECTIONS.length - 1, Math.max(0, sectionIndex + delta))
+    setSection(SECTIONS[nextIndex].id)
+  })
+  const content = useMemo(() => {
+    if (section === 'home') return <HomeSection dashboard={dashboard} goTo={setSection} />
+    if (section === 'schedule') return <ScheduleSection lessons={dashboard.lessons} />
+    if (section === 'attendance') return <AttendanceSection lessons={dashboard.lessons} />
+    if (section === 'materials') return <MaterialsSection lessons={dashboard.lessons} available={dashboard.availability.materials} />
+    if (section === 'practice') return <PracticeSection canUseOnline={dashboard.profile.studentType === 'both'} />
+    if (section === 'progress') return <ProgressSection dashboard={dashboard} />
+    return <HomeworkSection homework={dashboard.homework} />
+  }, [dashboard, section])
+
+  const goTo = (next: Section) => { setSection(next); setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  const logout = async () => { await supabase.auth.signOut(); router.replace('/login') }
+
+  return (
+    <div className="min-h-screen bg-[#F6F7FB] text-slate-900">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#1B4FD8]"><Image src="/images/logo.png" alt="Жангак" width={40} height={40} className="h-full w-full object-cover" /></span><div className="min-w-0"><p className="truncate text-sm font-black text-slate-950">Жангак</p><p className="truncate text-xs text-slate-500">Офлайн-кабинет • {dashboard.group?.name ?? 'без группы'}</p></div></div>
+          <div className="flex items-center gap-1"><button type="button" onClick={() => setMenuOpen(true)} aria-label="Открыть все разделы" className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 lg:hidden"><Menu size={21} /></button><button type="button" onClick={() => void logout()} aria-label="Выйти" className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600"><LogOut size={20} /></button></div>
+        </div>
+      </header>
+
+      <div className="mx-auto flex max-w-7xl gap-6 px-4 py-5 sm:px-6 lg:py-7">
+        <aside className="hidden w-60 shrink-0 lg:block"><nav aria-label="Разделы офлайн-кабинета" className="sticky top-24 space-y-1 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">{SECTIONS.map(item => { const Icon = item.icon; const active = section === item.id; return <button key={item.id} type="button" onClick={() => goTo(item.id)} aria-current={active ? 'page' : undefined} className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-bold ${active ? 'bg-blue-50 text-[#1B4FD8]' : 'text-slate-600 hover:bg-slate-50'}`}><Icon size={18} aria-hidden="true" />{item.label}</button> })}</nav></aside>
+        <main className="min-w-0 flex-1 pb-28 lg:pb-8" {...swipe}>{content}<div className="mt-7 flex items-center justify-between border-t border-slate-200 pt-4 lg:hidden"><button type="button" disabled={sectionIndex === 0} onClick={() => goTo(SECTIONS[sectionIndex - 1].id)} className="inline-flex min-h-11 items-center gap-1 text-sm font-bold text-slate-600 disabled:opacity-30"><ArrowLeft size={16} /> Назад</button><span className="text-xs font-semibold text-slate-400">{sectionIndex + 1} из {SECTIONS.length}</span><button type="button" disabled={sectionIndex === SECTIONS.length - 1} onClick={() => goTo(SECTIONS[sectionIndex + 1].id)} className="inline-flex min-h-11 items-center gap-1 text-sm font-bold text-[#1B4FD8] disabled:opacity-30">Дальше <ArrowRight size={16} /></button></div></main>
+      </div>
+
+      <nav aria-label="Быстрая навигация" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">{SECTIONS.filter(item => ['home', 'schedule', 'attendance', 'progress', 'homework'].includes(item.id)).map(item => { const Icon = item.icon; const active = section === item.id; return <button key={item.id} type="button" onClick={() => goTo(item.id)} aria-current={active ? 'page' : undefined} className={`flex min-h-16 min-w-11 flex-col items-center justify-center gap-1 px-1 text-[10px] font-bold ${active ? 'text-[#1B4FD8]' : 'text-slate-500'}`}><Icon size={20} strokeWidth={active ? 2.5 : 2} /><span className="max-w-full truncate">{item.shortLabel}</span></button> })}</nav>
+
+      {menuOpen && <div className="fixed inset-0 z-50 bg-slate-950/40 lg:hidden" onClick={() => setMenuOpen(false)}><div role="dialog" aria-modal="true" aria-label="Все разделы" className="absolute inset-x-3 top-3 rounded-3xl bg-white p-4 shadow-2xl" onClick={event => event.stopPropagation()}><div className="flex items-center justify-between"><h2 className="text-lg font-black">Все разделы</h2><button type="button" onClick={() => setMenuOpen(false)} aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500"><X size={21} /></button></div><div className="mt-3 grid grid-cols-2 gap-2">{SECTIONS.map(item => { const Icon = item.icon; return <button key={item.id} type="button" onClick={() => goTo(item.id)} className={`flex min-h-14 items-center gap-2 rounded-2xl p-3 text-left text-sm font-bold ${section === item.id ? 'bg-blue-50 text-[#1B4FD8]' : 'bg-slate-50 text-slate-700'}`}><Icon size={19} />{item.label}</button> })}</div></div></div>}
+    </div>
+  )
+}

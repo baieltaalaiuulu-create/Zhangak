@@ -57,6 +57,9 @@ jobs:
       - name: Check university journey invariants
         run: npm run check:university-journey
 
+      - name: Check offline student journey invariants
+        run: npm run check:offline-student-journey
+
       - name: Reject corrupted SQL migrations
         run: npm run check:migrations
 

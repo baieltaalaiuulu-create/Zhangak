@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "total": 171,
+  "total": 170,
   "roots": ["app", "components", "lib", "public"],
   "files": {
     "app/admin/archive/page.tsx": 1,
@@ -14,7 +14,6 @@
     "app/math/page.tsx": 1,
     "app/math/parent/page.tsx": 6,
     "app/math/student/page.tsx": 10,
-    "app/offline/page.tsx": 1,
     "app/teacher/page.tsx": 13,
     "components/admin/AdminSidebar.tsx": 5,
     "components/student/AICard.tsx": 2,
