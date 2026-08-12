@@ -19,6 +19,9 @@
 
 # production
 /build
+/backups/
+*.sql.gz
+*.dump
 
 # misc
 .DS_Store

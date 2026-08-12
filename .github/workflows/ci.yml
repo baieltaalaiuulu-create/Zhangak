@@ -45,6 +45,9 @@ jobs:
       - name: Check API security invariants
         run: npm run check:security
 
+      - name: Reject corrupted SQL migrations
+        run: npm run check:migrations
+
       - name: Prevent emoji debt regressions
         run: npm run check:emoji
 

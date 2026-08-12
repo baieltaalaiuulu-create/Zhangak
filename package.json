@@ -14,6 +14,7 @@
     "typecheck": "next typegen && tsc --noEmit --incremental false",
     "audit:prod": "npm audit --omit=dev --audit-level=high",
     "check:security": "node scripts/check-api-security.mjs",
+    "check:migrations": "node scripts/check-sql-migrations.mjs",
     "check:emoji": "node scripts/check-emoji.mjs",
     "check:client-secrets": "node scripts/check-client-secrets.mjs",
     "package:standalone": "node scripts/package-standalone.mjs",
