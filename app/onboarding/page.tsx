@@ -1,68 +1,47 @@
 'use client'
 export const dynamic = 'force-dynamic'
 
-import { useState, type JSX } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import {
+  ArrowRight,
+  BookOpenCheck,
+  BrainCircuit,
+  ChevronLeft,
+  Trophy,
+  type LucideIcon,
+} from 'lucide-react'
 
 const ONBOARDING_KEY = 'zhangak-onboarding-done'
 
 interface Slide {
+  eyebrow: string
   title: string
-  sub: string
-  bg: string
-  svg: JSX.Element
+  description: string
+  Icon: LucideIcon
 }
 
-// Simple inline illustrations — no external asset files, matching this
-// app's existing "no static illustration assets" convention.
 const slides: Slide[] = [
   {
-    title: 'Готовься к ОРТ где угодно',
-    sub: 'Уроки, тренажёр и AI-наставник в твоём кармане',
-    bg: '#1B4FD8',
-    svg: (
-      <svg viewBox="0 0 200 200" className="h-48 w-48" aria-hidden="true">
-        <circle cx="100" cy="60" r="35" fill="white" opacity="0.9" />
-        <rect x="65" y="100" width="70" height="80" rx="10" fill="white" opacity="0.9" />
-        <rect x="120" y="110" width="40" height="60" rx="8" fill="#0D0D1A" opacity="0.8" />
-        <rect x="125" y="118" width="30" height="40" rx="4" fill="#4B9EFF" />
-      </svg>
-    ),
+    eyebrow: 'Сабактар жана практика',
+    title: 'ОРТга күн сайын аз-аздан даярдан',
+    description: 'Видео көр, кыска тесттен өт жана кийинки кадамды дароо көр.',
+    Icon: BookOpenCheck,
   },
   {
-    title: 'Соревнуйся с другими',
-    sub: 'Еженедельный рейтинг и реальные призы',
-    bg: '#1B4FD8',
-    svg: (
-      <svg viewBox="0 0 200 200" className="h-48 w-48" aria-hidden="true">
-        <polygon points="100,20 120,80 185,80 130,115 150,175 100,140 50,175 70,115 15,80 80,80" fill="#FFD700" opacity="0.9" />
-        <rect x="80" y="155" width="40" height="20" rx="4" fill="white" opacity="0.8" />
-        <rect x="60" y="172" width="80" height="12" rx="4" fill="white" opacity="0.6" />
-      </svg>
-    ),
+    eyebrow: 'Жумалык рейтинг',
+    title: 'Өз өсүшүңдү көрүп, темпти сакта',
+    description: 'Күн сайын упай топто. Рейтинг кимден озуу керектигин түшүнүүгө жардам берет.',
+    Icon: Trophy,
   },
   {
-    title: 'AI знает твои слабые места',
-    sub: 'Персональный план подготовки каждый день',
-    bg: '#1B4FD8',
-    svg: (
-      <svg viewBox="0 0 200 200" className="h-48 w-48" aria-hidden="true">
-        <rect x="60" y="50" width="80" height="80" rx="20" fill="white" opacity="0.9" />
-        <circle cx="82" cy="85" r="10" fill="#1B4FD8" />
-        <circle cx="118" cy="85" r="10" fill="#1B4FD8" />
-        <rect x="80" y="105" width="40" height="8" rx="4" fill="#1B4FD8" opacity="0.5" />
-        <line x1="80" y1="50" x2="70" y2="30" stroke="white" strokeWidth="4" strokeLinecap="round" />
-        <line x1="120" y1="50" x2="130" y2="30" stroke="white" strokeWidth="4" strokeLinecap="round" />
-        <rect x="55" y="130" width="90" height="50" rx="10" fill="white" opacity="0.7" />
-      </svg>
-    ),
+    eyebrow: 'AI-насаатчы',
+    title: 'Түшүнбөгөн темаңа жардам ал',
+    description: 'Суроо бер, каталарыңды талда жана өзүңө ылайык даярдык планын ал.',
+    Icon: BrainCircuit,
   },
 ]
 
-// Dedicated onboarding route (was a root-layout overlay before) — reached
-// only from app/page.tsx's root smart router, on a first run with no
-// session. Marks itself done and replaces to /login on finish, either via
-// the last slide's "Начать" or the skip button.
 export default function OnboardingPage() {
   const [current, setCurrent] = useState(0)
   const router = useRouter()
@@ -73,56 +52,86 @@ export default function OnboardingPage() {
   }
 
   const next = () => {
-    if (current < slides.length - 1) setCurrent(current + 1)
+    if (current < slides.length - 1) setCurrent(index => index + 1)
     else finish()
   }
 
+  const previous = () => setCurrent(index => Math.max(0, index - 1))
   const slide = slides[current]
+  const isLast = current === slides.length - 1
 
   return (
-    <div className="fixed inset-0 flex flex-col" style={{ backgroundColor: slide.bg }}>
-      {/* Skip button */}
-      <div className="flex justify-end p-4 pt-12">
-        <button type="button" onClick={finish} className="text-sm font-medium text-white/70">
-          Пропустить
-        </button>
-      </div>
+    <main className="fixed inset-0 overflow-y-auto bg-[#1B4FD8] text-white">
+      <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))]">
+        <header className="flex min-h-12 items-center justify-between">
+          {current > 0 ? (
+            <button
+              type="button"
+              onClick={previous}
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              aria-label="Мурунку кадам"
+            >
+              <ChevronLeft size={24} strokeWidth={2.25} aria-hidden="true" />
+            </button>
+          ) : (
+            <div className="h-11 w-11" aria-hidden="true" />
+          )}
 
-      {/* Illustration */}
-      <div className="flex flex-1 items-center justify-center">
-        {slide.svg}
-      </div>
+          <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold tracking-wide text-white/80">
+            {current + 1} / {slides.length}
+          </span>
 
-      {/* Text */}
-      <div className="px-8 pb-4">
-        <h2 className="text-center text-2xl font-bold leading-tight text-white">
-          {slide.title}
-        </h2>
-        <p className="mt-3 text-center text-sm text-white/80">
-          {slide.sub}
-        </p>
-      </div>
+          <button
+            type="button"
+            onClick={finish}
+            className="min-h-11 rounded-xl px-2 text-sm font-semibold text-white/75 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          >
+            Өткөрүү
+          </button>
+        </header>
 
-      {/* Progress dots */}
-      <div className="flex justify-center gap-2 py-4">
-        {slides.map((s, i) => (
-          <div
-            key={s.title}
-            className={`h-2 rounded-full transition-all duration-300 ${i === current ? 'w-6 bg-white' : 'w-2 bg-white/40'}`}
-          />
-        ))}
-      </div>
-
-      {/* Button */}
-      <div className="px-4 pb-12">
-        <button
-          type="button"
-          onClick={next}
-          className="h-14 w-full rounded-2xl bg-white text-base font-bold text-[#1B4FD8]"
+        <section
+          className="flex flex-1 flex-col items-center justify-center py-8 text-center"
+          aria-live="polite"
+          aria-atomic="true"
         >
-          {current < slides.length - 1 ? 'Далее →' : 'Начать →'}
-        </button>
+          <div className="relative flex h-44 w-44 items-center justify-center rounded-[44px] bg-white/10 ring-1 ring-white/15">
+            <div className="absolute inset-5 rounded-[34px] bg-white/10" aria-hidden="true" />
+            <slide.Icon className="relative h-20 w-20 text-white" strokeWidth={1.7} aria-hidden="true" />
+          </div>
+
+          <p className="mt-10 text-xs font-extrabold uppercase tracking-[0.16em] text-blue-100">
+            {slide.eyebrow}
+          </p>
+          <h1 className="mt-3 max-w-sm text-3xl font-extrabold leading-[1.12] tracking-tight">
+            {slide.title}
+          </h1>
+          <p className="mt-4 max-w-xs text-[15px] font-medium leading-6 text-blue-100">
+            {slide.description}
+          </p>
+        </section>
+
+        <div className="pb-3">
+          <div className="mb-5 grid grid-cols-3 gap-2" aria-label={`Кадам ${current + 1} / ${slides.length}`}>
+            {slides.map((item, index) => (
+              <span
+                key={item.title}
+                aria-current={index === current ? 'step' : undefined}
+                className={`h-1.5 rounded-full transition-colors ${index <= current ? 'bg-white' : 'bg-white/25'}`}
+              />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={next}
+            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 text-base font-extrabold text-[#1B4FD8] shadow-lg shadow-blue-950/15 transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/40"
+          >
+            {isLast ? 'Баштоо' : 'Кийинки'}
+            <ArrowRight size={20} strokeWidth={2.5} aria-hidden="true" />
+          </button>
+        </div>
       </div>
-    </div>
+    </main>
   )
 }

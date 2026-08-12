@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { AlertCircle, Eye, EyeOff, LoaderCircle, LogIn, MessageCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { redirectForRole } from '@/lib/auth-redirect'
 
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [checkingSession, setCheckingSession] = useState(true)
@@ -60,18 +62,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#F4F6FA] px-6 py-12">
+    <main className="flex min-h-dvh flex-col items-center justify-center bg-[#F4F6FA] px-5 py-8 sm:px-6 sm:py-12">
       <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <div className="h-12 w-12 overflow-hidden rounded-xl shadow-sm">
+        <div className="mb-7 flex flex-col items-center text-center">
+          <div className="h-14 w-14 overflow-hidden rounded-2xl shadow-sm ring-1 ring-black/5">
             {/* eslint-disable-next-line @next/next/no-img-element -- static asset, no next/image domain config needed */}
             <img src="/images/logo.png" alt="Жангак" className="h-full w-full object-cover" />
           </div>
-          <h1 className="mt-4 text-xl font-extrabold text-[#0D1E4A]">Кирүү</h1>
-          <p className="mt-1 text-sm text-gray-400">Жангак системасына кирүү</p>
+          <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-[#0D1E4A]">Кайра кош келдиң</h1>
+          <p className="mt-1.5 text-sm font-medium text-gray-500">Даярдыкты улантуу үчүн аккаунтуңа кир</p>
         </div>
 
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-7">
+        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-7">
           {/*
             CRITICAL for the browser's "Сохранить пароль?" prompt: a real
             <form>, type="email"/type="password" inputs with name +
@@ -83,62 +85,97 @@ export default function LoginPage() {
           */}
           <form onSubmit={handleSubmit} method="post" action="#" className="flex flex-col gap-4">
             <div>
-              <label htmlFor="login-email" className="mb-1.5 block text-xs font-semibold text-gray-500">
-                Email
+              <label htmlFor="login-email" className="mb-2 block text-sm font-bold text-[#26324D]">
+                Электрондук почта
               </label>
               <input
                 id="login-email"
                 type="email"
                 name="email"
                 autoComplete="email"
+                autoCapitalize="none"
+                spellCheck={false}
+                inputMode="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="email@gmail.com"
                 required
-                className="w-full rounded-xl border border-gray-200 bg-[#FAFBFF] px-3.5 py-3 text-[15px] text-[#0D1E4A] outline-none transition-colors focus:border-[#1B4FD8]"
+                aria-invalid={!!error}
+                className="min-h-13 w-full rounded-2xl border border-gray-200 bg-[#FAFBFF] px-4 py-3 text-base text-[#0D1E4A] outline-none transition-shadow placeholder:text-gray-400 focus:border-[#1B4FD8] focus:ring-4 focus:ring-blue-100"
               />
             </div>
 
             <div>
-              <label htmlFor="login-password" className="mb-1.5 block text-xs font-semibold text-gray-500">
+              <label htmlFor="login-password" className="mb-2 block text-sm font-bold text-[#26324D]">
                 Сырсөз
               </label>
-              <input
-                id="login-password"
-                type="password"
-                name="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full rounded-xl border border-gray-200 bg-[#FAFBFF] px-3.5 py-3 text-[15px] text-[#0D1E4A] outline-none transition-colors focus:border-[#1B4FD8]"
-              />
+              <div className="relative">
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Сырсөзүңдү жаз"
+                  required
+                  aria-invalid={!!error}
+                  className="min-h-13 w-full rounded-2xl border border-gray-200 bg-[#FAFBFF] py-3 pl-4 pr-14 text-base text-[#0D1E4A] outline-none transition-shadow placeholder:text-gray-400 focus:border-[#1B4FD8] focus:ring-4 focus:ring-blue-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(value => !value)}
+                  className="absolute inset-y-0 right-1 flex min-h-11 min-w-11 items-center justify-center rounded-xl text-gray-400 transition-colors hover:text-[#1B4FD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B4FD8]"
+                  aria-label={showPassword ? 'Сырсөздү жашыруу' : 'Сырсөздү көрсөтүү'}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? <EyeOff size={21} aria-hidden="true" /> : <Eye size={21} aria-hidden="true" />}
+                </button>
+              </div>
             </div>
 
             {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-center text-sm text-red-500">
-                {error}
+              <div role="alert" className="flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 px-3.5 py-3 text-sm font-semibold text-red-600">
+                <AlertCircle size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
+                <span>{error}</span>
               </div>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="mt-1 rounded-xl bg-[#1B4FD8] py-3.5 text-[15px] font-bold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-1 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#1B4FD8] px-5 text-base font-extrabold text-white shadow-md shadow-blue-200 transition-all hover:bg-[#1744BC] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {loading ? 'Кирүүдө...' : 'Кирүү →'}
+              {loading ? (
+                <>
+                  <LoaderCircle size={20} className="animate-spin" aria-hidden="true" />
+                  Кирип жатат...
+                </>
+              ) : (
+                <>
+                  <LogIn size={20} aria-hidden="true" />
+                  Кирүү
+                </>
+              )}
             </button>
           </form>
         </div>
 
-        <p className="mt-6 text-center text-sm text-gray-400">
-          Аккаунт жокпу?{' '}
-          <a href="https://wa.me/996502077326" target="_blank" rel="noopener noreferrer" className="font-bold text-[#1B4FD8]">
-            📲 Жазылуу
-          </a>
-        </p>
+        <a
+          href="https://wa.me/996502077326"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-5 flex min-h-14 items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-left transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#1B4FD8] shadow-sm">
+            <MessageCircle size={21} aria-hidden="true" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-extrabold text-[#0D1E4A]">Аккаунт керекпи?</span>
+            <span className="mt-0.5 block text-xs font-medium leading-4 text-gray-500">WhatsApp аркылуу бизге жаз</span>
+          </span>
+        </a>
       </div>
-    </div>
+    </main>
   )
 }
