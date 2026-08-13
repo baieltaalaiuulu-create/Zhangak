@@ -29,6 +29,12 @@ function matchesPrefix(pathname: string, prefix: string): boolean {
 function routeSurface(pathname: string): RouteSurface {
   if (pathname === '/api/health') return 'shared'
   if (matchesPrefix(pathname, '/v1/auth')) return 'workspace-auth-api'
+  // First-party product APIs are deliberately namespace-scoped. The Next BFF
+  // forwards them only to the loopback Node API, while this host gate prevents
+  // an admin endpoint from being called through platform.zhangak.com (and vice
+  // versa). Other /v1 paths remain undiscoverable.
+  if (matchesPrefix(pathname, '/v1/platform')) return 'platform'
+  if (matchesPrefix(pathname, '/v1/admin')) return 'admin'
   if (ADMIN_API_PREFIXES.some(prefix => matchesPrefix(pathname, prefix))) return 'admin'
   if (PLATFORM_API_PREFIXES.some(prefix => matchesPrefix(pathname, prefix))) return 'platform'
   if (pathname === '/login') return 'shared-auth'

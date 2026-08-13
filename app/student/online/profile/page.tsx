@@ -2,8 +2,8 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { logoutZhangak } from '@/lib/zhangak-auth-client'
 import { calcStreak, DEFAULT_TARGET_SCORE } from '@/lib/student-data'
 import {
   fetchProfileInfo,
@@ -23,9 +23,10 @@ import ProfileProgressCard from '@/components/student/profile/ProfileProgressCar
 import ScoreSparkline from '@/components/student/profile/ScoreSparkline'
 import AchievementsCard from '@/components/student/profile/AchievementsCard'
 import NotificationSettings from '@/components/student/profile/NotificationSettings'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 
 export default function ProfilePage() {
-  const router = useRouter()
+  const sessionUser = useStudentSession()
   const [loading, setLoading] = useState(true)
   const [studentId, setStudentId] = useState<string | null>(null)
   const [profile, setProfile] = useState<ProfileInfo | null>(null)
@@ -38,18 +39,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: authProfile } = await supabase
-        .from('profiles')
-        .select('role, student_type')
-        .eq('id', user.id)
-        .single()
-
-      if (!authProfile || authProfile.role !== 'student') { router.push('/login'); return }
-      if (authProfile.student_type === 'offline') { router.push('/student'); return }
-
+      const user = sessionUser
       setStudentId(user.id)
 
       const [info, latest, history, learningProgress, solved, { data: allResults }] = await Promise.all([
@@ -78,11 +68,11 @@ export default function ProfilePage() {
       setLoading(false)
     }
     checkAuth()
-  }, [router])
+  }, [sessionUser])
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
+    await logoutZhangak().catch(() => {})
+    window.location.assign('/')
   }
 
   const handleGoalUpdate = (newGoal: number) => {

@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { GitCompareArrows, RefreshCw, WifiOff } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import { fetchLatestMockScore } from '@/lib/profile-data'
 import {
   fetchUniversityById, fetchUniversities, getFavoriteIds, toggleFavorite, type University,
@@ -16,6 +15,7 @@ import ScorePassingChart from '@/components/student/universities/ScorePassingCha
 import DocumentsChecklist from '@/components/student/universities/DocumentsChecklist'
 import ComparisonTable from '@/components/student/universities/ComparisonTable'
 import { UniversityAdvantageIcon } from '@/components/student/universities/UniversityVisuals'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 
 type TabKey = 'overview' | 'specialties' | 'scores' | 'cost' | 'documents'
 
@@ -47,6 +47,7 @@ function formatCost(cost: number | null): string {
 export default function UniversityDetailPage() {
   const router = useRouter()
   const params = useParams<{ id: string }>()
+  const sessionUser = useStudentSession()
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [studentId, setStudentId] = useState<string | null>(null)
@@ -59,17 +60,7 @@ export default function UniversityDetailPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type, target_score')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
+      const user = sessionUser
       setStudentId(user.id)
 
       try {
@@ -96,7 +87,7 @@ export default function UniversityDetailPage() {
       }
     }
     init()
-  }, [router, params.id])
+  }, [params.id, sessionUser])
 
   if (loading) return <LoadingScreen />
 

@@ -2,17 +2,17 @@
 
 import { useState } from 'react'
 import { X } from 'lucide-react'
-import { resetStudentPassword, type AdminStudent } from '@/lib/admin-data'
+import { resetAdminAccountPassword, type AdminAccount } from '@/lib/admin-account-client'
 
 interface Props {
-  student: AdminStudent
+  account: AdminAccount
   onClose: () => void
   onSaved: () => void
 }
 
-const MIN_PASSWORD_LENGTH = 6
+const MIN_PASSWORD_LENGTH = 10
 
-export default function ResetPasswordModal({ student, onClose, onSaved }: Props) {
+export default function ResetPasswordModal({ account, onClose, onSaved }: Props) {
   const [password, setPassword] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -24,7 +24,7 @@ export default function ResetPasswordModal({ student, onClose, onSaved }: Props)
 
     setSaving(true)
     try {
-      await resetStudentPassword(student.id, password)
+      await resetAdminAccountPassword(account.id, password)
       setSuccess(true)
       onSaved()
     } catch (e) {
@@ -40,7 +40,7 @@ export default function ResetPasswordModal({ student, onClose, onSaved }: Props)
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-bold text-[#191B23]">Сбросить пароль</h2>
-            <p className="text-xs text-gray-400">{student.full_name}</p>
+            <p className="text-xs text-gray-400">{account.fullName}</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-gray-50"><X size={18} /></button>
         </div>
@@ -59,7 +59,8 @@ export default function ResetPasswordModal({ student, onClose, onSaved }: Props)
           <div className="space-y-4">
             <div>
               <label className="mb-1 block text-xs font-semibold text-gray-500">Новый пароль *</label>
-              <input type="text" value={password} onChange={e => setPassword(e.target.value)} placeholder="Мин. 6 символов"
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={`Мин. ${MIN_PASSWORD_LENGTH} символов`}
+                autoComplete="new-password"
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
             </div>
 

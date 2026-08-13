@@ -2,48 +2,24 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import SettingsNotifications from '@/components/student/settings/SettingsNotifications'
 import SettingsInstallCard from '@/components/student/settings/SettingsInstallCard'
 import DangerZoneCard from '@/components/student/settings/DangerZoneCard'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 
 export default function SettingsPage() {
-  const router = useRouter()
+  useStudentSession()
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
-
-      setLoading(false)
-    }
-    checkAuth()
-  }, [router])
+    setLoading(false)
+  }, [])
 
   const handleDeleteAccount = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) throw new Error('Не авторизован')
-
-    const res = await fetch('/api/delete-own-account', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    })
-    const data = await res.json()
-    if (!res.ok || data.error) throw new Error(data.error ?? 'Failed to delete account')
-
-    await supabase.auth.signOut()
-    router.push('/')
+    // Deletion must remove every first-party learning record atomically. It
+    // remains unavailable until the learning-data cutover is complete rather
+    // than accidentally calling the retired Supabase endpoint.
+    throw new Error('Удаление аккаунта станет доступно после переноса учебных данных. Пока обратитесь в поддержку.')
   }
 
   if (loading) {

@@ -25,6 +25,7 @@ import PracticeQuestionScreen from '@/components/student/PracticeQuestionScreen'
 import PracticeResultsScreen, { type WrongAnswer } from '@/components/student/PracticeResultsScreen'
 import PracticeErrorReview from '@/components/student/PracticeErrorReview'
 import PracticeHome from '@/components/student/practice/PracticeHome'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 
 type View = 'start' | 'question' | 'results' | 'review'
 
@@ -49,6 +50,7 @@ function EmptyState({ text, backHref = '/student/online/practice', backLabel = '
 
 export default function PracticePage() {
   const router = useRouter()
+  const sessionUser = useStudentSession()
   const searchParams = useSearchParams()
   const lessonId = searchParams.get('lesson')
   const sectionParam = searchParams.get('section')
@@ -73,18 +75,10 @@ export default function PracticePage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
-
+      // StudentLayout has already verified the first-party Zhangak session.
+      // Do not ask the retired Supabase Auth client here: it would see no
+      // session and redirect a valid user back to /login.
+      const user = sessionUser
       setStudentId(user.id)
 
       if (lessonId) {
@@ -129,7 +123,7 @@ export default function PracticePage() {
       setLoading(false)
     }
     load()
-  }, [router, lessonId, sectionParam, topicParam])
+  }, [router, sessionUser, lessonId, sectionParam, topicParam])
 
   const finishTest = async () => {
     if (!test || !studentId) { setView('results'); return }

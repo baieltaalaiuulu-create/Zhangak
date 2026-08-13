@@ -5,12 +5,12 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { BrainCircuit, Calculator, CheckCircle2, Eye, Flame, Languages, Sparkles, RotateCcw, TrendingUp, type LucideIcon } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import {
   fetchTodayChallenge, fetchChallengeQuestions, fetchChallengeResult, fetchChallengeStreak,
   loadCompletionSnapshot, groupErrorsBySubject, SUBJECT_META,
   type DailyChallenge, type DailyChallengeQuestion, type CompletionSnapshot, type SubjectErrorGroup, type ChallengeSubject,
 } from '@/lib/daily-challenge-data'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 
 const SUBJECT_TO_SECTION: Record<ChallengeSubject, string> = {
   math: 'math',
@@ -36,6 +36,7 @@ function LoadingScreen() {
 
 export default function DailyChallengeResultsPage() {
   const router = useRouter()
+  const sessionUser = useStudentSession()
   const [loading, setLoading] = useState(true)
   const [challenge, setChallenge] = useState<DailyChallenge | null>(null)
   const [snapshot, setSnapshot] = useState<CompletionSnapshot | null>(null)
@@ -45,17 +46,7 @@ export default function DailyChallengeResultsPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type')
-        .eq('id', user.id)
-        .single()
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
-
+      const user = sessionUser
       const today = await fetchTodayChallenge()
       if (!today) { router.replace('/student/online/practice'); return }
       setChallenge(today)
@@ -80,7 +71,7 @@ export default function DailyChallengeResultsPage() {
       setLoading(false)
     }
     load()
-  }, [router])
+  }, [router, sessionUser])
 
   if (loading || !challenge) return <LoadingScreen />
 

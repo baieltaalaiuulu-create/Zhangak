@@ -22,7 +22,13 @@ export default function TeacherPage() {
   const [error, setError] = useState<string | null>(null)
 
   const handleError = useCallback((requestError: unknown) => {
-    if (requestError instanceof TeacherRequestError && requestError.status === 401) { router.replace('/login'); return }
+    // Authentication is now first-party. A 401 from a legacy Supabase data
+    // endpoint is a migration error, not proof that the Zhangak session has
+    // ended; redirecting here recreated the login loop.
+    if (requestError instanceof TeacherRequestError && requestError.status === 401) {
+      setError('Учебные данные учителя переносятся на новый сервис. Вход сохранён, попробуйте немного позже.')
+      return
+    }
     if (requestError instanceof TeacherRequestError && requestError.status === 403) { router.replace('/'); return }
     setError(requestError instanceof Error ? requestError.message : 'Не удалось загрузить кабинет')
   }, [router])

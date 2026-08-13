@@ -2,9 +2,7 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { GitCompareArrows, RefreshCw, WifiOff, X } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import { DEFAULT_TARGET_SCORE } from '@/lib/student-data'
 import { fetchLatestMockScore } from '@/lib/profile-data'
 import {
@@ -19,6 +17,7 @@ import AIRecommendationBar from '@/components/student/universities/AIRecommendat
 import UniversityCard from '@/components/student/universities/UniversityCard'
 import UniversitiesBottomCTA from '@/components/student/universities/UniversitiesBottomCTA'
 import ComparisonTable from '@/components/student/universities/ComparisonTable'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 
 function LoadingScreen() {
   return (
@@ -40,7 +39,7 @@ function LoadingScreen() {
 }
 
 export default function UniversitiesPage() {
-  const router = useRouter()
+  const sessionUser = useStudentSession()
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [studentId, setStudentId] = useState<string | null>(null)
@@ -57,17 +56,7 @@ export default function UniversitiesPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type, target_score')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
+      const user = sessionUser
       setStudentId(user.id)
 
       try {
@@ -77,7 +66,7 @@ export default function UniversitiesPage() {
           fetchCatalogStats(),
         ])
 
-        setTargetScore(profile.target_score ?? DEFAULT_TARGET_SCORE)
+        setTargetScore(user.targetScore ?? DEFAULT_TARGET_SCORE)
         setLatestScore(latest)
         setUniversities(universityList)
         setCatalogStats(stats)
@@ -89,7 +78,7 @@ export default function UniversitiesPage() {
       }
     }
     init()
-  }, [router])
+  }, [sessionUser])
 
   const handleToggleFavorite = (id: string) => {
     if (studentId) setFavorites(toggleFavorite(studentId, id))

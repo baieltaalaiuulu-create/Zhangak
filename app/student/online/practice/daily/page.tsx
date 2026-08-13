@@ -4,13 +4,13 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
 import {
   fetchTodayChallenge, fetchChallengeQuestions, fetchChallengeResult,
   loadDailyProgress, saveDailyProgress, clearDailyProgress, saveCompletionSnapshot,
   recordChallengeCompletion, optionText, isCorrect, SUBJECT_META,
   type DailyChallenge, type DailyChallengeQuestion, type AnswerLetter,
 } from '@/lib/daily-challenge-data'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 
 const LETTERS: AnswerLetter[] = ['A', 'B', 'C', 'D']
 
@@ -30,6 +30,7 @@ function LoadingScreen() {
 
 export default function DailyChallengeFlowPage() {
   const router = useRouter()
+  const sessionUser = useStudentSession()
   const [loading, setLoading] = useState(true)
   const [studentId, setStudentId] = useState<string | null>(null)
   const [challenge, setChallenge] = useState<DailyChallenge | null>(null)
@@ -41,17 +42,7 @@ export default function DailyChallengeFlowPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type')
-        .eq('id', user.id)
-        .single()
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
-
+      const user = sessionUser
       setStudentId(user.id)
 
       const today = await fetchTodayChallenge()
@@ -76,7 +67,7 @@ export default function DailyChallengeFlowPage() {
       setLoading(false)
     }
     load()
-  }, [router])
+  }, [router, sessionUser])
 
   // Ticking session timer — persisted alongside answers so "Прошло времени"
   // survives a resume.

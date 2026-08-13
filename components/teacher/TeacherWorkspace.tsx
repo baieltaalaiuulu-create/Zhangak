@@ -1,7 +1,6 @@
 'use client'
 
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import {
   BookOpen,
@@ -22,7 +21,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
-import { supabase } from '@/lib/supabase'
+import { logoutZhangak } from '@/lib/zhangak-auth-client'
 import { createTeacherHomework, saveTeacherAttendance, saveTeacherGrades } from '@/lib/teacher-data'
 import {
   SCORE_LIMITS,
@@ -124,7 +123,6 @@ function Empty({ icon: Icon, title, text }: { icon: LucideIcon; title: string; t
 }
 
 export default function TeacherWorkspace({ groups, workspace, onSelectGroup, onRefresh }: Props) {
-  const router = useRouter()
   const [tab, setTab] = useState<Tab>('lessons')
   const [attendanceLessonId, setAttendanceLessonId] = useState<number | null>(workspace?.lessons[0]?.id ?? null)
   const firstTestId = workspace?.lessons.find(lesson => lesson.isTest)?.id ?? null
@@ -210,7 +208,10 @@ export default function TeacherWorkspace({ groups, workspace, onSelectGroup, onR
     finally { setSaving(false) }
   }
 
-  const logout = async () => { await supabase.auth.signOut(); router.replace('/login') }
+  const logout = async () => {
+    await logoutZhangak().catch(() => {})
+    window.location.assign('/login?surface=platform')
+  }
   const title = TABS.find(item => item.id === tab)?.label ?? 'Кабинет учителя'
 
   return (

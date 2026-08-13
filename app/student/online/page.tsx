@@ -2,96 +2,97 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import nextDynamic from 'next/dynamic'
 import { RefreshCw } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import { useStudentSession } from '@/components/student/StudentSessionContext'
-import { getStudentDashboard, DEFAULT_TARGET_SCORE, type StudentDashboardData } from '@/lib/student-data'
-import { fetchDashboardExtras, type DashboardExtras } from '@/lib/dashboard-data'
-import { fetchLessons, type Lesson } from '@/lib/lessons-data'
-import {
-  fetchTodayChallenge,
-  fetchChallengeResult,
-  type DailyChallenge,
-} from '@/lib/daily-challenge-data'
+import { DEFAULT_TARGET_SCORE, type StudentDashboardData } from '@/lib/student-data'
+import { zhangakApiRequest } from '@/lib/zhangak-api-client'
 
-import AnnouncementBanner from '@/components/student/AnnouncementBanner'
 import DashboardHeroCard from '@/components/student/DashboardHeroCard'
-import TodayPlanCard from '@/components/student/TodayPlanCard'
-import WeeklyProgressCard from '@/components/student/WeeklyProgressCard'
 import SubjectsGrid from '@/components/student/SubjectsGrid'
-import RecentAchievementsCard from '@/components/student/RecentAchievementsCard'
 import MobileHero from '@/components/student/mobile/MobileHero'
 import MobileTodayChecklist from '@/components/student/mobile/MobileTodayChecklist'
 
-// Secondary desktop cards are deferred out of the initial JS bundle rather
-// than pulled in eagerly with everything above it. ssr:false because both are pure
-// client-rendered cards fed by props already computed before render (no
-// server-render benefit, and it keeps their own internal useState from
-// running through hydration). AIRecommendationCard in the literal spec
-// doesn't exist in this codebase; AIMentorRecommendationCard is the real
-// component that fills that role here.
-const ActivityHeatmap = nextDynamic(() => import('@/components/student/ActivityHeatmap'), {
-  ssr: false,
-  loading: () => <div className="h-32 animate-pulse rounded-2xl bg-gray-100" />,
-})
-const AIMentorRecommendationCard = nextDynamic(() => import('@/components/student/AIMentorRecommendationCard'), {
-  ssr: false,
-  loading: () => null,
-})
+interface FirstPartyDashboardResponse {
+  profile: {
+    fullName: string
+    targetScore: number | null
+  }
+  summary: {
+    courseCount: number
+    lessons: { total: number; completed: number; completionPercent: number }
+    practice: { attempts: number; passed: number; averageScorePercent: number; bestScorePercent: number }
+    latestResult: {
+      title: string
+      testType: string
+      scorePercent: number | null
+      correctCount: number
+      questionCount: number
+      submittedAt: string | null
+    } | null
+  }
+}
+
+function dashboardFrom(response: FirstPartyDashboardResponse): StudentDashboardData {
+  const { profile, summary } = response
+  const lessonTrack = {
+    currentLesson: null,
+    completedCount: summary.lessons.completed,
+    totalCount: summary.lessons.total,
+    progressPct: summary.lessons.completionPercent,
+    lessonDoneToday: false,
+    practiceDoneToday: false,
+  }
+  return {
+    profile: { full_name: profile.fullName, target_score: profile.targetScore ?? DEFAULT_TARGET_SCORE },
+    // A practice percentage is deliberately not converted to a 245-point
+    // ORT result. A real headline score will be added with the own-backend
+    // mock-exam slice instead of presenting a misleading number.
+    latestScore: null,
+    previousScore: null,
+    scoreHistory: [],
+    subjects: [
+      { subject: 'math', current: 0, max: 40, delta: 0 },
+      { subject: 'kyr', current: 0, max: 40, delta: 0 },
+      { subject: 'analogy', current: 0, max: 20, delta: 0 },
+      { subject: 'reading', current: 0, max: 30, delta: 0 },
+    ],
+    streak: 0,
+    subjectTracks: [
+      { subject: 'math', ...lessonTrack },
+      { subject: 'kyr', ...lessonTrack },
+    ],
+    monthStats: {
+      lessons: summary.lessons.completed,
+      questions: 0,
+      tests: summary.practice.attempts,
+      mocks: 0,
+      hours: 0,
+    },
+  }
+}
 
 export default function StudentOnlinePage() {
   const user = useStudentSession()
   const [profileName, setProfileName] = useState<string | null>(null)
   const [data, setData] = useState<StudentDashboardData | null>(null)
-  const [extras, setExtras] = useState<DashboardExtras | null>(null)
-  const [heroLesson, setHeroLesson] = useState<Lesson | null>(null)
-  const [todayChallenge, setTodayChallenge] = useState<DailyChallenge | null>(null)
-  const [challengeCompleted, setChallengeCompleted] = useState(false)
+  const [summary, setSummary] = useState<FirstPartyDashboardResponse['summary'] | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
-  const router = useRouter()
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const loadDashboard = async () => {
       setProfileName(user.fullName)
       try {
-        // fetchDashboardExtras only depends on getStudentDashboard's score
-        // fields, not on any of the other calls below — chained off that
-        // one promise (not awaited separately) so it runs in the same wave
-        // as everything else instead of only starting once the whole batch
-        // below has already resolved, which used to add a full extra
-        // round-trip to every dashboard load.
-        const dashboardPromise = getStudentDashboard()
-        const [dashboard, allLessons, challenge, dashboardExtras] = await Promise.all([
-          dashboardPromise,
-          fetchLessons(),
-          fetchTodayChallenge(),
-          dashboardPromise.then(d => fetchDashboardExtras(user.id, d.latestScore, d.previousScore)),
-        ])
-        setData(dashboard)
-        setExtras(dashboardExtras)
-        // First incomplete lesson overall, ordered by order_number (already
-        // the sort order fetchLessons returns) — the mobile "continue
-        // learning" hero, independent of which subject it belongs to.
-        // Reuses dashboardExtras.completedLessonIds (already computed
-        // inside fetchDashboardExtras) instead of this page issuing its
-        // own separate, identical fetchCompletedLessonIds query.
-        setHeroLesson(allLessons.find(l => !dashboardExtras.completedLessonIds.has(l.id)) ?? null)
-
-        setTodayChallenge(challenge)
-        if (challenge) {
-          const result = await fetchChallengeResult(challenge.id, user.id)
-          setChallengeCompleted(!!result)
-        }
+        const response = await zhangakApiRequest<FirstPartyDashboardResponse>('/v1/platform/dashboard')
+        setData(dashboardFrom(response))
+        setSummary(response.summary)
       } catch {
         setLoadError(true)
       } finally {
         setLoading(false)
       }
     }
-    checkAuth()
+    void loadDashboard()
   }, [user.id, user.fullName])
 
   if (loadError) {
@@ -110,7 +111,7 @@ export default function StudentOnlinePage() {
     )
   }
 
-  if (loading || !data || !extras) {
+  if (loading || !data || !summary) {
     return (
       <div className="min-h-screen bg-[#F4F6FA]">
         <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6">
@@ -138,76 +139,56 @@ export default function StudentOnlinePage() {
 
   const firstName = (data.profile?.full_name ?? profileName ?? 'Студент').split(' ')[0]
   const targetScore = data.profile?.target_score ?? DEFAULT_TARGET_SCORE
-  const continueHref = '/student/online/lessons'
-
-  const handleGoalUpdate = (newGoal: number) => {
-    setData(prev => prev ? {
-      ...prev,
-      profile: prev.profile ? { ...prev.profile, target_score: newGoal } : prev.profile,
-    } : prev)
-  }
-
-  // ── Mobile "Сегодня" checklist data — real todayPlan/subjectTracks data,
-  // just re-read into the 3 fixed rows the mobile spec calls for. ──────────
-  const heroSubjectTrack = heroLesson
-    ? data.subjectTracks.find(t => t.subject === heroLesson.subject)
-    : null
-  const lessonDoneToday = heroLesson ? (heroSubjectTrack?.lessonDoneToday ?? false) : true
-  const practiceItem = extras.todayPlan.items.find(i => i.kind === 'practice')
+  const continueHref = summary.courseCount > 0 ? '/student/online/lessons' : '/student/online/practice'
+  const subjects = [
+    { key: 'math' as const, label: 'Уроки', topicLabel: summary.courseCount > 0 ? 'Продолжай программу курса' : 'Курс появится после назначения группы', color: '#1B4FD8', completed: summary.lessons.completed, total: summary.lessons.total, hoursRemaining: 0, href: '/student/online/lessons' },
+    { key: 'kyr' as const, label: 'Тренажёр', topicLabel: summary.practice.attempts > 0 ? `Попыток: ${summary.practice.attempts}, успешно: ${summary.practice.passed}` : 'Начни первую безопасную попытку', color: '#14B8A6', completed: summary.practice.passed, total: summary.practice.attempts, hoursRemaining: 0, href: '/student/online/practice' },
+  ]
 
   return (
     <div className="min-h-screen bg-[#F4F6FA]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 min-w-0">
 
-        <div className="hidden md:block">
-          <AnnouncementBanner />
-        </div>
-
         {/* ============ MOBILE (< 768px) ============ */}
         <div className="block space-y-5 md:hidden">
           <MobileHero
             firstName={firstName}
-            currentScore={data.latestScore ?? 0}
+            currentScore={0}
             targetScore={targetScore}
-            heroLesson={heroLesson}
+            heroLesson={null}
             loading={false}
           />
 
           <MobileTodayChecklist
-            lessonDone={lessonDoneToday}
-            lessonHref={heroLesson ? `/student/online/lessons/${heroLesson.id}` : '/student/online/lessons'}
-            practiceDone={practiceItem?.done ?? false}
-            practiceHref={practiceItem?.href ?? '/student/online/practice'}
-            challengeDone={todayChallenge ? challengeCompleted : false}
-            challengeHref="/student/online/practice/daily"
+            lessonDone={summary.lessons.total > 0 && summary.lessons.completed >= summary.lessons.total}
+            lessonHref="/student/online/lessons"
+            practiceDone={summary.practice.attempts > 0}
+            practiceHref="/student/online/practice"
+            challengeDone={false}
+            challengeHref="/student/online/practice"
           />
         </div>
 
-        {/* ============ DESKTOP (>= 768px) — unchanged ============ */}
+        {/* ============ DESKTOP (>= 768px) ============ */}
         <div className="hidden md:block space-y-5">
           <DashboardHeroCard
             firstName={firstName}
             latestScore={data.latestScore}
             targetScore={targetScore}
-            minutesRemaining={extras.todayPlan.minutesRemaining}
+            minutesRemaining={0}
             ctaHref={continueHref}
-            onGoalUpdate={handleGoalUpdate}
           />
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            {/* Left column */}
-            <div className="space-y-5 min-w-0">
-              <TodayPlanCard plan={extras.todayPlan} />
-              <WeeklyProgressCard stats={extras.weeklyStats} />
-              <ActivityHeatmap days={extras.heatmapDays} months={extras.heatmapMonths} />
-            </div>
-
-            {/* Right column */}
-            <div className="space-y-5 min-w-0">
-              <SubjectsGrid subjects={extras.subjectsGrid} />
-              <AIMentorRecommendationCard recommendation={extras.aiRecommendation} />
-              <RecentAchievementsCard achievements={extras.achievements} />
-            </div>
+            <SubjectsGrid subjects={subjects} />
+            <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+              <h2 className="text-base font-extrabold text-[#191B23]">Твой прогресс</h2>
+              <dl className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-blue-50 p-3"><dt className="text-xs font-semibold text-blue-700">Уроки</dt><dd className="mt-1 text-2xl font-black text-[#1B4FD8]">{summary.lessons.completed}/{summary.lessons.total}</dd></div>
+                <div className="rounded-xl bg-violet-50 p-3"><dt className="text-xs font-semibold text-violet-700">Практика</dt><dd className="mt-1 text-2xl font-black text-violet-700">{summary.practice.attempts}</dd></div>
+              </dl>
+              <p className="mt-4 text-sm leading-6 text-gray-500">ОРТ-балл появится после первого полного пробного экзамена. Короткие тренировки не будут искусственно превращаться в балл ОРТ.</p>
+            </section>
           </div>
         </div>
 

@@ -7,6 +7,7 @@ import { createHandler } from './http.js'
 import './routes/health.js'
 import './routes/auth.js'
 import './routes/admin-users.js'
+import './routes/platform-learning.js'
 
 const config = loadConfig()
 connectDatabase(config)
