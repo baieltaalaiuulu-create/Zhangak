@@ -103,7 +103,7 @@ export default function StudentOnlinePage() {
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="flex min-h-11 items-center gap-1.5 rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white"
+          className="flex min-h-11 items-center gap-1.5 rounded-xl bg-[#1B3F92] px-5 py-2.5 text-sm font-bold text-white"
         >
           <RefreshCw size={16} aria-hidden="true" />
           Попробовать ещё раз
@@ -142,7 +142,7 @@ export default function StudentOnlinePage() {
   const targetScore = targetScoreOverride ?? data.profile?.target_score ?? DEFAULT_TARGET_SCORE
   const continueHref = summary.courseCount > 0 ? '/student/online/lessons' : '/student/online/practice'
   const subjects = [
-    { key: 'math' as const, label: 'Уроки', topicLabel: summary.courseCount > 0 ? 'Продолжай программу курса' : 'Курс появится после назначения группы', color: '#1B4FD8', completed: summary.lessons.completed, total: summary.lessons.total, hoursRemaining: 0, href: '/student/online/lessons' },
+    { key: 'math' as const, label: 'Уроки', topicLabel: summary.courseCount > 0 ? 'Продолжай программу курса' : 'Курс появится после назначения группы', color: '#1B3F92', completed: summary.lessons.completed, total: summary.lessons.total, hoursRemaining: 0, href: '/student/online/lessons' },
     { key: 'kyr' as const, label: 'Тренажёр', topicLabel: summary.practice.attempts > 0 ? `Попыток: ${summary.practice.attempts}, успешно: ${summary.practice.passed}` : 'Начни первую безопасную попытку', color: '#14B8A6', completed: summary.practice.passed, total: summary.practice.attempts, hoursRemaining: 0, href: '/student/online/practice' },
   ]
 
@@ -187,7 +187,7 @@ export default function StudentOnlinePage() {
             <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
               <h2 className="text-base font-extrabold text-[#191B23]">Твой прогресс</h2>
               <dl className="mt-4 grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-blue-50 p-3"><dt className="text-xs font-semibold text-blue-700">Уроки</dt><dd className="mt-1 text-2xl font-black text-[#1B4FD8]">{summary.lessons.completed}/{summary.lessons.total}</dd></div>
+                <div className="rounded-xl bg-blue-50 p-3"><dt className="text-xs font-semibold text-blue-700">Уроки</dt><dd className="mt-1 text-2xl font-black text-[#1B3F92]">{summary.lessons.completed}/{summary.lessons.total}</dd></div>
                 <div className="rounded-xl bg-violet-50 p-3"><dt className="text-xs font-semibold text-violet-700">Практика</dt><dd className="mt-1 text-2xl font-black text-violet-700">{summary.practice.attempts}</dd></div>
               </dl>
               <p className="mt-4 text-sm leading-6 text-gray-500">ОРТ-балл появится после первого полного пробного экзамена. Короткие тренировки не будут искусственно превращаться в балл ОРТ.</p>

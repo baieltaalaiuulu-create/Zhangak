@@ -72,7 +72,7 @@ export default function LessonCard({ lesson, status, questionCount, courseProgre
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
               <div
-                className="h-full rounded-full bg-[#1B4FD8] transition-all duration-700"
+                className="h-full rounded-full bg-[#1B3F92] transition-all duration-700"
                 style={{ width: `${courseProgress}%` }}
               />
             </div>
@@ -81,7 +81,7 @@ export default function LessonCard({ lesson, status, questionCount, courseProgre
 
         <div className="mt-1">
           {status === 'current' && (
-            <span className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#1B4FD8] py-2.5 text-center text-sm font-bold text-white">
+            <span className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#1B3F92] py-2.5 text-center text-sm font-bold text-white">
               <Play size={18} />
               {courseProgress === 0 ? 'Начать урок' : 'Продолжить →'}
             </span>

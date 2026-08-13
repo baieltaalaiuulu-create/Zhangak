@@ -68,7 +68,7 @@ function MetricCard({ label, value, hint, icon: Icon, tone }: {
   tone: 'blue' | 'green' | 'violet' | 'amber'
 }) {
   const tones = {
-    blue: 'bg-blue-50 text-[#1B4FD8]',
+    blue: 'bg-blue-50 text-[#1B3F92]',
     green: 'bg-emerald-50 text-emerald-600',
     violet: 'bg-violet-50 text-violet-600',
     amber: 'bg-amber-50 text-amber-600',
@@ -108,8 +108,8 @@ function ErrorState({ error, onRetry }: { error: ZhangakApiError | null; onRetry
       <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
       <div className="mt-5 flex justify-center gap-3">
         {loginRequired
-          ? <button type="button" onClick={() => window.location.assign('/login')} className="inline-flex min-h-11 items-center rounded-xl bg-[#1B4FD8] px-4 text-sm font-bold text-white">Войти</button>
-          : <button type="button" onClick={() => void onRetry()} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1B4FD8] px-4 text-sm font-bold text-white"><RefreshCw size={17} aria-hidden="true" />Повторить</button>}
+          ? <button type="button" onClick={() => window.location.assign('/login')} className="inline-flex min-h-11 items-center rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white">Войти</button>
+          : <button type="button" onClick={() => void onRetry()} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white"><RefreshCw size={17} aria-hidden="true" />Повторить</button>}
       </div>
     </section>
   )
@@ -167,7 +167,7 @@ export default function AdminDashboardPage() {
             <h1 className="text-lg font-black text-[#191B23]">Сегодня</h1>
             <p className="mt-1 text-sm text-slate-400">{todayLabel()}</p>
           </div>
-          {dashboard && <button type="button" onClick={() => exportStats(dashboard)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm hover:border-[#1B4FD8]/30 hover:text-[#1B4FD8]"><Download size={17} aria-hidden="true" />Экспорт CSV</button>}
+          {dashboard && <button type="button" onClick={() => exportStats(dashboard)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm hover:border-[#1B3F92]/30 hover:text-[#1B3F92]"><Download size={17} aria-hidden="true" />Экспорт CSV</button>}
         </div>
 
         {loading && !dashboard ? <LoadingState /> : !dashboard ? <ErrorState error={error} onRetry={load} /> : (
@@ -180,7 +180,7 @@ export default function AdminDashboardPage() {
             </section>
 
             <section className="grid gap-4 lg:grid-cols-3" aria-label="Быстрые действия">
-              <Link href="/admin/lessons/new" className="group flex min-h-24 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#1B4FD8]/30 hover:shadow-md">
+              <Link href="/admin/lessons/new" className="group flex min-h-24 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#1B3F92]/30 hover:shadow-md">
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white"><FilePlus2 size={18} aria-hidden="true" /></span>
                 <span><span className="block text-sm font-bold text-[#191B23]">Добавить урок</span><span className="mt-1 block text-xs text-slate-400">В собственную программу</span></span>
               </Link>
@@ -202,11 +202,11 @@ export default function AdminDashboardPage() {
 
             <section className="grid gap-4 xl:grid-cols-2">
               <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4"><ClipboardCheck size={18} className="text-[#1B4FD8]" aria-hidden="true" /><h2 className="text-sm font-black text-[#191B23]">Последние сданные попытки</h2></div>
+                <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4"><ClipboardCheck size={18} className="text-[#1B3F92]" aria-hidden="true" /><h2 className="text-sm font-black text-[#191B23]">Последние сданные попытки</h2></div>
                 {dashboard.recentAttempts.length === 0 ? <p className="p-8 text-center text-sm text-slate-400">Пока нет сданных попыток в собственной базе.</p> : <ul>
                   {dashboard.recentAttempts.map((attempt, index) => <li key={attempt.id} className={`flex items-center justify-between gap-3 px-5 py-3 ${index < dashboard.recentAttempts.length - 1 ? 'border-b border-slate-100' : ''}`}>
                     <div className="min-w-0"><p className="truncate text-sm font-bold text-[#191B23]">{attempt.studentName}</p><p className="mt-1 truncate text-xs text-slate-400">{ATTEMPT_LABELS[attempt.testType]} · {attempt.testTitle}</p></div>
-                    <div className="shrink-0 text-right"><p className="text-sm font-black text-[#1B4FD8]">{attempt.scorePercent}%</p><p className="mt-1 text-xs text-slate-400">{timeAgo(attempt.completedAt)}</p></div>
+                    <div className="shrink-0 text-right"><p className="text-sm font-black text-[#1B3F92]">{attempt.scorePercent}%</p><p className="mt-1 text-xs text-slate-400">{timeAgo(attempt.completedAt)}</p></div>
                   </li>)}
                 </ul>}
               </article>

@@ -8,7 +8,7 @@ export default function DailyChallengeFlowPage() {
   return (
     <main className="flex min-h-[70vh] items-center justify-center bg-[#F4F6FA] px-4 py-8">
       <section className="w-full max-w-xl rounded-3xl border border-gray-100 bg-white p-6 text-center shadow-sm sm:p-9">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-[#1B4FD8]">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-[#1B3F92]">
           <CalendarClock size={28} aria-hidden="true" />
         </div>
         <h1 className="mt-5 text-2xl font-black tracking-tight text-gray-900">Задание дня готовится</h1>
@@ -22,7 +22,7 @@ export default function DailyChallengeFlowPage() {
         <div className="mt-7 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <Link
             href="/student/online/practice"
-            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#1B4FD8] px-4 text-sm font-bold text-white transition-colors hover:bg-blue-700"
+            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white transition-colors hover:bg-blue-700"
           >
             Открыть тренажёр
           </Link>

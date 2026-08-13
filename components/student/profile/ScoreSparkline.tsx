@@ -43,14 +43,14 @@ export default function ScoreSparkline({ history }: Props) {
         </span>
       </div>
       <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="mt-3 w-full" preserveAspectRatio="none" role="img" aria-label="График последних баллов">
-        <path d={path} fill="none" stroke="#1B4FD8" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        <path d={path} fill="none" stroke="#1B3F92" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
         {points.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r={i === points.length - 1 ? 3.5 : 2.5} fill={i === points.length - 1 ? '#1B4FD8' : '#C3D3FA'} />
+          <circle key={i} cx={p.x} cy={p.y} r={i === points.length - 1 ? 3.5 : 2.5} fill={i === points.length - 1 ? '#1B3F92' : '#C3D3FA'} />
         ))}
       </svg>
       <div className="mt-1 flex justify-between text-[11px] text-gray-400">
         <span>{first.score}</span>
-        <span className="font-bold text-[#1B4FD8]">{latest.score}</span>
+        <span className="font-bold text-[#1B3F92]">{latest.score}</span>
       </div>
     </div>
   )

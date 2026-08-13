@@ -43,10 +43,10 @@ function GroupCard({ group }: { group: PlatformTeacherGroup }) {
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Моя группа</p>
           <h2 className="mt-1 break-words text-xl font-black text-slate-950">{group.name}</h2>
-          <p className="mt-2 break-words text-sm font-semibold text-[#1B4FD8]">{group.course.name}</p>
+          <p className="mt-2 break-words text-sm font-semibold text-[#1B3F92]">{group.course.name}</p>
           {courseDetails.length > 0 && <p className="mt-1 text-sm text-slate-500">{courseDetails.join(' • ')}</p>}
         </div>
-        <span className="inline-flex min-h-8 items-center rounded-full bg-blue-50 px-3 text-xs font-bold text-[#1B4FD8]">{deliveryModeLabel(group.deliveryMode)}</span>
+        <span className="inline-flex min-h-8 items-center rounded-full bg-blue-50 px-3 text-xs font-bold text-[#1B3F92]">{deliveryModeLabel(group.deliveryMode)}</span>
       </div>
 
       <dl className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -73,7 +73,7 @@ function GroupCard({ group }: { group: PlatformTeacherGroup }) {
 function EmptyGroups() {
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm sm:p-10">
-      <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-[#1B4FD8]"><Users size={28} aria-hidden="true" /></span>
+      <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-[#1B3F92]"><Users size={28} aria-hidden="true" /></span>
       <h2 className="mt-4 text-xl font-black text-slate-950">Нет активных групп</h2>
       <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500">Когда администратор назначит вам активную группу и курс, она появится здесь. Мы не показываем тестовые или вымышленные данные.</p>
     </section>
@@ -97,7 +97,7 @@ export default function TeacherWorkspace({ dashboard, onRefresh, refreshing }: P
             <div className="min-w-0"><p className="truncate text-sm font-black text-slate-950">Жангак • Учитель</p><p className="truncate text-xs text-slate-500">Кабинет преподавателя</p></div>
           </div>
           <div className="flex items-center gap-1">
-            <button type="button" onClick={() => void onRefresh()} disabled={refreshing} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-[#1B4FD8] hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60" aria-label="Обновить данные">
+            <button type="button" onClick={() => void onRefresh()} disabled={refreshing} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-[#1B3F92] hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60" aria-label="Обновить данные">
               <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} aria-hidden="true" /><span className="hidden sm:inline">Обновить</span>
             </button>
             <button type="button" onClick={() => void logout()} aria-label="Выйти" className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600"><LogOut size={20} aria-hidden="true" /></button>

@@ -61,7 +61,7 @@ export default function OnboardingPage() {
   const isLast = current === slides.length - 1
 
   return (
-    <main className="fixed inset-0 overflow-y-auto bg-[#1B4FD8] text-white">
+    <main className="fixed inset-0 overflow-y-auto bg-[#1B3F92] text-white">
       <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))]">
         <header className="flex min-h-12 items-center justify-between">
           {current > 0 ? (
@@ -125,7 +125,7 @@ export default function OnboardingPage() {
           <button
             type="button"
             onClick={next}
-            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 text-base font-extrabold text-[#1B4FD8] shadow-lg shadow-blue-950/15 transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/40"
+            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 text-base font-extrabold text-[#1B3F92] shadow-lg shadow-blue-950/15 transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/40"
           >
             {isLast ? 'Баштоо' : 'Кийинки'}
             <ArrowRight size={20} strokeWidth={2.5} aria-hidden="true" />

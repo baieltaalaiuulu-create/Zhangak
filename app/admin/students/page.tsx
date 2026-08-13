@@ -156,7 +156,7 @@ export default function AdminStudentsPage() {
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: 'Всего доступно', value: stats.total, color: '#1B4FD8' },
+            { label: 'Всего доступно', value: stats.total, color: '#1B3F92' },
             { label: 'Активны', value: stats.active, color: '#10B981' },
             { label: 'Заблокированы', value: stats.blocked, color: '#EF4444' },
             { label: 'Ученики', value: stats.students, color: '#7C3AED' },
@@ -178,15 +178,15 @@ export default function AdminStudentsPage() {
           <div className="relative flex-1">
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
             <input value={search} onChange={event => setSearch(event.target.value)} placeholder="Поиск: имя, email или телефон"
-              className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+              className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
           </div>
           <select value={roleFilter} onChange={event => setRoleFilter(event.target.value as 'all' | AccountRole)}
-            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20">
+            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20">
             <option value="all">Все роли</option>
             {visibleRoles.map(role => <option key={role} value={role}>{ACCOUNT_ROLE_LABELS[role]}</option>)}
           </select>
           <select value={statusFilter} onChange={event => setStatusFilter(event.target.value as 'all' | 'active' | 'blocked')}
-            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20">
+            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20">
             <option value="all">Все статусы</option>
             <option value="active">Активные</option>
             <option value="blocked">Заблокированные</option>
@@ -215,7 +215,7 @@ export default function AdminStudentsPage() {
                 <tr key={account.id} className={`border-b border-gray-100 last:border-0 hover:bg-gray-50 ${index % 2 === 1 ? 'bg-gray-50/40' : ''}`}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1B4FD8] text-xs font-bold text-white">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1B3F92] text-xs font-bold text-white">
                         {account.fullName.slice(0, 1).toUpperCase()}
                       </div>
                       <div className="min-w-0">

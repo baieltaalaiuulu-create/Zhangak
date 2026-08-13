@@ -21,7 +21,7 @@ export default function LessonsBanner({ completed, total, streak, targetScore }:
         <div className="min-w-0">
           <h1 className="flex items-center gap-2 text-lg font-bold text-gray-900"><BookOpen size={20} aria-hidden="true" />Мои уроки</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Пройдено <span className="font-bold text-[#1B4FD8]">{completed}</span> из {total} уроков
+            Пройдено <span className="font-bold text-[#1B3F92]">{completed}</span> из {total} уроков
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap shrink-0">
@@ -49,7 +49,7 @@ export default function LessonsBanner({ completed, total, streak, targetScore }:
         </div>
         <div className="h-3 rounded-full bg-gray-100 overflow-hidden">
           <div
-            className="h-full rounded-full bg-[#1B4FD8] transition-all duration-700"
+            className="h-full rounded-full bg-[#1B3F92] transition-all duration-700"
             style={{ width: `${pct}%` }}
           />
         </div>

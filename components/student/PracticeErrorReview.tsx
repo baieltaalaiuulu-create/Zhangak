@@ -56,7 +56,7 @@ export default function PracticeErrorReview({ wrongAnswers, onBack, practiceLink
 
       <a
         href={practiceLink}
-        className="block w-full rounded-xl bg-[#1B4FD8] py-3 text-center text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700"
+        className="block w-full rounded-xl bg-[#1B3F92] py-3 text-center text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700"
       >
         Тренироваться по этим темам →
       </a>

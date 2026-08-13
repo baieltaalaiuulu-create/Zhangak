@@ -14,7 +14,7 @@ export default function ScreenPlaceholder({ icon, title, description }: Props) {
   return (
     <View style={styles.screen}>
       <View style={styles.iconCircle}>
-        <Ionicons name={icon} size={28} color="#1B4FD8" />
+        <Ionicons name={icon} size={28} color="#1B3F92" />
       </View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>

@@ -8,7 +8,7 @@ interface Props {
 
 export default function MyRankCard({ rank, score, delta }: Props) {
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-[#1B4FD8] to-[#2F6BFF] p-6 text-white">
+    <div className="rounded-2xl bg-gradient-to-br from-[#1B3F92] to-[#2F6BFF] p-6 text-white">
       <div className="flex items-center gap-2 text-sm font-semibold text-white/80">
         <Trophy size={16} /> Ваш результат
       </div>

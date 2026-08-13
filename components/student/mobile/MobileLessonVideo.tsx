@@ -102,7 +102,7 @@ export default function MobileLessonVideo({ videoUrl, title, watched, onWatched 
               className="h-full w-full object-cover opacity-80"
             />
             <span className="absolute inset-0 flex items-center justify-center">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-[#1B4FD8] shadow-lg transition-transform group-active:scale-95">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-[#1B3F92] shadow-lg transition-transform group-active:scale-95">
                 <Play size={26} fill="currentColor" />
               </span>
             </span>

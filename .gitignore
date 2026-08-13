@@ -25,6 +25,10 @@
 *.sql.gz
 *.dump
 
+# Local text extraction of owner-provided PDFs. The source files live outside
+# the repository and must not be copied into Git without explicit approval.
+/docs/sources/
+
 # misc
 .DS_Store
 *.pem

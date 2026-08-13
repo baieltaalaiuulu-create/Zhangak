@@ -30,7 +30,7 @@ export default function AiMentorChatPage() {
         </Link>
 
         <div className="mt-4 overflow-hidden rounded-3xl border border-indigo-100 bg-white shadow-sm">
-          <div className="border-b border-indigo-100 bg-gradient-to-br from-[#0D1E4A] via-[#1B4FD8] to-[#6C3DE0] px-6 py-8 text-white sm:px-9 sm:py-10">
+          <div className="border-b border-indigo-100 bg-gradient-to-br from-[#0D1E4A] via-[#1B3F92] to-[#6C3DE0] px-6 py-8 text-white sm:px-9 sm:py-10">
             <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/20">
               <BrainCircuit size={25} aria-hidden="true" />
             </span>
@@ -48,7 +48,7 @@ export default function AiMentorChatPage() {
 
             <ul className="space-y-3" aria-label="Что появится в AI-коуче">
               <li className="flex gap-3 rounded-2xl border border-slate-100 p-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#1B4FD8]">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#1B3F92]">
                   <BookOpen size={18} aria-hidden="true" />
                 </span>
                 <span>
@@ -75,7 +75,7 @@ export default function AiMentorChatPage() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <Link
                 href="/student/online/lessons"
-                className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-[#1B4FD8] px-4 text-sm font-bold text-white transition-colors hover:bg-blue-700"
+                className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white transition-colors hover:bg-blue-700"
               >
                 Открыть уроки
               </Link>

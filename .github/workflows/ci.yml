@@ -63,6 +63,9 @@ jobs:
       - name: Check admin learning journey invariants
         run: npm run check:admin-learning-journey
 
+      - name: Check first-party group administration journey
+        run: npm run check:admin-groups-journey
+
       - name: Check legacy admin cutover invariants
         run: npm run check:admin-legacy-cutover
 
@@ -77,6 +80,7 @@ jobs:
           npm --prefix backend ci
           npm --prefix backend run check
           npm --prefix backend test
+          npm --prefix backend run migration:preflight -- --help
           npm run check:own-backend
 
       - name: Verify the first-party web data plane

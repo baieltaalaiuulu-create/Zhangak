@@ -92,7 +92,7 @@ export default function PracticeResultsScreen({
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-gray-900">Ошибки ({wrongAnswers.length})</h3>
-            <button type="button" onClick={onReview} className="text-xs font-bold text-[#1B4FD8] hover:underline">
+            <button type="button" onClick={onReview} className="text-xs font-bold text-[#1B3F92] hover:underline">
               Смотреть разбор →
             </button>
           </div>
@@ -137,7 +137,7 @@ export default function PracticeResultsScreen({
         {nextLessonHref && (
           <a
             href={nextLessonHref}
-            className="flex-1 rounded-xl bg-[#1B4FD8] py-3 text-center text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700"
+            className="flex-1 rounded-xl bg-[#1B3F92] py-3 text-center text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700"
           >
             {nextLessonTitle ? `Следующий урок: ${nextLessonTitle}` : 'Следующий урок'}
           </a>

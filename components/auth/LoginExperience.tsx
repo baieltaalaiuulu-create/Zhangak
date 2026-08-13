@@ -125,7 +125,7 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
   return (
     <main className={`min-h-dvh px-4 py-4 sm:px-6 sm:py-8 ${isAdmin ? 'bg-[#07142E]' : 'bg-[#EEF4FF]'}`}>
       <div className="mx-auto grid min-h-[calc(100dvh-2rem)] w-full max-w-6xl overflow-hidden rounded-[28px] bg-white shadow-[0_28px_80px_rgba(13,30,74,0.16)] sm:min-h-[calc(100dvh-4rem)] lg:grid-cols-2">
-        <section className={`relative flex flex-col overflow-hidden p-12 text-white max-lg:hidden ${isAdmin ? 'bg-[#0D1E4A]' : 'bg-[#1B4FD8]'}`}>
+        <section className={`relative flex flex-col overflow-hidden p-12 text-white max-lg:hidden ${isAdmin ? 'bg-[#0D1E4A]' : 'bg-[#1B3F92]'}`}>
           <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full border border-white/10" />
           <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-white/[0.05]" />
 
@@ -177,15 +177,15 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
               <a href={marketingHref} className="inline-flex items-center gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100">
                 {/* eslint-disable-next-line @next/next/no-img-element -- local brand asset */}
                 <img src="/images/logo.png" alt="Логотип Жангак" className="h-11 w-11 rounded-xl object-cover shadow-sm" />
-                <span className={`text-lg font-black tracking-wide ${isAdmin ? 'text-[#0D1E4A]' : 'text-[#1B4FD8]'}`}>ZHANGAK</span>
+                <span className={`text-lg font-black tracking-wide ${isAdmin ? 'text-[#0D1E4A]' : 'text-[#1B3F92]'}`}>ZHANGAK</span>
               </a>
-              <span className={`rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] ${isAdmin ? 'bg-slate-100 text-slate-600' : 'bg-blue-50 text-[#1B4FD8]'}`}>
+              <span className={`rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] ${isAdmin ? 'bg-slate-100 text-slate-600' : 'bg-blue-50 text-[#1B3F92]'}`}>
                 {isAdmin ? 'Админ' : 'Платформа'}
               </span>
             </div>
 
             <div className="mt-9 lg:mt-0">
-              <p className={`text-xs font-extrabold uppercase tracking-[0.18em] ${isAdmin ? 'text-slate-500' : 'text-[#1B4FD8]'}`}>
+              <p className={`text-xs font-extrabold uppercase tracking-[0.18em] ${isAdmin ? 'text-slate-500' : 'text-[#1B3F92]'}`}>
                 {isAdmin ? 'Для команды Жангак' : 'Для учеников и преподавателей'}
               </p>
               <h1 className="mt-3 text-3xl font-black tracking-[-0.035em] text-[#0D1E4A] sm:text-4xl">
@@ -223,7 +223,7 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
                   placeholder={isAdmin ? 'work@example.com' : 'email@example.com'}
                   required
                   aria-invalid={!!error}
-                  className="min-h-14 w-full rounded-2xl border border-slate-200 bg-[#FAFBFF] px-4 text-base text-[#0D1E4A] outline-none transition placeholder:text-slate-400 focus:border-[#1B4FD8] focus:ring-4 focus:ring-blue-100"
+                  className="min-h-14 w-full rounded-2xl border border-slate-200 bg-[#FAFBFF] px-4 text-base text-[#0D1E4A] outline-none transition placeholder:text-slate-400 focus:border-[#1B3F92] focus:ring-4 focus:ring-blue-100"
                 />
               </div>
 
@@ -243,12 +243,12 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
                     placeholder="Введите пароль"
                     required
                     aria-invalid={!!error}
-                    className="min-h-14 w-full rounded-2xl border border-slate-200 bg-[#FAFBFF] py-3 pl-4 pr-14 text-base text-[#0D1E4A] outline-none transition placeholder:text-slate-400 focus:border-[#1B4FD8] focus:ring-4 focus:ring-blue-100"
+                    className="min-h-14 w-full rounded-2xl border border-slate-200 bg-[#FAFBFF] py-3 pl-4 pr-14 text-base text-[#0D1E4A] outline-none transition placeholder:text-slate-400 focus:border-[#1B3F92] focus:ring-4 focus:ring-blue-100"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(value => !value)}
-                    className="absolute inset-y-0 right-1 flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-400 transition-colors hover:text-[#1B4FD8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B4FD8]"
+                    className="absolute inset-y-0 right-1 flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-400 transition-colors hover:text-[#1B3F92] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3F92]"
                     aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
                     aria-pressed={showPassword}
                   >
@@ -267,7 +267,7 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
               <button
                 type="submit"
                 disabled={loading}
-                className={`flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl px-5 text-base font-extrabold text-white shadow-lg transition-all active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 ${isAdmin ? 'bg-[#0D1E4A] shadow-slate-200 hover:bg-[#152A5A]' : 'bg-[#1B4FD8] shadow-blue-200 hover:bg-[#1744BC]'}`}
+                className={`flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl px-5 text-base font-extrabold text-white shadow-lg transition-all active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 ${isAdmin ? 'bg-[#0D1E4A] shadow-slate-200 hover:bg-[#152A5A]' : 'bg-[#1B3F92] shadow-blue-200 hover:bg-[#1744BC]'}`}
               >
                 {loading ? <LoaderCircle size={20} className="animate-spin" aria-hidden="true" /> : <LogIn size={20} aria-hidden="true" />}
                 {loading ? 'Входим…' : 'Войти'}
@@ -285,12 +285,12 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
               </div>
             ) : (
               <a
-                href="https://wa.me/996502077326"
+                href="https://wa.me/996502245245"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-6 flex min-h-14 items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#1B4FD8] shadow-sm">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#1B3F92] shadow-sm">
                   <MessageCircle size={20} aria-hidden="true" />
                 </span>
                 <span className="min-w-0">
@@ -300,7 +300,7 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
               </a>
             )}
 
-            <a href={marketingHref} className="mx-auto mt-7 flex w-fit min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-slate-500 transition-colors hover:text-[#1B4FD8] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100">
+            <a href={marketingHref} className="mx-auto mt-7 flex w-fit min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-slate-500 transition-colors hover:text-[#1B3F92] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100">
               <ArrowLeft size={17} aria-hidden="true" />
               На главный сайт
             </a>

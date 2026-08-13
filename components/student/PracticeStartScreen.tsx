@@ -57,7 +57,7 @@ export default function PracticeStartScreen({ test, questionCount, onStart, star
           <ul className="mt-2 space-y-2">
             {RULES.map(rule => (
               <li key={rule} className="flex items-start gap-2 text-sm text-gray-600">
-                <span className="mt-0.5 text-[#1B4FD8]">•</span>
+                <span className="mt-0.5 text-[#1B3F92]">•</span>
                 {rule}
               </li>
             ))}
@@ -68,7 +68,7 @@ export default function PracticeStartScreen({ test, questionCount, onStart, star
           type="button"
           onClick={onStart}
           disabled={starting}
-          className="mt-8 w-full rounded-xl bg-[#1B4FD8] py-3.5 text-center text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+          className="mt-8 w-full rounded-xl bg-[#1B3F92] py-3.5 text-center text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
         >
           {starting ? 'Открываем тест…' : 'Начать тест'}
         </button>

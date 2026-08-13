@@ -44,7 +44,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
       <button
         type="button"
         onClick={onRetry}
-        className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1B4FD8] px-4 text-sm font-bold text-white transition-colors hover:bg-blue-700"
+        className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white transition-colors hover:bg-blue-700"
       >
         <RefreshCw size={16} aria-hidden="true" />
         Повторить
@@ -94,7 +94,7 @@ function Catalog({
             {description}
           </p>
         </div>
-        <Link href="/student/online" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-[#1B4FD8] hover:bg-blue-50">
+        <Link href="/student/online" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-[#1B3F92] hover:bg-blue-50">
           <ArrowLeft size={16} aria-hidden="true" />
           На главную
         </Link>
@@ -115,10 +115,10 @@ function Catalog({
               key={test.id}
               type="button"
               onClick={() => onSelect(test)}
-              className="group flex min-h-52 flex-col rounded-2xl border border-gray-100 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B4FD8]"
+              className="group flex min-h-52 flex-col rounded-2xl border border-gray-100 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3F92]"
             >
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-[#1B4FD8]">{subjectLabel(test.subject)}</span>
+                <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-[#1B3F92]">{subjectLabel(test.subject)}</span>
                 <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">{testTypeLabel(test.testType)}</span>
               </div>
               <h2 className="mt-4 text-base font-black leading-snug text-gray-900">{test.title}</h2>
@@ -127,7 +127,7 @@ function Catalog({
                 <span className="inline-flex items-center gap-1.5"><FileText size={14} aria-hidden="true" />{test.questionCount} вопросов</span>
                 {test.timeLimitSeconds && <span className="inline-flex items-center gap-1.5"><Clock3 size={14} aria-hidden="true" />{Math.ceil(test.timeLimitSeconds / 60)} мин</span>}
               </div>
-              <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-[#1B4FD8]">
+              <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-[#1B3F92]">
                 Открыть <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
               </span>
             </button>

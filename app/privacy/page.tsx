@@ -54,7 +54,7 @@ const SECTIONS: { title: string; body: string[] }[] = [
   {
     title: '8. Контакты',
     body: [
-      'По всем вопросам, связанным с обработкой персональных данных, вы можете связаться с нами через WhatsApp: +996 502 077 326, или посетить наш офис по адресу: Бишкек, ул. Горького 108.',
+      'По всем вопросам, связанным с обработкой персональных данных, вы можете связаться с нами через WhatsApp: +996 502 245 245. Актуальный адрес ближайшей группы уточняйте у команды Жангак.',
     ],
   },
 ]
@@ -66,7 +66,7 @@ export default function PrivacyPage() {
         {/* /landing, not '/' — '/' is now the root smart router (splash +
             auth check), not the marketing page itself, so a direct link
             meant to show that content has to name it explicitly. */}
-        <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#1B4FD8', fontSize: '13px', fontWeight: 700, textDecoration: 'none', marginBottom: '28px' }}>
+        <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#1B3F92', fontSize: '13px', fontWeight: 700, textDecoration: 'none', marginBottom: '28px' }}>
           ← На главную
         </Link>
 

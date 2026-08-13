@@ -4,7 +4,7 @@ export default function AITypingIndicator() {
       {[0, 1, 2].map(i => (
         <span
           key={i}
-          className="animate-ai-typing-dot h-2 w-2 rounded-full bg-[#1B4FD8]"
+          className="animate-ai-typing-dot h-2 w-2 rounded-full bg-[#1B3F92]"
           style={{ animationDelay: `${i * 0.15}s` }}
         />
       ))}

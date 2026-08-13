@@ -40,7 +40,7 @@ export default function MarketingFooter() {
             </p>
             <a
               href={platformHref}
-              className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B4FD8] px-5 text-sm font-extrabold text-white shadow-lg shadow-blue-950/30 transition-colors hover:bg-[#2860E3] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/40"
+              className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B3F92] px-5 text-sm font-extrabold text-white shadow-lg shadow-blue-950/30 transition-colors hover:bg-[#2860E3] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/40"
             >
               Открыть учебную платформу
               <ArrowRight size={17} aria-hidden="true" />
@@ -68,21 +68,21 @@ export default function MarketingFooter() {
           <div>
             <h2 className="text-xs font-extrabold uppercase tracking-[0.18em] text-slate-400">Контакты</h2>
             <div className="mt-5 space-y-4 text-sm font-semibold text-slate-200">
-              <a href="tel:+996502077326" className="flex min-h-10 items-center gap-3 rounded-lg transition-colors hover:text-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
+              <a href="tel:+996502245245" className="flex min-h-10 items-center gap-3 rounded-lg transition-colors hover:text-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
                 <Phone size={18} className="shrink-0 text-blue-300" aria-hidden="true" />
-                +996 502 077 326
+                +996 502 245 245
               </a>
               <div className="flex min-h-10 items-center gap-3">
                 <MapPin size={18} className="shrink-0 text-blue-300" aria-hidden="true" />
-                Бишкек, ул. Горького, 108
+                Адрес ближайшей группы — в WhatsApp
               </div>
               <div className="flex min-h-10 items-center gap-3">
                 <Clock3 size={18} className="shrink-0 text-blue-300" aria-hidden="true" />
-                Понедельник–пятница, 09:00–19:00
+                Напишите нам в WhatsApp
               </div>
             </div>
             <a
-              href="https://wa.me/996502077326"
+              href="https://wa.me/996502245245"
               target="_blank"
               rel="noopener noreferrer"
               className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/[0.06] px-4 text-sm font-bold text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/40"

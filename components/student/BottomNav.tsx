@@ -45,10 +45,10 @@ export default function BottomNav() {
             aria-current={isActive ? 'page' : undefined}
             className="group flex min-h-16 min-w-11 flex-1 flex-col items-center justify-center gap-1 px-0.5"
           >
-            <span className={`flex h-7 min-w-10 items-center justify-center rounded-full px-2 transition-colors ${isActive ? 'bg-blue-50 text-[#1B4FD8]' : 'text-gray-400 group-active:bg-gray-50'}`}>
+            <span className={`flex h-7 min-w-10 items-center justify-center rounded-full px-2 transition-colors ${isActive ? 'bg-blue-50 text-[#1B3F92]' : 'text-gray-400 group-active:bg-gray-50'}`}>
               <Icon size={21} strokeWidth={isActive ? 2.5 : 2} aria-hidden="true" />
             </span>
-            <span className={`max-w-full truncate text-[10px] leading-none ${isActive ? 'font-bold text-[#1B4FD8]' : 'font-medium text-gray-500'}`}>
+            <span className={`max-w-full truncate text-[10px] leading-none ${isActive ? 'font-bold text-[#1B3F92]' : 'font-medium text-gray-500'}`}>
               {item.label}
             </span>
           </Link>

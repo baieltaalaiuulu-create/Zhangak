@@ -71,7 +71,7 @@ export default function FirstLoginInstallOverlay({ ready }: Props) {
           <button
             type="button"
             onClick={handleInstall}
-            className="mt-10 flex h-14 w-full max-w-xs items-center justify-center gap-2 rounded-2xl bg-[#1B4FD8] text-base font-bold text-white transition-colors active:bg-blue-700"
+            className="mt-10 flex h-14 w-full max-w-xs items-center justify-center gap-2 rounded-2xl bg-[#1B3F92] text-base font-bold text-white transition-colors active:bg-blue-700"
           >
             Установить
           </button>

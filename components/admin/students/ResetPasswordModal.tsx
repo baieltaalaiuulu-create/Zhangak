@@ -61,14 +61,14 @@ export default function ResetPasswordModal({ account, onClose, onSaved }: Props)
               <label className="mb-1 block text-xs font-semibold text-gray-500">Новый пароль *</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={`Мин. ${MIN_PASSWORD_LENGTH} символов`}
                 autoComplete="new-password"
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
             </div>
 
             {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">{error}</div>}
 
             <div className="flex gap-2 pt-2">
               <button type="button" onClick={handleSubmit} disabled={saving}
-                className="rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60">
+                className="rounded-xl bg-[#1B3F92] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60">
                 {saving ? 'Сохранение...' : 'Сохранить'}
               </button>
               <button type="button" onClick={onClose}

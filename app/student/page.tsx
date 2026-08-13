@@ -80,7 +80,7 @@ export default function OfflineStudentPage() {
           </span>
           <h1 className="mt-4 text-lg font-extrabold text-slate-900">Кабинет не загрузился</h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">{error ?? 'Попробуй ещё раз.'}</p>
-          <button type="button" onClick={() => void retry()} className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#1B4FD8] px-5 text-sm font-bold text-white">
+          <button type="button" onClick={() => void retry()} className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white">
             <RefreshCw size={17} aria-hidden="true" />
             Повторить
           </button>

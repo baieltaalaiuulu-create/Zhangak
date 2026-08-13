@@ -21,10 +21,10 @@ export default function IOSInstallSteps({ className = '' }: Props) {
         const Icon = step.icon
         return (
           <div key={step.text} className="flex items-center gap-3">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EEF2FF] text-xs font-bold text-[#1B4FD8]">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EEF2FF] text-xs font-bold text-[#1B3F92]">
               {i + 1}
             </span>
-            <Icon size={18} className="shrink-0 text-[#1B4FD8]" />
+            <Icon size={18} className="shrink-0 text-[#1B3F92]" />
             <span className="text-sm text-gray-700">{step.text}</span>
           </div>
         )

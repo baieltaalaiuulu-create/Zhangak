@@ -12,7 +12,7 @@ export default function MobileAIHelp({ lessonTitle }: Props) {
   return (
     <section className="rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm" aria-labelledby="mobile-ai-help-title">
       <div className="flex items-start gap-2">
-        <Sparkles size={17} className="mt-0.5 shrink-0 text-[#1B4FD8]" aria-hidden="true" />
+        <Sparkles size={17} className="mt-0.5 shrink-0 text-[#1B3F92]" aria-hidden="true" />
         <div>
           <h2 id="mobile-ai-help-title" className="text-sm font-bold text-[#0D1E4A]">AI-помощник обновляется</h2>
           <p className="mt-1 text-xs leading-5 text-gray-500">
@@ -22,7 +22,7 @@ export default function MobileAIHelp({ lessonTitle }: Props) {
       </div>
       <Link
         href="/student/online/practice"
-        className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-[#EEF2FF] px-3 text-xs font-bold text-[#1B4FD8]"
+        className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-[#EEF2FF] px-3 text-xs font-bold text-[#1B3F92]"
       >
         Открыть тренажёр по теме
       </Link>

@@ -86,7 +86,7 @@ function SectionTitle({ title, description }: { title: string; description: stri
 function EmptyState({ icon: Icon, title, text }: { icon: LucideIcon; title: string; text: string }) {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-      <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#1B4FD8]">
+      <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#1B3F92]">
         <Icon size={24} aria-hidden="true" />
       </span>
       <h2 className="mt-4 text-base font-extrabold text-slate-900">{title}</h2>
@@ -163,7 +163,7 @@ function GradeCard({ grade }: { grade: OfflineGrade }) {
     <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <h3 className="font-extrabold text-slate-900">{grade.lessonTitle}</h3>
-        {grade.total != null && <span className="rounded-xl bg-blue-50 px-3 py-1.5 text-sm font-black text-[#1B4FD8]">{grade.total}</span>}
+        {grade.total != null && <span className="rounded-xl bg-blue-50 px-3 py-1.5 text-sm font-black text-[#1B3F92]">{grade.total}</span>}
       </div>
       {scores.length > 0 ? (
         <dl className="mt-3 grid grid-cols-2 gap-2">
@@ -220,7 +220,7 @@ function HomeSection({ dashboard, goTo }: { dashboard: OfflineStudentDashboard; 
               <span className="pb-1 text-sm font-semibold text-slate-500">за отмеченные уроки</span>
             </div>
             <p className="mt-3 text-sm text-slate-500">Был: {summary.present} • Опоздал: {summary.late} • Пропустил: {summary.absent}</p>
-            <button type="button" onClick={() => goTo('attendance')} className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#1B4FD8]">
+            <button type="button" onClick={() => goTo('attendance')} className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#1B3F92]">
               Подробнее <ArrowRight size={16} aria-hidden="true" />
             </button>
           </section>
@@ -233,7 +233,7 @@ function HomeSection({ dashboard, goTo }: { dashboard: OfflineStudentDashboard; 
             <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Домашнее задание</p>
             <h2 className="mt-1 text-lg font-black text-slate-900">Что сделать дальше</h2>
           </div>
-          <button type="button" onClick={() => goTo('homework')} className="min-h-11 text-sm font-bold text-[#1B4FD8]">Все задания</button>
+          <button type="button" onClick={() => goTo('homework')} className="min-h-11 text-sm font-bold text-[#1B3F92]">Все задания</button>
         </div>
         {pendingHomework[0] ? <HomeworkCard item={pendingHomework[0]} /> : <EmptyState icon={ClipboardCheck} title="Домашние задания пока не подключены" text="Этот раздел появится после отдельного переноса заданий в наш сервер. Сейчас кабинет показывает только подтверждённую программу курса." />}
       </section>
@@ -287,7 +287,7 @@ function AttendanceSection({ lessons }: { lessons: OfflineLesson[] }) {
           ['Пропустил', String(summary.absent), XCircle],
         ].map(([label, value, RawIcon]) => {
           const Icon = RawIcon as LucideIcon
-          return <div key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><Icon size={19} className="text-[#1B4FD8]" /><p className="mt-3 text-2xl font-black text-slate-950">{String(value)}</p><p className="mt-1 text-xs font-semibold text-slate-500">{String(label)}</p></div>
+          return <div key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><Icon size={19} className="text-[#1B3F92]" /><p className="mt-3 text-2xl font-black text-slate-950">{String(value)}</p><p className="mt-1 text-xs font-semibold text-slate-500">{String(label)}</p></div>
         })}
       </div>
       {recorded.length === 0 ? <EmptyState icon={UserRoundCheck} title="Посещаемость ещё переносится" text="В первой версии офлайн-кабинета мы не показываем старые или выдуманные отметки. Они появятся только после переноса в наш сервер." /> : <div className="space-y-3">{recorded.map(lesson => <LessonRow key={lesson.id} lesson={lesson} />)}</div>}
@@ -317,7 +317,7 @@ function PracticeSection({ canUseOnline }: { canUseOnline: boolean }) {
       {canUseOnline ? (
         <div className="grid gap-4 sm:grid-cols-2">
           <Link href="/student/online/practice" className="rounded-3xl bg-orange-500 p-5 text-white shadow-lg shadow-orange-500/15"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15"><PenLine size={22} /></span><h2 className="mt-4 text-xl font-black">Свободная практика</h2><p className="mt-2 text-sm leading-6 text-orange-50">Выбери предмет и тему, затем решай в своём темпе.</p><span className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-orange-600">Открыть <ArrowRight size={16} /></span></Link>
-          <Link href="/student/online/practice?type=mock" className="rounded-3xl bg-[#1B4FD8] p-5 text-white shadow-lg shadow-blue-700/15"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15"><CalendarDays size={22} /></span><h2 className="mt-4 text-xl font-black">Пробный тест</h2><p className="mt-2 text-sm leading-6 text-blue-50">Открой опубликованный пробный тест в общем тренажёре.</p><span className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-[#1B4FD8]">Открыть <PlayCircle size={17} /></span></Link>
+          <Link href="/student/online/practice?type=mock" className="rounded-3xl bg-[#1B3F92] p-5 text-white shadow-lg shadow-blue-700/15"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15"><CalendarDays size={22} /></span><h2 className="mt-4 text-xl font-black">Пробный тест</h2><p className="mt-2 text-sm leading-6 text-blue-50">Открой опубликованный пробный тест в общем тренажёре.</p><span className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-[#1B3F92]">Открыть <PlayCircle size={17} /></span></Link>
         </div>
       ) : <EmptyState icon={PenLine} title="Онлайн-тренажёр не подключён к аккаунту" text="Обратись к администратору, чтобы включить тип обучения «оба». Офлайн-данные при этом сохранятся." />}
     </div>
@@ -399,19 +399,19 @@ export default function OfflineStudentCabinet({ dashboard }: { dashboard: Offlin
     <div className="min-h-screen bg-[#F6F7FB] text-slate-900">
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#1B4FD8]"><Image src="/images/logo.png" alt="Жангак" width={40} height={40} className="h-full w-full object-cover" /></span><div className="min-w-0"><p className="truncate text-sm font-black text-slate-950">Жангак</p><p className="truncate text-xs text-slate-500">Офлайн-кабинет • {dashboard.group?.name ?? 'без группы'}</p></div></div>
+          <div className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#1B3F92]"><Image src="/images/logo.png" alt="Жангак" width={40} height={40} className="h-full w-full object-cover" /></span><div className="min-w-0"><p className="truncate text-sm font-black text-slate-950">Жангак</p><p className="truncate text-xs text-slate-500">Офлайн-кабинет • {dashboard.group?.name ?? 'без группы'}</p></div></div>
           <div className="flex items-center gap-1"><button type="button" onClick={() => setMenuOpen(true)} aria-label="Открыть все разделы" className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 lg:hidden"><Menu size={21} /></button><button type="button" onClick={() => void logout()} aria-label="Выйти" className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600"><LogOut size={20} /></button></div>
         </div>
       </header>
 
       <div className="mx-auto flex max-w-7xl gap-6 px-4 py-5 sm:px-6 lg:py-7">
-        <aside className="hidden w-60 shrink-0 lg:block"><nav aria-label="Разделы офлайн-кабинета" className="sticky top-24 space-y-1 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">{SECTIONS.map(item => { const Icon = item.icon; const active = section === item.id; return <button key={item.id} type="button" onClick={() => goTo(item.id)} aria-current={active ? 'page' : undefined} className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-bold ${active ? 'bg-blue-50 text-[#1B4FD8]' : 'text-slate-600 hover:bg-slate-50'}`}><Icon size={18} aria-hidden="true" />{item.label}</button> })}</nav></aside>
-        <main className="min-w-0 flex-1 pb-28 lg:pb-8" {...swipe}>{content}<div className="mt-7 flex items-center justify-between border-t border-slate-200 pt-4 lg:hidden"><button type="button" disabled={sectionIndex === 0} onClick={() => goTo(SECTIONS[sectionIndex - 1].id)} className="inline-flex min-h-11 items-center gap-1 text-sm font-bold text-slate-600 disabled:opacity-30"><ArrowLeft size={16} /> Назад</button><span className="text-xs font-semibold text-slate-400">{sectionIndex + 1} из {SECTIONS.length}</span><button type="button" disabled={sectionIndex === SECTIONS.length - 1} onClick={() => goTo(SECTIONS[sectionIndex + 1].id)} className="inline-flex min-h-11 items-center gap-1 text-sm font-bold text-[#1B4FD8] disabled:opacity-30">Дальше <ArrowRight size={16} /></button></div></main>
+        <aside className="hidden w-60 shrink-0 lg:block"><nav aria-label="Разделы офлайн-кабинета" className="sticky top-24 space-y-1 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">{SECTIONS.map(item => { const Icon = item.icon; const active = section === item.id; return <button key={item.id} type="button" onClick={() => goTo(item.id)} aria-current={active ? 'page' : undefined} className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-bold ${active ? 'bg-blue-50 text-[#1B3F92]' : 'text-slate-600 hover:bg-slate-50'}`}><Icon size={18} aria-hidden="true" />{item.label}</button> })}</nav></aside>
+        <main className="min-w-0 flex-1 pb-28 lg:pb-8" {...swipe}>{content}<div className="mt-7 flex items-center justify-between border-t border-slate-200 pt-4 lg:hidden"><button type="button" disabled={sectionIndex === 0} onClick={() => goTo(SECTIONS[sectionIndex - 1].id)} className="inline-flex min-h-11 items-center gap-1 text-sm font-bold text-slate-600 disabled:opacity-30"><ArrowLeft size={16} /> Назад</button><span className="text-xs font-semibold text-slate-400">{sectionIndex + 1} из {SECTIONS.length}</span><button type="button" disabled={sectionIndex === SECTIONS.length - 1} onClick={() => goTo(SECTIONS[sectionIndex + 1].id)} className="inline-flex min-h-11 items-center gap-1 text-sm font-bold text-[#1B3F92] disabled:opacity-30">Дальше <ArrowRight size={16} /></button></div></main>
       </div>
 
-      <nav aria-label="Быстрая навигация" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">{SECTIONS.filter(item => ['home', 'schedule', 'attendance', 'progress', 'homework'].includes(item.id)).map(item => { const Icon = item.icon; const active = section === item.id; return <button key={item.id} type="button" onClick={() => goTo(item.id)} aria-current={active ? 'page' : undefined} className={`flex min-h-16 min-w-11 flex-col items-center justify-center gap-1 px-1 text-[10px] font-bold ${active ? 'text-[#1B4FD8]' : 'text-slate-500'}`}><Icon size={20} strokeWidth={active ? 2.5 : 2} /><span className="max-w-full truncate">{item.shortLabel}</span></button> })}</nav>
+      <nav aria-label="Быстрая навигация" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">{SECTIONS.filter(item => ['home', 'schedule', 'attendance', 'progress', 'homework'].includes(item.id)).map(item => { const Icon = item.icon; const active = section === item.id; return <button key={item.id} type="button" onClick={() => goTo(item.id)} aria-current={active ? 'page' : undefined} className={`flex min-h-16 min-w-11 flex-col items-center justify-center gap-1 px-1 text-[10px] font-bold ${active ? 'text-[#1B3F92]' : 'text-slate-500'}`}><Icon size={20} strokeWidth={active ? 2.5 : 2} /><span className="max-w-full truncate">{item.shortLabel}</span></button> })}</nav>
 
-      {menuOpen && <div className="fixed inset-0 z-50 bg-slate-950/40 lg:hidden" onClick={() => setMenuOpen(false)}><div role="dialog" aria-modal="true" aria-label="Все разделы" className="absolute inset-x-3 top-3 rounded-3xl bg-white p-4 shadow-2xl" onClick={event => event.stopPropagation()}><div className="flex items-center justify-between"><h2 className="text-lg font-black">Все разделы</h2><button type="button" onClick={() => setMenuOpen(false)} aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500"><X size={21} /></button></div><div className="mt-3 grid grid-cols-2 gap-2">{SECTIONS.map(item => { const Icon = item.icon; return <button key={item.id} type="button" onClick={() => goTo(item.id)} className={`flex min-h-14 items-center gap-2 rounded-2xl p-3 text-left text-sm font-bold ${section === item.id ? 'bg-blue-50 text-[#1B4FD8]' : 'bg-slate-50 text-slate-700'}`}><Icon size={19} />{item.label}</button> })}</div></div></div>}
+      {menuOpen && <div className="fixed inset-0 z-50 bg-slate-950/40 lg:hidden" onClick={() => setMenuOpen(false)}><div role="dialog" aria-modal="true" aria-label="Все разделы" className="absolute inset-x-3 top-3 rounded-3xl bg-white p-4 shadow-2xl" onClick={event => event.stopPropagation()}><div className="flex items-center justify-between"><h2 className="text-lg font-black">Все разделы</h2><button type="button" onClick={() => setMenuOpen(false)} aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500"><X size={21} /></button></div><div className="mt-3 grid grid-cols-2 gap-2">{SECTIONS.map(item => { const Icon = item.icon; return <button key={item.id} type="button" onClick={() => goTo(item.id)} className={`flex min-h-14 items-center gap-2 rounded-2xl p-3 text-left text-sm font-bold ${section === item.id ? 'bg-blue-50 text-[#1B3F92]' : 'bg-slate-50 text-slate-700'}`}><Icon size={19} />{item.label}</button> })}</div></div></div>}
     </div>
   )
 }

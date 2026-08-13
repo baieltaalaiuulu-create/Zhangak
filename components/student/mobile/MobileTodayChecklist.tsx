@@ -69,7 +69,7 @@ export default function MobileTodayChecklist({
               aria-label={`${row.label}: ${row.done ? 'выполнено' : 'перейти к заданию'}`}
               className="flex min-h-14 items-center gap-3 rounded-xl px-2 transition-colors active:bg-gray-50"
             >
-              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${row.done ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-[#1B4FD8]'}`}>
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${row.done ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-[#1B3F92]'}`}>
                 {row.done ? <CheckCircle2 size={21} aria-hidden="true" /> : <Icon size={20} aria-hidden="true" />}
               </span>
               <span className={`min-w-0 flex-1 text-sm font-semibold ${row.done ? 'text-gray-500' : 'text-[#191B23]'}`}>

@@ -21,7 +21,7 @@ export default function MobileLeaderboardCard({ rank, inTopTen, xpToNextRank, hr
             ? `До ТОП-10: ${xpToNextRank} XP`
             : 'Зарабатывай XP, чтобы попасть в топ'}
       </p>
-      <Link href={href} className="mt-2 inline-block text-xs font-semibold text-[#1B4FD8]">
+      <Link href={href} className="mt-2 inline-block text-xs font-semibold text-[#1B3F92]">
         Смотреть рейтинг →
       </Link>
     </div>

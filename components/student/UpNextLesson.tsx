@@ -44,7 +44,7 @@ export default function UpNextLesson({ lesson, progress }: Props) {
               <circle cx="24" cy="24" r="20" fill="none" stroke="#e5e7eb" strokeWidth="4" />
               <circle
                 cx="24" cy="24" r="20" fill="none"
-                stroke="#1B4FD8" strokeWidth="4"
+                stroke="#1B3F92" strokeWidth="4"
                 strokeDasharray={`${circumference}`}
                 strokeDashoffset={`${circumference * (1 - progress / 100)}`}
                 strokeLinecap="round"

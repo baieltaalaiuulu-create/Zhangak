@@ -106,7 +106,7 @@ export default function ProfileHeader({
         onClick={handleAvatarClick}
         disabled={savingAvatar}
         aria-label="Изменить фото профиля"
-        className="group relative mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-[#1B4FD8] text-2xl font-extrabold text-white"
+        className="group relative mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-[#1B3F92] text-2xl font-extrabold text-white"
       >
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- user-provided HTTPS avatar domains are not known at build time
@@ -131,7 +131,7 @@ export default function ProfileHeader({
             onChange={event => setAvatarInput(event.target.value)}
             placeholder="https://..."
             autoComplete="url"
-            className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-[#191B23] focus:outline-none focus:ring-2 focus:ring-[#1B4FD8]/20"
+            className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-[#191B23] focus:outline-none focus:ring-2 focus:ring-[#1B3F92]/20"
           />
           <p className="mt-1.5 text-[10px] leading-4 text-gray-400">Загрузка с устройства появится после переноса собственного хранилища. Пустое поле удалит текущее фото.</p>
           <div className="mt-2 flex justify-end gap-2">
@@ -146,7 +146,7 @@ export default function ProfileHeader({
             <button
               type="submit"
               disabled={savingAvatar}
-              className="rounded-lg bg-[#1B4FD8] px-2.5 py-1.5 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-lg bg-[#1B3F92] px-2.5 py-1.5 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
             >
               Сохранить
             </button>
@@ -161,7 +161,7 @@ export default function ProfileHeader({
             value={nameInput}
             onChange={e => setNameInput(e.target.value)}
             autoFocus
-            className="w-40 rounded-lg border border-gray-200 px-2 py-1 text-center text-sm font-bold text-[#191B23] focus:outline-none focus:ring-2 focus:ring-[#1B4FD8]/20"
+            className="w-40 rounded-lg border border-gray-200 px-2 py-1 text-center text-sm font-bold text-[#191B23] focus:outline-none focus:ring-2 focus:ring-[#1B3F92]/20"
           />
           <button type="submit" disabled={savingName} aria-label="Сохранить" className="rounded-lg p-1.5 text-green-600 hover:bg-green-50 disabled:opacity-50">
             <Check size={16} />
@@ -173,14 +173,14 @@ export default function ProfileHeader({
       ) : (
         <div className="mt-4 flex items-center justify-center gap-1.5">
           <h1 className="text-lg font-bold text-[#191B23]">{fullName}</h1>
-          <button type="button" onClick={startEditingName} aria-label="Изменить имя" className="rounded-lg p-1 text-gray-400 hover:bg-gray-50 hover:text-[#1B4FD8]">
+          <button type="button" onClick={startEditingName} aria-label="Изменить имя" className="rounded-lg p-1 text-gray-400 hover:bg-gray-50 hover:text-[#1B3F92]">
             <Pencil size={13} />
           </button>
         </div>
       )}
       {nameError && <p className="mt-1 text-[11px] font-semibold text-red-500">{nameError}</p>}
 
-      <span className={`mt-1 inline-block rounded-full px-2.5 py-1 text-xs font-bold ${isOnline ? 'bg-[#EEF2FF] text-[#1B4FD8]' : 'bg-gray-100 text-gray-500'}`}>
+      <span className={`mt-1 inline-block rounded-full px-2.5 py-1 text-xs font-bold ${isOnline ? 'bg-[#EEF2FF] text-[#1B3F92]' : 'bg-gray-100 text-gray-500'}`}>
         {isOnline ? 'Онлайн' : 'Оффлайн'}
       </span>
 

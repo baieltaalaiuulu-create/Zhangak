@@ -19,7 +19,7 @@ export default function AdminLessonQuestionsMigrationPage() {
       <AdminTopbar title="Задания урока" />
 
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <Link href="/admin/lessons" className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-gray-500 hover:bg-white hover:text-[#1B4FD8]">
+        <Link href="/admin/lessons" className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-gray-500 hover:bg-white hover:text-[#1B3F92]">
           <ArrowLeft size={16} aria-hidden="true" /> Назад к курсам и урокам
         </Link>
 
@@ -30,7 +30,7 @@ export default function AdminLessonQuestionsMigrationPage() {
 
           <div className="mx-auto mt-6 grid max-w-xl gap-3 text-left sm:grid-cols-2">
             <div className="rounded-2xl bg-blue-50 p-4">
-              <BookOpen size={19} className="text-[#1B4FD8]" aria-hidden="true" />
+              <BookOpen size={19} className="text-[#1B3F92]" aria-hidden="true" />
               <p className="mt-2 text-sm font-bold text-[#0D1E4A]">Можно делать сейчас</p>
               <p className="mt-1 text-xs leading-5 text-slate-600">Создавать уроки, прикреплять материал и публиковать готовую программу.</p>
             </div>
@@ -41,7 +41,7 @@ export default function AdminLessonQuestionsMigrationPage() {
             </div>
           </div>
 
-          <Link href="/admin/lessons" className="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#1B4FD8] px-5 text-sm font-bold text-white hover:bg-blue-700">Вернуться к урокам</Link>
+          <Link href="/admin/lessons" className="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white hover:bg-blue-700">Вернуться к урокам</Link>
         </section>
       </main>
     </div>

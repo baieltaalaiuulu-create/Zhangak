@@ -57,7 +57,7 @@ export interface PlatformDashboard {
 }
 
 export const LESSON_SUBJECT_META: Record<LessonSubject, { label: string; icon: LessonIcon; color: string }> = {
-  math: { label: 'Математика', icon: 'calculator-outline', color: '#1B4FD8' },
+  math: { label: 'Математика', icon: 'calculator-outline', color: '#1B3F92' },
   kyr: { label: 'Кыргыз тили', icon: 'book-outline', color: '#F59E0B' },
   other: { label: 'Другие предметы', icon: 'library-outline', color: '#7C3AED' },
 }

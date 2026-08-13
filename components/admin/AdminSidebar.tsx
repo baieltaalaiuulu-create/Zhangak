@@ -100,7 +100,7 @@ export default function AdminSidebar() {
                             ? 'bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200'
                             : 'text-slate-500 hover:bg-amber-50 hover:text-amber-800'
                           : isActive
-                            ? 'bg-blue-50 text-[#1B4FD8]'
+                            ? 'bg-blue-50 text-[#1B3F92]'
                             : 'text-gray-500 hover:bg-gray-50 hover:text-[#191B23]'
                       }`}>
                       <Icon size={18} aria-hidden="true" />

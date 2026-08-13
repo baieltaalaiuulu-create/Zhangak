@@ -29,7 +29,7 @@ function LoadingState() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#F6F7FB] p-5">
       <div className="flex items-center gap-3 rounded-2xl bg-white px-5 py-4 text-sm font-semibold text-slate-600 shadow-sm">
-        <RefreshCw size={18} className="animate-spin text-[#1B4FD8]" aria-hidden="true" />
+        <RefreshCw size={18} className="animate-spin text-[#1B3F92]" aria-hidden="true" />
         Проверяем доступ к кабинету
       </div>
     </div>
@@ -88,8 +88,8 @@ export default function RoleMigrationWorkspace({
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             {wrongRole
-              ? <button type="button" onClick={() => void signOut()} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B4FD8] px-5 text-sm font-bold text-white"><LogOut size={17} aria-hidden="true" />Сменить учётную запись</button>
-              : <button type="button" onClick={() => void load()} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B4FD8] px-5 text-sm font-bold text-white"><RefreshCw size={17} aria-hidden="true" />Повторить</button>}
+              ? <button type="button" onClick={() => void signOut()} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white"><LogOut size={17} aria-hidden="true" />Сменить учётную запись</button>
+              : <button type="button" onClick={() => void load()} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white"><RefreshCw size={17} aria-hidden="true" />Повторить</button>}
             <a href={loginHref} className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-700"><LogIn size={17} aria-hidden="true" />Ко входу</a>
           </div>
         </section>

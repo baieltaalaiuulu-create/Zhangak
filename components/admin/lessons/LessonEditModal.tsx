@@ -85,52 +85,52 @@ export default function LessonEditModal({ lesson, onClose, onSaved }: Props) {
           <div>
             <label className="mb-1 block text-xs font-semibold text-gray-500">Название *</label>
             <input value={title} onChange={event => setTitle(event.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold text-gray-500">Описание</label>
             <textarea value={description} onChange={event => setDescription(event.target.value)} rows={3}
-              className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+              className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-semibold text-gray-500">Номер урока</label>
               <input type="number" min={1} max={10_000} value={lessonNumber} onChange={event => setLessonNumber(event.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-gray-500">Длительность, мин.</label>
               <input type="number" min={1} max={600} value={durationMinutes} onChange={event => setDurationMinutes(event.target.value)} placeholder="Не указана"
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
             </div>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-semibold text-gray-500">Предмет</label>
               <input value={subject} onChange={event => setSubject(event.target.value)} placeholder="Математика"
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-gray-500">Раздел</label>
               <input value={section} onChange={event => setSection(event.target.value)} placeholder="Алгебра"
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
             </div>
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold text-gray-500">Тема</label>
             <input value={topic} onChange={event => setTopic(event.target.value)} placeholder="Квадратные уравнения"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-semibold text-gray-500">Дата урока</label>
               <input type="date" value={lessonDate} onChange={event => setLessonDate(event.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-gray-500">Ссылка на материал</label>
               <input value={contentUrl} onChange={event => setContentUrl(event.target.value)} placeholder="https://..."
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
             </div>
           </div>
           <div className="flex flex-wrap gap-x-5 gap-y-2">
@@ -148,7 +148,7 @@ export default function LessonEditModal({ lesson, onClose, onSaved }: Props) {
 
           <div className="flex flex-wrap gap-2 pt-2">
             <button type="button" onClick={handleSubmit} disabled={saving}
-              className="rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60">
+              className="rounded-xl bg-[#1B3F92] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60">
               {saving ? 'Сохранение…' : 'Сохранить'}
             </button>
             <button type="button" onClick={onClose} disabled={saving}

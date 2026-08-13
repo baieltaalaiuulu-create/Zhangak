@@ -17,7 +17,7 @@ export default function SettingsNotifications() {
     <div className="rounded-2xl border border-gray-200 bg-white p-5">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Bell size={16} className="text-[#1B4FD8]" />
+          <Bell size={16} className="text-[#1B3F92]" />
           <h2 className="text-sm font-bold text-[#191B23]">Уведомления</h2>
         </div>
         <span className="rounded-full bg-gray-100 px-2 py-1 text-[10px] font-bold text-gray-500">Скоро</span>

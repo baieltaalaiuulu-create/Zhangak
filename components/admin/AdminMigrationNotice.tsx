@@ -25,7 +25,7 @@ function LoadingState() {
   return (
     <div className="flex min-h-[calc(100dvh-60px)] items-center justify-center bg-[#FAF8FF] px-5">
       <div role="status" className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-600 shadow-sm">
-        <LoaderCircle size={19} className="animate-spin text-[#1B4FD8]" aria-hidden="true" />
+        <LoaderCircle size={19} className="animate-spin text-[#1B3F92]" aria-hidden="true" />
         Проверяем права доступа…
       </div>
     </div>
@@ -87,12 +87,12 @@ export default function AdminMigrationNotice({ title, description, plannedCapabi
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               {wrongRole ? (
-                <button type="button" onClick={() => void signOut()} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B4FD8] px-5 text-sm font-bold text-white transition-colors hover:bg-blue-700">
+                <button type="button" onClick={() => void signOut()} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white transition-colors hover:bg-blue-700">
                   <LogOut size={17} aria-hidden="true" />
                   Сменить аккаунт
                 </button>
               ) : (
-                <button type="button" onClick={() => void load()} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B4FD8] px-5 text-sm font-bold text-white transition-colors hover:bg-blue-700">
+                <button type="button" onClick={() => void load()} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white transition-colors hover:bg-blue-700">
                   <RefreshCw size={17} aria-hidden="true" />
                   Повторить
                 </button>
@@ -115,7 +115,7 @@ export default function AdminMigrationNotice({ title, description, plannedCapabi
       <AdminTopbar title={title} />
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         <section className="overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm">
-          <div className="bg-gradient-to-br from-[#0D1E4A] via-[#1B4FD8] to-[#5A36C8] px-6 py-8 text-white sm:px-9 sm:py-10">
+          <div className="bg-gradient-to-br from-[#0D1E4A] via-[#1B3F92] to-[#5A36C8] px-6 py-8 text-white sm:px-9 sm:py-10">
             <span className="inline-flex min-h-9 items-center gap-2 rounded-xl bg-white/10 px-3 text-sm font-bold text-blue-100 ring-1 ring-white/20">
               <ShieldCheck size={18} aria-hidden="true" />
               Собственный backend Zhangak
@@ -147,9 +147,9 @@ export default function AdminMigrationNotice({ title, description, plannedCapabi
 
             <section className="mt-6 grid gap-3 sm:grid-cols-2" aria-label="Доступные рабочие разделы">
               <Link href="/admin/lessons" className="group flex min-h-24 items-center gap-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 transition-colors hover:bg-blue-100">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#1B4FD8] shadow-sm"><BookOpen size={21} aria-hidden="true" /></span>
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#1B3F92] shadow-sm"><BookOpen size={21} aria-hidden="true" /></span>
                 <span className="min-w-0"><span className="block text-sm font-black text-slate-950">Уроки</span><span className="mt-0.5 block text-xs leading-5 text-slate-600">Создавайте проверенный учебный контент.</span></span>
-                <ArrowRight size={18} className="ml-auto shrink-0 text-[#1B4FD8] transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                <ArrowRight size={18} className="ml-auto shrink-0 text-[#1B3F92] transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
               </Link>
               <Link href="/admin/students" className="group flex min-h-24 items-center gap-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 transition-colors hover:bg-emerald-100">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-700 shadow-sm"><Users size={21} aria-hidden="true" /></span>

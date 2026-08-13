@@ -52,14 +52,14 @@ export default function MobileNextStepCard({
   if (isRepeat) {
     return (
       <div className="rounded-2xl border border-gray-100 bg-white p-4">
-        <p className="flex items-center gap-2 text-lg font-bold text-gray-900"><PencilLine size={20} className="text-[#1B4FD8]" aria-hidden="true" /> Практика</p>
+        <p className="flex items-center gap-2 text-lg font-bold text-gray-900"><PencilLine size={20} className="text-[#1B3F92]" aria-hidden="true" /> Практика</p>
         {questionCount > 0 ? (
           <>
             <p className="mt-1 text-sm text-gray-500">Пройди практику ещё раз, чтобы закрепить</p>
             <button
               type="button"
               onClick={onStartPractice}
-              className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4FD8] px-4 text-sm font-bold text-white transition-colors active:bg-blue-700"
+              className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white transition-colors active:bg-blue-700"
             >
               <RotateCcw size={17} aria-hidden="true" />
               Повторить практику
@@ -84,12 +84,12 @@ export default function MobileNextStepCard({
   if (questionCount === 0) {
     return (
       <div className="rounded-2xl border border-gray-100 bg-white p-4">
-        <p className="flex items-center gap-2 text-lg font-bold text-gray-900"><PencilLine size={20} className="text-[#1B4FD8]" aria-hidden="true" /> Практика</p>
+        <p className="flex items-center gap-2 text-lg font-bold text-gray-900"><PencilLine size={20} className="text-[#1B3F92]" aria-hidden="true" /> Практика</p>
         <p className="mt-1 text-sm text-gray-400">Практика недоступна</p>
         <button
           type="button"
           onClick={onFinishNoQuestions}
-          className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4FD8] px-4 text-sm font-bold text-white transition-colors active:bg-blue-700"
+          className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white transition-colors active:bg-blue-700"
         >
           Завершить урок
           <ArrowRight size={17} aria-hidden="true" />
@@ -100,12 +100,12 @@ export default function MobileNextStepCard({
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-4">
-      <p className="flex items-center gap-2 text-lg font-bold text-gray-900"><PencilLine size={20} className="text-[#1B4FD8]" aria-hidden="true" /> Практика</p>
+      <p className="flex items-center gap-2 text-lg font-bold text-gray-900"><PencilLine size={20} className="text-[#1B3F92]" aria-hidden="true" /> Практика</p>
       <p className="mt-1 text-sm text-gray-500">{questionCount} вопросов • ~{minutes} мин</p>
       <button
         type="button"
         onClick={onStartPractice}
-        className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4FD8] px-4 text-sm font-bold text-white transition-colors active:bg-blue-700"
+        className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white transition-colors active:bg-blue-700"
       >
         Начать практику
         <ArrowRight size={17} aria-hidden="true" />

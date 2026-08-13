@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useNativeAuth } from '@/components/NativeAuthProvider'
 import { isSupportedNativeStudent } from '@/lib/native-auth'
 
-const BRAND_BLUE = '#1B4FD8'
+const BRAND_BLUE = '#1B3F92'
 const INACTIVE_GRAY = '#9CA3AF'
 
 // 5 tabs, same set and order as the web bottom nav

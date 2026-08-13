@@ -1,0 +1,97 @@
+{
+  "format": "zhangak.supabase-mapping-manifest/v1",
+  "status": "template",
+  "inventorySha256": "<sha256-of-completed-source-inventory-json-bytes>",
+  "targetSchema": {
+    "migrations": [
+      { "file": "001_core.sql", "sha256": "89e18ce62db8c7013a8e47061beb718af25c125015f6643d3c0ff870d590816a" },
+      { "file": "002_learning_core.sql", "sha256": "1b15b88131a208045f75265b6c64e86795c014ceca0cda9d7e50545873909687" },
+      { "file": "003_university_catalog.sql", "sha256": "f78cf1a53773f9793d2304c38d1d660c2bedc2a066d95556b55d64eabcc5ab93" }
+    ]
+  },
+  "globalRules": [
+    "No Supabase auth session, refresh token, password hash, MFA factor, recovery token, service role secret, or publishable key may enter Zhangak artifacts.",
+    "Legacy user authentication requires a reviewed Zhangak password-reset and activation flow; do not translate bcrypt or encrypted_password values into the scrypt password_hash column.",
+    "Generated numeric Zhangak IDs are never assumed to equal legacy IDs. Use a disposable, run-scoped staging ID map after a separate importer has been approved.",
+    "Historic assessment attempts, XP, ranks, and client-authored scores are archive-only until item-level provenance and server-authoritative invariants are independently verified.",
+    "Supabase Storage object URLs are not portable. Re-host reviewed files and create new Zhangak-owned URLs before importing references.",
+    "Tables with no current Zhangak schema are archive-only and must not be silently dropped or force-fit into unrelated tables."
+  ],
+  "mappings": [
+    {
+      "id": "identity-profiles",
+      "status": "blocked",
+      "sourceCandidates": ["auth.users", "public.profiles"],
+      "target": { "tables": ["users", "profiles"], "identityStrategy": "preserve-verified-uuid" },
+      "dependencies": [],
+      "reviewNote": "Blocked until an explicit password-reset/activation schema and migration are reviewed. Password hashes and active Supabase sessions are never imported."
+    },
+    {
+      "id": "courses",
+      "status": "blocked",
+      "sourceCandidates": ["public.courses"],
+      "target": { "tables": ["courses"], "identityStrategy": "new-target-id-with-staging-map" },
+      "dependencies": ["identity-profiles"],
+      "reviewNote": "Confirm exact source columns and who created each row before mapping to the Zhangak courses contract."
+    },
+    {
+      "id": "groups-and-memberships",
+      "status": "blocked",
+      "sourceCandidates": ["public.groups", "public.group_students"],
+      "target": { "tables": ["groups", "group_students"], "identityStrategy": "new-target-id-with-staging-map" },
+      "dependencies": ["identity-profiles", "courses"],
+      "reviewNote": "Teacher, student, course, capacity, delivery mode, and historical membership rules must all pass target validation."
+    },
+    {
+      "id": "lessons-and-progress",
+      "status": "blocked",
+      "sourceCandidates": ["public.lessons", "public.lesson_progress"],
+      "target": { "tables": ["lessons", "lesson_progress"], "identityStrategy": "new-target-id-with-staging-map" },
+      "dependencies": ["identity-profiles", "courses", "groups-and-memberships"],
+      "reviewNote": "Content URLs must be re-hosted or removed; progress is imported only after student and lesson maps reconcile."
+    },
+    {
+      "id": "assessments",
+      "status": "blocked",
+      "sourceCandidates": ["public.practice_tests", "public.questions"],
+      "target": { "tables": ["practice_tests", "practice_questions"], "identityStrategy": "new-target-id-with-staging-map" },
+      "dependencies": ["identity-profiles", "courses", "lessons-and-progress"],
+      "reviewNote": "Map exactly four options, correct-answer semantics, publication state, and question ordering in an isolated review environment."
+    },
+    {
+      "id": "university-catalog",
+      "status": "blocked",
+      "sourceCandidates": ["public.universities", "public.university_specialties", "public.university_advantages"],
+      "target": { "tables": ["universities", "university_specialties", "university_advantages"], "identityStrategy": "preserve-verified-uuid" },
+      "dependencies": [],
+      "reviewNote": "Migration may carry provenance only. Verify current tuition, scores, deadlines, and official URLs before activating catalog rows."
+    }
+  ],
+  "archiveOnly": [
+    "public.attendance",
+    "public.homeworks",
+    "public.homework_submissions",
+    "public.practice_results",
+    "public.test_results",
+    "public.mock_registrations",
+    "public.daily_challenges",
+    "public.daily_challenge_questions",
+    "public.daily_challenge_results",
+    "public.weekly_leaderboard",
+    "public.weekly_prizes",
+    "public.announcements",
+    "public.ai_chat_sessions",
+    "public.ai_chat_messages",
+    "public.ai_knowledge_files",
+    "public.admin_settings",
+    "public.crm_leads",
+    "public.income",
+    "public.expenses",
+    "public.payments",
+    "public.math_lessons",
+    "public.math_questions",
+    "public.math_results",
+    "public.math_parent_student",
+    "storage.*"
+  ]
+}

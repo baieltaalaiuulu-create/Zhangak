@@ -95,7 +95,7 @@ export default function LessonsPage() {
         <button
           type="button"
           onClick={retryLoad}
-          className="flex min-h-11 items-center gap-1.5 rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white"
+          className="flex min-h-11 items-center gap-1.5 rounded-xl bg-[#1B3F92] px-5 py-2.5 text-sm font-bold text-white"
         >
           <RefreshCw size={16} aria-hidden="true" />
           Попробовать ещё раз
@@ -171,12 +171,12 @@ export default function LessonsPage() {
         <div className="block space-y-4 md:hidden">
           <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2">
-              <BookOpen size={22} className="text-[#1B4FD8]" aria-hidden="true" />
+              <BookOpen size={22} className="text-[#1B3F92]" aria-hidden="true" />
               <h1 className="text-lg font-bold text-[#191B23]">Мои уроки</h1>
             </div>
             <p className="mt-1 text-sm text-gray-500">Пройдено {completedCount}/{total}</p>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
-              <div className="h-full rounded-full bg-[#1B4FD8] transition-all duration-700" style={{ width: `${overallPct}%` }} />
+              <div className="h-full rounded-full bg-[#1B3F92] transition-all duration-700" style={{ width: `${overallPct}%` }} />
             </div>
 
             {remainingToday > 0 && currentLesson && (
@@ -190,7 +190,7 @@ export default function LessonsPage() {
               <Link
                 href={`/student/online/lessons/${currentLesson.id}`}
                 prefetch
-                className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl bg-[#1B4FD8] text-base font-bold text-white"
+                className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl bg-[#1B3F92] text-base font-bold text-white"
               >
                 Продолжить обучение
                 <ArrowRight size={19} className="ml-2" aria-hidden="true" />
@@ -233,7 +233,7 @@ export default function LessonsPage() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <BookOpen size={22} className="text-[#1B4FD8]" aria-hidden="true" />
+                  <BookOpen size={22} className="text-[#1B3F92]" aria-hidden="true" />
                   <h1 className="text-xl font-bold text-gray-900">Мои уроки</h1>
                 </div>
                 <p className="mt-1 text-sm text-gray-500">Пройдено {completedCount} из {total} уроков</p>
@@ -254,7 +254,7 @@ export default function LessonsPage() {
                 <span>Общий прогресс</span><span>{overallPct}%</span>
               </div>
               <div className="h-3 overflow-hidden rounded-full bg-gray-100">
-                <div className="h-full rounded-full bg-[#1B4FD8] transition-all duration-700" style={{ width: `${overallPct}%` }} />
+                <div className="h-full rounded-full bg-[#1B3F92] transition-all duration-700" style={{ width: `${overallPct}%` }} />
               </div>
             </div>
           </div>

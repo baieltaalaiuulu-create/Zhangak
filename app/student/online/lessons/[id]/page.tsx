@@ -152,7 +152,7 @@ export default function LessonDetailPage() {
         <button
           type="button"
           onClick={retryLoad}
-          className="flex min-h-11 items-center gap-1.5 rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white"
+          className="flex min-h-11 items-center gap-1.5 rounded-xl bg-[#1B3F92] px-5 py-2.5 text-sm font-bold text-white"
         >
           <RefreshCw size={16} aria-hidden="true" />
           Попробовать ещё раз
@@ -177,7 +177,7 @@ export default function LessonDetailPage() {
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#F4F6FA] p-6 text-center">
         <BookOpen size={30} className="text-gray-300" aria-hidden="true" />
         <p className="text-sm font-semibold text-gray-700">Урок не найден или не назначен твоей группе</p>
-        <Link href="/student/online/lessons" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-[#1B4FD8]">
+        <Link href="/student/online/lessons" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-[#1B3F92]">
           <ArrowLeft size={16} aria-hidden="true" /> Ко всем урокам
         </Link>
       </div>
@@ -215,13 +215,13 @@ export default function LessonDetailPage() {
     </div>
   ) : lesson.contentUrl ? (
     <div className="flex aspect-video flex-col items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 p-6 text-center">
-      <FileText size={38} className="text-[#1B4FD8]" aria-hidden="true" />
+      <FileText size={38} className="text-[#1B3F92]" aria-hidden="true" />
       <p className="mt-3 text-sm font-bold text-gray-800">Материал урока откроется в новой вкладке</p>
       <a
         href={lesson.contentUrl}
         target="_blank"
         rel="noreferrer"
-        className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1B4FD8] px-4 py-2.5 text-sm font-bold text-white"
+        className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1B3F92] px-4 py-2.5 text-sm font-bold text-white"
       >
         Открыть материал <ExternalLink size={16} aria-hidden="true" />
       </a>
@@ -237,7 +237,7 @@ export default function LessonDetailPage() {
   const practiceCard = (
     <div className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#1B4FD8]">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#1B3F92]">
           <ShieldCheck size={21} aria-hidden="true" />
         </span>
         <div>
@@ -249,7 +249,7 @@ export default function LessonDetailPage() {
       </div>
       <Link
         href={practiceHref}
-        className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4FD8] px-4 text-sm font-bold text-white"
+        className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white"
       >
         Открыть практику <ArrowRight size={17} aria-hidden="true" />
       </Link>
@@ -307,7 +307,7 @@ export default function LessonDetailPage() {
               className="flex min-h-12 items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 text-sm font-bold text-gray-700 shadow-sm"
             >
               Следующий урок: {upcoming.title}
-              <ArrowRight size={17} className="shrink-0 text-[#1B4FD8]" aria-hidden="true" />
+              <ArrowRight size={17} className="shrink-0 text-[#1B3F92]" aria-hidden="true" />
             </Link>
           )}
 
@@ -382,7 +382,7 @@ export default function LessonDetailPage() {
 
               <Link
                 href={practiceHref}
-                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4FD8] px-4 text-sm font-bold text-white shadow-md shadow-blue-200"
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white shadow-md shadow-blue-200"
               >
                 Открыть практику <ArrowRight size={17} aria-hidden="true" />
               </Link>

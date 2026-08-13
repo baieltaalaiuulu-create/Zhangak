@@ -18,7 +18,7 @@ function Pill({ children, tone = 'gray', className = '' }: { children: ReactNode
   const toneClass = tone === 'orange'
     ? 'bg-orange-50 text-orange-600'
     : tone === 'blue'
-      ? 'bg-[#EEF2FF] text-[#1B4FD8]'
+      ? 'bg-[#EEF2FF] text-[#1B3F92]'
       : 'bg-gray-50 text-gray-600'
 
   return (
@@ -38,7 +38,7 @@ export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore
       {/* Logo — only needed on mobile, where the sidebar (which normally
           carries it) is hidden in favor of the bottom nav. */}
       <div className="flex items-center gap-2 md:hidden">
-        <span className="text-base font-extrabold tracking-tight text-[#1B4FD8]">ZHANGAK</span>
+        <span className="text-base font-extrabold tracking-tight text-[#1B3F92]">ZHANGAK</span>
         <span className="h-1.5 w-1.5 rounded-full" style={{ background: '#8B5CF6' }} />
       </div>
 
@@ -47,7 +47,7 @@ export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore
         <input
           type="text"
           placeholder="Поиск уроков, тем..."
-          className="w-full rounded-full bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B4FD8]/20"
+          className="w-full rounded-full bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3F92]/20"
         />
       </div>
 
@@ -93,7 +93,7 @@ export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore
             type="button"
             onClick={() => setMenuOpen(v => !v)}
             aria-label="Меню профиля"
-            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[#1B4FD8] text-xs font-bold text-white"
+            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[#1B3F92] text-xs font-bold text-white"
           >
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL, no next/image domain config in this project

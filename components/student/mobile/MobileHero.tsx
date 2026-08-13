@@ -38,11 +38,11 @@ export default function MobileHero({ firstName, currentScore, targetScore, heroL
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-sm font-semibold text-[#1B4FD8]">Салам, {firstName}!</p>
+        <p className="text-sm font-semibold text-[#1B3F92]">Салам, {firstName}!</p>
         <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-[#191B23]">Что сделаем сегодня?</h1>
         <div className="mt-3 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2 text-sm font-semibold text-gray-600">
-            <Target size={18} className="text-[#1B4FD8]" aria-hidden="true" />
+            <Target size={18} className="text-[#1B3F92]" aria-hidden="true" />
             <span>Твой путь к цели</span>
             <span className="ml-auto font-bold text-[#191B23]">{currentScore > 0 ? currentScore : '—'} / {targetScore}</span>
           </div>
@@ -54,7 +54,7 @@ export default function MobileHero({ firstName, currentScore, targetScore, heroL
             aria-valuemax={targetScore}
             aria-valuenow={scoreTowardGoal}
           >
-            <div className="h-full rounded-full bg-[#1B4FD8] transition-all duration-700" style={{ width: `${pct}%` }} />
+            <div className="h-full rounded-full bg-[#1B3F92] transition-all duration-700" style={{ width: `${pct}%` }} />
           </div>
         </div>
       </div>
@@ -62,7 +62,7 @@ export default function MobileHero({ firstName, currentScore, targetScore, heroL
       {loading ? (
         <HeroSkeleton />
       ) : heroLesson ? (
-        <div className="rounded-2xl bg-[#1B4FD8] p-5 text-white shadow-lg">
+        <div className="rounded-2xl bg-[#1B3F92] p-5 text-white shadow-lg">
           <p className="text-xs font-semibold uppercase tracking-widest text-white/75">Следующий шаг</p>
           <span className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold">
             <SubjectIcon size={14} aria-hidden="true" />
@@ -72,7 +72,7 @@ export default function MobileHero({ firstName, currentScore, targetScore, heroL
           <p className="mt-1 text-sm text-white/75">Около {LESSON_MINUTES} минут</p>
           <Link
             href={`/student/online/lessons/${heroLesson.id}`}
-            className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 text-base font-bold text-[#1B4FD8] transition-colors active:bg-blue-50"
+            className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 text-base font-bold text-[#1B3F92] transition-colors active:bg-blue-50"
           >
             Продолжить урок
             <ArrowRight size={19} aria-hidden="true" />
@@ -84,7 +84,7 @@ export default function MobileHero({ firstName, currentScore, targetScore, heroL
           <p className="mt-2 text-sm font-semibold text-gray-700">Все доступные уроки пройдены</p>
           <Link
             href="/student/online/practice"
-            className="mt-4 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#1B4FD8] px-4 text-base font-bold text-white transition-colors active:bg-blue-700"
+            className="mt-4 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#1B3F92] px-4 text-base font-bold text-white transition-colors active:bg-blue-700"
           >
             Открыть тренажёр
             <ArrowRight size={19} aria-hidden="true" />

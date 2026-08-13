@@ -124,7 +124,7 @@ export default function ProfilePage() {
         <button
           type="button"
           onClick={retryLoad}
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1B3F92] px-5 py-2.5 text-sm font-bold text-white"
         >
           <RefreshCw size={16} aria-hidden="true" />
           Попробовать ещё раз

@@ -10,7 +10,7 @@ export default function SettingsInstallCard() {
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5">
       <div className="flex items-center gap-2">
-        <Smartphone size={16} className="text-[#1B4FD8]" />
+        <Smartphone size={16} className="text-[#1B3F92]" />
         <h2 className="text-sm font-bold text-[#191B23]">Приложение</h2>
       </div>
 
@@ -31,7 +31,7 @@ export default function SettingsInstallCard() {
           <button
             type="button"
             onClick={promptInstall}
-            className="shrink-0 rounded-xl bg-[#1B4FD8] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-700"
+            className="shrink-0 rounded-xl bg-[#1B3F92] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-700"
           >
             Установить
           </button>

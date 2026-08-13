@@ -24,7 +24,7 @@ for (const entry of ['package.json', 'package-lock.json', 'src', 'migrations']) 
   await cp(path.join(backendRoot, entry), path.join(output, entry), { recursive: true })
 }
 await mkdir(path.join(output, 'scripts'), { recursive: true })
-for (const script of ['migrate.js', 'check-syntax.js', 'create-super-admin.js']) {
+for (const script of ['migrate.js', 'check-syntax.js', 'create-super-admin.js', 'supabase-migration-preflight.js']) {
   await cp(path.join(backendRoot, 'scripts', script), path.join(output, 'scripts', script))
 }
 await writeFile(path.join(output, 'release.json'), `${JSON.stringify({ gitSha, requiredNode }, null, 2)}\n`)

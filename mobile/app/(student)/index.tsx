@@ -11,7 +11,7 @@ import {
 } from '@/lib/lessons'
 import { useNativeAuth } from '@/components/NativeAuthProvider'
 
-const BRAND_BLUE = '#1B4FD8'
+const BRAND_BLUE = '#1B3F92'
 
 interface ProgressItem {
   label: string

@@ -43,7 +43,7 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 
 const GRADES = [
   { grade: '6-класс', color: '#3B82F6', bg: '#EFF6FF', topics: ['Бөлчөктөр жана аралаш сандар', 'Пайыздар', 'Координаттык түз сызык', 'Теңдемелер', 'Геометрия негиздери'] },
-  { grade: '7-класс', color: '#1B4FD8', bg: '#EEF2FF', topics: ['Алгебралык туюнтмалар', 'Сызыктуу теңдемелер', 'Статистика', 'Үчбурчтук', 'Параллель түз сызыктар'], featured: true },
+  { grade: '7-класс', color: '#1B3F92', bg: '#EEF2FF', topics: ['Алгебралык туюнтмалар', 'Сызыктуу теңдемелер', 'Статистика', 'Үчбурчтук', 'Параллель түз сызыктар'], featured: true },
   { grade: '8-класс', color: '#7C3AED', bg: '#F5F3FF', topics: ['Квадраттык теңдемелер', 'Функциялар жана графиктер', 'Квадраттык тамыр', 'Теорема Пифагора', 'Координаттык плоскость'] },
 ]
 
@@ -83,7 +83,9 @@ export default function MathPage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const wa = 'https://wa.me/996708584613'
+  // Use the confirmed Zhangak contact until a separate Math-program contact
+  // is supplied and explicitly approved for publication.
+  const wa = 'https://wa.me/996502245245'
   const navScrolled = scrollY > 40
 
   return (
@@ -96,7 +98,7 @@ export default function MathPage() {
         @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
         .cta-btn:active{transform:scale(0.97)!important}
         @media(hover:hover){.cta-btn:hover{transform:scale(1.03)!important;filter:brightness(1.06)!important}}
-        @media(hover:hover){.grade-card:hover{transform:translateY(-4px)!important;box-shadow:0 16px 40px rgba(27,79,216,0.12)!important}}
+        @media(hover:hover){.grade-card:hover{transform:translateY(-4px)!important;box-shadow:0 16px 40px rgba(27,63,146,0.12)!important}}
         @media(hover:hover){.why-card:hover{border-color:#BFDBFE!important}}
         @media(hover:hover){.faq-row:hover{background:#F8FAFF!important}}
 
@@ -145,7 +147,7 @@ export default function MathPage() {
       `}</style>
 
       {/* BANNER */}
-      <div style={{ background: 'linear-gradient(90deg,#1B4FD8,#3B82F6,#7C3AED,#1B4FD8)', backgroundSize: '300% 100%', animation: 'gradientShift 5s ease infinite', padding: '9px 16px', textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#fff' }}>
+      <div style={{ background: 'linear-gradient(90deg,#1B3F92,#3B82F6,#7C3AED,#1B3F92)', backgroundSize: '300% 100%', animation: 'gradientShift 5s ease infinite', padding: '9px 16px', textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#fff' }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Ruler size={14} aria-hidden="true" /> Жаңгак Math — 6-7-8 класстар үчүн</span>
         <span className="banner-text-extra"> · Бишкек · Онлайн/Оффлайн</span>
         <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#fff', marginLeft: '10px', background: 'rgba(255,255,255,0.22)', padding: '3px 10px', borderRadius: '20px', fontWeight: '800', textDecoration: 'none', fontSize: '11px' }}>Жазылуу →</a>
@@ -155,20 +157,20 @@ export default function MathPage() {
       <nav style={{ background: navScrolled ? 'rgba(255,255,255,0.97)' : 'transparent', backdropFilter: navScrolled ? 'blur(20px)' : 'none', borderBottom: navScrolled ? '1px solid #E2E8F0' : 'none', position: 'sticky', top: 0, zIndex: 200, transition: 'all 0.3s ease' }}>
         <div className="nav-inner" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-            <div style={{ width: '34px', height: '34px', background: '#1B4FD8', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
+            <div style={{ width: '34px', height: '34px', background: '#1B3F92', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
               <img src="/images/logo.png" alt="Z" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <span style={{ fontWeight: '900', fontSize: '17px', color: '#0D1E4A' }}>Zhangak</span>
-            <span style={{ fontWeight: '800', fontSize: '12px', color: '#1B4FD8', background: '#EEF2FF', padding: '2px 7px', borderRadius: '6px' }}>Math</span>
+            <span style={{ fontWeight: '800', fontSize: '12px', color: '#1B3F92', background: '#EEF2FF', padding: '2px 7px', borderRadius: '6px' }}>Math</span>
           </div>
 
           <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div className="switcher" style={{ display: 'flex', background: '#F1F5F9', borderRadius: '12px', padding: '4px', gap: '4px' }}>
               <Link href="/" style={{ padding: '6px 14px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '600', cursor: 'pointer', background: 'transparent', color: '#64748B', textDecoration: 'none' }}>ЖРТ</Link>
-              <button style={{ padding: '6px 14px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '700', cursor: 'pointer', background: '#1B4FD8', color: '#fff' }}>Math</button>
+              <button style={{ padding: '6px 14px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '700', cursor: 'pointer', background: '#1B3F92', color: '#fff' }}>Math</button>
             </div>
             <a href={PLATFORM_LOGIN_HREF} style={{ background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '8px 16px', fontWeight: '600', fontSize: '13px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><LogIn size={15} aria-hidden="true" /> Кирүү</a>
-            <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ background: '#1B4FD8', color: '#fff', borderRadius: '10px', padding: '8px 16px', fontWeight: '800', fontSize: '13px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s', boxShadow: '0 4px 14px rgba(27,79,216,0.3)' }}>
+            <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ background: '#1B3F92', color: '#fff', borderRadius: '10px', padding: '8px 16px', fontWeight: '800', fontSize: '13px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s', boxShadow: '0 4px 14px rgba(27,63,146,0.3)' }}>
               <MessageCircle size={15} aria-hidden="true" /> Жазылуу
             </a>
           </div>
@@ -185,10 +187,10 @@ export default function MathPage() {
           <div className="mobile-menu" style={{ background: '#fff', borderTop: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px', animation: 'slideDown 0.2s ease' }}>
             <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: '12px', padding: '4px', gap: '4px' }}>
               <Link href="/" onClick={() => setMenuOpen(false)} style={{ flex: 1, padding: '9px', borderRadius: '9px', border: 'none', fontSize: '14px', fontWeight: '600', cursor: 'pointer', background: 'transparent', color: '#64748B', textAlign: 'center', textDecoration: 'none' }}>ЖРТ</Link>
-              <button style={{ flex: 1, padding: '9px', borderRadius: '9px', border: 'none', fontSize: '14px', fontWeight: '700', cursor: 'pointer', background: '#1B4FD8', color: '#fff' }}>Math</button>
+              <button style={{ flex: 1, padding: '9px', borderRadius: '9px', border: 'none', fontSize: '14px', fontWeight: '700', cursor: 'pointer', background: '#1B3F92', color: '#fff' }}>Math</button>
             </div>
             <a href={PLATFORM_LOGIN_HREF} onClick={() => setMenuOpen(false)} style={{ width: '100%', background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '13px', fontWeight: '600', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}><LogIn size={17} aria-hidden="true" /> Кирүү</a>
-            <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', textAlign: 'center', background: '#1B4FD8', color: '#fff', borderRadius: '12px', padding: '13px', fontWeight: '800', fontSize: '14px', textDecoration: 'none', boxShadow: '0 4px 14px rgba(27,79,216,0.3)' }}>
+            <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', textAlign: 'center', background: '#1B3F92', color: '#fff', borderRadius: '12px', padding: '13px', fontWeight: '800', fontSize: '14px', textDecoration: 'none', boxShadow: '0 4px 14px rgba(27,63,146,0.3)' }}>
               <MessageCircle size={17} aria-hidden="true" /> WhatsAppка жазылуу
             </a>
           </div>
@@ -197,19 +199,19 @@ export default function MathPage() {
 
       {/* HERO */}
       <div style={{ background: 'linear-gradient(160deg,#fff 0%,#EFF6FF 50%,#EEF2FF 100%)', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '8%', right: '4%', fontSize: '100px', opacity: 0.04, fontWeight: '900', color: '#1B4FD8', pointerEvents: 'none', animation: 'float 6s ease infinite' }}>∑</div>
+        <div style={{ position: 'absolute', top: '8%', right: '4%', fontSize: '100px', opacity: 0.04, fontWeight: '900', color: '#1B3F92', pointerEvents: 'none', animation: 'float 6s ease infinite' }}>∑</div>
         <div style={{ position: 'absolute', bottom: '8%', left: '2%', fontSize: '70px', opacity: 0.04, fontWeight: '900', color: '#7C3AED', pointerEvents: 'none', animation: 'float 8s 2s ease infinite' }}>π</div>
 
         <div className="hero-grid section-inner" style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', alignItems: 'center', padding: '88px 32px 72px', position: 'relative', zIndex: 1 }}>
           {/* Left */}
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#EEF2FF', border: '1px solid #BFDBFE', borderRadius: '20px', padding: '7px 14px', marginBottom: '24px' }}>
-              <Ruler size={16} aria-hidden="true" style={{ color: '#1B4FD8' }} />
-              <span style={{ color: '#1B4FD8', fontSize: '13px', fontWeight: '700' }}>6 · 7 · 8-класстар үчүн</span>
+              <Ruler size={16} aria-hidden="true" style={{ color: '#1B3F92' }} />
+              <span style={{ color: '#1B3F92', fontSize: '13px', fontWeight: '700' }}>6 · 7 · 8-класстар үчүн</span>
             </div>
             <h1 className="hero-title" style={{ fontSize: 'clamp(32px,5vw,58px)', fontWeight: '900', lineHeight: '1.07', marginBottom: '20px', letterSpacing: '-2px', color: '#0D1E4A' }}>
               Математика —<br />
-              <span style={{ color: '#1B4FD8' }}>келечектин</span><br />
+              <span style={{ color: '#1B3F92' }}>келечектин</span><br />
               <span style={{ color: '#7C3AED' }}>тили.</span>
             </h1>
             <p className="hero-desc" style={{ color: '#64748B', fontSize: '16px', lineHeight: '1.8', marginBottom: '28px' }}>
@@ -217,7 +219,7 @@ export default function MathPage() {
             </p>
             <div className="hero-btns" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
-                style={{ background: '#1B4FD8', color: '#fff', borderRadius: '14px', padding: '14px 28px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 8px 28px rgba(27,79,216,0.3)', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                style={{ background: '#1B3F92', color: '#fff', borderRadius: '14px', padding: '14px 28px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 8px 28px rgba(27,63,146,0.3)', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                 <MessageCircle size={18} aria-hidden="true" /> Жазылуу
               </a>
               <a href="#grades" className="cta-btn"
@@ -228,7 +230,7 @@ export default function MathPage() {
             <div className="mini-stats" style={{ display: 'flex', gap: '28px', marginTop: '36px', paddingTop: '28px', borderTop: '1px solid #E2E8F0', flexWrap: 'wrap' }}>
               {[{ n: '6–8', l: 'Класстар' }, { n: '80%', l: 'Практика' }, { n: '2', l: 'Тил' }].map(s => (
                 <div key={s.l}>
-                  <div style={{ fontWeight: '900', fontSize: '22px', color: '#1B4FD8', letterSpacing: '-0.5px' }}>{s.n}</div>
+                  <div style={{ fontWeight: '900', fontSize: '22px', color: '#1B3F92', letterSpacing: '-0.5px' }}>{s.n}</div>
                   <div style={{ color: '#94A3B8', fontSize: '11px', marginTop: '3px' }}>{s.l}</div>
                 </div>
               ))}
@@ -237,8 +239,8 @@ export default function MathPage() {
 
           {/* Right — dark card */}
           <div className="hero-right">
-            <div style={{ background: 'linear-gradient(135deg,#050C1F,#0D1E4A)', borderRadius: '24px', padding: '36px', position: 'relative', overflow: 'hidden', boxShadow: '0 28px 72px rgba(27,79,216,0.22)' }}>
-              <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '180px', height: '180px', background: 'radial-gradient(circle,rgba(27,79,216,0.4) 0%,transparent 70%)', pointerEvents: 'none' }} />
+            <div style={{ background: 'linear-gradient(135deg,#050C1F,#0D1E4A)', borderRadius: '24px', padding: '36px', position: 'relative', overflow: 'hidden', boxShadow: '0 28px 72px rgba(27,63,146,0.22)' }}>
+              <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '180px', height: '180px', background: 'radial-gradient(circle,rgba(27,63,146,0.4) 0%,transparent 70%)', pointerEvents: 'none' }} />
               <div style={{ position: 'relative', zIndex: 1 }}>
                 <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: '600', marginBottom: '20px', letterSpacing: '1px', textTransform: 'uppercase' as const }}>Бир сабак ичинде</div>
                 {[
@@ -248,13 +250,13 @@ export default function MathPage() {
                   { step: '04', text: 'Тест жана жыйынтык', done: false },
                 ].map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-                    <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: item.done ? '#1B4FD8' : 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: '#fff', flexShrink: 0 }}>
+                    <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: item.done ? '#1B3F92' : 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: '#fff', flexShrink: 0 }}>
                       {item.done ? <Check size={14} aria-hidden="true" /> : item.step}
                     </div>
                     <span style={{ fontSize: '13px', color: item.done ? '#fff' : 'rgba(255,255,255,0.45)', fontWeight: item.done ? '600' : '400' }}>{item.text}</span>
                   </div>
                 ))}
-                <div style={{ marginTop: '24px', padding: '14px', background: 'rgba(27,79,216,0.3)', borderRadius: '12px', border: '1px solid rgba(27,79,216,0.5)' }}>
+                <div style={{ marginTop: '24px', padding: '14px', background: 'rgba(27,63,146,0.3)', borderRadius: '12px', border: '1px solid rgba(27,63,146,0.5)' }}>
                   <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginBottom: '8px' }}>Ар бир сабак боюнча тема</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {['Алгебра', 'Геометрия', 'Статистика', 'Функциялар'].map(t => (
@@ -275,7 +277,7 @@ export default function MathPage() {
             <div style={{ textAlign: 'center', marginBottom: '44px' }}>
               <p style={{ color: '#94A3B8', fontSize: '11px', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase' as const, marginBottom: '12px' }}>Эмүчүн</p>
               <h2 style={{ fontSize: 'clamp(24px,3.5vw,38px)', fontWeight: '900', letterSpacing: '-1px', color: '#0D1E4A' }}>
-                Математика — бул <span style={{ color: '#1B4FD8' }}>инвестиция</span>
+                Математика — бул <span style={{ color: '#1B3F92' }}>инвестиция</span>
               </h2>
             </div>
           </Reveal>
@@ -283,7 +285,7 @@ export default function MathPage() {
             {WHY.map(({ Icon, title, desc }, i) => (
               <Reveal key={i} delay={i * 70}>
                 <div className="why-card" style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '18px', padding: '22px', height: '100%', transition: 'all 0.3s' }}>
-                  <div className="why-icon" style={{ marginBottom: '12px', color: '#1B4FD8' }}><Icon size={28} strokeWidth={1.8} aria-hidden="true" /></div>
+                  <div className="why-icon" style={{ marginBottom: '12px', color: '#1B3F92' }}><Icon size={28} strokeWidth={1.8} aria-hidden="true" /></div>
                   <div className="why-title" style={{ fontWeight: '800', fontSize: '14px', color: '#0D1E4A', marginBottom: '8px', lineHeight: '1.3' }}>{title}</div>
                   <div className="why-desc" style={{ fontSize: '13px', color: '#64748B', lineHeight: '1.65' }}>{desc}</div>
                 </div>
@@ -300,7 +302,7 @@ export default function MathPage() {
             <div style={{ textAlign: 'center', marginBottom: '44px' }}>
               <p style={{ color: '#94A3B8', fontSize: '11px', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase' as const, marginBottom: '12px' }}>Программа</p>
               <h2 style={{ fontSize: 'clamp(24px,3.5vw,38px)', fontWeight: '900', letterSpacing: '-1px', color: '#0D1E4A' }}>
-                Ар бир класс үчүн <span style={{ color: '#1B4FD8' }}>өзүнчө программа</span>
+                Ар бир класс үчүн <span style={{ color: '#1B3F92' }}>өзүнчө программа</span>
               </h2>
             </div>
           </Reveal>
@@ -351,7 +353,7 @@ export default function MathPage() {
                     <div className="how-connector" style={{ position: 'absolute', top: '20px', left: 'calc(100% - 7px)', width: '14px', height: '2px', background: '#BFDBFE', zIndex: 0 }} />
                   )}
                   <div className="how-card" style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '18px', padding: '22px', position: 'relative', zIndex: 1 }}>
-                    <div style={{ width: '38px', height: '38px', background: '#1B4FD8', borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '900', fontSize: '13px', marginBottom: '14px' }}>{h.n}</div>
+                    <div style={{ width: '38px', height: '38px', background: '#1B3F92', borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '900', fontSize: '13px', marginBottom: '14px' }}>{h.n}</div>
                     <div style={{ fontWeight: '800', fontSize: '14px', color: '#0D1E4A', marginBottom: '7px' }}>{h.title}</div>
                     <div style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.65' }}>{h.desc}</div>
                   </div>
@@ -378,7 +380,7 @@ export default function MathPage() {
                 <div className="faq-row" style={{ background: openFaq === i ? '#F0F5FF' : '#FAFBFF', border: `1px solid ${openFaq === i ? '#BFDBFE' : '#E2E8F0'}`, borderRadius: '14px', overflow: 'hidden', transition: 'all 0.2s', cursor: 'pointer' }} onClick={() => setOpenFaq(openFaq === i ? null : i)}>
                   <div className="faq-q" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px', gap: '12px' }}>
                     <span style={{ fontWeight: '600', fontSize: '14px', color: '#0D1E4A' }}>{faq.q}</span>
-                    <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: openFaq === i ? '#1B4FD8' : '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s', transform: openFaq === i ? 'rotate(45deg)' : 'none', color: openFaq === i ? '#fff' : '#1B4FD8', fontSize: '17px' }}>+</div>
+                    <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: openFaq === i ? '#1B3F92' : '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s', transform: openFaq === i ? 'rotate(45deg)' : 'none', color: openFaq === i ? '#fff' : '#1B3F92', fontSize: '17px' }}>+</div>
                   </div>
                   {openFaq === i && (
                     <div className="faq-a" style={{ padding: '0 20px 18px', color: '#64748B', fontSize: '14px', lineHeight: '1.7', borderTop: '1px solid #E2E8F0' }}>
@@ -393,7 +395,7 @@ export default function MathPage() {
       </div>
 
       {/* CTA */}
-      <div className="cta-section" style={{ background: '#1B4FD8', padding: '88px 20px', position: 'relative', overflow: 'hidden' }}>
+      <div className="cta-section" style={{ background: '#1B3F92', padding: '88px 20px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '10%', right: '5%', fontSize: '160px', opacity: 0.04, fontWeight: '900', color: '#fff', pointerEvents: 'none' }}>∑</div>
         <Reveal>
           <div style={{ maxWidth: '560px', margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
@@ -405,7 +407,7 @@ export default function MathPage() {
               Жазылуу үчүн WhatsAppка жазыңыз — биз байланышып, бардык маалыматты беребиз.
             </p>
             <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#fff', color: '#1B4FD8', borderRadius: '14px', padding: '15px 40px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 10px 36px rgba(0,0,0,0.18)', transition: 'all 0.2s' }}>
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#fff', color: '#1B3F92', borderRadius: '14px', padding: '15px 40px', fontWeight: '900', fontSize: '15px', textDecoration: 'none', boxShadow: '0 10px 36px rgba(0,0,0,0.18)', transition: 'all 0.2s' }}>
               <MessageCircle size={18} aria-hidden="true" /> WhatsAppка жазуу
             </a>
           </div>
@@ -423,7 +425,7 @@ export default function MathPage() {
             <span style={{ fontWeight: '800', fontSize: '11px', color: '#93C5FD', background: 'rgba(147,197,253,0.15)', padding: '2px 7px', borderRadius: '5px' }}>Math</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}><Copyright size={12} aria-hidden="true" />2026 Жангак Math</div>
-          <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#93C5FD', fontSize: '13px', textDecoration: 'none', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Phone size={15} aria-hidden="true" /> +996 708 584 613</a>
+          <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#93C5FD', fontSize: '13px', textDecoration: 'none', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Phone size={15} aria-hidden="true" /> +996 502 245 245</a>
         </div>
       </div>
     </div>

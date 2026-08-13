@@ -88,7 +88,7 @@ export default function AdminLayout({ children }: Props) {
   if (!checked) return (
     <main className="flex min-h-dvh items-center justify-center bg-[#F4F6FA] px-5">
       <div role="status" className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-600 shadow-sm">
-        <LoaderCircle size={19} className="animate-spin text-[#1B4FD8]" aria-hidden="true" />
+        <LoaderCircle size={19} className="animate-spin text-[#1B3F92]" aria-hidden="true" />
         Проверяем права доступа…
       </div>
     </main>

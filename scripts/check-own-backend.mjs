@@ -18,10 +18,18 @@ async function walk(directory) {
   return files
 }
 
+// The migration-preparation kit is quarantined from API runtime and has its
+// own static guard below; its source terminology must not weaken this check.
+const migrationPreparationFiles = new Set([
+  'backend/scripts/supabase-migration-preflight.js',
+  'backend/test/supabase-migration-preflight.test.js',
+])
 const files = (await walk('backend')).filter(file =>
   /\.(?:js|sql|json)$/.test(file)
   && !file.includes('/node_modules/')
-  && !file.includes('/dist/'),
+  && !file.includes('/dist/')
+  && !file.includes('/migration-prep/')
+  && !migrationPreparationFiles.has(file),
 )
 const combined = (await Promise.all(files.map(read))).join('\n')
 expect(!/@supabase|supabase-js|supabase\.co/i.test(combined), 'first-party backend must not depend on Supabase')
@@ -35,6 +43,10 @@ expect(config.includes('Production origins must use HTTPS'), 'production origins
 const migration = await read('backend/scripts/migrate.js')
 expect(migration.includes('pg_advisory_xact_lock'), 'migrations must be serialized')
 expect(migration.includes('Applied migration changed'), 'changed applied migrations must be rejected')
+
+const migrationPreflight = await read('backend/scripts/supabase-migration-preflight.js')
+expect(!/from ['"]pg['"]|connectDatabase|\bfetch\s*\(|node:child_process|writeFile/.test(migrationPreflight), 'migration preflight must remain a local read-only preparation tool')
+expect(migrationPreflight.includes('SUPABASE_SOURCE_DATABASE_URL') && migrationPreflight.includes('ZHANGAK_TARGET_DATABASE_URL') && migrationPreflight.includes("'--apply'"), 'migration preflight must require explicit source, target, and --apply consent')
 
 const auth = await read('backend/src/auth.js')
 expect(auth.includes('user.session_version !== claims.sv'), 'protected requests must enforce current session version')

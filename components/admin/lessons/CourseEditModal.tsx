@@ -66,29 +66,29 @@ export default function CourseEditModal({ course, onClose, onSaved }: Props) {
           <div>
             <label className="mb-1 block text-xs font-semibold text-gray-500">Название *</label>
             <input value={name} onChange={event => setName(event.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-semibold text-gray-500">Код курса</label>
               <input value={code} onChange={event => setCode(event.target.value)} placeholder="ort-math-11"
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm lowercase outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm lowercase outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-gray-500">Уровень</label>
               <input value={level} onChange={event => setLevel(event.target.value)} placeholder="11 класс"
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
             </div>
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold text-gray-500">Предмет</label>
             <input value={subject} onChange={event => setSubject(event.target.value)} placeholder="Математика"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold text-gray-500">Описание</label>
             <textarea value={description} onChange={event => setDescription(event.target.value)} rows={3}
-              className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B4FD8]/20" />
+              className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
           </div>
           <label className="flex items-center gap-2 text-sm font-semibold text-gray-600"><input type="checkbox" checked={isActive} onChange={event => setIsActive(event.target.checked)} /> Курс активен</label>
 
@@ -96,7 +96,7 @@ export default function CourseEditModal({ course, onClose, onSaved }: Props) {
 
           <div className="flex flex-wrap gap-2 pt-2">
             <button type="button" onClick={handleSubmit} disabled={saving}
-              className="rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60">
+              className="rounded-xl bg-[#1B3F92] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60">
               {saving ? 'Сохранение…' : 'Сохранить'}
             </button>
             <button type="button" onClick={onClose} disabled={saving}

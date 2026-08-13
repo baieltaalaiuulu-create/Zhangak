@@ -56,7 +56,7 @@ export default function AdminTopbar({ title, actionLabel, actionIcon: ActionIcon
           <button
             type="button"
             onClick={onAction}
-            className="flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-[#1B4FD8] px-4 py-2 text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-[#1B3F92] px-4 py-2 text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700"
           >
             {ActionIcon && <ActionIcon size={16} />}
             {actionLabel}

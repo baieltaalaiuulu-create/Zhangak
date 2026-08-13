@@ -72,7 +72,7 @@ export default function MobileLessonComplete({ correct, total, xp, wrongQuestion
         {nextLessonHref && (
           <a
             href={nextLessonHref}
-            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#1B4FD8] px-4 text-base font-bold text-white transition-colors active:bg-blue-700"
+            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#1B3F92] px-4 text-base font-bold text-white transition-colors active:bg-blue-700"
           >
             Следующий урок
             <ArrowRight size={19} aria-hidden="true" />

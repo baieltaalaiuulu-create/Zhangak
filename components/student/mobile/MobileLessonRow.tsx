@@ -52,14 +52,14 @@ export default function MobileLessonRow({ lesson, status, onLockedTap }: Props) 
     <Link
       href={`/student/online/lessons/${lesson.id}`}
       prefetch={true}
-      className="flex min-h-[88px] w-full items-center gap-3 border-l-4 border-l-[#1B4FD8] bg-[#EEF2FF]/50 px-3 py-3"
+      className="flex min-h-[88px] w-full items-center gap-3 border-l-4 border-l-[#1B3F92] bg-[#EEF2FF]/50 px-3 py-3"
     >
-      <PlayCircle size={22} className="shrink-0 text-[#1B4FD8]" />
+      <PlayCircle size={22} className="shrink-0 text-[#1B3F92]" />
       <div className="min-w-0 flex-1">
         <span className="line-clamp-2 text-base font-bold leading-snug text-[#191B23]">{lesson.order_number}. {lesson.title}</span>
         <p className="mt-0.5 text-xs text-gray-400">{durationLabel(lesson)}</p>
       </div>
-      <span className="flex min-h-11 shrink-0 items-center gap-0.5 rounded-lg bg-[#1B4FD8] px-3 py-2 text-xs font-bold text-white">
+      <span className="flex min-h-11 shrink-0 items-center gap-0.5 rounded-lg bg-[#1B3F92] px-3 py-2 text-xs font-bold text-white">
         Продолжить <ChevronRight size={14} />
       </span>
     </Link>

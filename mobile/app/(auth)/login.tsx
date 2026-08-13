@@ -7,7 +7,7 @@ import { router, Redirect } from 'expo-router'
 import { useNativeAuth } from '@/components/NativeAuthProvider'
 import { ZhangakApiError } from '@/lib/native-auth'
 
-const BRAND_BLUE = '#1B4FD8'
+const BRAND_BLUE = '#1B3F92'
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('')

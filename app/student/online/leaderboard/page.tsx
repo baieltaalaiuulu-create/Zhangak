@@ -40,7 +40,7 @@ export default function LeaderboardPage() {
 
           <div className="mx-auto mt-7 grid max-w-xl gap-3 text-left sm:grid-cols-2">
             <div className="rounded-2xl bg-blue-50 p-4">
-              <BookOpenCheck size={20} className="text-[#1B4FD8]" aria-hidden="true" />
+              <BookOpenCheck size={20} className="text-[#1B3F92]" aria-hidden="true" />
               <h2 className="mt-3 text-sm font-bold text-slate-900">Только проверенные попытки</h2>
               <p className="mt-1 text-xs leading-5 text-slate-600">Баллы будут считаться на сервере после завершения теста.</p>
             </div>
@@ -59,7 +59,7 @@ export default function LeaderboardPage() {
           <div className="mt-7 flex flex-col justify-center gap-2 sm:flex-row">
             <Link
               href="/student/online/practice"
-              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#1B4FD8] px-5 text-sm font-bold text-white transition-colors hover:bg-blue-700"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white transition-colors hover:bg-blue-700"
             >
               Открыть тренажёр
             </Link>

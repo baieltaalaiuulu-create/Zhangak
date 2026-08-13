@@ -28,7 +28,7 @@ export default function ChatTopbar({
       </button>
 
       <div className="min-w-0 truncate text-sm font-semibold text-gray-500">
-        <Link href="/student/online" className="hover:text-[#1B4FD8]">AI Mentor</Link>
+        <Link href="/student/online" className="hover:text-[#1B3F92]">AI Mentor</Link>
         <span className="mx-1.5 text-gray-300">·</span>
         <span className="text-gray-900">{firstName}</span>
         <span className="text-gray-400"> {currentScore} / {targetScore} баллов</span>
@@ -39,7 +39,7 @@ export default function ChatTopbar({
           type="button"
           onClick={onToggleAnalytics}
           className={`ml-auto flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-colors lg:hidden ${
-            analyticsOpen ? 'bg-[#1B4FD8] text-white' : 'bg-gray-50 text-gray-600'
+            analyticsOpen ? 'bg-[#1B3F92] text-white' : 'bg-gray-50 text-gray-600'
           }`}
         >
           {analyticsOpen ? <X size={14} /> : <BarChart2 size={14} />}

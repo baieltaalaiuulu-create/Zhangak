@@ -1,0 +1,20 @@
+{
+  "format": "zhangak.supabase-checksum-ledger/v1",
+  "inventorySha256": "<sha256-of-completed-source-inventory-json-bytes>",
+  "sourceSchemaSha256": "<same-sha256-recorded-in-inventory-capture>",
+  "artifacts": [
+    {
+      "key": "example-courses-export",
+      "path": "exports/public-courses.ndjson",
+      "format": "ndjson",
+      "bytes": 0,
+      "rowCount": 0,
+      "sha256": "<sha256-of-the-encrypted-export-copy-before-encryption>"
+    }
+  ],
+  "notes": [
+    "This repository stores only the lock metadata. Real exports, dumps, and access credentials remain encrypted outside Git.",
+    "For each exported table, independently record the source count, exported row count, byte length, and SHA-256 before and after secure transfer.",
+    "A checksum match proves file integrity, not semantic correctness. Review foreign keys, duplicate natural keys, nullability, and target constraints in a disposable restore."
+  ]
+}

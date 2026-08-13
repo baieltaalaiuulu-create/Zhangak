@@ -114,7 +114,7 @@ export default function StudentLayout({ children }: Props) {
           </span>
           <h1 className="mt-4 text-xl font-black text-[#0D1E4A]">Не удалось проверить вход</h1>
           <p className="mt-2 text-sm font-medium leading-6 text-slate-500">Кабинет остаётся закрытым. Проверь соединение и повтори попытку.</p>
-          <button type="button" onClick={retryAuth} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4FD8] px-4 text-sm font-extrabold text-white">
+          <button type="button" onClick={retryAuth} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-extrabold text-white">
             <RefreshCw size={17} aria-hidden="true" />
             Повторить
           </button>
@@ -127,7 +127,7 @@ export default function StudentLayout({ children }: Props) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-[#FAF8FF] px-5">
         <div role="status" className="flex items-center gap-3 rounded-2xl border border-blue-100 bg-white px-5 py-4 text-sm font-semibold text-slate-600 shadow-sm">
-          <LoaderCircle size={19} className="animate-spin text-[#1B4FD8]" aria-hidden="true" />
+          <LoaderCircle size={19} className="animate-spin text-[#1B3F92]" aria-hidden="true" />
           Проверяем вход…
         </div>
       </main>

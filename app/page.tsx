@@ -68,7 +68,7 @@ export default function RootPage() {
         {DOT_DELAYS_MS.map(delay => (
           <div
             key={delay}
-            className="h-2 w-2 animate-bounce rounded-full bg-[#1B4FD8]"
+            className="h-2 w-2 animate-bounce rounded-full bg-[#1B3F92]"
             style={{ animationDelay: `${delay}ms` }}
           />
         ))}

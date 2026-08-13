@@ -42,7 +42,7 @@ export default function PracticeQuestionScreen({
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-gray-200">
             <div
-              className="h-full rounded-full bg-[#1B4FD8] transition-all duration-500"
+              className="h-full rounded-full bg-[#1B3F92] transition-all duration-500"
               style={{ width: `${(answeredCount / total) * 100}%` }}
             />
           </div>
@@ -84,11 +84,11 @@ export default function PracticeQuestionScreen({
                   type="button"
                   onClick={() => onSelect(letter)}
                   className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-colors ${
-                    isSelected ? 'border-[#1B4FD8] bg-blue-50' : 'border-gray-100 bg-gray-50 hover:border-gray-200'
+                    isSelected ? 'border-[#1B3F92] bg-blue-50' : 'border-gray-100 bg-gray-50 hover:border-gray-200'
                   }`}
                 >
                   <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                    isSelected ? 'bg-[#1B4FD8] text-white' : 'bg-white text-gray-500'
+                    isSelected ? 'bg-[#1B3F92] text-white' : 'bg-white text-gray-500'
                   }`}>
                     {letter.toUpperCase()}
                   </span>
@@ -113,7 +113,7 @@ export default function PracticeQuestionScreen({
                     type="button"
                     onClick={() => onJump(i)}
                     className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                      isCurrent ? 'bg-[#1B4FD8] text-white' :
+                      isCurrent ? 'bg-[#1B3F92] text-white' :
                       isAnswered ? 'bg-green-100 text-green-700' :
                       'bg-gray-100 text-gray-400'
                     }`}
@@ -132,7 +132,7 @@ export default function PracticeQuestionScreen({
             type="button"
             onClick={onNext}
             disabled={!selected || submitting}
-            className="block w-full rounded-xl bg-[#1B4FD8] py-3 text-center text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+            className="block w-full rounded-xl bg-[#1B3F92] py-3 text-center text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
           >
             {submitting ? 'Отправляем…' : isLast ? 'Завершить тест' : 'Следующий вопрос →'}
           </button>

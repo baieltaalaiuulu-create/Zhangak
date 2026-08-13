@@ -23,14 +23,14 @@ export default function MobileSubjectAccordion({ icon, label, completed, total, 
         onClick={onToggle}
         className="flex min-h-11 w-full items-center gap-3 px-4 py-3.5 text-left"
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#1B4FD8]">{icon}</span>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#1B3F92]">{icon}</span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center justify-between gap-2">
             <span className="text-sm font-bold text-[#191B23]">{label}</span>
             <span className="shrink-0 text-xs font-semibold text-gray-400">{completed}/{total} уроков</span>
           </span>
           <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-gray-100">
-            <span className="block h-full rounded-full bg-[#1B4FD8] transition-all duration-700" style={{ width: `${pct}%` }} />
+            <span className="block h-full rounded-full bg-[#1B3F92] transition-all duration-700" style={{ width: `${pct}%` }} />
           </span>
         </span>
         <ChevronDown size={18} className={`shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
