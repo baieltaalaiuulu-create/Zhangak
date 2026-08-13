@@ -5,6 +5,7 @@ import {
   getAdmissionProbability,
   rankAdmissionMatches,
 } from '../../lib/university-matching.ts'
+import { parseUniversityCatalog } from '../../lib/universities-data.ts'
 
 test('admission probability stays unknown without a real mock result or published threshold', () => {
   assert.equal(getAdmissionProbability(null, 140).level, 'unknown')
@@ -42,4 +43,40 @@ test('admission plan prompt forbids fabricated university facts', () => {
   const prompt = buildAdmissionPlanPrompt(null, 200)
   assert.match(prompt, /нет результата пробного ОРТ/)
   assert.match(prompt, /Не придумывай проходные баллы, стоимость или сроки/)
+})
+
+test('an empty first-party catalog is an explicit valid state, not fabricated data', () => {
+  assert.deepEqual(parseUniversityCatalog({
+    items: [],
+    stats: {
+      totalUniversities: 0,
+      totalSpecialties: 0,
+      stateUniversities: 0,
+      privateUniversities: 0,
+      averagePassingScore: 0,
+    },
+    catalogStatus: 'empty',
+  }), {
+    items: [],
+    stats: {
+      totalUniversities: 0,
+      totalSpecialties: 0,
+      stateUniversities: 0,
+      privateUniversities: 0,
+      averagePassingScore: 0,
+    },
+    catalogStatus: 'empty',
+  })
+
+  assert.throws(() => parseUniversityCatalog({
+    items: [],
+    stats: {
+      totalUniversities: 1,
+      totalSpecialties: 0,
+      stateUniversities: 1,
+      privateUniversities: 0,
+      averagePassingScore: 0,
+    },
+    catalogStatus: 'empty',
+  }), /empty catalog/)
 })

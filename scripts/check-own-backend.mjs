@@ -49,6 +49,7 @@ expect(authRoutes.includes("GET('/v1/auth/me'"), 'current-account endpoint is re
 const server = await read('backend/src/server.js')
 expect(server.includes("import './routes/health.js'"), 'health routes must be registered')
 expect(server.includes("import './routes/admin-users.js'"), 'first-party account administration routes must be registered')
+expect(server.includes("import './routes/platform-profile.js'"), 'first-party student profile routes must be registered')
 expect(server.includes('server.requestTimeout = 30_000'), 'HTTP request timeout must be bounded')
 expect(server.includes("process.on('SIGTERM'"), 'API must shut down gracefully')
 
@@ -59,6 +60,13 @@ const adminUsers = await read('backend/src/routes/admin-users.js')
 expect(adminUsers.includes('ACCOUNT_CREATOR_ROLES') && adminUsers.includes('ACCOUNT_MANAGER_ROLES'), 'account routes must separate create and manage roles')
 expect(adminUsers.includes('session_version = session_version + 1'), 'account security changes must revoke access tokens')
 expect(adminUsers.includes("await audit(client, currentActor, 'delete_user'"), 'privileged account deletion must be audited')
+
+const platformProfile = await read('backend/src/routes/platform-profile.js')
+expect(platformProfile.includes("GET('/v1/platform/profile'"), 'student profile read endpoint is required')
+expect(platformProfile.includes("PATCH('/v1/platform/profile'"), 'student profile update endpoint is required')
+expect(platformProfile.includes("new Set(['student', 'math_student'])"), 'student profile endpoint must enforce student roles')
+expect(platformProfile.includes('const allowed = new Set([\'fullName\', \'avatarUrl\', \'targetScore\'])'), 'student profile fields must be explicitly whitelisted')
+expect(!platformProfile.includes("DELETE('/v1/platform/profile'"), 'student profile deletion must remain unavailable until data deletion is transactional')
 
 if (failures.length > 0) {
   console.error(`Own backend check failed (${failures.length}):`)

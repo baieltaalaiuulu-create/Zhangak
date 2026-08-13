@@ -2,12 +2,11 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useMemo, useState } from 'react'
-import { GitCompareArrows, RefreshCw, WifiOff, X } from 'lucide-react'
+import { GitCompareArrows, GraduationCap, RefreshCw, WifiOff, X } from 'lucide-react'
 import { DEFAULT_TARGET_SCORE } from '@/lib/student-data'
-import { fetchLatestMockScore } from '@/lib/profile-data'
 import {
-  fetchUniversities, fetchCatalogStats, getFavoriteIds, toggleFavorite,
-  type University, type CatalogStats,
+  fetchUniversityCatalog, getFavoriteIds, toggleFavorite,
+  type CatalogStatus, type University, type CatalogStats,
 } from '@/lib/universities-data'
 import { rankAdmissionMatches } from '@/lib/university-matching'
 import UniversitiesHero from '@/components/student/universities/UniversitiesHero'
@@ -53,31 +52,35 @@ export default function UniversitiesPage() {
   const [comparisonIds, setComparisonIds] = useState<Set<string>>(new Set())
   const [universities, setUniversities] = useState<University[]>([])
   const [catalogStats, setCatalogStats] = useState<CatalogStats | null>(null)
+  const [catalogStatus, setCatalogStatus] = useState<CatalogStatus | null>(null)
 
   useEffect(() => {
+    let active = true
     const init = async () => {
       const user = sessionUser
-      setStudentId(user.id)
 
       try {
-        const [latest, universityList, stats] = await Promise.all([
-          fetchLatestMockScore(user.id),
-          fetchUniversities(),
-          fetchCatalogStats(),
-        ])
+        const catalog = await fetchUniversityCatalog()
+        if (!active) return
 
         setTargetScore(user.targetScore ?? DEFAULT_TARGET_SCORE)
-        setLatestScore(latest)
-        setUniversities(universityList)
-        setCatalogStats(stats)
+        // An own API for an authoritative full ORT mock score is not part of
+        // this slice yet. Never reinterpret a practice percentage or the
+        // student's target score as a current result.
+        setLatestScore(null)
+        setUniversities(catalog.items)
+        setCatalogStats(catalog.stats)
+        setCatalogStatus(catalog.catalogStatus)
+        setStudentId(user.id)
         setFavorites(getFavoriteIds(user.id))
       } catch {
-        setLoadError(true)
+        if (active) setLoadError(true)
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     }
-    init()
+    void init()
+    return () => { active = false }
   }, [sessionUser])
 
   const handleToggleFavorite = (id: string) => {
@@ -94,7 +97,8 @@ export default function UniversitiesPage() {
   }
 
   // Only an actual mock result is a current score. A target is aspirational
-  // and must never be presented as evidence of admission probability.
+  // and must never be presented as evidence of admission probability. The
+  // first-party mock score projection is pending, so this stays unknown.
   const studentScore = latestScore
 
   const filtered = useMemo(() => {
@@ -130,6 +134,30 @@ export default function UniversitiesPage() {
           <button type="button" onClick={() => window.location.reload()} className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#6C3DE0] px-5 text-sm font-bold text-white">
             <RefreshCw size={16} aria-hidden="true" /> Повторить
           </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (catalogStatus === 'empty') {
+    return (
+      <div className="min-h-screen bg-[#F4F6FA]">
+        <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+          <section className="rounded-3xl border border-violet-100 bg-white p-6 text-center shadow-sm sm:p-10">
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 text-[#6C3DE0]">
+              <GraduationCap size={28} aria-hidden="true" />
+            </span>
+            <h1 className="mt-5 text-xl font-extrabold text-gray-900">Каталог университетов обновляется</h1>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-gray-500">
+              Мы добавим сюда только проверенные карточки университетов и специальностей. Пока данных нет в новой платформе, поэтому не показываем старые или непроверенные сведения.
+            </p>
+            <p className="mt-4 text-xs leading-5 text-gray-400">
+              Для выбора вуза сейчас сверяй условия поступления на официальных сайтах и в приёмных комиссиях.
+            </p>
+          </section>
+          <div className="mt-5">
+            <UniversitiesBottomCTA currentScore={studentScore} targetScore={targetScore} />
+          </div>
         </div>
       </div>
     )

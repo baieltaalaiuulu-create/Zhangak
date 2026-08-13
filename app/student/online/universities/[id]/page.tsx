@@ -2,12 +2,11 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { GitCompareArrows, RefreshCw, WifiOff } from 'lucide-react'
-import { fetchLatestMockScore } from '@/lib/profile-data'
 import {
-  fetchUniversityById, fetchUniversities, getFavoriteIds, toggleFavorite, type University,
+  fetchUniversityById, fetchUniversityCatalog, getFavoriteIds, toggleFavorite, type University,
 } from '@/lib/universities-data'
 import UniversityDetailHeader from '@/components/student/universities/UniversityDetailHeader'
 import SpecialtiesTable from '@/components/student/universities/SpecialtiesTable'
@@ -45,7 +44,6 @@ function formatCost(cost: number | null): string {
 }
 
 export default function UniversityDetailPage() {
-  const router = useRouter()
   const params = useParams<{ id: string }>()
   const sessionUser = useStudentSession()
   const [loading, setLoading] = useState(true)
@@ -59,34 +57,42 @@ export default function UniversityDetailPage() {
   const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
+    let active = true
     const init = async () => {
       const user = sessionUser
-      setStudentId(user.id)
+      setLoading(true)
+      setLoadError(false)
+      setNotFound(false)
 
       try {
-        const [latest, foundUniversity, allUniversities] = await Promise.all([
-          fetchLatestMockScore(user.id),
+        const [foundUniversity, catalog] = await Promise.all([
           fetchUniversityById(params.id),
-          fetchUniversities(),
+          fetchUniversityCatalog(),
         ])
+        if (!active) return
 
         if (!foundUniversity) { setNotFound(true); return }
 
-        setStudentScore(latest)
+        // The catalog no longer reads a legacy mock result. An own full ORT
+        // score projection is still pending, so admission probability remains
+        // explicitly unknown instead of using a target score or percentage.
+        setStudentScore(null)
         setUniversity(foundUniversity)
         const savedFavorites = getFavoriteIds(user.id)
         setComparisonList([
           foundUniversity,
-          ...allUniversities.filter(u => u.id !== foundUniversity.id && savedFavorites.has(u.id)).slice(0, 2),
+          ...catalog.items.filter(u => u.id !== foundUniversity.id && savedFavorites.has(u.id)).slice(0, 2),
         ])
+        setStudentId(user.id)
         setFavorites(savedFavorites)
       } catch {
-        setLoadError(true)
+        if (active) setLoadError(true)
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     }
-    init()
+    void init()
+    return () => { active = false }
   }, [params.id, sessionUser])
 
   if (loading) return <LoadingScreen />
@@ -107,8 +113,17 @@ export default function UniversityDetailPage() {
   }
 
   if (notFound || !university) {
-    router.push('/student/online/universities')
-    return <LoadingScreen />
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F4F6FA] px-6 text-center">
+        <div className="max-w-sm rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <h1 className="text-lg font-bold text-gray-900">Университет пока не опубликован</h1>
+          <p className="mt-2 text-sm leading-6 text-gray-500">Карточка не найдена в новом каталоге. Мы показываем только проверенные и активные данные.</p>
+          <Link href="/student/online/universities" className="mt-5 inline-flex min-h-12 items-center rounded-xl bg-[#6C3DE0] px-5 text-sm font-bold text-white">
+            Вернуться в каталог
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   const isFavorite = favorites.has(university.id)

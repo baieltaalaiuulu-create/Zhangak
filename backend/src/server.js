@@ -8,6 +8,8 @@ import './routes/health.js'
 import './routes/auth.js'
 import './routes/admin-users.js'
 import './routes/platform-learning.js'
+import './routes/platform-universities.js'
+import './routes/platform-profile.js'
 
 const config = loadConfig()
 connectDatabase(config)

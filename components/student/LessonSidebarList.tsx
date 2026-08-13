@@ -1,11 +1,22 @@
 import Link from 'next/link'
-import { LESSON_SUBJECT_META, type Lesson, type LessonStatus } from '@/lib/lessons-data'
+import { BookMarked, BookOpen, Calculator, Check, Lock } from 'lucide-react'
+import {
+  type LessonView,
+  type PlatformLessonStatus,
+  type PlatformLessonSubject,
+} from '@/lib/platform-lessons'
 
 interface Props {
-  lessons: Lesson[]
-  statuses: Record<string, LessonStatus>
+  lessons: LessonView[]
+  statuses: Record<string, PlatformLessonStatus>
   activeId: string
 }
+
+const SUBJECT_ICON = {
+  math: Calculator,
+  kyr: BookMarked,
+  other: BookOpen,
+} satisfies Record<PlatformLessonSubject, typeof BookOpen>
 
 export default function LessonSidebarList({ lessons, statuses, activeId }: Props) {
   return (
@@ -14,7 +25,7 @@ export default function LessonSidebarList({ lessons, statuses, activeId }: Props
       <div className="flex max-h-96 flex-col gap-1 overflow-y-auto">
         {lessons.map(lesson => {
           const status = statuses[lesson.id]
-          const meta = LESSON_SUBJECT_META[lesson.subject]
+          const SubjectIcon = SUBJECT_ICON[lesson.subject]
           const isActive = lesson.id === activeId
           const rowClasses = `flex items-center gap-2.5 rounded-xl px-2.5 py-2 transition-colors ${
             isActive ? 'bg-blue-50' : status === 'locked' ? 'opacity-50' : 'hover:bg-gray-50'
@@ -27,12 +38,16 @@ export default function LessonSidebarList({ lessons, statuses, activeId }: Props
                 status === 'current' ? 'bg-blue-100 text-blue-600' :
                 'bg-gray-100 text-gray-400'
               }`}>
-                {status === 'done' ? '✓' : status === 'locked' ? '🔒' : lesson.order_number}
+                {status === 'done'
+                  ? <Check size={13} aria-label="Пройден" />
+                  : status === 'locked'
+                    ? <Lock size={12} aria-label="Заблокирован" />
+                    : lesson.order_number}
               </span>
               <span className={`min-w-0 flex-1 truncate text-xs font-medium ${isActive ? 'font-bold text-blue-700' : 'text-gray-700'}`}>
                 {lesson.title}
               </span>
-              <span className="shrink-0 text-[10px]">{meta.icon}</span>
+              <SubjectIcon size={14} className="shrink-0 text-gray-400" aria-hidden="true" />
             </>
           )
 

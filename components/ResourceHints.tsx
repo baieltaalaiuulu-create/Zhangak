@@ -11,8 +11,6 @@ import ReactDOM from 'react-dom'
 // why this is its own small mounted-in-the-root-layout component rather
 // than something in the (Server Component) RootLayout itself.
 export default function ResourceHints() {
-  // Every authenticated page's very first request — hit on every route.
-  ReactDOM.preconnect('https://olqikkvjeutdgewmhnub.supabase.co')
   // The CSS host for the @import in app/landing/page.tsx and
   // app/math/page.tsx's own <style> blocks (this app doesn't use
   // next/font/google, so there's no built-in preconnect for these).

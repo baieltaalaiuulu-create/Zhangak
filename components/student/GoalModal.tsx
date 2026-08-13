@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
-import { MIN_TARGET_SCORE, MAX_TARGET_SCORE } from '@/lib/student-data'
+import { MAX_TARGET_SCORE, MIN_TARGET_SCORE, updatePlatformProfile } from '@/lib/platform-profile'
 
 interface Props {
   currentGoal: number
@@ -40,25 +39,15 @@ export default function GoalModal({ currentGoal, onClose, onSaved }: Props) {
     setSaving(true)
     setSaveError(null)
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setSaveError('Не удалось определить пользователя')
+    try {
+      await updatePlatformProfile({ targetScore: goal })
+    } catch {
+      setSaveError('Не удалось сохранить. Попробуйте снова.')
       setSaving(false)
       return
     }
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ target_score: goal })
-      .eq('id', user.id)
-
     setSaving(false)
-
-    if (error) {
-      setSaveError('Не удалось сохранить. Попробуйте снова.')
-      return
-    }
-
     onSaved(goal)
     onClose()
   }

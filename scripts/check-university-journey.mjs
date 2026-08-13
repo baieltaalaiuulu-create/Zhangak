@@ -27,7 +27,11 @@ async function collect(relativePath) {
 
 async function main() {
   const catalog = await source('app/student/online/universities/page.tsx')
-  expect(catalog.includes('const studentScore = latestScore'), 'catalog must use only the latest real mock score')
+  expect(catalog.includes('const studentScore = latestScore'), 'catalog must use only an authoritative latest mock score when that projection exists')
+  expect(catalog.includes('setLatestScore(null)'), 'catalog must keep the score unknown until the first-party mock-score projection exists')
+  expect(!catalog.includes('fetchLatestMockScore') && !catalog.includes('profile-data'), 'catalog must not fall back to the retired score source')
+  expect(catalog.includes('fetchUniversityCatalog'), 'catalog must load through the first-party university API')
+  expect(catalog.includes("catalogStatus === 'empty'"), 'an empty first-party catalog needs an explicit honest state')
   expect(!catalog.includes('latestScore ?? targetScore'), 'target score must never impersonate a current ORT result')
   expect(catalog.includes('next.size < 3'), 'comparison selection must remain capped at three universities')
   expect(catalog.includes('comparisonList.length >= 2'), 'comparison table needs at least two selected universities')
@@ -41,9 +45,17 @@ async function main() {
 
   const universityData = await source('lib/universities-data.ts')
   expect(universityData.includes('favoritesKey(studentId)'), 'favorites must be scoped to the signed-in student')
-  expect(universityData.includes(".eq('is_active', true).maybeSingle()"), 'university details must hide inactive records')
+  expect(!universityData.includes("from '@/lib/supabase'"), 'student university catalog must not import Supabase')
+  expect(universityData.includes("zhangakApiRequest<unknown>('/v1/platform/universities')"), 'catalog reads must use the first-party BFF')
+  expect(universityData.includes('ZhangakApiError') && universityData.includes('error.status === 404'), 'missing catalog entries need a typed first-party 404 state')
   expect(!universityData.includes('середина июня'), 'generic admission copy must not invent an unverified date range')
   expect(universityData.includes('Точные сроки приёма пока не загружены'), 'missing deadlines need an explicit unknown state')
+
+  const firstPartyRoute = await source('backend/src/routes/platform-universities.js')
+  expect(firstPartyRoute.includes('requireAuth(config, req)') && firstPartyRoute.includes("'student_required'"), 'catalog API must require an own student session')
+  expect(firstPartyRoute.includes('WHERE u.is_active = true'), 'catalog API must hide inactive universities')
+  expect(firstPartyRoute.includes('AND s.is_active = true'), 'catalog API must hide inactive specialties')
+  expect(!/POST\('\/v1\/platform\/universities/.test(firstPartyRoute), 'student catalog API must remain read-only')
 
   const aiPage = await source('app/student/online/ai/page.tsx')
   expect(aiPage.includes("searchParams.get('prompt')"), 'AI coach must accept the admission-plan handoff')
@@ -52,6 +64,8 @@ async function main() {
   const detail = await source('app/student/online/universities/[id]/page.tsx')
   expect(!detail.includes("key: 'reviews'"), 'unimplemented reviews must not appear as a dead tab')
   expect(detail.includes('officialWebsite={university.website}'), 'deadline guidance must link to the official university site')
+  expect(!detail.includes('fetchLatestMockScore') && !detail.includes('profile-data'), 'catalog detail must not use the retired score source')
+  expect(detail.includes('fetchUniversityCatalog'), 'catalog detail comparison must use the first-party university API')
 
   const adminData = await source('lib/admin-universities-data.ts')
   expect(!adminData.includes("from '@/lib/supabase'"), 'admin university reads must not use the anonymous browser client')

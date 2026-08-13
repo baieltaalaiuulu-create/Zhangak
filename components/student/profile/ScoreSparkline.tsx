@@ -1,7 +1,7 @@
-import type { ScorePoint } from '@/lib/profile-data'
+import type { ProfileScorePoint } from '@/lib/platform-profile'
 
 interface Props {
-  history: ScorePoint[]
+  history: ProfileScorePoint[]
 }
 
 const WIDTH = 280

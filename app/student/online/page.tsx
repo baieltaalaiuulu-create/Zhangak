@@ -76,6 +76,7 @@ export default function StudentOnlinePage() {
   const [profileName, setProfileName] = useState<string | null>(null)
   const [data, setData] = useState<StudentDashboardData | null>(null)
   const [summary, setSummary] = useState<FirstPartyDashboardResponse['summary'] | null>(null)
+  const [targetScoreOverride, setTargetScoreOverride] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
 
@@ -138,7 +139,7 @@ export default function StudentOnlinePage() {
   }
 
   const firstName = (data.profile?.full_name ?? profileName ?? 'Студент').split(' ')[0]
-  const targetScore = data.profile?.target_score ?? DEFAULT_TARGET_SCORE
+  const targetScore = targetScoreOverride ?? data.profile?.target_score ?? DEFAULT_TARGET_SCORE
   const continueHref = summary.courseCount > 0 ? '/student/online/lessons' : '/student/online/practice'
   const subjects = [
     { key: 'math' as const, label: 'Уроки', topicLabel: summary.courseCount > 0 ? 'Продолжай программу курса' : 'Курс появится после назначения группы', color: '#1B4FD8', completed: summary.lessons.completed, total: summary.lessons.total, hoursRemaining: 0, href: '/student/online/lessons' },
@@ -178,6 +179,7 @@ export default function StudentOnlinePage() {
             targetScore={targetScore}
             minutesRemaining={0}
             ctaHref={continueHref}
+            onGoalUpdate={setTargetScoreOverride}
           />
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">

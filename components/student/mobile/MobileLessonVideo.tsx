@@ -11,8 +11,16 @@ interface Props {
 }
 
 function extractYoutubeId(url: string): string | null {
-  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)
-  return match ? match[1] : null
+  try {
+    const parsed = new URL(url)
+    if (parsed.hostname === 'youtu.be') return parsed.pathname.split('/').filter(Boolean)[0] ?? null
+    if (['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(parsed.hostname)) {
+      return parsed.searchParams.get('v') ?? (parsed.pathname.startsWith('/embed/') ? parsed.pathname.split('/')[2] ?? null : null)
+    }
+    return null
+  } catch {
+    return null
+  }
 }
 
 // Not in lib.dom — loaded lazily from https://www.youtube.com/iframe_api

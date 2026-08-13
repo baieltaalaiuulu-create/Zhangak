@@ -1,34 +1,16 @@
 'use client'
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState } from 'react'
 import SettingsNotifications from '@/components/student/settings/SettingsNotifications'
 import SettingsInstallCard from '@/components/student/settings/SettingsInstallCard'
 import DangerZoneCard from '@/components/student/settings/DangerZoneCard'
 import { useStudentSession } from '@/components/student/StudentSessionContext'
 
 export default function SettingsPage() {
+  // The parent StudentLayout has already verified this own first-party
+  // session. Keep this read so the page cannot accidentally be mounted
+  // outside that protected shell in the future.
   useStudentSession()
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    setLoading(false)
-  }, [])
-
-  const handleDeleteAccount = async () => {
-    // Deletion must remove every first-party learning record atomically. It
-    // remains unavailable until the learning-data cutover is complete rather
-    // than accidentally calling the retired Supabase endpoint.
-    throw new Error('Удаление аккаунта станет доступно после переноса учебных данных. Пока обратитесь в поддержку.')
-  }
-
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAF8FF', fontFamily: 'Inter, sans-serif' }}>
-        <div style={{ color: '#9CA3AF', fontSize: 14 }}>Загрузка...</div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-[#FAF8FF]">
@@ -37,7 +19,7 @@ export default function SettingsPage() {
 
         <SettingsNotifications />
         <SettingsInstallCard />
-        <DangerZoneCard onDeleteAccount={handleDeleteAccount} />
+        <DangerZoneCard />
       </div>
     </div>
   )
