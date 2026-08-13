@@ -20,45 +20,39 @@ async function collect(directory) {
 }
 
 async function main() {
-  const route = await source('app/api/teacher/route.ts')
-  expect((route.match(/requireRoleAuth\(request, TEACHER_ROLES\)/g) ?? []).length === 3, 'every teacher handler must require the teacher role')
-  expect(route.includes(".eq('teacher_id', teacherId)"), 'group ownership must be checked against the bearer teacher')
-  expect(route.includes(".eq('course_id', courseId)"), 'lesson ownership must be checked against the owned group course')
-  expect(route.includes(".from('group_students').select('student_id')"), 'write targets must be checked against group membership')
-  expect(route.includes("membership.ids.has(entry.studentId)"), 'attendance and grade entries must reject students outside the group')
-  expect(route.includes('readJsonObject(request, 64_000)') && route.includes('readJsonObject(request)'), 'teacher writes need bounded body parsing')
-  expect(!route.includes('request.json()'), 'teacher API must not parse unbounded JSON')
-  expect(route.includes(".upsert(rows, { onConflict: 'lesson_id,student_id' })"), 'attendance and grades must use one batch upsert')
-  expect(route.includes('total_score: gradeTotal(entry.scores)'), 'grade totals must be server-derived')
-  expect(route.includes("lessonOwnership.lesson.is_test !== true"), 'grades must be limited to control lessons')
-  expect(!/error\?\.message|error instanceof Error|String\(error\)/.test(route), 'teacher API must not leak provider or database error messages')
-  expect(!/searchParams\.get\(['"]teacherId/.test(route), 'teacher identity must never come from query parameters')
+  const [route, server, page, workspace, client, proxy] = await Promise.all([
+    source('backend/src/routes/platform-teacher.js'),
+    source('backend/src/server.js'),
+    source('app/teacher/page.tsx'),
+    source('components/teacher/TeacherWorkspace.tsx'),
+    source('lib/platform-teacher.ts'),
+    source('proxy.ts'),
+  ])
 
-  const data = await source('lib/teacher-data.ts')
-  expect(data.includes('authenticatedFetch(url'), 'teacher client writes must use authenticatedFetch')
-  expect(data.includes("request<{ success: true }>('/api/teacher'"), 'teacher mutations must go through the protected teacher endpoint')
-  expect(!data.includes("from '@/lib/supabase'"), 'teacher data client must not query Supabase tables directly')
+  expect(route.includes("GET('/v1/platform/teacher-dashboard'"), 'teacher dashboard must live on the first-party platform API')
+  expect(route.includes('requireTeacher(await requireAuth(config, req))'), 'teacher dashboard must require the first-party teacher session')
+  expect(route.includes('WHERE g.teacher_id = $1 AND g.is_active = true'), 'teacher groups must be scoped to the signed-in teacher and active only')
+  expect(route.includes('JOIN courses c ON c.id = g.course_id AND c.is_active = true'), 'teacher dashboard must exclude archived courses')
+  expect(route.includes('active_student_count') && route.includes('published_lesson_count'), 'teacher dashboard must expose only authoritative counts')
+  expect(route.includes("member_profile.role IN ('student', 'math_student')"), 'teacher student count must exclude non-student accounts')
+  for (const forbidden of [/\bFROM attendance\b/i, /\bFROM homeworks?\b/i, /\bFROM practice_attempts?\b/i, /\bcorrect_answer\b/i]) {
+    expect(!forbidden.test(route), `teacher dashboard must not project ${forbidden}`)
+  }
+  expect(server.includes("import './routes/platform-teacher.js'"), 'teacher dashboard route must be registered')
 
-  const page = await source('app/teacher/page.tsx')
-  expect(page.includes('fetchTeacherGroups()') && page.includes('fetchTeacherWorkspace'), 'teacher page must load the protected workspace')
-  expect(!page.includes('supabase.from'), 'teacher page must not read tables directly')
-
-  const workspace = await source('components/teacher/TeacherWorkspace.tsx')
-  for (const tab of ['lessons', 'attendance', 'grades', 'homework']) expect(workspace.includes(`id: '${tab}'`), `teacher workspace is missing ${tab}`)
-  expect(workspace.includes('Отметить всех: был'), 'attendance needs a one-tap mark-all action')
-  expect(workspace.includes('min-h-11') && workspace.includes('min-h-12'), 'teacher touch controls must remain at least 44px')
-  expect(workspace.includes('будет видно всем группам этого курса'), 'course-scoped homework limitation must be visible')
-  expect(!/\bany\b/.test(workspace), 'teacher workspace must stay typed without any')
-
-  const proxy = await source('proxy.ts')
-  expect(proxy.includes("'/api/teacher'"), 'teacher API must belong to the admin host')
+  expect(page.includes('getPlatformTeacherDashboard') && page.includes('TeacherWorkspace'), 'teacher page must load the first-party dashboard')
+  expect(page.includes("'/login?surface=platform'"), 'expired teacher sessions must offer the first-party login')
+  expect(!/teacher-data|teacher-contract|\/api\/teacher|supabase/i.test(page), 'mounted teacher page must not depend on the retired teacher API or Supabase')
+  expect(workspace.includes('activeStudentCount') && workspace.includes('publishedLessonCount'), 'teacher UI must render server-authoritative counts')
+  expect(workspace.includes('Журнал и задания переносятся'), 'teacher UI must state that unmigrated workflows are unavailable')
+  expect(!/teacher-data|teacher-contract|saveTeacher|createTeacherHomework|supabase/i.test(workspace), 'mounted teacher workspace must not call legacy teacher or Supabase code')
+  expect(client.includes("zhangakApiRequest<unknown>('/v1/platform/teacher-dashboard')"), 'teacher browser client must use the same-origin first-party BFF')
+  expect(proxy.includes("if (matchesPrefix(pathname, '/v1/platform')) return 'platform'"), 'teacher BFF must remain on the platform host')
 
   const scanFiles = [
     ...(await collect('components/teacher')),
     'app/teacher/page.tsx',
-    'app/api/teacher/route.ts',
-    'lib/teacher-contract.ts',
-    'lib/teacher-data.ts',
+    'lib/platform-teacher.ts',
   ]
   const pictograph = /\p{Extended_Pictographic}/u
   for (const file of scanFiles) expect(!pictograph.test(await source(file)), `${file} contains an emoji instead of an icon`)
@@ -69,7 +63,7 @@ async function main() {
     process.exitCode = 1
     return
   }
-  console.log(`Teacher journey check passed (${scanFiles.length} source files, owned groups, batch writes, mobile controls).`)
+  console.log(`Teacher journey check passed (${scanFiles.length} mounted files, first-party session, count-only dashboard).`)
 }
 
 main().catch(error => {
