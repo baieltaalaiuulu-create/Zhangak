@@ -126,6 +126,10 @@ export default function StudentOnlinePage() {
         <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6">
           {/* Mobile skeleton mirrors the intentionally short daily route. */}
           <div className="block space-y-3 md:hidden">
+            <div role="status" className="rounded-2xl border border-blue-100 bg-white px-4 py-3 shadow-sm">
+              <p className="text-sm font-extrabold text-[#0D1E4A]">Готовим твой план на сегодня</p>
+              <p className="mt-1 text-xs font-medium text-gray-500">Загружаем уроки и прогресс — это займёт несколько секунд.</p>
+            </div>
             <div className="animate-pulse space-y-2">
               <div className="h-6 w-48 rounded bg-gray-200" />
               <div className="h-4 w-32 rounded bg-gray-200" />

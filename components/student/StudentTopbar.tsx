@@ -22,7 +22,7 @@ function Pill({ children, tone = 'gray', className = '' }: { children: ReactNode
       : 'bg-gray-50 text-gray-600'
 
   return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[11px] font-semibold sm:px-3 sm:text-xs ${toneClass} ${className}`}>
+    <span className={`items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[11px] font-semibold sm:px-3 sm:text-xs ${toneClass} ${className}`}>
       {children}
     </span>
   )

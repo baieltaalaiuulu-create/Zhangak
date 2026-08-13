@@ -219,7 +219,7 @@ export default function AIDrawer() {
         type="button"
         onClick={handleOpen}
         aria-label="Открыть AI Mentor"
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-transform hover:scale-105 hover:animate-pulse sm:right-6 md:bottom-6"
+        className="fixed bottom-6 right-6 z-40 hidden h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-transform hover:scale-105 hover:animate-pulse md:flex"
         style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #7C3AED 100%)' }}
       >
         <Sparkles size={22} />

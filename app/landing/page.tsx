@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useRef } from 'react'
 import {
   Clock3,
-  ExternalLink,
   Flame,
   LogIn,
   MonitorSmartphone,
@@ -18,10 +17,10 @@ import {
   Users,
 } from 'lucide-react'
 import { PLATFORM_ORIGIN } from '@/lib/site-hosts'
+import MarketingFooter from '@/components/marketing/MarketingFooter'
 
 const PLATFORM_LOGIN_HREF = process.env.NODE_ENV === 'production' ? `${PLATFORM_ORIGIN}/login` : '/login'
 const MATH_HREF = '/math'
-const PLATFORM_HOME_HREF = process.env.NODE_ENV === 'production' ? PLATFORM_ORIGIN : '/'
 
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null)
@@ -97,11 +96,6 @@ export default function LandingPage() {
   }, [])
 
   useEffect(() => {
-    const id = setInterval(() => setActiveResult(p => (p + 1) % ALL_RESULTS.length), 3000)
-    return () => clearInterval(id)
-  }, [])
-
-  useEffect(() => {
     const onScroll = () => { setScrollY(window.scrollY); if (window.scrollY > 10) setMenuOpen(false) }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
@@ -126,7 +120,7 @@ export default function LandingPage() {
   ]
 
   return (
-    <div style={{ background: '#fff', minHeight: '100vh', fontFamily: 'Inter, -apple-system, sans-serif', color: '#0D1E4A', overflowX: 'hidden' }}>
+    <main id="top" lang="ky" style={{ background: '#fff', minHeight: '100vh', fontFamily: 'Inter, -apple-system, sans-serif', color: '#0D1E4A', overflowX: 'hidden' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         *{box-sizing:border-box}
@@ -143,6 +137,10 @@ export default function LandingPage() {
         @media(hover:hover){.course-card:hover{transform:translateY(-6px)!important;box-shadow:0 20px 56px rgba(27,79,216,0.14)!important}}
         @media(hover:hover){.result-thumb:hover{transform:scale(1.05)!important}}
         @media(hover:hover){.faq-row:hover{background:#F8FAFF!important}}
+        @media(prefers-reduced-motion:reduce){
+          *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}
+        }
+        @media(min-width:641px) and (max-width:1050px){.nav-anchor-links{display:none!important}}
 
         /* ── MOBILE ── */
         @media(max-width:640px){
@@ -207,6 +205,11 @@ export default function LandingPage() {
 
           {/* Desktop */}
           <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="nav-anchor-links" style={{ display: 'flex', alignItems: 'center', gap: '18px', marginRight: '4px' }}>
+              <a href="#courses" style={{ color: '#475569', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>Программалар</a>
+              <a href="#results" style={{ color: '#475569', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>Жыйынтыктар</a>
+              <a href="#office" style={{ color: '#475569', fontSize: '13px', fontWeight: '700', textDecoration: 'none' }}>Байланыш</a>
+            </div>
             <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: '12px', padding: '4px', gap: '4px' }}>
               <button style={{ padding: '6px 14px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '700', cursor: 'pointer', background: '#1B4FD8', color: '#fff' }}>ЖРТ</button>
               <a href={MATH_HREF} style={{ padding: '6px 14px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '600', cursor: 'pointer', background: 'transparent', color: '#64748B', textDecoration: 'none' }}>Math</a>
@@ -216,7 +219,8 @@ export default function LandingPage() {
           </div>
 
           {/* Mobile burger */}
-          <button className="nav-mob-btn" onClick={() => setMenuOpen(p => !p)}
+          <button className="nav-mob-btn" type="button" onClick={() => setMenuOpen(p => !p)}
+            aria-label={menuOpen ? 'Менюну жабуу' : 'Менюну ачуу'} aria-expanded={menuOpen}
             style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'none', flexDirection: 'column', gap: '5px', padding: '8px' }}>
             <div style={{ width: '22px', height: '2px', background: '#0D1E4A', borderRadius: '2px', transition: 'all 0.2s', transform: menuOpen ? 'rotate(45deg) translateY(7px)' : 'none' }} />
             <div style={{ width: '22px', height: '2px', background: '#0D1E4A', borderRadius: '2px', opacity: menuOpen ? 0 : 1, transition: 'opacity 0.2s' }} />
@@ -231,6 +235,9 @@ export default function LandingPage() {
               <button style={{ flex: 1, padding: '9px', borderRadius: '9px', border: 'none', fontSize: '14px', fontWeight: '700', cursor: 'pointer', background: '#1B4FD8', color: '#fff' }}>ЖРТ</button>
               <a href={MATH_HREF} onClick={() => setMenuOpen(false)} style={{ flex: 1, padding: '9px', borderRadius: '9px', border: 'none', fontSize: '14px', fontWeight: '600', cursor: 'pointer', background: 'transparent', color: '#64748B', textAlign: 'center', textDecoration: 'none' }}>Math</a>
             </div>
+            <a href="#courses" onClick={() => setMenuOpen(false)} style={{ padding: '7px 4px', color: '#334155', fontWeight: '700', fontSize: '14px', textDecoration: 'none' }}>Программалар</a>
+            <a href="#results" onClick={() => setMenuOpen(false)} style={{ padding: '7px 4px', color: '#334155', fontWeight: '700', fontSize: '14px', textDecoration: 'none' }}>Жыйынтыктар</a>
+            <a href="#office" onClick={() => setMenuOpen(false)} style={{ padding: '7px 4px', color: '#334155', fontWeight: '700', fontSize: '14px', textDecoration: 'none' }}>Дарек жана байланыш</a>
             <a href={PLATFORM_LOGIN_HREF} onClick={() => setMenuOpen(false)} style={{ width: '100%', background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '13px', fontWeight: '600', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}><LogIn size={17} aria-hidden="true" /> Кирүү</a>
             <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', textAlign: 'center', background: '#1B4FD8', color: '#fff', borderRadius: '12px', padding: '13px', fontWeight: '800', fontSize: '14px', textDecoration: 'none', boxShadow: '0 4px 14px rgba(27,79,216,0.3)' }}><MessageCircle size={17} aria-hidden="true" /> Жазылуу</a>
           </div>
@@ -287,14 +294,14 @@ export default function LandingPage() {
             </div>
             <div style={{ display: 'flex', gap: '6px' }}>
               {ALL_RESULTS.map((r, i) => (
-                <div key={i} onClick={() => setActiveResult(i)} style={{ flex: 1, aspectRatio: '1', borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', border: activeResult === i ? '2px solid #1B4FD8' : '2px solid transparent', transition: 'all 0.2s', opacity: activeResult === i ? 1 : 0.6, background: '#0D1E4A' }}>
-                  <img src={r.img} alt={r.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
+                <button key={i} type="button" onClick={() => setActiveResult(i)} aria-label={`${r.name}: ${r.score} балл`} aria-pressed={activeResult === i} className="result-thumb" style={{ flex: 1, aspectRatio: '1', padding: 0, borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', border: activeResult === i ? '2px solid #1B4FD8' : '2px solid transparent', transition: 'all 0.2s', opacity: activeResult === i ? 1 : 0.6, background: '#0D1E4A' }}>
+                  <img src={r.img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </button>
               ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '5px', marginTop: '10px' }}>
               {ALL_RESULTS.map((_, i) => (
-                <div key={i} onClick={() => setActiveResult(i)} style={{ width: activeResult === i ? '18px' : '5px', height: '5px', borderRadius: '999px', background: activeResult === i ? '#1B4FD8' : '#BFDBFE', cursor: 'pointer', transition: 'all 0.3s' }} />
+                <button key={i} type="button" onClick={() => setActiveResult(i)} aria-label={`Жыйынтык ${i + 1}`} aria-current={activeResult === i ? 'true' : undefined} style={{ width: activeResult === i ? '24px' : '12px', height: '12px', padding: 0, border: 'none', borderRadius: '999px', background: activeResult === i ? '#1B4FD8' : '#BFDBFE', cursor: 'pointer', transition: 'all 0.3s' }} />
               ))}
             </div>
           </div>
@@ -332,9 +339,9 @@ export default function LandingPage() {
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '20px', padding: '5px 12px', marginBottom: '14px' }}>
                 <span style={{ color: '#D97706', fontSize: '12px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Flame size={14} aria-hidden="true" /> ЖРТ 2027 · ЖАҢЫ ТОПТОР</span>
               </div>
-              <h3 style={{ fontSize: 'clamp(16px,2.5vw,22px)', fontWeight: '900', marginBottom: '14px', lineHeight: '1.3', color: '#0D1E4A' }}>
+              <h2 style={{ fontSize: 'clamp(16px,2.5vw,22px)', fontWeight: '900', marginBottom: '14px', lineHeight: '1.3', color: '#0D1E4A' }}>
                 Өз деңгээлиңе ылайык топ менен <span style={{ color: '#D97706' }}>системалуу даярдан</span>
-              </h3>
+              </h2>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 {[{ Icon: Users, text: '10–11 класс' }, { Icon: MonitorSmartphone, text: 'Онлайн/оффлайн' }, { Icon: MapPin, text: 'Горький 108' }].map(({ Icon, text }) => (
                   <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#64748B', background: '#fff', borderRadius: '9px', padding: '5px 10px', border: '1px solid #E2E8F0' }}>
@@ -504,13 +511,13 @@ export default function LandingPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {faqs.map((faq, i) => (
               <Reveal key={i} delay={i * 40}>
-                <div className="faq-row" style={{ background: openFaq === i ? '#F0F5FF' : '#FAFBFF', border: `1px solid ${openFaq === i ? '#BFDBFE' : '#E2E8F0'}`, borderRadius: '14px', overflow: 'hidden', transition: 'all 0.2s', cursor: 'pointer' }} onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', gap: '12px' }}>
+                <div className="faq-row" style={{ background: openFaq === i ? '#F0F5FF' : '#FAFBFF', border: `1px solid ${openFaq === i ? '#BFDBFE' : '#E2E8F0'}`, borderRadius: '14px', overflow: 'hidden', transition: 'all 0.2s' }}>
+                  <button type="button" onClick={() => setOpenFaq(openFaq === i ? null : i)} aria-expanded={openFaq === i} aria-controls={`faq-answer-${i}`} style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', gap: '12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}>
                     <span className="faq-q-text" style={{ fontWeight: '600', fontSize: '14px', color: '#0D1E4A', lineHeight: '1.4' }}>{faq.q}</span>
                     <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: openFaq === i ? '#1B4FD8' : '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s', transform: openFaq === i ? 'rotate(45deg)' : 'none', color: openFaq === i ? '#fff' : '#1B4FD8', fontSize: '17px' }}>+</div>
-                  </div>
+                  </button>
                   {openFaq === i && (
-                    <div style={{ padding: '0 18px 16px', color: '#64748B', fontSize: '14px', lineHeight: '1.7', borderTop: '1px solid #E2E8F0' }}>
+                    <div id={`faq-answer-${i}`} style={{ padding: '0 18px 16px', color: '#64748B', fontSize: '14px', lineHeight: '1.7', borderTop: '1px solid #E2E8F0' }}>
                       <div style={{ paddingTop: '12px' }}>{faq.a}</div>
                     </div>
                   )}
@@ -555,40 +562,7 @@ export default function LandingPage() {
         </Reveal>
       </div>
 
-      {/* FOOTER */}
-      <div style={{ background: '#0D3BAE', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-        <div className="footer-inner s-pad" style={{ maxWidth: '1200px', margin: '0 auto', padding: '22px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '26px', height: '26px', background: 'rgba(255,255,255,0.15)', borderRadius: '6px', overflow: 'hidden' }}>
-              <img src="/images/logo.png" alt="Z" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
-            <span style={{ fontWeight: '900', fontSize: '14px', color: '#fff' }}>Zhangak</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>© 2026 Жангак. Бардык укуктар корголгон.</div>
-            <a href="/privacy" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', textDecoration: 'none', fontWeight: '600' }}>Купуялык саясаты</a>
-          </div>
-          <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#93C5FD', fontSize: '13px', textDecoration: 'none', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Phone size={15} aria-hidden="true" /> +996 502 077 326</a>
-        </div>
-      </div>
-
-      {/* PWA installation belongs to platform.zhangak.com. The marketing
-          origin only links there, so it never installs a service worker or
-          stores an authentication session of its own. */}
-      <section className="py-8 px-4 border-t border-gray-100 bg-white">
-        <div className="max-w-sm mx-auto rounded-2xl border border-blue-100 bg-blue-50 p-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-[#1B4FD8] shadow-sm"><ExternalLink size={22} aria-hidden="true" /></div>
-            <div>
-              <div className="font-bold text-gray-900">Онлайн платформа</div>
-              <div className="text-xs text-gray-500">Сабактарыңды жана прогрессти ач</div>
-            </div>
-          </div>
-          <a href={PLATFORM_HOME_HREF} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4FD8] px-4 text-sm font-semibold text-white">
-            Платформаны ачуу <ExternalLink size={17} aria-hidden="true" />
-          </a>
-        </div>
-      </section>
-    </div>
+      <MarketingFooter />
+    </main>
   )
 }
