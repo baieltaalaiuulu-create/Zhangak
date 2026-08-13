@@ -18,7 +18,11 @@ async function walk(directory) {
   return files
 }
 
-const files = (await walk('backend')).filter(file => /\.(?:js|sql|json)$/.test(file) && !file.includes('/node_modules/'))
+const files = (await walk('backend')).filter(file =>
+  /\.(?:js|sql|json)$/.test(file)
+  && !file.includes('/node_modules/')
+  && !file.includes('/dist/'),
+)
 const combined = (await Promise.all(files.map(read))).join('\n')
 expect(!/@supabase|supabase-js|supabase\.co/i.test(combined), 'first-party backend must not depend on Supabase')
 expect(!/admin123|student123/.test(combined), 'backend must not contain default account credentials')
@@ -35,6 +39,7 @@ expect(migration.includes('Applied migration changed'), 'changed applied migrati
 const auth = await read('backend/src/auth.js')
 expect(auth.includes('user.session_version !== claims.sv'), 'protected requests must enforce current session version')
 expect(auth.includes('s.revoked_at IS NULL') && auth.includes('s.expires_at > now()'), 'protected requests must check live session state')
+expect(auth.includes('if (req.headers.origin) return {}'), 'browser responses must not expose session tokens to JavaScript')
 
 const authRoutes = await read('backend/src/routes/auth.js')
 expect(authRoutes.includes('LOGIN_MAX_FAILURES'), 'login must be rate limited')

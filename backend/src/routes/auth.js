@@ -4,6 +4,7 @@ import {
   ACCESS_COOKIE,
   REFRESH_COOKIE,
   authCookies,
+  clientSessionTokens,
   clearAuthCookies,
   createSession,
   loginBucket,
@@ -83,8 +84,7 @@ POST('/v1/auth/login', async ({ req, config, ip }) => {
     headers: { 'Set-Cookie': authCookies(config, session.access, session.refresh) },
     body: {
       user: publicUser(user),
-      accessToken: session.access,
-      ...(req.headers.origin ? {} : { refreshToken: session.refresh }),
+      ...clientSessionTokens(req, session),
     },
   }
 })
@@ -102,7 +102,7 @@ POST('/v1/auth/refresh', async ({ req, config, ip }) => {
   return {
     status: 200,
     headers: { 'Set-Cookie': authCookies(config, session.access, session.refresh) },
-    body: { accessToken: session.access, ...(req.headers.origin ? {} : { refreshToken: session.refresh }) },
+    body: clientSessionTokens(req, session),
   }
 })
 

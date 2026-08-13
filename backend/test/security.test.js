@@ -9,6 +9,7 @@ import {
   verifyAccessToken,
   verifyPassword,
 } from '../src/security.js'
+import { clientSessionTokens } from '../src/auth.js'
 
 const config = {
   jwtSecret: 'test-only-secret-that-is-longer-than-thirty-two-characters',
@@ -39,4 +40,13 @@ test('refresh tokens are opaque and stored only as hashes', () => {
   assert.match(token, /^[A-Za-z0-9_-]{40,}$/)
   assert.notEqual(tokenHash(token), token)
   assert.equal(tokenHash(token), tokenHash(token))
+})
+
+test('browser sessions expose tokens only through HttpOnly cookies', () => {
+  const session = { access: 'access-token', refresh: 'refresh-token' }
+  assert.deepEqual(clientSessionTokens({ headers: { origin: 'https://platform.zhangak.com' } }, session), {})
+  assert.deepEqual(clientSessionTokens({ headers: {} }, session), {
+    accessToken: 'access-token',
+    refreshToken: 'refresh-token',
+  })
 })

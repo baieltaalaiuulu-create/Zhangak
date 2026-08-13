@@ -28,6 +28,11 @@ export function clearAuthCookies() {
   ]
 }
 
+export function clientSessionTokens(req, session) {
+  if (req.headers.origin) return {}
+  return { accessToken: session.access, refreshToken: session.refresh }
+}
+
 export async function createSession(config, client, user, requestMeta, rotatedFrom = null) {
   const refresh = randomRefreshToken()
   const result = await client.query(
