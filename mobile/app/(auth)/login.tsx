@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   View, Text, TextInput, Pressable, StyleSheet, KeyboardAvoidingView,
   Platform, ActivityIndicator, Image,
 } from 'react-native'
 import { router, Redirect } from 'expo-router'
-import { supabase } from '@/lib/supabase'
+import { useNativeAuth } from '@/components/NativeAuthProvider'
+import { ZhangakApiError } from '@/lib/native-auth'
 
 const BRAND_BLUE = '#1B4FD8'
 
@@ -13,55 +14,33 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [sessionChecked, setSessionChecked] = useState(false)
-  const [hasSession, setHasSession] = useState(false)
-
-  // Skip straight past the form if a session is already stored — the
-  // (student) tab layout re-validates the role/type anyway.
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setHasSession(!!data.session)
-      setSessionChecked(true)
-    })
-  }, [])
+  const { status, session, signIn } = useNativeAuth()
 
   const handleLogin = async () => {
     if (!email.trim() || !password) return
     setLoading(true)
     setError(null)
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    })
-
-    if (authError) {
-      setError('Неверный email или пароль')
+    try {
+      // The native API returns short-lived bearer credentials only after a
+      // successful password check. The password itself stays in component
+      // state and is never written to SecureStore.
+      await signIn(email, password)
+      setPassword('')
+      router.replace('/(student)')
+    } catch (caught) {
+      if (caught instanceof ZhangakApiError) {
+        if (caught.code === 'invalid_credentials') setError('Неверный email или пароль')
+        else setError(caught.message)
+      } else {
+        setError('Не удалось выполнить вход. Попробуйте ещё раз.')
+      }
+    } finally {
       setLoading(false)
-      return
     }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role, student_type')
-      .eq('id', data.user.id)
-      .single()
-
-    // This app only implements the online student cabinet — mirrors the
-    // web app's role-based redirect, just narrowed to the one role/type
-    // combination the mobile screens actually support.
-    if (!profile || profile.role !== 'student' || profile.student_type !== 'online') {
-      await supabase.auth.signOut()
-      setError('Это приложение доступно только онлайн-ученикам')
-      setLoading(false)
-      return
-    }
-
-    setLoading(false)
-    router.replace('/(student)')
   }
 
-  if (!sessionChecked) {
+  if (status === 'loading') {
     return (
       <View style={styles.container}>
         <ActivityIndicator color={BRAND_BLUE} size="large" />
@@ -69,7 +48,7 @@ export default function LoginScreen() {
     )
   }
 
-  if (hasSession) {
+  if (status === 'authenticated' && session) {
     return <Redirect href="/(student)" />
   }
 

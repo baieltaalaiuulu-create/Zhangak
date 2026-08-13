@@ -1,4 +1,5 @@
 import { View, StyleSheet, Text } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { WebView } from 'react-native-webview'
 import { VideoView, useVideoPlayer } from 'expo-video'
 
@@ -25,7 +26,7 @@ export default function LessonVideoPlayer({ videoUrl }: Props) {
   if (!videoUrl) {
     return (
       <View style={[styles.media, styles.placeholder]}>
-        <Text style={styles.placeholderEmoji}>🎬</Text>
+        <Ionicons name="videocam-outline" size={32} color="#9CA3AF" accessibilityElementsHidden />
         <Text style={styles.placeholderText}>Видео скоро появится</Text>
       </View>
     )
@@ -52,6 +53,5 @@ export default function LessonVideoPlayer({ videoUrl }: Props) {
 const styles = StyleSheet.create({
   media: { width: '100%', aspectRatio: 16 / 9, borderRadius: 16, overflow: 'hidden', backgroundColor: '#111827' },
   placeholder: { alignItems: 'center', justifyContent: 'center', gap: 6 },
-  placeholderEmoji: { fontSize: 32 },
   placeholderText: { color: '#9CA3AF', fontSize: 13 },
 })

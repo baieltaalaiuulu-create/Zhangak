@@ -156,6 +156,11 @@ export default function AdminMigrationNotice({ title, description, plannedCapabi
                 <span className="min-w-0"><span className="block text-sm font-black text-slate-950">Ученики</span><span className="mt-0.5 block text-xs leading-5 text-slate-600">Управляйте учётными записями в собственной системе.</span></span>
                 <ArrowRight size={18} className="ml-auto shrink-0 text-emerald-700 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
               </Link>
+              <Link href="/admin/groups" className="group flex min-h-24 items-center gap-4 rounded-2xl border border-violet-100 bg-violet-50 p-4 transition-colors hover:bg-violet-100">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-violet-700 shadow-sm"><Users size={21} aria-hidden="true" /></span>
+                <span className="min-w-0"><span className="block text-sm font-black text-slate-950">Группы</span><span className="mt-0.5 block text-xs leading-5 text-slate-600">Назначайте преподавателя и учеников в собственной системе.</span></span>
+                <ArrowRight size={18} className="ml-auto shrink-0 text-violet-700 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+              </Link>
             </section>
           </div>
         </section>

@@ -257,7 +257,7 @@ export default function AdminStudentsPage() {
         {total > accounts.length && (
           <p className="text-xs font-medium text-gray-400">Показаны первые {accounts.length} из {total} доступных аккаунтов.</p>
         )}
-        <p className="text-xs text-gray-400">Группы, курсы и платежи будут подключены после переноса учебного контура в собственную БД.</p>
+        <p className="text-xs text-gray-400">Курсы и учебные группы уже работают через собственную базу Zhangak. Платёжный контур подключается отдельным этапом.</p>
       </div>
 
       {createOpen && (

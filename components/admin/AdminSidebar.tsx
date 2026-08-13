@@ -21,6 +21,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: '/admin', label: 'Обзор', icon: LayoutDashboard, availability: 'ready' },
   { href: '/admin/lessons', label: 'Уроки', icon: BookOpen, availability: 'ready' },
+  { href: '/admin/groups', label: 'Группы', icon: Users, availability: 'ready' },
   { href: '/admin/students', label: 'Ученики', icon: Users, availability: 'ready' },
   { href: '/admin/practice', label: 'Практика', icon: ListChecks, availability: 'ready' },
   { href: '/admin/questions', label: 'Вопросы', icon: PenLine, availability: 'ready' },
@@ -35,7 +36,7 @@ const NAV_ITEMS: NavItem[] = [
 ]
 
 const NAV_GROUPS: { label: string; availability: NavAvailability; hrefs: string[] }[] = [
-  { label: 'Рабочие разделы', availability: 'ready', hrefs: ['/admin', '/admin/lessons', '/admin/students', '/admin/practice', '/admin/questions', '/admin/mock'] },
+  { label: 'Рабочие разделы', availability: 'ready', hrefs: ['/admin', '/admin/lessons', '/admin/groups', '/admin/students', '/admin/practice', '/admin/questions', '/admin/mock'] },
   {
     label: 'Перенос на наш backend',
     availability: 'migration',

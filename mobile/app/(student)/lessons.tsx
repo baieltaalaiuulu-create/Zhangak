@@ -2,29 +2,39 @@ import { useCallback, useEffect, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, RefreshControl } from 'react-native'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { supabase } from '@/lib/supabase'
-import { fetchLessons, fetchCompletedLessonIds, computeLessonStatuses, LESSON_SUBJECT_META } from '@/lib/lessons'
-import type { PracticeLesson, LessonSubject, LessonStatus } from '@/lib/supabase'
+import {
+  completedLessonIds,
+  computeLessonStatuses,
+  fetchLessons,
+  LESSON_SUBJECT_META,
+  type LessonStatus,
+  type LessonSubject,
+  type PlatformLesson,
+} from '@/lib/lessons'
 
 const BRAND_BLUE = '#1B4FD8'
-const SECTIONS: LessonSubject[] = ['math', 'kyr']
+const SECTIONS: LessonSubject[] = ['math', 'kyr', 'other']
 
 interface LessonsState {
-  lessons: PracticeLesson[]
+  lessons: PlatformLesson[]
   completedIds: Set<string>
 }
 
-async function loadLessons(studentId: string): Promise<LessonsState> {
-  const [lessons, completedIds] = await Promise.all([fetchLessons(), fetchCompletedLessonIds(studentId)])
-  return { lessons, completedIds }
+async function loadLessons(): Promise<LessonsState> {
+  const lessons = await fetchLessons()
+  return { lessons, completedIds: completedLessonIds(lessons) }
 }
 
-function LessonRow({ lesson, status, onLockedPress }: { lesson: PracticeLesson; status: LessonStatus; onLockedPress: () => void }) {
+function lessonDuration(lesson: PlatformLesson) {
+  return lesson.durationMinutes === null ? 'Длительность не указана' : `${lesson.durationMinutes} мин`
+}
+
+function LessonRow({ lesson, status, onLockedPress }: { lesson: PlatformLesson; status: LessonStatus; onLockedPress: () => void }) {
   if (status === 'locked') {
     return (
       <Pressable style={styles.row} onPress={onLockedPress}>
         <Ionicons name="lock-closed" size={18} color="#D1D5DB" />
-        <Text style={styles.rowTitleLocked} numberOfLines={1}>{lesson.order_number}. {lesson.title}</Text>
+        <Text style={styles.rowTitleLocked} numberOfLines={1}>{lesson.lessonNumber}. {lesson.title}</Text>
       </Pressable>
     )
   }
@@ -35,10 +45,10 @@ function LessonRow({ lesson, status, onLockedPress }: { lesson: PracticeLesson; 
         <Ionicons name="checkmark-circle" size={22} color="#16A34A" />
         <View style={styles.rowBody}>
           <View style={styles.rowTitleLine}>
-            <Text style={styles.rowTitle} numberOfLines={1}>{lesson.order_number}. {lesson.title}</Text>
+            <Text style={styles.rowTitle} numberOfLines={1}>{lesson.lessonNumber}. {lesson.title}</Text>
             <View style={styles.doneBadge}><Text style={styles.doneBadgeText}>Пройден</Text></View>
           </View>
-          <Text style={styles.rowMeta}>~25 мин</Text>
+          <Text style={styles.rowMeta}>{lessonDuration(lesson)}</Text>
         </View>
       </Pressable>
     )
@@ -48,8 +58,8 @@ function LessonRow({ lesson, status, onLockedPress }: { lesson: PracticeLesson; 
     <Pressable style={[styles.row, styles.rowCurrent]} onPress={() => router.push(`/(student)/lessons/${lesson.id}`)}>
       <Ionicons name="play-circle" size={22} color={BRAND_BLUE} />
       <View style={styles.rowBody}>
-        <Text style={styles.rowTitleBold} numberOfLines={2}>{lesson.order_number}. {lesson.title}</Text>
-        <Text style={styles.rowMeta}>~25 мин</Text>
+        <Text style={styles.rowTitleBold} numberOfLines={2}>{lesson.lessonNumber}. {lesson.title}</Text>
+        <Text style={styles.rowMeta}>{lessonDuration(lesson)}</Text>
       </View>
       <View style={styles.continueButton}>
         <Text style={styles.continueButtonText}>Продолжить</Text>
@@ -68,13 +78,10 @@ export default function LessonsScreen() {
   const [toast, setToast] = useState<string | null>(null)
 
   const load = useCallback(async (isRefresh = false) => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.replace('/(auth)/login'); return }
-
     isRefresh ? setRefreshing(true) : setLoading(true)
     setError(false)
     try {
-      setData(await loadLessons(user.id))
+      setData(await loadLessons())
     } catch {
       setError(true)
     } finally {
@@ -83,7 +90,7 @@ export default function LessonsScreen() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { void load() }, [load])
 
   const showToast = (message: string) => {
     setToast(message)
@@ -97,9 +104,9 @@ export default function LessonsScreen() {
   if (error || !data) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>Не удалось загрузить. Попробуй ещё раз.</Text>
-        <Pressable style={styles.retryButton} onPress={() => load()}>
-          <Text style={styles.retryButtonText}>↻ Попробовать ещё раз</Text>
+        <Text style={styles.errorText}>Не удалось загрузить уроки. Попробуй ещё раз.</Text>
+        <Pressable style={styles.retryButton} onPress={() => { void load() }}>
+          <Text style={styles.retryButtonText}>Попробовать ещё раз</Text>
         </Pressable>
       </View>
     )
@@ -107,20 +114,17 @@ export default function LessonsScreen() {
 
   const statuses = computeLessonStatuses(data.lessons, data.completedIds)
   const total = data.lessons.length
-  const completedCount = data.lessons.filter(l => data.completedIds.has(l.id)).length
-  const currentLesson = data.lessons.find(l => statuses[l.id] === 'current')
-
-  const isOpen = (subject: LessonSubject) => openMap[subject] ?? (subject === currentLesson?.subject)
-  const toggleOpen = (subject: LessonSubject) => setOpenMap(prev => ({ ...prev, [subject]: !isOpen(subject) }))
+  const completedCount = data.lessons.filter(lesson => data.completedIds.has(lesson.id)).length
+  const currentLesson = data.lessons.find(lesson => statuses[lesson.id] === 'current')
 
   return (
     <View style={styles.screen}>
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={BRAND_BLUE} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { void load(true) }} tintColor={BRAND_BLUE} />}
       >
         <View style={styles.card}>
-          <Text style={styles.title}>📚 Мои уроки</Text>
+          <Text style={styles.title}>Мои уроки</Text>
           <Text style={styles.subtitle}>Пройдено {completedCount}/{total}</Text>
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${total > 0 ? Math.round((completedCount / total) * 100) : 0}%` }]} />
@@ -130,29 +134,40 @@ export default function LessonsScreen() {
               style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
               onPress={() => router.push(`/(student)/lessons/${currentLesson.id}`)}
             >
-              <Text style={styles.primaryButtonText}>Продолжить обучение →</Text>
+              <Text style={styles.primaryButtonText}>Продолжить обучение</Text>
             </Pressable>
           )}
         </View>
 
-        {SECTIONS.map(subject => {
-          const list = data.lessons.filter(l => l.subject === subject)
+        {total === 0 ? (
+          <View style={styles.emptyCard}>
+            <Ionicons name="school-outline" size={28} color={BRAND_BLUE} />
+            <Text style={styles.emptyTitle}>Уроки пока не назначены</Text>
+            <Text style={styles.emptyDescription}>После добавления в учебную группу они появятся здесь.</Text>
+          </View>
+        ) : SECTIONS.map(subject => {
+          const list = data.lessons.filter(lesson => lesson.subject === subject)
           if (list.length === 0) return null
-          const completed = list.filter(l => data.completedIds.has(l.id)).length
-          const open = isOpen(subject)
+          const completed = list.filter(lesson => data.completedIds.has(lesson.id)).length
+          const open = openMap[subject] ?? (subject === currentLesson?.subject)
           const meta = LESSON_SUBJECT_META[subject]
 
           return (
             <View key={subject} style={styles.accordion}>
-              <Pressable style={styles.accordionHeader} onPress={() => toggleOpen(subject)}>
-                <Text style={styles.accordionIcon}>{meta.icon}</Text>
+              <Pressable
+                style={styles.accordionHeader}
+                onPress={() => setOpenMap(previous => ({ ...previous, [subject]: !open }))}
+              >
+                <View style={[styles.accordionIcon, { backgroundColor: `${meta.color}18` }]}>
+                  <Ionicons name={meta.icon} size={18} color={meta.color} />
+                </View>
                 <View style={styles.accordionHeaderBody}>
                   <View style={styles.accordionHeaderLine}>
                     <Text style={styles.accordionLabel}>{meta.label}</Text>
                     <Text style={styles.accordionCount}>{completed}/{list.length} уроков</Text>
                   </View>
                   <View style={styles.accordionProgressTrack}>
-                    <View style={[styles.accordionProgressFill, { width: `${list.length > 0 ? Math.round((completed / list.length) * 100) : 0}%` }]} />
+                    <View style={[styles.accordionProgressFill, { width: `${Math.round((completed / list.length) * 100)}%`, backgroundColor: meta.color }]} />
                   </View>
                 </View>
                 <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color="#9CA3AF" />
@@ -195,9 +210,12 @@ const styles = StyleSheet.create({
   primaryButton: { marginTop: 16, height: 52, borderRadius: 16, backgroundColor: BRAND_BLUE, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.85 },
   primaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  emptyCard: { alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#F1F1F4', padding: 24 },
+  emptyTitle: { marginTop: 10, color: '#191B23', fontSize: 16, fontWeight: '800', textAlign: 'center' },
+  emptyDescription: { marginTop: 6, color: '#6B7280', fontSize: 13, lineHeight: 19, textAlign: 'center' },
   accordion: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#F1F1F4', overflow: 'hidden' },
   accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, minHeight: 44 },
-  accordionIcon: { fontSize: 18 },
+  accordionIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   accordionHeaderBody: { flex: 1 },
   accordionHeaderLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   accordionLabel: { fontSize: 14, fontWeight: '700', color: '#191B23' },

@@ -82,6 +82,16 @@ jobs:
       - name: Verify the first-party web data plane
         run: npm run check:web-data-plane
 
+      - name: Verify the first-party mobile data plane
+        run: npm run check:mobile-data-plane
+
+      - name: Install and verify the native companion
+        working-directory: mobile
+        run: |
+          npm ci
+          npm run check:auth
+          npx tsc --noEmit --pretty false
+
       - name: Check first-party browser authentication
         run: npm run check:first-party-auth
 
