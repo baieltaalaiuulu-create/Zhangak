@@ -10,9 +10,6 @@ import { getCurrentZhangakUser, logoutZhangak, type ZhangakSessionUser } from '@
 import StudentSidebar from './StudentSidebar'
 import StudentTopbar from './StudentTopbar'
 import BottomNav from './BottomNav'
-import NotificationPopup from './NotificationPopup'
-import AIDrawer from './ai/AIDrawer'
-import FirstLoginInstallOverlay from './FirstLoginInstallOverlay'
 import PWAInstallBanner from '@/components/PWAInstallBanner'
 import { StudentSessionProvider } from './StudentSessionContext'
 
@@ -43,8 +40,6 @@ export default function StudentLayout({ children }: Props) {
   const [targetScore, setTargetScore] = useState(DEFAULT_TARGET_SCORE)
   const [streak, setStreak] = useState(0)
   const [level, setLevel] = useState(1)
-  const [studentId, setStudentId] = useState<string | null>(null)
-  const [unreadCount, setUnreadCount] = useState(0)
   const [sessionUser, setSessionUser] = useState<ZhangakSessionUser | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
   const [authError, setAuthError] = useState(false)
@@ -85,7 +80,6 @@ export default function StudentLayout({ children }: Props) {
         }
 
         setSessionUser(user)
-        setStudentId(user.id)
         setFullName(user.fullName || 'Студент')
         setTargetScore(user.targetScore ?? DEFAULT_TARGET_SCORE)
         setAvatarUrl(user.avatarUrl ?? null)
@@ -165,17 +159,16 @@ export default function StudentLayout({ children }: Props) {
             streak={streak}
             targetScore={targetScore}
             level={level}
-            unreadCount={unreadCount}
+            unreadCount={0}
             onLogout={handleLogout}
           />
           <main className="pb-20 md:pb-0">{children}</main>
         </div>
 
         <BottomNav />
-        <NotificationPopup studentId={studentId} onUnreadChange={setUnreadCount} />
-        <AIDrawer />
-        <FirstLoginInstallOverlay ready={!!studentId} />
-        <PWAInstallBanner ready={!!studentId} />
+        {/* Announcements and AI are intentionally absent until their own
+            first-party APIs replace the retired Supabase data paths. */}
+        <PWAInstallBanner ready={Boolean(sessionUser)} />
       </div>
     </StudentSessionProvider>
   )

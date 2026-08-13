@@ -1,16 +1,19 @@
-import { PASS_RATIO, type PracticeTest } from '@/lib/practice-data'
+import type { PlatformPracticeTest } from '@/lib/platform-practice'
 
 interface Props {
-  test: PracticeTest
+  test: PlatformPracticeTest
   questionCount: number
   onStart: () => void
+  starting?: boolean
 }
 
-const SUBJECT_META: Record<PracticeTest['subject'], { label: string; color: string; bg: string }> = {
+const SUBJECT_META: Record<string, { label: string; color: string; bg: string }> = {
   math: { label: 'Математика', color: 'text-blue-600', bg: 'bg-blue-50' },
   kyr: { label: 'Кыргыз тили', color: 'text-orange-600', bg: 'bg-orange-50' },
   all: { label: 'Общий тест', color: 'text-purple-600', bg: 'bg-purple-50' },
 }
+
+const DEFAULT_SUBJECT_META = { label: 'Практика ОРТ', color: 'text-purple-600', bg: 'bg-purple-50' }
 
 const RULES = [
   'На каждый вопрос только один правильный ответ',
@@ -19,9 +22,10 @@ const RULES = [
   'Результат автоматически сохранится в твой прогресс',
 ]
 
-export default function PracticeStartScreen({ test, questionCount, onStart }: Props) {
-  const meta = SUBJECT_META[test.subject]
-  const passingScore = Math.ceil(questionCount * PASS_RATIO)
+export default function PracticeStartScreen({ test, questionCount, onStart, starting = false }: Props) {
+  const meta = SUBJECT_META[test.subject] ?? DEFAULT_SUBJECT_META
+  const passingScore = Math.ceil(questionCount * (test.passScoreRatio ?? 0.7))
+  const timeLabel = test.timeLimitSeconds ? `${Math.ceil(test.timeLimitSeconds / 60)} мин` : 'Без лимита'
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -38,7 +42,7 @@ export default function PracticeStartScreen({ test, questionCount, onStart }: Pr
           </div>
           <div className="rounded-xl bg-gray-50 p-4 text-center">
             <div className="text-xl font-bold text-gray-900">
-              {test.time_limit_minutes ? `${test.time_limit_minutes} мин` : '—'}
+              {timeLabel}
             </div>
             <div className="mt-0.5 text-xs text-gray-500">на тест</div>
           </div>
@@ -63,9 +67,10 @@ export default function PracticeStartScreen({ test, questionCount, onStart }: Pr
         <button
           type="button"
           onClick={onStart}
-          className="mt-8 w-full rounded-xl bg-[#1B4FD8] py-3.5 text-center text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700"
+          disabled={starting}
+          className="mt-8 w-full rounded-xl bg-[#1B4FD8] py-3.5 text-center text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
         >
-          Начать тест
+          {starting ? 'Открываем тест…' : 'Начать тест'}
         </button>
       </div>
     </div>

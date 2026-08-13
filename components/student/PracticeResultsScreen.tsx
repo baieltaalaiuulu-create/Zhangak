@@ -1,10 +1,11 @@
 'use client'
 
-import { SECTION_LABELS, type AnswerLetter, type PracticeQuestion } from '@/lib/practice-data'
+import { Bot, CheckCircle2, Share2, Trophy, XCircle } from 'lucide-react'
+
+import { SECTION_LABELS, type SubmittedPracticeReview } from '@/lib/platform-practice'
 
 export interface WrongAnswer {
-  question: PracticeQuestion
-  selected: AnswerLetter | undefined
+  question: SubmittedPracticeReview
 }
 
 interface Props {
@@ -13,10 +14,8 @@ interface Props {
   previousScore: number | null
   passed: boolean
   elapsedSeconds: number
-  streak: number
   wrongAnswers: WrongAnswer[]
   weakSection: string | null
-  projectedScore: number
   nextLessonTitle: string | null
   nextLessonHref: string | null
   onRetry: () => void
@@ -30,15 +29,14 @@ function formatDuration(totalSeconds: number): string {
 }
 
 export default function PracticeResultsScreen({
-  score, total, previousScore, passed, elapsedSeconds, streak, wrongAnswers,
-  weakSection, projectedScore, nextLessonTitle, nextLessonHref, onRetry, onReview,
+  score, total, previousScore, passed, elapsedSeconds, wrongAnswers,
+  weakSection, nextLessonTitle, nextLessonHref, onRetry, onReview,
 }: Props) {
   const accuracy = total > 0 ? Math.round((score / total) * 100) : 0
-  const xpEarned = score * 10
   const delta = previousScore !== null ? score - previousScore : null
 
   const handleShare = async () => {
-    const text = `Я прошёл практический тест на Zhangak: ${score}/${total} (${accuracy}%)! 🎯`
+    const text = `Я прошёл практический тест на Zhangak: ${score}/${total} (${accuracy}%)!`
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({ text })
@@ -59,7 +57,10 @@ export default function PracticeResultsScreen({
         className="rounded-2xl p-6 text-center text-white sm:p-8"
         style={{ background: 'linear-gradient(135deg, #1e50e8 0%, #0f2fa8 60%, #061d70 100%)' }}
       >
-        <p className="text-sm font-medium text-blue-200">{passed ? '🎉 Тест пройден!' : 'Тест завершён'}</p>
+        <p className="inline-flex items-center gap-2 text-sm font-medium text-blue-200">
+          {passed ? <CheckCircle2 size={17} aria-hidden="true" /> : <Trophy size={17} aria-hidden="true" />}
+          {passed ? 'Тест пройден!' : 'Тест завершён'}
+        </p>
         <p className="mt-2 text-5xl font-bold leading-none">{score}/{total}</p>
         {delta !== null && delta > 0 && (
           <span className="mt-3 inline-block rounded-full bg-green-400/20 px-3 py-1 text-sm font-semibold text-green-300">
@@ -70,11 +71,7 @@ export default function PracticeResultsScreen({
 
       {/* Stats row */}
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-        <div className="grid grid-cols-2 divide-x divide-y divide-gray-100 sm:grid-cols-4 sm:divide-y-0">
-          <div className="flex flex-col items-center justify-center gap-0.5 py-4">
-            <span className="text-lg font-bold text-yellow-600">⭐ {xpEarned}</span>
-            <span className="text-xs text-gray-400">XP</span>
-          </div>
+        <div className="grid grid-cols-2 divide-x divide-y divide-gray-100 sm:grid-cols-3 sm:divide-y-0">
           <div className="flex flex-col items-center justify-center gap-0.5 py-4">
             <span className="text-lg font-bold text-gray-900">{formatDuration(elapsedSeconds)}</span>
             <span className="text-xs text-gray-400">время</span>
@@ -84,8 +81,8 @@ export default function PracticeResultsScreen({
             <span className="text-xs text-gray-400">точность</span>
           </div>
           <div className="flex flex-col items-center justify-center gap-0.5 py-4">
-            <span className="text-lg font-bold text-orange-600">🔥 {streak}</span>
-            <span className="text-xs text-gray-400">подряд</span>
+            <span className="text-lg font-bold text-gray-900">{passed ? 'Зачёт' : 'Повторить'}</span>
+            <span className="text-xs text-gray-400">статус</span>
           </div>
         </div>
       </div>
@@ -101,8 +98,9 @@ export default function PracticeResultsScreen({
           </div>
           <ul className="mt-3 space-y-2">
             {wrongAnswers.slice(0, 3).map(({ question }) => (
-              <li key={question.id} className="line-clamp-1 text-sm text-gray-600">
-                <span className="text-red-500">✕</span> {question.question_text}
+              <li key={question.questionId} className="line-clamp-1 text-sm text-gray-600">
+                <XCircle className="mr-1 inline-block text-red-500" size={15} aria-hidden="true" />
+                {question.questionText}
               </li>
             ))}
             {wrongAnswers.length > 3 && (
@@ -118,7 +116,8 @@ export default function PracticeResultsScreen({
         style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e2d4e 100%)' }}
       >
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-blue-300">
-          🤖 AI-наставник
+          <Bot size={14} aria-hidden="true" />
+          AI-наставник
         </span>
         {weakSection ? (
           <p className="mt-3 text-sm leading-relaxed text-slate-300">
@@ -129,11 +128,6 @@ export default function PracticeResultsScreen({
         ) : (
           <p className="mt-3 text-sm leading-relaxed text-slate-300">
             Отличный результат — ошибок нет! Продолжай в том же темпе.
-          </p>
-        )}
-        {projectedScore > score && (
-          <p className="mt-3 text-2xl font-bold text-orange-400">
-            {score} → {projectedScore} <span className="text-sm font-medium text-slate-400">баллов в следующий раз</span>
           </p>
         )}
       </div>
@@ -160,7 +154,10 @@ export default function PracticeResultsScreen({
           onClick={handleShare}
           className="flex-1 rounded-xl border border-gray-200 bg-white py-3 text-center text-sm font-bold text-gray-700 transition-colors hover:bg-gray-50"
         >
-          Поделиться
+          <span className="inline-flex items-center gap-2">
+            <Share2 size={16} aria-hidden="true" />
+            Поделиться
+          </span>
         </button>
       </div>
     </div>
