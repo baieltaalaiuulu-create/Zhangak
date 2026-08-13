@@ -125,9 +125,10 @@ POST('/v1/admin/users', async ({ req, config }) => {
   const role = body.role
   const studentType = body.studentType == null ? null : body.studentType
   const targetScore = body.targetScore == null ? null : body.targetScore
-  if (!email || !fullName || phone === undefined || !isAccountRole(role) || !canCreateAccount(currentActor.role, role)) {
+  if (!email || !fullName || phone === undefined || !isAccountRole(role)) {
     throw new HttpError(400, 'Некорректные данные или роль', 'invalid_user')
   }
+  if (!canCreateAccount(currentActor.role, role)) throw new HttpError(403, 'Доступ запрещён', 'forbidden')
   if (role === 'student' && !['online', 'offline', 'both'].includes(studentType)) {
     throw new HttpError(400, 'Для ученика требуется тип обучения', 'invalid_student_type')
   }
