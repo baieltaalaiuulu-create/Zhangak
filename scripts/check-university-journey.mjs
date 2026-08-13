@@ -1,4 +1,4 @@
-import { readFile, readdir } from 'node:fs/promises'
+import { access, readFile, readdir } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -12,6 +12,15 @@ async function source(relativePath) {
 
 function expect(condition, message) {
   if (!condition) failures.push(message)
+}
+
+async function exists(relativePath) {
+  try {
+    await access(path.join(root, relativePath))
+    return true
+  } catch {
+    return false
+  }
 }
 
 async function collect(relativePath) {
@@ -69,20 +78,20 @@ async function main() {
   expect(!detail.includes('fetchLatestMockScore') && !detail.includes('profile-data'), 'catalog detail must not use the retired score source')
   expect(detail.includes('fetchUniversityCatalog'), 'catalog detail comparison must use the first-party university API')
 
-  const adminData = await source('lib/admin-universities-data.ts')
-  expect(!adminData.includes("from '@/lib/supabase'"), 'admin university reads must not use the anonymous browser client')
-  expect(adminData.includes("authenticatedFetch('/api/admin/universities')"), 'admin university reads must use the protected API')
-
+  const adminCatalogPages = [
+    'app/admin/universities/page.tsx',
+    'app/admin/universities/[id]/specialties/page.tsx',
+  ]
+  for (const page of adminCatalogPages) {
+    const adminPage = await source(page)
+    expect(adminPage.includes('AdminMigrationNotice'), `${page} must make the unavailable own-data migration explicit`)
+    expect(!/supabase|authenticatedFetch|\/api\/admin\/|admin-universities-data/i.test(adminPage), `${page} must not call the retired university API`)
+  }
   for (const route of [
     'app/api/admin/universities/route.ts',
     'app/api/admin/university-specialties/route.ts',
   ]) {
-    const routeSource = await source(route)
-    expect(routeSource.includes('export async function GET'), `${route} needs a protected GET handler`)
-    const getHandler = routeSource.slice(routeSource.indexOf('export async function GET'), routeSource.indexOf('export async function POST'))
-    expect(getHandler.includes('requireAdminApi(req)'), `${route} GET must authenticate before reading`)
-    expect(routeSource.includes('readJsonObject(req)'), `${route} writes need bounded JSON parsing`)
-    expect(!routeSource.includes('req.json()'), `${route} must not accept an unbounded JSON body`)
+    expect(!await exists(route), `${route}: retired Supabase catalog route must remain deleted`)
   }
 
   const scanFiles = [
@@ -105,7 +114,7 @@ async function main() {
     return
   }
 
-  console.log(`University journey check passed (${scanFiles.length} source files, honest scoring, scoped favorites, protected admin reads).`)
+  console.log(`University journey check passed (${scanFiles.length} source files, honest scoring, scoped favorites, retired admin catalog unavailable).`)
 }
 
 main().catch(error => {

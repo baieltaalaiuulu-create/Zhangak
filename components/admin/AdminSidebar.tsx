@@ -22,9 +22,9 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin', label: 'Обзор', icon: LayoutDashboard, availability: 'ready' },
   { href: '/admin/lessons', label: 'Уроки', icon: BookOpen, availability: 'ready' },
   { href: '/admin/students', label: 'Ученики', icon: Users, availability: 'ready' },
-  { href: '/admin/practice', label: 'Практика', icon: ListChecks, availability: 'migration' },
-  { href: '/admin/questions', label: 'Вопросы', icon: PenLine, availability: 'migration' },
-  { href: '/admin/mock', label: 'Пробный ОРТ', icon: ClipboardList, availability: 'migration' },
+  { href: '/admin/practice', label: 'Практика', icon: ListChecks, availability: 'ready' },
+  { href: '/admin/questions', label: 'Вопросы', icon: PenLine, availability: 'ready' },
+  { href: '/admin/mock', label: 'Пробный ОРТ', icon: ClipboardList, availability: 'ready' },
   { href: '/admin/daily-challenge', label: 'Задание дня', icon: Zap, availability: 'migration' },
   { href: '/admin/prizes', label: 'Рейтинг и призы', icon: Trophy, availability: 'migration' },
   { href: '/admin/knowledge-base', label: 'База знаний AI', icon: Brain, availability: 'migration' },
@@ -35,12 +35,12 @@ const NAV_ITEMS: NavItem[] = [
 ]
 
 const NAV_GROUPS: { label: string; availability: NavAvailability; hrefs: string[] }[] = [
-  { label: 'Рабочие разделы', availability: 'ready', hrefs: ['/admin', '/admin/lessons', '/admin/students'] },
+  { label: 'Рабочие разделы', availability: 'ready', hrefs: ['/admin', '/admin/lessons', '/admin/students', '/admin/practice', '/admin/questions', '/admin/mock'] },
   {
     label: 'Перенос на наш backend',
     availability: 'migration',
     hrefs: [
-      '/admin/practice', '/admin/questions', '/admin/mock', '/admin/daily-challenge', '/admin/prizes', '/admin/knowledge-base',
+      '/admin/daily-challenge', '/admin/prizes', '/admin/knowledge-base',
       '/admin/universities', '/admin/archive', '/admin/analytics', '/admin/announcements',
     ],
   },

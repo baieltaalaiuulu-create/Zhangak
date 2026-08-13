@@ -9,9 +9,6 @@ const read = file => readFile(path.join(root, file), 'utf8')
 const expect = (condition, message) => { if (!condition) failures.push(message) }
 
 const migrationPages = [
-  'app/admin/practice/page.tsx',
-  'app/admin/questions/page.tsx',
-  'app/admin/mock/page.tsx',
   'app/admin/mock/[id]/questions/page.tsx',
   'app/admin/daily-challenge/page.tsx',
   'app/admin/daily-challenge/[id]/page.tsx',
@@ -25,9 +22,17 @@ const migrationPages = [
   'app/admin/announcements/page.tsx',
 ]
 
-const [notice, sidebar, ...pages] = await Promise.all([
+const assessmentPages = [
+  'app/admin/practice/page.tsx',
+  'app/admin/questions/page.tsx',
+  'app/admin/mock/page.tsx',
+]
+
+const [notice, sidebar, workspace, client, ...pages] = await Promise.all([
   read('components/admin/AdminMigrationNotice.tsx'),
   read('components/admin/AdminSidebar.tsx'),
+  read('components/admin/AdminAssessmentWorkspace.tsx'),
+  read('lib/admin-assessments-client.ts'),
   ...migrationPages.map(read),
 ])
 
@@ -37,10 +42,25 @@ expect(notice.includes("window.location.replace('/login')"), 'missing session mu
 expect(notice.includes('Старая база для этого раздела отключена'), 'migration notice must make the safe unavailable state explicit')
 expect(!/supabase|authenticatedFetch|\/api\/admin\//i.test(notice), 'migration notice must not call the retired admin data path')
 
-expect(sidebar.includes("availability: 'migration'"), 'sidebar must classify migrated sections explicitly')
+expect(sidebar.includes("availability: 'migration'"), 'sidebar must classify remaining migrated sections explicitly')
 expect(sidebar.includes('Перенос на наш backend'), 'sidebar must present migrated sections as a roadmap group')
 expect(sidebar.includes('Скоро'), 'sidebar must label migrated links as unavailable workspaces')
 expect(sidebar.includes('aria-label={isMigrating'), 'sidebar must expose migration status to assistive technology')
+for (const route of ['/admin/practice', '/admin/questions', '/admin/mock']) {
+  expect(new RegExp(`href: '${route.replaceAll('/', '\\/')}'.*availability: 'ready'`).test(sidebar), `${route} must be shown as a working own-backend section`)
+}
+
+for (const file of assessmentPages) {
+  const page = await read(file)
+  expect(page.includes('AdminAssessmentWorkspace'), `${file} must mount the first-party assessment workspace`)
+  expect(!/supabase|admin-data|authenticatedFetch|\/api\/admin\//i.test(page), `${file} must not depend on legacy admin data`)
+}
+expect(workspace.includes('listAdminCoursePracticeTests') && workspace.includes('listAdminLessonPracticeTests'), 'assessment workspace must select course- and lesson-scoped first-party tests')
+expect(workspace.includes('createAdminPracticeQuestion') && workspace.includes('updateAdminPracticeQuestion'), 'assessment workspace must create and edit questions through the own backend')
+expect(workspace.includes('ключ ответа виден только администраторам'), 'assessment workspace must make the admin-only key boundary explicit')
+expect(!/supabase|admin-data|authenticatedFetch|\/api\/admin\//i.test(workspace), 'assessment workspace must not invoke retired admin data paths')
+expect(client.includes("/v1/admin/practice-tests/") && client.includes('correctAnswer'), 'admin assessment client must use the own admin-only answer-key projection')
+expect(!/supabase|authenticatedFetch|\/api\/admin\//i.test(client), 'admin assessment client must stay on the cookie-authenticated BFF')
 
 const pictograph = /\p{Extended_Pictographic}/u
 for (const [index, page] of pages.entries()) {
@@ -50,6 +70,7 @@ for (const [index, page] of pages.entries()) {
   expect(!pictograph.test(page), `${file} contains an emoji instead of an icon`)
 }
 expect(!pictograph.test(notice), 'AdminMigrationNotice contains an emoji instead of an icon')
+expect(!pictograph.test(workspace), 'AdminAssessmentWorkspace contains an emoji instead of an icon')
 
 if (failures.length > 0) {
   console.error(`Admin legacy cutover check failed (${failures.length}):`)

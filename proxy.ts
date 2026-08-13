@@ -9,18 +9,25 @@ import {
   type SiteSurface,
 } from './lib/site-hosts.ts'
 
-type RouteSurface = SiteSurface | 'shared-auth' | 'workspace-auth-api' | 'shared' | null
+type RouteSurface = SiteSurface | 'shared-auth' | 'workspace-auth-api' | 'retired-api' | 'shared' | null
 
 const ADMIN_PAGE_PREFIXES = ['/admin', '/director', '/finance', '/manager', '/math/admin']
 const PLATFORM_PAGE_PREFIXES = ['/student', '/teacher', '/onboarding', '/offline', '/math/student', '/math/parent']
-const ADMIN_API_PREFIXES = [
+// These paths were Supabase-backed Next route handlers.  The mounted product
+// flows now use the first-party `/v1/platform` and `/v1/admin` BFF routes.
+// Keep an explicit deny-list while old bookmarks, clients or probes exist so
+// they always receive a uniform 404 instead of reaching a future catch-all.
+const RETIRED_LEGACY_API_PREFIXES = [
   '/api/admin',
   '/api/block-user',
   '/api/create-user',
   '/api/delete-user',
   '/api/list-users',
+  '/api/delete-own-account',
+  '/api/ai-mentor',
+  '/api/practice',
+  '/api/teacher',
 ]
-const PLATFORM_API_PREFIXES = ['/api/ai-mentor', '/api/practice', '/api/teacher', '/api/delete-own-account']
 
 function matchesPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`)
@@ -35,8 +42,7 @@ function routeSurface(pathname: string): RouteSurface {
   // versa). Other /v1 paths remain undiscoverable.
   if (matchesPrefix(pathname, '/v1/platform')) return 'platform'
   if (matchesPrefix(pathname, '/v1/admin')) return 'admin'
-  if (ADMIN_API_PREFIXES.some(prefix => matchesPrefix(pathname, prefix))) return 'admin'
-  if (PLATFORM_API_PREFIXES.some(prefix => matchesPrefix(pathname, prefix))) return 'platform'
+  if (RETIRED_LEGACY_API_PREFIXES.some(prefix => matchesPrefix(pathname, prefix))) return 'retired-api'
   if (pathname === '/login') return 'shared-auth'
   if (pathname === '/sw.js' || pathname === '/platform.webmanifest') return 'platform'
   if (ADMIN_PAGE_PREFIXES.some(prefix => matchesPrefix(pathname, prefix))) return 'admin'
@@ -146,6 +152,11 @@ export function proxy(request: NextRequest): NextResponse {
 
   const requiredSurface = routeSurface(pathname)
   if (requiredSurface === 'shared') return withSurfaceHeaders(NextResponse.next(), surface)
+
+  // The old Supabase-backed App Router endpoints are deliberately retired.
+  // Returning here makes their absence a stable API contract on every owned
+  // host (rather than relying on the filesystem's default 404 response).
+  if (requiredSurface === 'retired-api') return wrongApiSurface(surface)
 
   if (requiredSurface === 'shared-auth') {
     if (surface === 'marketing') {

@@ -22,7 +22,9 @@ const v2Files = [
   'lib/learning/practice-validation.ts',
   'lib/learning/practice-reference.ts',
 ]
-const routeFile = 'app/api/practice/route.ts'
+const retiredRouteFile = 'app/api/practice/route.ts'
+const firstPartyPracticePage = 'app/student/online/practice/page.tsx'
+const firstPartyPracticeRoute = 'backend/src/routes/platform-learning.js'
 
 const answerKeyNames = new Set(['correctanswer', 'answerkey'])
 const forbiddenRequestNames = new Set([
@@ -340,12 +342,30 @@ async function checkV2Boundary() {
     if (mutations > 0) failures.push(`${file}: V2 boundary must not mutate practice_results directly`)
   }
 
-  if (await exists(routeFile)) {
-    const route = await readFile(fullPath(routeFile), 'utf8')
-    checkRoute(routeFile, route, validation ?? '')
-  } else {
-    notes.push('V2 /api/practice route is not present yet; route checks are inactive')
+  if (await exists(retiredRouteFile)) {
+    failures.push(`${retiredRouteFile}: retired Supabase-backed practice route must remain deleted`)
+    return
   }
+
+  const [page, route] = await Promise.all([
+    readFile(fullPath(firstPartyPracticePage), 'utf8'),
+    readFile(fullPath(firstPartyPracticeRoute), 'utf8'),
+  ])
+  if (!page.includes("zhangakApiRequest<unknown>('/v1/platform/practice-tests')")
+    || !page.includes("zhangakApiJson<unknown>('/v1/platform/practice-attempts', 'POST'")) {
+    failures.push(`${firstPartyPracticePage}: mounted practice must use the first-party attempt API`)
+  }
+  if (/['"`]\/api\/practice|from\s+['"][^'"]*supabase|authenticatedFetch\s*\(/i.test(page)) {
+    failures.push(`${firstPartyPracticePage}: mounted practice must not call the retired Supabase route`)
+  }
+  if (!route.includes("GET('/v1/platform/practice-tests'")
+    || !route.includes("POST('/v1/platform/practice-attempts'")) {
+    failures.push(`${firstPartyPracticeRoute}: first-party catalog and attempt routes are required after retirement`)
+  }
+  if (/supabase/i.test(route)) {
+    failures.push(`${firstPartyPracticeRoute}: first-party practice route must not depend on Supabase`)
+  }
+  notes.push('retired /api/practice handler is absent; mounted practice uses the first-party server-scored attempt flow')
 }
 
 await checkLegacyDebt()

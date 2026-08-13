@@ -71,8 +71,8 @@ test('students and teachers share the platform while administrators stay isolate
   assert.equal(workspaceSurfaceForRole('admin'), 'admin')
   assert.equal(workspaceSurfaceForRole('director'), 'admin')
 
-  assert.equal(proxy(request('https://platform.zhangak.com/api/teacher/groups')).headers.get('x-middleware-next'), '1')
-  assert.equal(proxy(request('https://admin.zhangak.com/api/teacher/groups')).status, 404)
+  assert.equal(proxy(request('https://platform.zhangak.com/v1/platform/teacher-dashboard')).headers.get('x-middleware-next'), '1')
+  assert.equal(proxy(request('https://admin.zhangak.com/v1/platform/teacher-dashboard', 'POST')).status, 404)
 })
 
 test('Math marketing stays public while Math accounts use workspace hosts', () => {
@@ -103,11 +103,20 @@ test('login is shared by workspace hosts but leaves the marketing host', () => {
   )
 })
 
-test('wrong-host API writes fail without redirecting credentials or request bodies', async () => {
-  const response = proxy(request('https://platform.zhangak.com/api/admin/settings', 'POST'))
-  assert.equal(response.status, 404)
-  assert.equal(response.headers.get('location'), null)
-  assert.deepEqual(await response.json(), { error: 'Not found' })
+test('retired Supabase API paths fail with a direct 404 on every owned host', async () => {
+  const requests = [
+    request('https://platform.zhangak.com/api/admin/settings', 'POST'),
+    request('https://admin.zhangak.com/api/teacher/groups'),
+    request('https://zhangak.com/api/ai-mentor', 'POST'),
+    request('https://platform.zhangak.com/api/delete-own-account', 'DELETE'),
+  ]
+
+  for (const retiredRequest of requests) {
+    const response = proxy(retiredRequest)
+    assert.equal(response.status, 404)
+    assert.equal(response.headers.get('location'), null)
+    assert.deepEqual(await response.json(), { error: 'Not found' })
+  }
 })
 
 test('first-party auth is available only on workspace hosts', async () => {
