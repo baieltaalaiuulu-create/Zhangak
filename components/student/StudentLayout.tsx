@@ -1,9 +1,12 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { AlertCircle, LoaderCircle, RefreshCw } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import { calcStreak, DEFAULT_TARGET_SCORE } from '@/lib/student-data'
+import { DEFAULT_TARGET_SCORE } from '@/lib/student-data'
+import { redirectForRole } from '@/lib/auth-redirect'
+import { PLATFORM_ORIGIN } from '@/lib/site-hosts'
+import { getCurrentZhangakUser, logoutZhangak, type ZhangakSessionUser } from '@/lib/zhangak-auth-client'
 import StudentSidebar from './StudentSidebar'
 import StudentTopbar from './StudentTopbar'
 import BottomNav from './BottomNav'
@@ -11,6 +14,7 @@ import NotificationPopup from './NotificationPopup'
 import AIDrawer from './ai/AIDrawer'
 import FirstLoginInstallOverlay from './FirstLoginInstallOverlay'
 import PWAInstallBanner from '@/components/PWAInstallBanner'
+import { StudentSessionProvider } from './StudentSessionContext'
 
 interface Props {
   children: ReactNode
@@ -41,85 +45,138 @@ export default function StudentLayout({ children }: Props) {
   const [level, setLevel] = useState(1)
   const [studentId, setStudentId] = useState<string | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [sessionUser, setSessionUser] = useState<ZhangakSessionUser | null>(null)
+  const [authChecked, setAuthChecked] = useState(false)
+  const [authError, setAuthError] = useState(false)
+  const [authAttempt, setAuthAttempt] = useState(0)
 
-  // Chrome data only — auth/role/student_type enforcement stays on each
-  // page (as before), so this never redirects on its own, except for the
-  // admin/student cross-visit conflict below (an admin landing here should
-  // bounce to their own panel, not see a half-loaded student shell).
+  const retryAuth = useCallback(() => {
+    setAuthChecked(false)
+    setAuthError(false)
+    setAuthAttempt(value => value + 1)
+  }, [])
+
+  // This is the single online-student route guard. Child pages receive this
+  // resolved first-party session through StudentSessionContext, rather than
+  // checking the retired Supabase Auth session and bouncing back to /login.
   useEffect(() => {
+    let active = true
+
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      try {
+        const user = await getCurrentZhangakUser()
+        if (!active) return
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, full_name, target_score, avatar_url')
-        .eq('id', user.id)
-        .single()
+        if (!user) {
+          window.location.replace(process.env.NODE_ENV === 'production'
+            ? `${PLATFORM_ORIGIN}/login`
+            : '/login?surface=platform')
+          return
+        }
 
-      if (profile?.role === 'super_admin' || profile?.role === 'admin') { router.push('/admin'); return }
+        if (user.role !== 'student') {
+          redirectForRole(user.role, user.studentType ?? undefined, router)
+          return
+        }
 
-      setStudentId(user.id)
+        if (user.studentType === 'offline') {
+          router.replace('/student')
+          return
+        }
 
-      if (profile) {
-        setFullName(profile.full_name ?? 'Студент')
-        setTargetScore(profile.target_score ?? DEFAULT_TARGET_SCORE)
-        setAvatarUrl(profile.avatar_url ?? null)
+        setSessionUser(user)
+        setStudentId(user.id)
+        setFullName(user.fullName || 'Студент')
+        setTargetScore(user.targetScore ?? DEFAULT_TARGET_SCORE)
+        setAvatarUrl(user.avatarUrl ?? null)
+        setAuthChecked(true)
+
+        // Progress metrics arrive with the first-party dashboard endpoint.
+        // Until that learning slice is populated, a valid account must still
+        // reach its workspace without a legacy Supabase request or redirect.
+        setStreak(0)
+        setLevel(1)
+      } catch {
+        if (active) setAuthError(true)
       }
-
-      const { data: results } = await supabase
-        .from('practice_results')
-        .select('completed_at')
-        .eq('student_id', user.id)
-        .not('completed_at', 'is', null)
-
-      const rows = results ?? []
-      setStreak(calcStreak(rows.map(r => r.completed_at as string)))
-      setLevel(Math.max(1, Math.floor(rows.length / 10) + 1))
     }
-    load()
-  }, [router])
+    void load()
+    return () => { active = false }
+  }, [authAttempt, router])
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
+    await logoutZhangak().catch(() => {})
+    window.location.assign(process.env.NODE_ENV === 'production'
+      ? `${PLATFORM_ORIGIN}/login`
+      : '/login?surface=platform')
   }
 
-  if (isImmersivePage) return <>{children}</>
+  if (authError) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center bg-[#FAF8FF] px-5">
+        <div className="w-full max-w-md rounded-3xl border border-red-100 bg-white p-7 text-center shadow-sm">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+            <AlertCircle size={23} aria-hidden="true" />
+          </span>
+          <h1 className="mt-4 text-xl font-black text-[#0D1E4A]">Не удалось проверить вход</h1>
+          <p className="mt-2 text-sm font-medium leading-6 text-slate-500">Кабинет остаётся закрытым. Проверь соединение и повтори попытку.</p>
+          <button type="button" onClick={retryAuth} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4FD8] px-4 text-sm font-extrabold text-white">
+            <RefreshCw size={17} aria-hidden="true" />
+            Повторить
+          </button>
+        </div>
+      </main>
+    )
+  }
+
+  if (!authChecked || !sessionUser) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center bg-[#FAF8FF] px-5">
+        <div role="status" className="flex items-center gap-3 rounded-2xl border border-blue-100 bg-white px-5 py-4 text-sm font-semibold text-slate-600 shadow-sm">
+          <LoaderCircle size={19} className="animate-spin text-[#1B4FD8]" aria-hidden="true" />
+          Проверяем вход…
+        </div>
+      </main>
+    )
+  }
+
+  if (isImmersivePage) return <StudentSessionProvider user={sessionUser}>{children}</StudentSessionProvider>
 
   // AI keeps its focused chat shell, but the five-item mobile navigation
   // remains available just like it does on the other primary destinations.
   if (isAiPage) {
     return (
-      <>
+      <StudentSessionProvider user={sessionUser}>
         {children}
         <BottomNav />
-      </>
+      </StudentSessionProvider>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF8FF]">
-      <StudentSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} fullName={fullName} avatarUrl={avatarUrl} />
+    <StudentSessionProvider user={sessionUser}>
+      <div className="min-h-screen bg-[#FAF8FF]">
+        <StudentSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} fullName={fullName} avatarUrl={avatarUrl} />
 
-      <div className="md:ml-64">
-        <StudentTopbar
-          fullName={fullName}
-          avatarUrl={avatarUrl}
-          streak={streak}
-          targetScore={targetScore}
-          level={level}
-          unreadCount={unreadCount}
-          onLogout={handleLogout}
-        />
-        <main className="pb-20 md:pb-0">{children}</main>
+        <div className="md:ml-64">
+          <StudentTopbar
+            fullName={fullName}
+            avatarUrl={avatarUrl}
+            streak={streak}
+            targetScore={targetScore}
+            level={level}
+            unreadCount={unreadCount}
+            onLogout={handleLogout}
+          />
+          <main className="pb-20 md:pb-0">{children}</main>
+        </div>
+
+        <BottomNav />
+        <NotificationPopup studentId={studentId} onUnreadChange={setUnreadCount} />
+        <AIDrawer />
+        <FirstLoginInstallOverlay ready={!!studentId} />
+        <PWAInstallBanner ready={!!studentId} />
       </div>
-
-      <BottomNav />
-      <NotificationPopup studentId={studentId} onUnreadChange={setUnreadCount} />
-      <AIDrawer />
-      <FirstLoginInstallOverlay ready={!!studentId} />
-      <PWAInstallBanner ready={!!studentId} />
-    </div>
+    </StudentSessionProvider>
   )
 }

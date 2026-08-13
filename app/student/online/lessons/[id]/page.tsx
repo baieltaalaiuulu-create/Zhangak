@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 import {
   fetchLessons,
   fetchLessonById,
@@ -51,6 +52,7 @@ type LessonStep = 'video' | 'practice' | 'complete'
 
 export default function LessonDetailPage() {
   const router = useRouter()
+  const user = useStudentSession()
   const params = useParams<{ id: string }>()
   const lessonId = params.id
 
@@ -75,18 +77,6 @@ export default function LessonDetailPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
-
       setStudentId(user.id)
 
       try {
@@ -132,7 +122,7 @@ export default function LessonDetailPage() {
       }
     }
     load()
-  }, [router, lessonId])
+  }, [lessonId, user.id])
 
   if (loadError) {
     return (

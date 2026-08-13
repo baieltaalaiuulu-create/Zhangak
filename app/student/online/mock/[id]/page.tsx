@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Menu, X, ChevronLeft, ChevronRight, Flag } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 import {
   fetchMockTestById, fetchMockQuestions, fetchAttemptCount,
   computeSectionRawScores, saveMockResult, sectionTabFor,
@@ -28,6 +29,7 @@ export default function MockExamPage() {
   const params = useParams<{ id: string }>()
   const testId = Number(params.id)
   const router = useRouter()
+  const user = useStudentSession()
 
   const [studentId, setStudentId] = useState<string | null>(null)
   const [test, setTest] = useState<MockTest | null>(null)
@@ -42,17 +44,6 @@ export default function MockExamPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type')
-        .eq('id', user.id)
-        .single()
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
-
       const t = await fetchMockTestById(testId)
       if (!t) { router.push('/student/online/mock'); return }
 
@@ -72,7 +63,7 @@ export default function MockExamPage() {
       setLoading(false)
     }
     init()
-  }, [testId, router])
+  }, [testId, router, user.id])
 
   const sectionGroups = useMemo(() => {
     const grouped = MOCK_SECTION_TABS.map(tab => ({

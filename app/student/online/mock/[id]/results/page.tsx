@@ -6,6 +6,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { RotateCcw, Share2, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 import { calcStreak, DEFAULT_TARGET_SCORE, type SubjectStat } from '@/lib/student-data'
 import {
   fetchMockResultById, fetchLatestMockResult, fetchPreviousMockScore,
@@ -25,6 +26,7 @@ export default function MockResultsPage() {
   const testId = Number(params.id)
   const resultId = searchParams.get('r')
   const router = useRouter()
+  const user = useStudentSession()
 
   const [studentId, setStudentId] = useState<string | null>(null)
   const [targetScore, setTargetScore] = useState(DEFAULT_TARGET_SCORE)
@@ -38,17 +40,7 @@ export default function MockResultsPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type, target_score')
-        .eq('id', user.id)
-        .single()
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
-      setTargetScore(profile.target_score ?? DEFAULT_TARGET_SCORE)
+      setTargetScore(user.targetScore ?? DEFAULT_TARGET_SCORE)
 
       const r = resultId ? await fetchMockResultById(resultId, testId) : await fetchLatestMockResult(user.id, testId)
       if (!r) { router.push('/student/online/mock'); return }
@@ -69,7 +61,7 @@ export default function MockResultsPage() {
       setLoading(false)
     }
     init()
-  }, [testId, resultId, router])
+  }, [testId, resultId, router, user.id, user.targetScore])
 
   const handleShare = async () => {
     if (!result) return

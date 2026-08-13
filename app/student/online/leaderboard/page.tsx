@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 import {
   fetchLeaderboardEntries,
   fetchScoreDelta,
@@ -26,6 +27,7 @@ const FILTERS: { key: LeaderboardFilter; label: string }[] = [
 
 export default function LeaderboardPage() {
   const router = useRouter()
+  const user = useStudentSession()
   const [loading, setLoading] = useState(true)
   const [studentId, setStudentId] = useState<string | null>(null)
   const [filter, setFilter] = useState<LeaderboardFilter>('all')
@@ -37,25 +39,13 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
-
       setStudentId(user.id)
       const delta = await fetchScoreDelta(user.id)
       setMyDelta(delta.delta)
       setLoading(false)
     }
     checkAuth()
-  }, [router])
+  }, [user.id])
 
   useEffect(() => {
     if (!studentId) return

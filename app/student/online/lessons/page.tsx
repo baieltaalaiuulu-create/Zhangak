@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, BookOpen, Calculator, Languages, RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 import {
   fetchLessons,
   fetchCompletedLessonIds,
@@ -35,6 +36,7 @@ const SECTIONS: { subject: LessonSubject; label: string }[] = [
 
 export default function LessonsPage() {
   const router = useRouter()
+  const user = useStudentSession()
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [lessons, setLessons] = useState<Lesson[]>([])
@@ -48,19 +50,7 @@ export default function LessonsPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type, target_score')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
-
-      setTargetScore(profile.target_score ?? DEFAULT_TARGET_SCORE)
+      setTargetScore(user.targetScore ?? DEFAULT_TARGET_SCORE)
 
       try {
         const [allLessons, completed] = await Promise.all([
@@ -97,7 +87,7 @@ export default function LessonsPage() {
       }
     }
     checkAuth()
-  }, [router])
+  }, [user.id, user.targetScore])
 
   const showToast = (message: string) => {
     setToast(message)

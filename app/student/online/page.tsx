@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import nextDynamic from 'next/dynamic'
 import { RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 import { getStudentDashboard, DEFAULT_TARGET_SCORE, type StudentDashboardData } from '@/lib/student-data'
 import { fetchDashboardExtras, type DashboardExtras } from '@/lib/dashboard-data'
 import { fetchLessons, type Lesson } from '@/lib/lessons-data'
@@ -41,6 +42,7 @@ const AIMentorRecommendationCard = nextDynamic(() => import('@/components/studen
 })
 
 export default function StudentOnlinePage() {
+  const user = useStudentSession()
   const [profileName, setProfileName] = useState<string | null>(null)
   const [data, setData] = useState<StudentDashboardData | null>(null)
   const [extras, setExtras] = useState<DashboardExtras | null>(null)
@@ -53,19 +55,7 @@ export default function StudentOnlinePage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type, full_name, target_score')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
-
-      setProfileName(profile.full_name)
+      setProfileName(user.fullName)
       try {
         // fetchDashboardExtras only depends on getStudentDashboard's score
         // fields, not on any of the other calls below — chained off that
@@ -102,7 +92,7 @@ export default function StudentOnlinePage() {
       }
     }
     checkAuth()
-  }, [router])
+  }, [user.id, user.fullName])
 
   if (loadError) {
     return (

@@ -3,9 +3,9 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import { redirectForRole } from '@/lib/auth-redirect'
 import { isDedicatedPlatformHost } from '@/lib/site-hosts'
+import { getCurrentZhangakUser } from '@/lib/zhangak-auth-client'
 
 const ONBOARDING_KEY = 'zhangak-onboarding-done'
 const DOT_DELAYS_MS = [0, 150, 300]
@@ -38,15 +38,10 @@ export default function RootPage() {
       try {
         const isPWA = window.matchMedia('(display-mode: standalone)').matches
         const isPlatformHost = isDedicatedPlatformHost(window.location.hostname)
-        const { data: { session } } = await supabase.auth.getSession()
+        const user = await getCurrentZhangakUser()
 
-        if (session) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role, student_type')
-            .eq('id', session.user.id)
-            .single()
-          redirectForRole(profile?.role, profile?.student_type, router, '/student')
+        if (user) {
+          redirectForRole(user.role, user.studentType ?? undefined, router, '/student')
           return
         }
 

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { CalendarClock, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 import {
   fetchRelevantMockSession, getMockSessionStatus, fetchQuestionCount, fetchAttemptCount, fetchMockHistory,
   fetchMyMockRegistration, fetchMockRegisteredCount, registerForMock,
@@ -28,21 +29,10 @@ export default function MockOrtPage() {
   const [registering, setRegistering] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
   const router = useRouter()
+  const user = useStudentSession()
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
-
       setStudentId(user.id)
 
       const session = await fetchRelevantMockSession()
@@ -74,7 +64,7 @@ export default function MockOrtPage() {
       setLoading(false)
     }
     checkAuth()
-  }, [router, reloadKey])
+  }, [reloadKey, user.id])
 
   const handleRegister = async () => {
     if (!studentId || !test) return

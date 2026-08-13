@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { BookOpenText, CalendarDays, SearchCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 import { DEFAULT_TARGET_SCORE } from '@/lib/student-data'
 import { fetchLatestMockScore } from '@/lib/profile-data'
 import {
@@ -49,6 +50,7 @@ function LoadingScreen() {
 
 export default function AiMentorChatPage() {
   const router = useRouter()
+  const user = useStudentSession()
   const searchParams = useSearchParams()
   const initialPromptRef = useRef(searchParams.get('prompt')?.trim().slice(0, 800) || null)
   const initialPromptConsumedRef = useRef(false)
@@ -78,22 +80,10 @@ export default function AiMentorChatPage() {
   // greeted session (persisted only once the greeting actually arrives). ──
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type, full_name, target_score, avatar_url')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
-
       setStudentId(user.id)
-      setFullName(profile.full_name ?? 'Студент')
-      setAvatarUrl(profile.avatar_url ?? null)
-      setTargetScore(profile.target_score ?? DEFAULT_TARGET_SCORE)
+      setFullName(user.fullName || 'Студент')
+      setAvatarUrl(user.avatarUrl ?? null)
+      setTargetScore(user.targetScore ?? DEFAULT_TARGET_SCORE)
 
       const [latest, context, panel, existingSessions, { count }] = await Promise.all([
         fetchLatestMockScore(user.id),
@@ -111,7 +101,7 @@ export default function AiMentorChatPage() {
       setLoading(false)
     }
     init()
-  }, [router])
+  }, [user.avatarUrl, user.fullName, user.id, user.targetScore])
 
   // Kick off the auto-greeted new session once context is ready.
   useEffect(() => {
