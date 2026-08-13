@@ -10,6 +10,15 @@ import "./globals.css";
 
 const description = "Жангак — платформа подготовки к ОРТ (ЖРТ) для школьников Кыргызстана. Курсы по математике, аналогиям, чтению и кыргызскому языку, тренажёры, пробные тесты и персональный AI-наставник."
 
+const brandIcons: Metadata['icons'] = {
+  icon: [
+    { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+    { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+  ],
+  shortcut: '/icons/icon-192.png',
+  apple: [{ url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' }],
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   const host = (await headers()).get('host')
   const surface = siteSurfaceForHost(host)
@@ -22,7 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
       manifest: '/platform.webmanifest',
       robots: { index: false, follow: false, nocache: true },
       appleWebApp: { capable: true, statusBarStyle: 'default', title: 'ZHANGAK' },
-      icons: { apple: '/icons/icon-512.png' },
+      icons: brandIcons,
       other: { 'mobile-web-app-capable': 'yes' },
     }
   }
@@ -33,6 +42,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title: { default: 'Жангак — управление', template: '%s | Жангак' },
       description: 'Защищённая панель управления платформой Жангак.',
       robots: { index: false, follow: false, nocache: true },
+      icons: brandIcons,
     }
   }
 
@@ -45,6 +55,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description,
     keywords: ["ОРТ", "ЖРТ", "Жангак", "Кыргызстан", "подготовка к ОРТ", "пробный ОРТ", "курсы Бишкек", "ЖРТ тест"],
     robots: { index: true, follow: true },
+    icons: brandIcons,
     openGraph: {
       title: "Жангак — подготовка к ОРТ (ЖРТ)",
       description: "Курсы, тренажёры, пробные тесты и AI-наставник для школьников Кыргызстана.",
