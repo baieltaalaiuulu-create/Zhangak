@@ -70,8 +70,8 @@ export default function AIRecommendationBar({ studentScore, universities }: Prop
       </p>
 
       <div className="mt-3 flex flex-wrap gap-4 text-sm font-bold">
-        <Link href="/student/online/mock" className="inline-flex min-h-11 items-center gap-1.5 text-[#4338CA] hover:underline">Пройти пробный ОРТ <ArrowRight size={15} aria-hidden="true" /></Link>
-        <Link href="/student/online/ai" className="inline-flex min-h-11 items-center gap-1.5 text-[#4338CA] hover:underline">Открыть AI Коуч <ArrowRight size={15} aria-hidden="true" /></Link>
+        <Link href="/student/online/practice?type=mock" className="inline-flex min-h-11 items-center gap-1.5 text-[#4338CA] hover:underline">Открыть пробный ОРТ <ArrowRight size={15} aria-hidden="true" /></Link>
+        <Link href="/student/online/lessons" className="inline-flex min-h-11 items-center gap-1.5 text-[#4338CA] hover:underline">Открыть уроки <ArrowRight size={15} aria-hidden="true" /></Link>
       </div>
     </div>
   )
