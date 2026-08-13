@@ -20,7 +20,10 @@ const requiredNode = (await readFile(path.join(repoRoot, '.node-version'), 'utf8
 
 await rm(output, { recursive: true, force: true })
 await mkdir(output, { recursive: true })
-for (const entry of ['package.json', 'package-lock.json', 'src', 'migrations']) {
+// Keep the release self-checkable: `npm run check` scans the test tree too.
+// Tests contain no production secrets and make the immutable artifact verifiable
+// before the service is switched.
+for (const entry of ['package.json', 'package-lock.json', 'src', 'migrations', 'test']) {
   await cp(path.join(backendRoot, entry), path.join(output, entry), { recursive: true })
 }
 await mkdir(path.join(output, 'scripts'), { recursive: true })
