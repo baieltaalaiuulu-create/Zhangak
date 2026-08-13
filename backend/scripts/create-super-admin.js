@@ -21,17 +21,18 @@ try {
       'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id',
       [email, passwordHash],
     )
+    const userId = user.rows[0].id
     await client.query(
       `INSERT INTO profiles (user_id, full_name, role)
        VALUES ($1, $2, 'super_admin')`,
-      [user.rows[0].id, fullName],
+      [userId, fullName],
     )
     await client.query(
       `INSERT INTO audit_log (actor_user_id, action, target_type, target_id)
-       VALUES ($1, 'bootstrap_super_admin', 'user', $1::text)`,
-      [user.rows[0].id],
+       VALUES ($1, 'bootstrap_super_admin', 'user', $2)`,
+      [userId, userId],
     )
-    return user.rows[0].id
+    return userId
   })
   console.log(JSON.stringify({ created: true, id }))
 } finally {

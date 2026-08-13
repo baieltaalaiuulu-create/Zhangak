@@ -51,6 +51,9 @@ expect(server.includes("import './routes/health.js'"), 'health routes must be re
 expect(server.includes('server.requestTimeout = 30_000'), 'HTTP request timeout must be bounded')
 expect(server.includes("process.on('SIGTERM'"), 'API must shut down gracefully')
 
+const bootstrap = await read('backend/scripts/create-super-admin.js')
+expect(bootstrap.includes('[userId, userId]'), 'bootstrap audit parameters must keep uuid and text inference separate')
+
 if (failures.length > 0) {
   console.error(`Own backend check failed (${failures.length}):`)
   for (const failure of failures) console.error(`- ${failure}`)
