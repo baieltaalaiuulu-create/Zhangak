@@ -69,7 +69,11 @@ async function main() {
   }
   expect(mobileDashboard.includes('<MobileHero'), 'mobile home needs one primary continue action')
   expect(mobileDashboard.includes('<MobileTodayChecklist'), 'mobile home needs the three-item daily plan')
-  expect(mobileDashboard.includes('challengeHref="/student/online/practice/daily"'), 'daily plan must open the real daily challenge')
+  expect(mobileDashboard.includes('challengeHref="/student/online/practice/daily"'), 'daily task must retain its canonical route')
+  expect(
+    mobileDashboard.includes('challengeAvailable={false}') || mobileDashboard.includes('challengeAvailable'),
+    'daily task must explicitly declare whether its first-party flow is available',
+  )
 
   const hero = await source('components/student/mobile/MobileHero.tsx')
   expect(hero.includes('href={`/student/online/lessons/${heroLesson.id}`}'), 'continue CTA must open the exact next lesson')
@@ -81,6 +85,7 @@ async function main() {
     expect(checklist.includes(`label: '${label}'`), `daily plan is missing ${label}`)
   }
   expect(checklist.includes('min-h-14'), 'daily plan rows must keep large touch targets')
+  expect(checklist.includes('challengeAvailable') && checklist.includes('Скоро'), 'unmigrated daily tasks must be disabled instead of linking into a legacy flow')
 
   const aiPage = await source('app/student/online/ai/page.tsx')
   const quickStart = aiPage.slice(aiPage.indexOf('const quickStartItems'), aiPage.indexOf('const todayGoalLabel'))

@@ -165,7 +165,8 @@ export default function StudentOnlinePage() {
             practiceDone={summary.practice.attempts > 0}
             practiceHref="/student/online/practice"
             challengeDone={false}
-            challengeHref="/student/online/practice"
+            challengeHref="/student/online/practice/daily"
+            challengeAvailable={false}
           />
         </div>
 
