@@ -10,6 +10,7 @@ import './routes/admin-users.js'
 import './routes/admin-learning.js'
 import './routes/platform-learning.js'
 import './routes/platform-teacher.js'
+import './routes/platform-offline.js'
 import './routes/platform-universities.js'
 import './routes/platform-profile.js'
 

@@ -80,6 +80,24 @@ async function main() {
   expect(hero.includes('min-h-14'), 'primary lesson CTA must keep a large touch target')
   expect(hero.includes('role="progressbar"'), 'score-to-goal progress needs progressbar semantics')
 
+  const mobileAiHelp = await source('components/student/mobile/MobileAIHelp.tsx')
+  expect(mobileAiHelp.includes('AI-помощник обновляется'), 'mobile lesson AI entry must explicitly state its first-party migration status')
+  expect(mobileAiHelp.includes('href="/student/online/practice"'), 'mobile lesson AI entry needs a working practice destination')
+  expect(!mobileAiHelp.includes('askAIMentor'), 'mobile lesson AI entry must not dispatch into the retired AI drawer')
+  expect(!mobileAiHelp.includes('useState'), 'mobile lesson AI entry must not expose dead expandable controls')
+
+  const firstPartyStudentFiles = [
+    'components/student/StudentLayout.tsx',
+    'app/student/online/page.tsx',
+    'app/student/online/universities/page.tsx',
+    'components/student/mobile/MobileHero.tsx',
+  ]
+  for (const file of firstPartyStudentFiles) {
+    const content = await source(file)
+    expect(!content.includes("@/lib/student-data"), `${file} must not import the legacy Supabase student reader`)
+    expect(!content.includes("@/lib/lessons-data"), `${file} must not import the legacy Supabase lesson reader`)
+  }
+
   const checklist = await source('components/student/mobile/MobileTodayChecklist.tsx')
   for (const label of ['Урок', 'Тренажёр', 'Задание дня']) {
     expect(checklist.includes(`label: '${label}'`), `daily plan is missing ${label}`)

@@ -1,52 +1,26 @@
 import { supabase } from '@/lib/supabase'
+import {
+  DEFAULT_TARGET_SCORE,
+  type ScoreHistory,
+  type StudentDashboardData,
+  type SubjectStat,
+  type SubjectTrack,
+} from '@/lib/student-dashboard-contract'
 
-export const DEFAULT_TARGET_SCORE = 180
-export const MIN_TARGET_SCORE = 100
-export const MAX_TARGET_SCORE = 245
-
-export type SubjectKey = 'math' | 'kyr' | 'analogy' | 'reading' | 'grammar'
-
-export interface ScoreHistory {
-  score: number
-  completed_at: string
-}
-
-export interface SubjectStat {
-  subject: SubjectKey
-  current: number
-  max: number
-  delta: number // разница с предыдущим результатом
-}
-
-// One card per subject track ("📐 Математика" / "📘 Кыргыз тили") on the
-// dashboard — each knows its own current lesson and progress instead of the
-// single cross-subject "next lesson" that used to jump between subjects.
-export interface SubjectTrack {
-  subject: 'math' | 'kyr'
-  currentLesson: { id: string; title: string; order_number: number } | null
-  completedCount: number
-  totalCount: number
-  progressPct: number
-  lessonDoneToday: boolean
-  practiceDoneToday: boolean
-}
-
-export interface StudentDashboardData {
-  profile: { full_name: string; target_score: number } | null
-  latestScore: number | null
-  previousScore: number | null
-  scoreHistory: ScoreHistory[]
-  subjects: SubjectStat[]
-  streak: number
-  subjectTracks: SubjectTrack[]
-  monthStats: {
-    lessons: number
-    questions: number
-    tests: number
-    mocks: number
-    hours: number
-  }
-}
+// Preserve the legacy module's public API for retired callers while mounted
+// first-party screens import the data-client-free contract directly.
+export {
+  DEFAULT_TARGET_SCORE,
+  MAX_TARGET_SCORE,
+  MIN_TARGET_SCORE,
+} from '@/lib/student-dashboard-contract'
+export type {
+  ScoreHistory,
+  StudentDashboardData,
+  SubjectKey,
+  SubjectStat,
+  SubjectTrack,
+} from '@/lib/student-dashboard-contract'
 
 // ── helpers ──────────────────────────────────────────────
 

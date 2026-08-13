@@ -30,7 +30,6 @@ const protectedRoutes = {
   'app/api/delete-own-account/route.ts': ownAccountGuard(),
   'app/api/delete-user/route.ts': roleGuard('ACCOUNT_MANAGER_ROLES'),
   'app/api/list-users/route.ts': roleGuard('ACCOUNT_MANAGER_ROLES'),
-  'app/api/offline-student/route.ts': roleGuard('STUDENT_ROLES'),
   'app/api/practice/route.ts': bearerGuard(),
   'app/api/teacher/route.ts': roleGuard('TEACHER_ROLES'),
 }

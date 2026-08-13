@@ -63,6 +63,12 @@ jobs:
       - name: Check teacher journey invariants
         run: npm run check:teacher-journey
 
+      - name: Check admin learning journey invariants
+        run: npm run check:admin-learning-journey
+
+      - name: Check special-role journey invariants
+        run: npm run check:special-role-journey
+
       - name: Install and verify the first-party backend
         run: |
           npm --prefix backend ci

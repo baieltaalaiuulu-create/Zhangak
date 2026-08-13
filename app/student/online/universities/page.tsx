@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useMemo, useState } from 'react'
 import { GitCompareArrows, GraduationCap, RefreshCw, WifiOff, X } from 'lucide-react'
-import { DEFAULT_TARGET_SCORE } from '@/lib/student-data'
+import { DEFAULT_TARGET_SCORE } from '@/lib/student-dashboard-contract'
 import {
   fetchUniversityCatalog, getFavoriteIds, toggleFavorite,
   type CatalogStatus, type University, type CatalogStats,

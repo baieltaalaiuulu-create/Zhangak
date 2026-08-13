@@ -20,7 +20,7 @@ const ADMIN_API_PREFIXES = [
   '/api/delete-user',
   '/api/list-users',
 ]
-const PLATFORM_API_PREFIXES = ['/api/ai-mentor', '/api/practice', '/api/teacher', '/api/offline-student', '/api/delete-own-account']
+const PLATFORM_API_PREFIXES = ['/api/ai-mentor', '/api/practice', '/api/teacher', '/api/delete-own-account']
 
 function matchesPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`)

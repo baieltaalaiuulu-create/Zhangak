@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { useStudentSession } from '@/components/student/StudentSessionContext'
-import { DEFAULT_TARGET_SCORE, type StudentDashboardData } from '@/lib/student-data'
+import { DEFAULT_TARGET_SCORE, type StudentDashboardData } from '@/lib/student-dashboard-contract'
 import { zhangakApiRequest } from '@/lib/zhangak-api-client'
 
 import DashboardHeroCard from '@/components/student/DashboardHeroCard'

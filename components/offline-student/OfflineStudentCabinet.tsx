@@ -31,7 +31,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
-import { supabase } from '@/lib/supabase'
+import { logoutZhangak } from '@/lib/zhangak-auth-client'
 import {
   activeHomework,
   attendanceSummary,
@@ -205,7 +205,7 @@ function HomeSection({ dashboard, goTo }: { dashboard: OfflineStudentDashboard; 
             ) : (
               <>
                 <h2 className="mt-3 text-xl font-black">Точное расписание пока не опубликовано</h2>
-                <p className="mt-2 text-sm leading-6 text-blue-100">Можно посмотреть программу курса и уже отмеченные занятия.</p>
+                <p className="mt-2 text-sm leading-6 text-blue-100">Можно посмотреть опубликованную программу курса и темы занятий.</p>
               </>
             )}
             <button type="button" onClick={() => goTo('schedule')} className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-[#132B66]">
@@ -235,7 +235,7 @@ function HomeSection({ dashboard, goTo }: { dashboard: OfflineStudentDashboard; 
           </div>
           <button type="button" onClick={() => goTo('homework')} className="min-h-11 text-sm font-bold text-[#1B4FD8]">Все задания</button>
         </div>
-        {pendingHomework[0] ? <HomeworkCard item={pendingHomework[0]} /> : <EmptyState icon={ClipboardCheck} title="Активных заданий нет" text="Новое домашнее задание появится здесь после публикации учителем." />}
+        {pendingHomework[0] ? <HomeworkCard item={pendingHomework[0]} /> : <EmptyState icon={ClipboardCheck} title="Домашние задания пока не подключены" text="Этот раздел появится после отдельного переноса заданий в наш сервер. Сейчас кабинет показывает только подтверждённую программу курса." />}
       </section>
     </div>
   )
@@ -278,7 +278,7 @@ function AttendanceSection({ lessons }: { lessons: OfflineLesson[] }) {
   const recorded = lessons.filter(lesson => lesson.attendance !== 'pending')
   return (
     <div className="space-y-5">
-      <SectionTitle title="Посещаемость" description="Здесь только отметки, внесённые учителем. Ученик не может их менять." />
+      <SectionTitle title="Посещаемость" description="Отметки появятся после отдельного защищённого переноса посещаемости. Ученик не сможет их менять." />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           ['Посещаемость', summary.rate == null ? '—' : `${summary.rate}%`, UserRoundCheck],
@@ -290,7 +290,7 @@ function AttendanceSection({ lessons }: { lessons: OfflineLesson[] }) {
           return <div key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><Icon size={19} className="text-[#1B4FD8]" /><p className="mt-3 text-2xl font-black text-slate-950">{String(value)}</p><p className="mt-1 text-xs font-semibold text-slate-500">{String(label)}</p></div>
         })}
       </div>
-      {recorded.length === 0 ? <EmptyState icon={UserRoundCheck} title="Отметок пока нет" text="После занятия учитель отметит присутствие, опоздание или пропуск." /> : <div className="space-y-3">{recorded.map(lesson => <LessonRow key={lesson.id} lesson={lesson} />)}</div>}
+      {recorded.length === 0 ? <EmptyState icon={UserRoundCheck} title="Посещаемость ещё переносится" text="В первой версии офлайн-кабинета мы не показываем старые или выдуманные отметки. Они появятся только после переноса в наш сервер." /> : <div className="space-y-3">{recorded.map(lesson => <LessonRow key={lesson.id} lesson={lesson} />)}</div>}
     </div>
   )
 }
@@ -317,7 +317,7 @@ function PracticeSection({ canUseOnline }: { canUseOnline: boolean }) {
       {canUseOnline ? (
         <div className="grid gap-4 sm:grid-cols-2">
           <Link href="/student/online/practice" className="rounded-3xl bg-orange-500 p-5 text-white shadow-lg shadow-orange-500/15"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15"><PenLine size={22} /></span><h2 className="mt-4 text-xl font-black">Свободная практика</h2><p className="mt-2 text-sm leading-6 text-orange-50">Выбери предмет и тему, затем решай в своём темпе.</p><span className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-orange-600">Открыть <ArrowRight size={16} /></span></Link>
-          <Link href="/student/online/practice/daily" className="rounded-3xl bg-[#1B4FD8] p-5 text-white shadow-lg shadow-blue-700/15"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15"><CalendarDays size={22} /></span><h2 className="mt-4 text-xl font-black">Задание дня</h2><p className="mt-2 text-sm leading-6 text-blue-50">Короткая ежедневная тренировка по опубликованным вопросам.</p><span className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-[#1B4FD8]">Начать <PlayCircle size={17} /></span></Link>
+          <Link href="/student/online/practice?type=mock" className="rounded-3xl bg-[#1B4FD8] p-5 text-white shadow-lg shadow-blue-700/15"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15"><CalendarDays size={22} /></span><h2 className="mt-4 text-xl font-black">Пробный тест</h2><p className="mt-2 text-sm leading-6 text-blue-50">Открой опубликованный пробный тест в общем тренажёре.</p><span className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-[#1B4FD8]">Открыть <PlayCircle size={17} /></span></Link>
         </div>
       ) : <EmptyState icon={PenLine} title="Онлайн-тренажёр не подключён к аккаунту" text="Обратись к администратору, чтобы включить тип обучения «оба». Офлайн-данные при этом сохранятся." />}
     </div>
@@ -328,13 +328,13 @@ function ProgressSection({ dashboard }: { dashboard: OfflineStudentDashboard }) 
   const gap = scoreGap(dashboard.progress)
   return (
     <div className="space-y-5">
-      <SectionTitle title="Мой прогресс" description="ОРТ-прогноз берётся только из последнего завершённого пробного теста, оценки — из кабинета учителя." />
+      <SectionTitle title="Мой прогресс" description="Здесь появятся только подтверждённые результаты после отдельного переноса ОРТ-оценок и контрольных работ в наш сервер." />
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-3xl bg-[#132B66] p-5 text-white"><Target size={22} className="text-blue-200" /><p className="mt-4 text-xs font-bold uppercase tracking-wide text-blue-200">Последний ОРТ</p><p className="mt-1 text-3xl font-black">{dashboard.progress.latestOrtScore ?? '—'}</p></div>
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><GraduationCap size={22} className="text-violet-600" /><p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">Цель</p><p className="mt-1 text-3xl font-black text-slate-950">{dashboard.progress.targetScore ?? '—'}</p></div>
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><TrendingUp size={22} className="text-emerald-600" /><p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">До цели</p><p className="mt-1 text-3xl font-black text-slate-950">{gap ?? '—'}</p></div>
       </div>
-      {dashboard.grades.length === 0 ? <EmptyState icon={ClipboardCheck} title="Оценки ещё не опубликованы" text="После контрольной учитель внесёт результаты, и они появятся здесь." /> : <div className="grid gap-3 lg:grid-cols-2">{dashboard.grades.map(grade => <GradeCard key={grade.lessonId} grade={grade} />)}</div>}
+      {dashboard.grades.length === 0 ? <EmptyState icon={ClipboardCheck} title="Оценки ещё не подключены" text="Чтобы не смешивать старые и новые данные, оценки появятся здесь только после защищённого переноса на наш сервер." /> : <div className="grid gap-3 lg:grid-cols-2">{dashboard.grades.map(grade => <GradeCard key={grade.lessonId} grade={grade} />)}</div>}
     </div>
   )
 }
@@ -344,8 +344,8 @@ function HomeworkSection({ homework }: { homework: OfflineHomework[] }) {
   const completed = homework.filter(item => item.completed)
   return (
     <div className="space-y-5">
-      <SectionTitle title="Домашние задания" description="Просматривай задания и сроки. Отметку о сдаче вносит учитель — формы редактирования здесь нет." />
-      {homework.length === 0 ? <EmptyState icon={ClipboardCheck} title="Заданий пока нет" text="После публикации учителем новое задание появится в этом разделе." /> : (
+      <SectionTitle title="Домашние задания" description="Этот раздел будет подключён после отдельного переноса заданий и сдач в наш сервер." />
+      {homework.length === 0 ? <EmptyState icon={ClipboardCheck} title="Домашние задания ещё не подключены" text="Мы не показываем задания из старой системы. После безопасного переноса они появятся в этом разделе." /> : (
         <>
           <section><h2 className="mb-3 text-sm font-black uppercase tracking-wide text-slate-500">Нужно сделать</h2>{active.length > 0 ? <div className="space-y-3">{active.map(item => <HomeworkCard key={item.id} item={item} />)}</div> : <p className="rounded-2xl bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">Все опубликованные задания выполнены.</p>}</section>
           {completed.length > 0 && <section><h2 className="mb-3 text-sm font-black uppercase tracking-wide text-slate-500">Выполненные</h2><div className="space-y-3">{completed.map(item => <HomeworkCard key={item.id} item={item} />)}</div></section>}
@@ -390,7 +390,10 @@ export default function OfflineStudentCabinet({ dashboard }: { dashboard: Offlin
   }, [dashboard, section])
 
   const goTo = (next: Section) => { setSection(next); setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }
-  const logout = async () => { await supabase.auth.signOut(); router.replace('/login') }
+  const logout = async () => {
+    await logoutZhangak().catch(() => {})
+    router.replace('/login')
+  }
 
   return (
     <div className="min-h-screen bg-[#F6F7FB] text-slate-900">

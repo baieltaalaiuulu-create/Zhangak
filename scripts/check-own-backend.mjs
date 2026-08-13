@@ -50,6 +50,7 @@ const server = await read('backend/src/server.js')
 expect(server.includes("import './routes/health.js'"), 'health routes must be registered')
 expect(server.includes("import './routes/admin-users.js'"), 'first-party account administration routes must be registered')
 expect(server.includes("import './routes/platform-profile.js'"), 'first-party student profile routes must be registered')
+expect(server.includes("import './routes/platform-offline.js'"), 'first-party offline dashboard route must be registered')
 expect(server.includes('server.requestTimeout = 30_000'), 'HTTP request timeout must be bounded')
 expect(server.includes("process.on('SIGTERM'"), 'API must shut down gracefully')
 
@@ -67,6 +68,12 @@ expect(platformProfile.includes("PATCH('/v1/platform/profile'"), 'student profil
 expect(platformProfile.includes("new Set(['student', 'math_student'])"), 'student profile endpoint must enforce student roles')
 expect(platformProfile.includes('const allowed = new Set([\'fullName\', \'avatarUrl\', \'targetScore\'])'), 'student profile fields must be explicitly whitelisted')
 expect(!platformProfile.includes("DELETE('/v1/platform/profile'"), 'student profile deletion must remain unavailable until data deletion is transactional')
+
+const platformOffline = await read('backend/src/routes/platform-offline.js')
+expect(platformOffline.includes("GET('/v1/platform/offline-dashboard'"), 'offline dashboard must use a first-party platform route')
+expect(platformOffline.includes('requireOfflineStudent(await requireAuth(config, req))'), 'offline dashboard must require an owned authenticated session')
+expect(platformOffline.includes('homework: []') && platformOffline.includes('grades: []'), 'unmigrated offline domains must fail closed')
+expect(!/\b(?:POST|PATCH|DELETE)\s*\('/.test(platformOffline), 'offline dashboard must remain read-only')
 
 if (failures.length > 0) {
   console.error(`Own backend check failed (${failures.length}):`)

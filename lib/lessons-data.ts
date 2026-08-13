@@ -1,16 +1,15 @@
 import { supabase } from '@/lib/supabase'
+import {
+  LESSON_SUBJECT_LABELS,
+  type Lesson,
+  type LessonStatus,
+  type LessonSubject,
+} from '@/lib/lesson-contract'
 
-export type LessonSubject = 'math' | 'kyr'
-export type LessonStatus = 'done' | 'current' | 'locked'
-
-export interface Lesson {
-  id: string
-  title: string
-  description: string | null
-  subject: LessonSubject
-  video_url: string | null
-  order_number: number
-}
+// Keep legacy consumers source-compatible. New first-party components import
+// the data-client-free lesson contract instead of this Supabase reader.
+export { LESSON_SUBJECT_LABELS } from '@/lib/lesson-contract'
+export type { Lesson, LessonStatus, LessonSubject } from '@/lib/lesson-contract'
 
 export const LESSON_SUBJECT_META: Record<LessonSubject, {
   label: string
@@ -19,8 +18,8 @@ export const LESSON_SUBJECT_META: Record<LessonSubject, {
   bg: string
   strip: string
 }> = {
-  math: { label: 'Математика', icon: '📐', color: 'text-blue-600', bg: 'bg-blue-50', strip: 'bg-blue-600' },
-  kyr:  { label: 'Кыргыз тили', icon: '📘', color: 'text-orange-600', bg: 'bg-orange-50', strip: 'bg-orange-400' },
+  math: { label: LESSON_SUBJECT_LABELS.math, icon: '📐', color: 'text-blue-600', bg: 'bg-blue-50', strip: 'bg-blue-600' },
+  kyr:  { label: LESSON_SUBJECT_LABELS.kyr, icon: '📘', color: 'text-orange-600', bg: 'bg-orange-50', strip: 'bg-orange-400' },
 }
 
 export async function fetchLessons(): Promise<Lesson[]> {

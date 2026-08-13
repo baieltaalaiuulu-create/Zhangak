@@ -1,50 +1,31 @@
-'use client'
-
-import { useState } from 'react'
+import Link from 'next/link'
 import { Sparkles } from 'lucide-react'
-import { askAIMentor } from '@/lib/ai-quick-ask'
 
 interface Props {
   lessonTitle: string
 }
 
-const CHIPS: { label: string; build: (title: string) => string }[] = [
-  { label: 'Объясни проще', build: title => `Объясни тему урока «${title}» проще, простыми словами.` },
-  { label: 'Покажи пример', build: title => `Покажи пример решения по теме урока «${title}».` },
-  { label: 'Помоги с задачей', build: title => `Помоги мне решить задачу по теме урока «${title}».` },
-]
-
-// Collapsed by default — expands into 3 chips that hand a pre-built,
-// lesson-context message to the existing floating AIDrawer (via
-// lib/ai-quick-ask.ts) rather than opening the full /student/online/ai page.
+// The previous quick-question event only dispatched into a retired floating
+// drawer, so taps appeared to do nothing. Until the first-party AI API is
+// ready, show an explicit state and route the student to a useful live flow.
 export default function MobileAIHelp({ lessonTitle }: Props) {
-  const [open, setOpen] = useState(false)
-
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        className="flex min-h-11 w-full items-center gap-2 text-left text-sm font-semibold text-[#1B4FD8]"
-      >
-        <Sparkles size={16} className="shrink-0" />
-        Не понял тему? → Спросить AI
-      </button>
-
-      {open && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {CHIPS.map(chip => (
-            <button
-              key={chip.label}
-              type="button"
-              onClick={() => askAIMentor(chip.build(lessonTitle))}
-              className="flex min-h-11 items-center rounded-full border border-[#1B4FD8]/20 bg-[#EEF2FF] px-3 py-2 text-xs font-bold text-[#1B4FD8]"
-            >
-              {chip.label}
-            </button>
-          ))}
+    <section className="rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm" aria-labelledby="mobile-ai-help-title">
+      <div className="flex items-start gap-2">
+        <Sparkles size={17} className="mt-0.5 shrink-0 text-[#1B4FD8]" aria-hidden="true" />
+        <div>
+          <h2 id="mobile-ai-help-title" className="text-sm font-bold text-[#0D1E4A]">AI-помощник обновляется</h2>
+          <p className="mt-1 text-xs leading-5 text-gray-500">
+            Вопросы по уроку «{lessonTitle}» появятся после подключения AI к проверенным материалам курса.
+          </p>
         </div>
-      )}
-    </div>
+      </div>
+      <Link
+        href="/student/online/practice"
+        className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-[#EEF2FF] px-3 text-xs font-bold text-[#1B4FD8]"
+      >
+        Открыть тренажёр по теме
+      </Link>
+    </section>
   )
 }

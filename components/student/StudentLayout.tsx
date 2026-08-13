@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { AlertCircle, LoaderCircle, RefreshCw } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
-import { DEFAULT_TARGET_SCORE } from '@/lib/student-data'
+import { DEFAULT_TARGET_SCORE } from '@/lib/student-dashboard-contract'
 import { redirectForRole } from '@/lib/auth-redirect'
 import { PLATFORM_ORIGIN } from '@/lib/site-hosts'
 import { getCurrentZhangakUser, logoutZhangak, type ZhangakSessionUser } from '@/lib/zhangak-auth-client'

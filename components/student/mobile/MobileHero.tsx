@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { ArrowRight, Calculator, CheckCircle2, Languages, Target } from 'lucide-react'
-import { LESSON_SUBJECT_META, type Lesson } from '@/lib/lessons-data'
+import { LESSON_SUBJECT_LABELS, type Lesson } from '@/lib/lesson-contract'
 
 interface Props {
   firstName: string
@@ -66,7 +66,7 @@ export default function MobileHero({ firstName, currentScore, targetScore, heroL
           <p className="text-xs font-semibold uppercase tracking-widest text-white/75">Следующий шаг</p>
           <span className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold">
             <SubjectIcon size={14} aria-hidden="true" />
-            {LESSON_SUBJECT_META[heroLesson.subject].label}
+            {LESSON_SUBJECT_LABELS[heroLesson.subject]}
           </span>
           <h2 className="mt-2 text-xl font-bold leading-snug">{heroLesson.title}</h2>
           <p className="mt-1 text-sm text-white/75">Около {LESSON_MINUTES} минут</p>
