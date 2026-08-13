@@ -6,8 +6,11 @@ import { NextRequest } from 'next/server.js'
 import { proxy } from '../../proxy.ts'
 import { normalizeHostname, siteSurfaceForHost, workspaceSurfaceForRole } from '../../lib/site-hosts.ts'
 
-function request(url: string, method = 'GET'): NextRequest {
-  return new NextRequest(url, { method })
+function request(url: string, method = 'GET', host?: string): NextRequest {
+  return new NextRequest(url, {
+    method,
+    headers: host ? { host } : undefined,
+  })
 }
 
 // Next 16's experimental testing helpers schedule an AsyncLocalStorage task
@@ -38,6 +41,9 @@ test('marketing root renders the landing page without changing the canonical URL
   assert.equal(isRewrite(response), true)
   assert.equal(getRewrittenUrl(response), 'https://zhangak.com/landing')
   assert.equal(response.headers.get('x-robots-tag'), null)
+
+  const tlsTerminated = proxy(request('https://localhost:3200/', 'GET', 'zhangak.com'))
+  assert.equal(getRewrittenUrl(tlsTerminated), 'http://localhost:3200/landing')
 })
 
 test('workspace pages move to their dedicated hosts', () => {

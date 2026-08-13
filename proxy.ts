@@ -64,6 +64,22 @@ function redirectTo(request: NextRequest, host: string, pathname = request.nextU
   return NextResponse.redirect(target, 308)
 }
 
+function internalRewrite(request: NextRequest, pathname: string): NextResponse {
+  const target = request.nextUrl.clone()
+
+  // In the standalone server, TLS is terminated by Nginx and Next receives a
+  // loopback URL whose protocol reflects X-Forwarded-Proto. Rewriting that
+  // HTTPS URL would make Next proxy back to its plaintext port with TLS. Keep
+  // public origins untouched (including previews), but always use HTTP for
+  // the local upstream that actually serves the process.
+  if (['localhost', '127.0.0.1', '::1'].includes(target.hostname)) {
+    target.protocol = 'http:'
+  }
+
+  target.pathname = pathname
+  return NextResponse.rewrite(target)
+}
+
 function wrongApiSurface(surface: SiteSurface): NextResponse {
   return withSurfaceHeaders(
     NextResponse.json({ error: 'Not found' }, { status: 404 }),
@@ -117,9 +133,7 @@ export function proxy(request: NextRequest): NextResponse {
   // redirected to their workspace by the login page itself.
   if (pathname === '/') {
     if (surface === 'marketing') {
-      const target = request.nextUrl.clone()
-      target.pathname = '/landing'
-      return withSurfaceHeaders(NextResponse.rewrite(target), surface)
+      return withSurfaceHeaders(internalRewrite(request, '/landing'), surface)
     }
     return withSurfaceHeaders(redirectTo(request, hostForSurface(surface), '/login'), surface)
   }
