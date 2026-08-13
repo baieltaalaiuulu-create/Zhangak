@@ -9,14 +9,16 @@ import { ADMIN_ORIGIN, MARKETING_ORIGIN, PLATFORM_ORIGIN, siteSurfaceForHost } f
 import "./globals.css";
 
 const description = "Жангак — платформа подготовки к ОРТ (ЖРТ) для школьников Кыргызстана. Курсы по математике, аналогиям, чтению и кыргызскому языку, тренажёры, пробные тесты и персональный AI-наставник."
+const brandIconVersion = '20260813'
+const brandIcon = (path: string) => `${path}?v=${brandIconVersion}`
 
 const brandIcons: Metadata['icons'] = {
   icon: [
-    { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-    { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    { url: brandIcon('/icons/icon-192.png'), sizes: '192x192', type: 'image/png' },
+    { url: brandIcon('/icons/icon-512.png'), sizes: '512x512', type: 'image/png' },
   ],
-  shortcut: '/icons/icon-192.png',
-  apple: [{ url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' }],
+  shortcut: brandIcon('/icons/icon-192.png'),
+  apple: [{ url: brandIcon('/icons/icon-512.png'), sizes: '512x512', type: 'image/png' }],
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -28,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
       metadataBase: new URL(PLATFORM_ORIGIN),
       title: { default: 'Жангак — учебная платформа', template: '%s | Жангак' },
       description,
-      manifest: '/platform.webmanifest',
+      manifest: `/platform.webmanifest?v=${brandIconVersion}`,
       robots: { index: false, follow: false, nocache: true },
       appleWebApp: { capable: true, statusBarStyle: 'default', title: 'ZHANGAK' },
       icons: brandIcons,
