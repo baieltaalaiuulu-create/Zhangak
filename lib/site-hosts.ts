@@ -31,9 +31,9 @@ export function isDedicatedPlatformHost(value: string | null | undefined): boole
 }
 
 export function workspaceSurfaceForRole(role: string | null | undefined): Exclude<SiteSurface, 'marketing'> | null {
-  if (['admin', 'super_admin', 'admin_jr', 'teacher', 'manager', 'director', 'finance', 'math_admin'].includes(role ?? '')) {
+  if (['admin', 'super_admin', 'admin_jr', 'manager', 'director', 'finance', 'math_admin'].includes(role ?? '')) {
     return 'admin'
   }
-  if (['student', 'math_student', 'math_parent'].includes(role ?? '')) return 'platform'
+  if (['student', 'teacher', 'math_student', 'math_parent'].includes(role ?? '')) return 'platform'
   return null
 }

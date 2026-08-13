@@ -11,17 +11,16 @@ import {
 
 type RouteSurface = SiteSurface | 'shared-auth' | 'workspace-auth-api' | 'shared' | null
 
-const ADMIN_PAGE_PREFIXES = ['/admin', '/director', '/finance', '/manager', '/teacher', '/math/admin']
-const PLATFORM_PAGE_PREFIXES = ['/student', '/onboarding', '/offline', '/math/student', '/math/parent']
+const ADMIN_PAGE_PREFIXES = ['/admin', '/director', '/finance', '/manager', '/math/admin']
+const PLATFORM_PAGE_PREFIXES = ['/student', '/teacher', '/onboarding', '/offline', '/math/student', '/math/parent']
 const ADMIN_API_PREFIXES = [
   '/api/admin',
-  '/api/teacher',
   '/api/block-user',
   '/api/create-user',
   '/api/delete-user',
   '/api/list-users',
 ]
-const PLATFORM_API_PREFIXES = ['/api/ai-mentor', '/api/practice', '/api/offline-student', '/api/delete-own-account']
+const PLATFORM_API_PREFIXES = ['/api/ai-mentor', '/api/practice', '/api/teacher', '/api/offline-student', '/api/delete-own-account']
 
 function matchesPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`)
@@ -113,18 +112,16 @@ export function proxy(request: NextRequest): NextResponse {
   if (pathname === '/robots.txt') return robotsResponse(surface)
 
   // Every host owns its root entry: marketing renders the landing page at
-  // the canonical apex URL, platform runs the session/onboarding router, and
-  // admin starts at its dedicated login page.
+  // the canonical apex URL, while both private workspaces start at a login
+  // page whose content is tailored to that host. Authenticated users are
+  // redirected to their workspace by the login page itself.
   if (pathname === '/') {
     if (surface === 'marketing') {
       const target = request.nextUrl.clone()
       target.pathname = '/landing'
       return withSurfaceHeaders(NextResponse.rewrite(target), surface)
     }
-    if (surface === 'admin') {
-      return withSurfaceHeaders(redirectTo(request, ADMIN_HOST, '/login'), surface)
-    }
-    return withSurfaceHeaders(NextResponse.next(), surface)
+    return withSurfaceHeaders(redirectTo(request, hostForSurface(surface), '/login'), surface)
   }
 
   const requiredSurface = routeSurface(pathname)

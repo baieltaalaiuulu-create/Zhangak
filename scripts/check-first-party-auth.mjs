@@ -7,16 +7,21 @@ const read = file => readFile(path.join(root, file), 'utf8')
 const failures = []
 const expect = (condition, message) => { if (!condition) failures.push(message) }
 
-const [login, client, proxyRoute, hostProxy, backendAuth] = await Promise.all([
+const [login, loginExperience, adminLayout, adminTopbar, client, proxyRoute, hostProxy, backendAuth] = await Promise.all([
   read('app/login/page.tsx'),
+  read('components/auth/LoginExperience.tsx'),
+  read('components/admin/AdminLayout.tsx'),
+  read('components/admin/AdminTopbar.tsx'),
   read('lib/zhangak-auth-client.ts'),
   read('app/v1/auth/[action]/route.ts'),
   read('proxy.ts'),
   read('backend/src/auth.js'),
 ])
 
-expect(!/supabase/i.test(`${login}\n${client}\n${proxyRoute}`), 'first-party login slice must not use Supabase')
-expect(login.includes('loginZhangak') && login.includes('getCurrentZhangakUser') && login.includes('logoutZhangak'), 'login page must use the Zhangak session API')
+const firstPartyUi = `${login}\n${loginExperience}\n${adminLayout}\n${adminTopbar}`
+expect(!/supabase/i.test(`${firstPartyUi}\n${client}\n${proxyRoute}`), 'first-party login and admin shell must not use Supabase')
+expect(login.includes('LoginExperience') && loginExperience.includes('loginZhangak') && loginExperience.includes('getCurrentZhangakUser') && loginExperience.includes('logoutZhangak'), 'login experience must use the Zhangak session API')
+expect(adminLayout.includes('getCurrentZhangakUser') && adminTopbar.includes('logoutZhangak'), 'admin shell must use the Zhangak session API')
 expect(client.includes("fetch(`/v1/auth/${path}`"), 'auth client must use same-origin /v1/auth endpoints')
 expect(client.includes("credentials: 'include'"), 'auth client must send HttpOnly cookies')
 expect(!/localStorage|sessionStorage|accessToken|refreshToken/.test(client), 'browser auth client must not store or read session tokens')

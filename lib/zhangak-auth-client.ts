@@ -23,6 +23,8 @@ const ACCOUNT_ROLES = new Set([
   'admin', 'super_admin', 'math_student', 'math_parent', 'math_admin',
 ])
 
+const AUTH_REQUEST_TIMEOUT_MS = 8_000
+
 export class ZhangakAuthError extends Error {
   readonly status: number
   readonly code: string
@@ -59,15 +61,26 @@ async function payload(response: Response): Promise<unknown> {
 }
 
 async function request(path: string, init: RequestInit = {}): Promise<{ response: Response; body: unknown }> {
-  const response = await fetch(`/v1/auth/${path}`, {
-    ...init,
-    credentials: 'include',
-    cache: 'no-store',
-    headers: {
-      Accept: 'application/json',
-      ...init.headers,
-    },
-  })
+  let response: Response
+  try {
+    response = await fetch(`/v1/auth/${path}`, {
+      ...init,
+      signal: init.signal ?? AbortSignal.timeout(AUTH_REQUEST_TIMEOUT_MS),
+      credentials: 'include',
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/json',
+        ...init.headers,
+      },
+    })
+  } catch (cause) {
+    const timedOut = cause instanceof Error && (cause.name === 'AbortError' || cause.name === 'TimeoutError')
+    throw new ZhangakAuthError(
+      timedOut ? 'Сервис входа не ответил вовремя' : 'Не удалось связаться с сервисом входа',
+      503,
+      timedOut ? 'request_timeout' : 'network_error',
+    )
+  }
   const body = await payload(response)
   return { response, body }
 }

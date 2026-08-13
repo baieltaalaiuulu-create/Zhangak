@@ -5,7 +5,7 @@ import { getRedirectUrl, getRewrittenUrl, isRewrite } from 'next/experimental/te
 import { NextRequest } from 'next/server.js'
 
 import { proxy } from '../../proxy.ts'
-import { normalizeHostname, siteSurfaceForHost } from '../../lib/site-hosts.ts'
+import { normalizeHostname, siteSurfaceForHost, workspaceSurfaceForRole } from '../../lib/site-hosts.ts'
 
 function request(url: string, method = 'GET'): NextRequest {
   return new NextRequest(url, { method })
@@ -38,6 +38,20 @@ test('workspace pages move to their dedicated hosts', () => {
     getRedirectUrl(proxy(request('https://admin.zhangak.com/student/online'))),
     'https://platform.zhangak.com/student/online',
   )
+  assert.equal(
+    getRedirectUrl(proxy(request('https://admin.zhangak.com/teacher'))),
+    'https://platform.zhangak.com/teacher',
+  )
+})
+
+test('students and teachers share the platform while administrators stay isolated', () => {
+  assert.equal(workspaceSurfaceForRole('student'), 'platform')
+  assert.equal(workspaceSurfaceForRole('teacher'), 'platform')
+  assert.equal(workspaceSurfaceForRole('admin'), 'admin')
+  assert.equal(workspaceSurfaceForRole('director'), 'admin')
+
+  assert.equal(proxy(request('https://platform.zhangak.com/api/teacher/groups')).headers.get('x-middleware-next'), '1')
+  assert.equal(proxy(request('https://admin.zhangak.com/api/teacher/groups')).status, 404)
 })
 
 test('Math marketing stays public while Math accounts use workspace hosts', () => {
@@ -61,6 +75,10 @@ test('login is shared by workspace hosts but leaves the marketing host', () => {
   assert.equal(
     getRedirectUrl(proxy(request('https://admin.zhangak.com/'))),
     'https://admin.zhangak.com/login',
+  )
+  assert.equal(
+    getRedirectUrl(proxy(request('https://platform.zhangak.com/'))),
+    'https://platform.zhangak.com/login',
   )
 })
 

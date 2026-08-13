@@ -103,3 +103,18 @@ test('logout is a credentialed same-origin POST', async () => {
     globalThis.fetch = originalFetch
   }
 })
+
+test('network failures become a bounded service error instead of hanging the login UI', async () => {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async () => { throw new TypeError('network down') }
+  try {
+    await assert.rejects(
+      getCurrentZhangakUser(),
+      (error: unknown) => error instanceof ZhangakAuthError
+        && error.status === 503
+        && error.code === 'network_error',
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
