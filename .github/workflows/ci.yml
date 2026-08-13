@@ -63,6 +63,13 @@ jobs:
       - name: Check teacher journey invariants
         run: npm run check:teacher-journey
 
+      - name: Install and verify the first-party backend
+        run: |
+          npm --prefix backend ci
+          npm --prefix backend run check
+          npm --prefix backend test
+          npm run check:own-backend
+
       - name: Reject corrupted SQL migrations
         run: npm run check:migrations
 

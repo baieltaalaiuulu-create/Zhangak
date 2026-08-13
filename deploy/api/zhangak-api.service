@@ -1,0 +1,37 @@
+[Unit]
+Description=Zhangak first-party API
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=zhangak-api
+Group=zhangak-api
+WorkingDirectory=/var/www/zhangak-api/current
+EnvironmentFile=/etc/zhangak-api/zhangak-api.env
+Environment=NODE_ENV=production
+ExecStartPre=/usr/bin/npm run migrate
+ExecStart=/usr/bin/node src/server.js
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=60
+TimeoutStopSec=20
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=full
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+UMask=0027
+LimitNOFILE=32768
+
+[Install]
+WantedBy=multi-user.target

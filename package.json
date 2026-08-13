@@ -20,6 +20,7 @@
     "check:university-journey": "node scripts/check-university-journey.mjs",
     "check:offline-student-journey": "node scripts/check-offline-student-journey.mjs",
     "check:teacher-journey": "node scripts/check-teacher-journey.mjs",
+    "check:own-backend": "node scripts/check-own-backend.mjs",
     "check:migrations": "node scripts/check-sql-migrations.mjs",
     "check:emoji": "node scripts/check-emoji.mjs",
     "check:client-secrets": "node scripts/check-client-secrets.mjs",
