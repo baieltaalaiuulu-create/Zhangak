@@ -1,114 +1,77 @@
 'use client'
+
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
+import { ArrowLeft, BookOpenCheck, ShieldCheck, Trophy, UsersRound } from 'lucide-react'
+
 import { useStudentSession } from '@/components/student/StudentSessionContext'
-import {
-  fetchLeaderboardEntries,
-  fetchScoreDelta,
-  fetchStreaksForStudents,
-  fetchDeltasForStudents,
-  type LeaderboardFilter,
-  type LeaderboardEntry,
-} from '@/lib/leaderboard-data'
 
-import MyRankCard from '@/components/student/leaderboard/MyRankCard'
-import PodiumTop3 from '@/components/student/leaderboard/PodiumTop3'
-import LeaderboardTable from '@/components/student/leaderboard/LeaderboardTable'
-
-const FILTERS: { key: LeaderboardFilter; label: string }[] = [
-  { key: 'all', label: 'Все участники' },
-  { key: 'group', label: 'Моя группа' },
-  { key: 'month', label: 'Этот месяц' },
-  { key: 'alltime', label: 'Все время' },
-]
-
+/**
+ * The former ranking was assembled in the browser from retired Supabase data.
+ * A ranking needs trusted, server-scored attempts and privacy rules before it
+ * can show other students. Do not show stale or fabricated positions during
+ * the migration.
+ */
 export default function LeaderboardPage() {
-  const router = useRouter()
   const user = useStudentSession()
-  const [loading, setLoading] = useState(true)
-  const [studentId, setStudentId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<LeaderboardFilter>('all')
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([])
-  const [streaks, setStreaks] = useState<Map<string, number>>(new Map())
-  const [deltas, setDeltas] = useState<Map<string, number | null>>(new Map())
-  const [myDelta, setMyDelta] = useState<number | null>(null)
-  const [entriesLoading, setEntriesLoading] = useState(true)
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      setStudentId(user.id)
-      const delta = await fetchScoreDelta(user.id)
-      setMyDelta(delta.delta)
-      setLoading(false)
-    }
-    checkAuth()
-  }, [user.id])
-
-  useEffect(() => {
-    if (!studentId) return
-    const load = async () => {
-      setEntriesLoading(true)
-      const list = await fetchLeaderboardEntries(filter, studentId)
-      setEntries(list)
-
-      const ids = list.map(e => e.studentId)
-      const [streakMap, deltaMap] = await Promise.all([
-        fetchStreaksForStudents(ids),
-        fetchDeltasForStudents(ids),
-      ])
-      setStreaks(streakMap)
-      setDeltas(deltaMap)
-      setEntriesLoading(false)
-    }
-    load()
-  }, [filter, studentId])
-
-  if (loading || !studentId) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAF8FF', fontFamily: 'Inter, sans-serif' }}>
-        <div style={{ color: '#9CA3AF', fontSize: 14 }}>Загрузка...</div>
-      </div>
-    )
-  }
-
-  const myEntry = entries.find(e => e.studentId === studentId)
+  const firstName = user.fullName.trim().split(/\s+/)[0] || 'Студент'
 
   return (
-    <div className="min-h-screen bg-[#FAF8FF]">
-      <div className="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:px-6">
-        <h1 className="text-xl font-bold text-[#191B23]">Рейтинг</h1>
+    <main className="min-h-screen bg-[#FAF8FF] px-4 py-6 sm:px-6">
+      <section className="mx-auto w-full max-w-3xl">
+        <Link
+          href="/student/online"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-white hover:text-slate-900"
+        >
+          <ArrowLeft size={17} aria-hidden="true" />
+          На главную
+        </Link>
 
-        <div className="flex gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible md:pb-0">
-          {FILTERS.map(f => (
-            <button
-              key={f.key}
-              type="button"
-              onClick={() => setFilter(f.key)}
-              className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-                filter === f.key
-                  ? 'bg-[#1B4FD8] text-white'
-                  : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-              }`}
+        <div className="mt-4 rounded-3xl border border-gray-100 bg-white p-6 text-center shadow-sm sm:p-10">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+            <Trophy size={28} aria-hidden="true" />
+          </span>
+          <p className="mt-5 text-sm font-bold uppercase tracking-[0.14em] text-amber-700">Рейтинг Zhangak</p>
+          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">{firstName}, честный рейтинг готовится</h1>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">
+            Мы переносим подсчёт результатов на защищённый сервер. Пока нельзя надёжно сравнить попытки, мы не покажем неточные места, баллы или чужие данные.
+          </p>
+
+          <div className="mx-auto mt-7 grid max-w-xl gap-3 text-left sm:grid-cols-2">
+            <div className="rounded-2xl bg-blue-50 p-4">
+              <BookOpenCheck size={20} className="text-[#1B4FD8]" aria-hidden="true" />
+              <h2 className="mt-3 text-sm font-bold text-slate-900">Только проверенные попытки</h2>
+              <p className="mt-1 text-xs leading-5 text-slate-600">Баллы будут считаться на сервере после завершения теста.</p>
+            </div>
+            <div className="rounded-2xl bg-violet-50 p-4">
+              <UsersRound size={20} className="text-violet-700" aria-hidden="true" />
+              <h2 className="mt-3 text-sm font-bold text-slate-900">Понятные правила</h2>
+              <p className="mt-1 text-xs leading-5 text-slate-600">Перед запуском появятся правила периода и отображения участников.</p>
+            </div>
+          </div>
+
+          <p className="mx-auto mt-5 flex max-w-xl items-start gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-left text-xs font-semibold leading-5 text-emerald-800">
+            <ShieldCheck size={17} className="mt-0.5 shrink-0" aria-hidden="true" />
+            Старые клиентские расчёты и данные другого пользователя отключены.
+          </p>
+
+          <div className="mt-7 flex flex-col justify-center gap-2 sm:flex-row">
+            <Link
+              href="/student/online/practice"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#1B4FD8] px-5 text-sm font-bold text-white transition-colors hover:bg-blue-700"
             >
-              {f.label}
-            </button>
-          ))}
+              Открыть тренажёр
+            </Link>
+            <Link
+              href="/student/online/lessons"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              Открыть уроки
+            </Link>
+          </div>
         </div>
-
-        <MyRankCard rank={myEntry?.rank ?? null} score={myEntry?.bestScore ?? null} delta={myDelta} />
-
-        {entriesLoading ? (
-          <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center text-sm text-gray-400">Загрузка...</div>
-        ) : (
-          <>
-            <PodiumTop3 entries={entries} currentStudentId={studentId} />
-            <LeaderboardTable entries={entries} currentStudentId={studentId} streaks={streaks} deltas={deltas} />
-          </>
-        )}
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }
