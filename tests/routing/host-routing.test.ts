@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { getRedirectUrl, getRewrittenUrl, isRewrite } from 'next/experimental/testing/server.js'
 import { NextRequest } from 'next/server.js'
 
 import { proxy } from '../../proxy.ts'
@@ -9,6 +8,22 @@ import { normalizeHostname, siteSurfaceForHost, workspaceSurfaceForRole } from '
 
 function request(url: string, method = 'GET'): NextRequest {
   return new NextRequest(url, { method })
+}
+
+// Next 16's experimental testing helpers schedule an AsyncLocalStorage task
+// after Node 22's test has already completed. The proxy contract is fully
+// observable through the stable response headers, so keep this suite on the
+// production response surface instead of depending on the experimental shim.
+function getRedirectUrl(response: Response): string | null {
+  return response.headers.get('location')
+}
+
+function getRewrittenUrl(response: Response): string | null {
+  return response.headers.get('x-middleware-rewrite')
+}
+
+function isRewrite(response: Response): boolean {
+  return getRewrittenUrl(response) !== null
 }
 
 test('host normalization is strict and supports development ports', () => {
