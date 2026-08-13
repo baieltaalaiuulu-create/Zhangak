@@ -127,8 +127,6 @@ async function main() {
     'app/student/online/mock',
     'app/student/online/ai',
     'components/student/mobile',
-    'components/student/practice',
-    'components/student/ai-chat',
   ]
   const standaloneFiles = [
     'app/student/online/page.tsx',
