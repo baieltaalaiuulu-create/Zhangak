@@ -71,6 +71,14 @@ test('wrong-host API writes fail without redirecting credentials or request bodi
   assert.deepEqual(await response.json(), { error: 'Not found' })
 })
 
+test('first-party auth is available only on workspace hosts', async () => {
+  const marketing = proxy(request('https://zhangak.com/v1/auth/login', 'POST'))
+  assert.equal(marketing.status, 404)
+  assert.equal(marketing.headers.get('location'), null)
+  assert.equal(proxy(request('https://platform.zhangak.com/v1/auth/login', 'POST')).headers.get('x-middleware-next'), '1')
+  assert.equal(proxy(request('https://admin.zhangak.com/v1/auth/me')).headers.get('x-middleware-next'), '1')
+})
+
 test('platform and admin hosts are noindex at both header and robots layers', async () => {
   const platform = proxy(request('https://platform.zhangak.com/student/online'))
   assert.equal(platform.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive')

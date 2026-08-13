@@ -92,6 +92,7 @@ POST('/v1/auth/login', async ({ req, config, ip }) => {
 POST('/v1/auth/refresh', async ({ req, config, ip }) => {
   let refresh = parseCookies(req)[REFRESH_COOKIE]
   if (!refresh) {
+    if (req.headers.origin) throw new HttpError(401, 'Сессия истекла', 'refresh_invalid')
     const body = await readJson(req, 8_000)
     if (!exactBody(body, ['refreshToken']) || typeof body.refreshToken !== 'string') {
       throw new HttpError(401, 'Сессия истекла', 'refresh_invalid')

@@ -70,6 +70,9 @@ jobs:
           npm --prefix backend test
           npm run check:own-backend
 
+      - name: Check first-party browser authentication
+        run: npm run check:first-party-auth
+
       - name: Reject corrupted SQL migrations
         run: npm run check:migrations
 

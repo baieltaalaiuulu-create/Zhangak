@@ -9,7 +9,7 @@ import {
   type SiteSurface,
 } from './lib/site-hosts.ts'
 
-type RouteSurface = SiteSurface | 'shared-auth' | 'shared' | null
+type RouteSurface = SiteSurface | 'shared-auth' | 'workspace-auth-api' | 'shared' | null
 
 const ADMIN_PAGE_PREFIXES = ['/admin', '/director', '/finance', '/manager', '/teacher', '/math/admin']
 const PLATFORM_PAGE_PREFIXES = ['/student', '/onboarding', '/offline', '/math/student', '/math/parent']
@@ -29,6 +29,7 @@ function matchesPrefix(pathname: string, prefix: string): boolean {
 
 function routeSurface(pathname: string): RouteSurface {
   if (pathname === '/api/health') return 'shared'
+  if (matchesPrefix(pathname, '/v1/auth')) return 'workspace-auth-api'
   if (ADMIN_API_PREFIXES.some(prefix => matchesPrefix(pathname, prefix))) return 'admin'
   if (PLATFORM_API_PREFIXES.some(prefix => matchesPrefix(pathname, prefix))) return 'platform'
   if (pathname === '/login') return 'shared-auth'
@@ -134,6 +135,12 @@ export function proxy(request: NextRequest): NextResponse {
       return withSurfaceHeaders(redirectTo(request, PLATFORM_HOST), surface)
     }
     return withSurfaceHeaders(NextResponse.next(), surface)
+  }
+
+  if (requiredSurface === 'workspace-auth-api') {
+    return surface === 'marketing'
+      ? wrongApiSurface(surface)
+      : withSurfaceHeaders(NextResponse.next(), surface)
   }
 
   if (requiredSurface && requiredSurface !== surface) {
