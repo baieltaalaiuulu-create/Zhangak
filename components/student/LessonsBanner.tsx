@@ -1,3 +1,5 @@
+import { BookOpen, Flame, Star, Target } from 'lucide-react'
+
 interface Props {
   completed: number
   total: number
@@ -17,7 +19,7 @@ export default function LessonsBanner({ completed, total, streak, targetScore }:
     <div className="rounded-2xl bg-white shadow-sm border border-gray-100 p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-lg font-bold text-gray-900">📚 Мои уроки</h1>
+          <h1 className="flex items-center gap-2 text-lg font-bold text-gray-900"><BookOpen size={20} aria-hidden="true" />Мои уроки</h1>
           <p className="text-sm text-gray-500 mt-1">
             Пройдено <span className="font-bold text-[#1B4FD8]">{completed}</span> из {total} уроков
           </p>
@@ -25,14 +27,17 @@ export default function LessonsBanner({ completed, total, streak, targetScore }:
         <div className="flex items-center gap-3 flex-wrap shrink-0">
           {streak > 0 && (
             <span className="text-sm font-semibold text-orange-600 bg-orange-50 px-3 py-1.5 rounded-full whitespace-nowrap">
-              🔥 {streak} {streakWord(streak)} подряд
+              <Flame size={16} aria-hidden="true" />
+              {streak} {streakWord(streak)} подряд
             </span>
           )}
           <span className="text-sm font-semibold text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded-full whitespace-nowrap">
-            ⭐ {xp} XP
+            <Star size={16} aria-hidden="true" />
+            {xp} XP
           </span>
           <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full whitespace-nowrap">
-            🎯 Цель: {targetScore} баллов
+            <Target size={16} aria-hidden="true" />
+            Цель: {targetScore} баллов
           </span>
         </div>
       </div>

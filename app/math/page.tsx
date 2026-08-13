@@ -7,6 +7,8 @@ import {
   Brain,
   Building2,
   ChartNoAxesColumnIncreasing,
+  Check,
+  Copyright,
   LogIn,
   MessageCircle,
   Phone,
@@ -247,7 +249,7 @@ export default function MathPage() {
                 ].map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
                     <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: item.done ? '#1B4FD8' : 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: '#fff', flexShrink: 0 }}>
-                      {item.done ? '✓' : item.step}
+                      {item.done ? <Check size={14} aria-hidden="true" /> : item.step}
                     </div>
                     <span style={{ fontSize: '13px', color: item.done ? '#fff' : 'rgba(255,255,255,0.45)', fontWeight: item.done ? '600' : '400' }}>{item.text}</span>
                   </div>
@@ -420,7 +422,7 @@ export default function MathPage() {
             <span style={{ fontWeight: '900', fontSize: '14px', color: '#fff' }}>Zhangak</span>
             <span style={{ fontWeight: '800', fontSize: '11px', color: '#93C5FD', background: 'rgba(147,197,253,0.15)', padding: '2px 7px', borderRadius: '5px' }}>Math</span>
           </div>
-          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>© 2026 Жангак Math</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}><Copyright size={12} aria-hidden="true" />2026 Жангак Math</div>
           <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: '#93C5FD', fontSize: '13px', textDecoration: 'none', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Phone size={15} aria-hidden="true" /> +996 708 584 613</a>
         </div>
       </div>

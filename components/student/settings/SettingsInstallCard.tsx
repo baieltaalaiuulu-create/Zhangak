@@ -1,6 +1,6 @@
 'use client'
 
-import { Smartphone } from 'lucide-react'
+import { CheckCircle2, Smartphone } from 'lucide-react'
 import { useInstallPrompt } from '@/components/PWAInstallProvider'
 import IOSInstallSteps from '@/components/IOSInstallSteps'
 
@@ -16,13 +16,14 @@ export default function SettingsInstallCard() {
 
       <div className="mt-3 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-[#191B23]">📱 Установить как приложение</div>
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-[#191B23]"><Smartphone size={15} aria-hidden="true" />Установить как приложение</div>
           <div className="text-xs text-gray-400">Работает без браузера, быстрее</div>
         </div>
 
         {isInstalled ? (
           <span className="shrink-0 whitespace-nowrap text-xs font-bold text-green-600">
-            ✅ Приложение установлено
+            <CheckCircle2 size={15} className="mr-1 inline-block align-text-bottom" aria-hidden="true" />
+            Приложение установлено
           </span>
         ) : isUnsupported ? (
           <span className="shrink-0 text-right text-xs font-semibold text-gray-400">Откройте в Chrome</span>

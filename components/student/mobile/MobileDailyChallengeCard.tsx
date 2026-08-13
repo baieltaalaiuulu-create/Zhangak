@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { CalendarCheck2 } from 'lucide-react'
+import { CalendarCheck2, Check } from 'lucide-react'
 
 interface Props {
   questionCount: number
@@ -26,7 +26,7 @@ export default function MobileDailyChallengeCard({ questionCount, minutes, parti
           completed ? 'bg-gray-300' : 'bg-orange-500 active:bg-orange-600'
         }`}
       >
-        {completed ? 'Пройдено ✓' : 'Начать задание'}
+        {completed ? <><Check size={16} aria-hidden="true" />Пройдено</> : 'Начать задание'}
       </Link>
     </div>
   )

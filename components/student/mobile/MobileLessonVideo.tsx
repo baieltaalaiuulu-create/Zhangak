@@ -51,7 +51,7 @@ function loadYoutubeApi(): Promise<void> {
 
 // Mobile-only lesson video: lazy-loaded (a thumbnail + play button stand in
 // for the iframe until tapped, per the "don't load until clicked" spec),
-// and wired to the real YouTube IFrame API so "✓ Видео просмотрено" reflects
+// and wired to the real YouTube IFrame API so "Видео просмотрено" reflects
 // an actual ENDED playback event rather than a guess.
 export default function MobileLessonVideo({ videoUrl, title, watched, onWatched }: Props) {
   const [playing, setPlaying] = useState(false)

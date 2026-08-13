@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ArrowRight, BarChart3 } from 'lucide-react'
 import type { SubjectGridItem } from '@/lib/student-dashboard-contract'
 
 interface Props {
@@ -8,7 +9,7 @@ interface Props {
 export default function SubjectsGrid({ subjects }: Props) {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <h3 className="text-sm font-bold text-gray-900">📊 Предметы ОРТ</h3>
+      <h3 className="flex items-center gap-2 text-sm font-bold text-gray-900"><BarChart3 size={18} aria-hidden="true" />Предметы ОРТ</h3>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {subjects.map(s => {
@@ -38,7 +39,8 @@ export default function SubjectsGrid({ subjects }: Props) {
                 className="mt-3 inline-flex items-center gap-1 text-xs font-bold transition-opacity hover:opacity-80"
                 style={{ color: s.color }}
               >
-                {isDone ? 'Повторить' : 'Продолжить'} ▶
+                {isDone ? 'Повторить' : 'Продолжить'}
+                <ArrowRight size={14} aria-hidden="true" />
               </Link>
             </div>
           )

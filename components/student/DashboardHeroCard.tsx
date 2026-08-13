@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ArrowRight, CheckCircle2, Pencil, Target, Timer } from 'lucide-react'
 import GoalModal from './GoalModal'
 
 interface Props {
@@ -32,7 +33,7 @@ export default function DashboardHeroCard({ firstName, latestScore, targetScore,
 
   const handleGoalSaved = (newGoal: number) => {
     onGoalUpdate?.(newGoal)
-    setToast(`🎉 Цель обновлена — ${newGoal} баллов`)
+    setToast(`Цель обновлена — ${newGoal} баллов`)
     window.setTimeout(() => setToast(null), 3000)
   }
 
@@ -47,25 +48,27 @@ export default function DashboardHeroCard({ firstName, latestScore, targetScore,
 
         <div className="relative flex flex-col items-start gap-8 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 w-full flex-1">
-            <h1 className="text-[22px] font-bold sm:text-3xl">{greeting}, {firstName} 👋</h1>
+            <h1 className="text-[22px] font-bold sm:text-3xl">{greeting}, {firstName}</h1>
             <p className="mt-2 max-w-md text-sm font-medium text-white/80 sm:text-base">
               Сегодня отличный день для подготовки к ОРТ. Твоя цель близка!
             </p>
 
             <div className="mt-5 flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold backdrop-blur-sm sm:text-sm">
-                🎯 {score} → {remaining > 0 ? `${remaining} баллов до цели` : 'цель достигнута!'}
+                <Target size={15} aria-hidden="true" />
+                {score} → {remaining > 0 ? `${remaining} баллов до цели` : 'цель достигнута!'}
                 <button
                   type="button"
                   onClick={() => setModalOpen(true)}
                   className="rounded-full p-0.5 leading-none text-white/70 transition-colors hover:bg-white/20 hover:text-white"
                   aria-label="Изменить личную цель"
                 >
-                  ✏️
+                  <Pencil size={14} aria-hidden="true" />
                 </button>
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold backdrop-blur-sm sm:text-sm">
-                ⏱ ~{minutesRemaining} мин сегодня
+                <Timer size={15} aria-hidden="true" />
+                ~{minutesRemaining} мин сегодня
               </span>
             </div>
 
@@ -73,7 +76,8 @@ export default function DashboardHeroCard({ firstName, latestScore, targetScore,
               href={ctaHref}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#4338CA] shadow-md transition-colors hover:bg-white/90 sm:mt-6 sm:inline-flex sm:w-auto"
             >
-              Продолжить обучение →
+              Продолжить обучение
+              <ArrowRight size={17} aria-hidden="true" />
             </a>
           </div>
 
@@ -109,6 +113,7 @@ export default function DashboardHeroCard({ firstName, latestScore, targetScore,
 
       {toast && (
         <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-full bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-lg md:bottom-6">
+          <CheckCircle2 size={17} className="mr-2 inline-block align-text-bottom" aria-hidden="true" />
           {toast}
         </div>
       )}

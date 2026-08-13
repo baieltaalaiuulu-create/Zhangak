@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Smartphone } from 'lucide-react'
 import { useInstallPrompt } from '@/components/PWAInstallProvider'
 import { INSTALL_DISMISSED_KEY, FIRST_LOGIN_SHOWN_KEY } from '@/lib/pwa-install'
 import IOSInstallSteps from '@/components/IOSInstallSteps'
@@ -51,7 +52,7 @@ export default function FirstLoginInstallOverlay({ ready }: Props) {
         <img src="/icons/icon-192.png" alt="Жангак" className="h-full w-full object-cover" />
       </div>
 
-      <h1 className="mt-6 text-2xl font-extrabold text-[#191B23]">📱 Установи Жангак!</h1>
+      <h1 className="mt-6 inline-flex items-center gap-2 text-2xl font-extrabold text-[#191B23]"><Smartphone size={24} aria-hidden="true" />Установи Жангак!</h1>
       <p className="mt-2 text-base text-gray-500">Заходи быстрее без браузера</p>
 
       {isIOS ? (
