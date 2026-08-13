@@ -66,6 +66,12 @@ jobs:
       - name: Check admin learning journey invariants
         run: npm run check:admin-learning-journey
 
+      - name: Check legacy admin cutover invariants
+        run: npm run check:admin-legacy-cutover
+
+      - name: Check admin dashboard journey invariants
+        run: npm run check:admin-dashboard-journey
+
       - name: Check special-role journey invariants
         run: npm run check:special-role-journey
 
