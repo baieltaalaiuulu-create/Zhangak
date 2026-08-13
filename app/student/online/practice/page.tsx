@@ -72,14 +72,26 @@ function testTypeLabel(testType: PlatformPracticeTest['testType']): string {
   return labels[testType]
 }
 
-function Catalog({ tests, onSelect }: { tests: PlatformPracticeTest[]; onSelect: (test: PlatformPracticeTest) => void }) {
+function Catalog({
+  tests,
+  onSelect,
+  requestedType,
+}: {
+  tests: PlatformPracticeTest[]
+  onSelect: (test: PlatformPracticeTest) => void
+  requestedType: PlatformPracticeTest['testType'] | null
+}) {
+  const title = requestedType === 'mock' ? 'Пробный ОРТ' : 'Тренажёр'
+  const description = requestedType === 'mock'
+    ? 'Выбери опубликованный пробный тест. Проверка и результаты сохраняются на защищённом сервере Zhangak.'
+    : 'Выбери опубликованный тест. Проверка и результаты сохраняются на защищённом сервере Zhangak.'
   return (
     <div className="mx-auto max-w-5xl">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-[#191B23]">Тренажёр</h1>
+          <h1 className="text-2xl font-black tracking-tight text-[#191B23]">{title}</h1>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-500">
-            Выбери опубликованный тест. Проверка и результаты сохраняются на защищённом сервере Zhangak.
+            {description}
           </p>
         </div>
         <Link href="/student/online" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-[#1B4FD8] hover:bg-blue-50">
@@ -91,7 +103,7 @@ function Catalog({ tests, onSelect }: { tests: PlatformPracticeTest[]; onSelect:
       {tests.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-7 text-center shadow-sm">
           <FileText className="mx-auto text-gray-300" size={32} aria-hidden="true" />
-          <h2 className="mt-3 text-base font-bold text-gray-900">Тесты пока готовятся</h2>
+          <h2 className="mt-3 text-base font-bold text-gray-900">{requestedType === 'mock' ? 'Пробные ОРТ пока готовятся' : 'Тесты пока готовятся'}</h2>
           <p className="mt-2 text-sm leading-6 text-gray-500">
             Преподаватель ещё не опубликовал тест для твоей программы. Вернись позже или напиши преподавателю.
           </p>
@@ -156,6 +168,11 @@ export default function PracticePage() {
   const [starting, setStarting] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [flowError, setFlowError] = useState<string | null>(null)
+  const requestedType = searchParams.get('type') === 'mock' ? 'mock' : null
+  const visibleTests = useMemo(
+    () => requestedType ? tests.filter(test => test.testType === requestedType) : tests,
+    [requestedType, tests],
+  )
 
   // Reuse idempotency keys after an ambiguous network failure. A new key is
   // created only when the learner deliberately starts a different attempt.
@@ -328,7 +345,7 @@ export default function PracticePage() {
     <div className="min-h-screen bg-[#F4F6FA] px-4 py-6 sm:px-6">
       {catalogError ? <ErrorState message={catalogError} onRetry={() => void loadCatalog()} /> : (
         <>
-          {view === 'catalog' && <Catalog tests={tests} onSelect={selectTest} />}
+          {view === 'catalog' && <Catalog tests={visibleTests} onSelect={selectTest} requestedType={requestedType} />}
 
           {view === 'start' && selectedTest && (
             <div className="space-y-4">
