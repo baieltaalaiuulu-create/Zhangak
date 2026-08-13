@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import type { SubjectGridItem } from '@/lib/dashboard-data'
+import type { SubjectGridItem } from '@/lib/student-dashboard-contract'
 
 interface Props {
   subjects: SubjectGridItem[]

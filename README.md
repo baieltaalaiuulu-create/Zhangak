@@ -35,6 +35,7 @@ npm run check:university-journey
 npm run check:offline-student-journey
 npm run check:teacher-journey
 npm run check:own-backend
+npm run check:web-data-plane
 npm run check:first-party-auth
 npm run check:emoji
 npm run audit:prod
@@ -76,12 +77,13 @@ manifest are exposed only by the platform surface.
 
 ## Security model
 
-- Browser calls to protected same-origin APIs use a Supabase Bearer token.
-- API authorization reads the current role from the server-side `profiles` row.
+- Browser calls use HttpOnly Zhangak session cookies and the same-origin `/v1`
+  BFF; tokens are never read from browser storage.
+- API authorization reads the current role from the first-party PostgreSQL
+  `profiles` row.
 - Role permissions are capability-specific and deny by default.
-- Private Supabase and AI keys are runtime-only environment variables.
-- Direct browser access to Supabase is still governed by RLS; a versioned,
-  auditable schema/RLS baseline is the next blocking platform milestone.
-- The phase-2 trusted-practice API contract is implemented but remains
-  fail-closed until its atomic Supabase functions pass the live-schema recovery
-  and database tests described in [`docs/database/practice-submission.md`](docs/database/practice-submission.md).
+- PostgreSQL and AI credentials are runtime-only environment variables.
+- Student practice is server-scored from immutable attempt snapshots. Answer
+  keys are returned only by the admin API and never to student screens.
+- The retired `/api/*` namespace is deny-listed and responds with `404`; all
+  product API calls use the first-party `/v1/platform` and `/v1/admin` routes.

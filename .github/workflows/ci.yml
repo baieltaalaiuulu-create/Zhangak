@@ -18,10 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-public-anon-placeholder
       PRIVATE_SECRET_CANARY: zhangak-ci-private-canary-57c09e99d2f14b3da8bc
-      SUPABASE_SERVICE_ROLE_KEY: zhangak-ci-private-canary-57c09e99d2f14b3da8bc
       REQUIRE_PRIVATE_SECRET_CANARY: "1"
       GIT_SHA: ${{ github.sha }}
       ZHANGAK_RELEASE_SHA: ${{ github.sha }}
@@ -81,6 +78,9 @@ jobs:
           npm --prefix backend run check
           npm --prefix backend test
           npm run check:own-backend
+
+      - name: Verify the first-party web data plane
+        run: npm run check:web-data-plane
 
       - name: Check first-party browser authentication
         run: npm run check:first-party-auth

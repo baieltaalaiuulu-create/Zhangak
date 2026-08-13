@@ -10,8 +10,6 @@ const canary = process.env.PRIVATE_SECRET_CANARY?.trim() ?? ''
 const requireCanary = process.env.REQUIRE_PRIVATE_SECRET_CANARY === '1'
 
 const knownServerSecretNames = [
-  'SUPABASE_SERVICE_ROLE_KEY',
-  'SUPABASE_DB_URL',
   'DATABASE_URL',
   'OPENAI_API_KEY',
   'GROQ_API_KEY',

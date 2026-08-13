@@ -25,6 +25,7 @@
     "check:admin-dashboard-journey": "node scripts/check-admin-dashboard-journey.mjs",
     "check:special-role-journey": "node scripts/check-special-role-journey.mjs",
     "check:own-backend": "node scripts/check-own-backend.mjs",
+    "check:web-data-plane": "node scripts/check-web-data-plane.mjs",
     "check:first-party-auth": "node scripts/check-first-party-auth.mjs",
     "check:migrations": "node scripts/check-sql-migrations.mjs",
     "check:emoji": "node scripts/check-emoji.mjs",
@@ -33,8 +34,6 @@
     "smoke:standalone": "node scripts/smoke-standalone.mjs"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.12.0",
-    "@supabase/supabase-js": "^2.108.2",
     "lucide-react": "^1.21.0",
     "mammoth": "^1.12.0",
     "next": "16.3.0",

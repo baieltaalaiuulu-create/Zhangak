@@ -1,11 +1,10 @@
 // Zhangak service worker — basic offline support + auto-update.
 //
-// Deliberately simple: this app is a dynamic, auth-gated Supabase-backed
-// dashboard, not a static site, so caching stays limited to a. the offline
+// Deliberately simple: this app is a dynamic, auth-gated dashboard, not a
+// static site, so caching stays limited to a. the offline
 // shell and b. same-origin static assets (script/style/image/font). Any
-// Supabase request (by hostname) or same-origin /api/* route is never
-// intercepted — those always carry live/auth data and must never be served
-// stale from cache.
+// Same-origin API routes are never intercepted — those always carry live/auth
+// data and must never be served stale from cache.
 //
 // The build pipeline replaces this placeholder with the immutable Git SHA,
 // so every release gets its own cache even when multiple deploys share a day.
@@ -47,8 +46,8 @@ self.addEventListener('message', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url)
 
-  // Supabase (any subdomain) and same-origin API routes: always network-only.
-  if (url.hostname.includes('supabase') || url.pathname.startsWith('/api/')) return
+  // First-party API routes are always network-only.
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/v1/')) return
 
   // Page navigations: network first, fall back to the offline shell.
   if (e.request.mode === 'navigate') {

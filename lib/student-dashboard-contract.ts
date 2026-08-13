@@ -11,6 +11,24 @@ export const MAX_TARGET_SCORE = 245
 
 export type SubjectKey = 'math' | 'kyr' | 'analogy' | 'reading' | 'grammar'
 
+export type GridSubjectKey = 'math' | 'kyr' | 'analogy' | 'reading'
+
+/**
+ * Presentation data for the dashboard course/practice cards.  This belongs
+ * to the first-party UI contract rather than the retired data reader so a
+ * mounted screen can use it without pulling a legacy client into its graph.
+ */
+export interface SubjectGridItem {
+  key: GridSubjectKey
+  label: string
+  topicLabel: string
+  color: string
+  completed: number
+  total: number
+  hoursRemaining: number
+  href: string
+}
+
 export interface ScoreHistory {
   score: number
   completed_at: string

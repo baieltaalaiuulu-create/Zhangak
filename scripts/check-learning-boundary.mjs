@@ -9,13 +9,6 @@ const failures = []
 const notes = []
 
 const legacyFile = 'lib/practice-data.ts'
-const legacyBaselines = {
-  // Counts executable TypeScript references, not comments. Lower these values
-  // as the legacy browser flow is retired so a removed trust-boundary cannot
-  // silently return.
-  answerKeyReferences: 7,
-  directResultMutations: 1,
-}
 
 const v2Files = [
   'lib/learning/practice-contract.ts',
@@ -297,21 +290,11 @@ function checkRoute(file, source, validationSource) {
 }
 
 async function checkLegacyDebt() {
-  const source = await readFile(fullPath(legacyFile), 'utf8')
-  const ast = sourceFile(legacyFile, source)
-  const answerKeyReferences = countAnswerKeyReferences(ast)
-  const directResultMutations = countDirectResultMutations(ast)
-
-  if (answerKeyReferences > legacyBaselines.answerKeyReferences) {
-    failures.push(`${legacyFile}: answer-key references increased from baseline ${legacyBaselines.answerKeyReferences} to ${answerKeyReferences}`)
+  if (await exists(legacyFile)) {
+    failures.push(`${legacyFile}: retired browser-scored practice reader must remain deleted`)
+    return
   }
-  if (directResultMutations > legacyBaselines.directResultMutations) {
-    failures.push(`${legacyFile}: direct practice_results mutations increased from baseline ${legacyBaselines.directResultMutations} to ${directResultMutations}`)
-  }
-  notes.push(`legacy debt: ${answerKeyReferences}/${legacyBaselines.answerKeyReferences} answer-key references, ${directResultMutations}/${legacyBaselines.directResultMutations} direct result mutations`)
-  if (answerKeyReferences < legacyBaselines.answerKeyReferences || directResultMutations < legacyBaselines.directResultMutations) {
-    notes.push('legacy debt decreased; lower the baselines in this checker to lock in the improvement')
-  }
+  notes.push('legacy browser-scored practice reader is absent')
 }
 
 async function checkV2Boundary() {

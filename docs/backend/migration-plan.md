@@ -12,8 +12,8 @@
   verifies current account state on protected requests so banning a user takes
   effect immediately.
 
-The existing Supabase project is a migration source only. New product features
-must not add Supabase calls.
+The legacy Supabase project is an archived migration source only. The web
+application and first-party backend must not add or restore Supabase calls.
 
 ## Delivery slices
 
@@ -34,13 +34,17 @@ must not add Supabase calls.
 - login throttling, generic credential errors and session revocation;
 - administrator bootstrap through a server-only CLI, never seed credentials.
 
-### Slice 3 — online learning
+### Slice 3 — online learning (web baseline complete)
 
 - lessons and content catalog;
-- server-authored practice/mock/daily attempts;
-- atomic attempt limits, scoring, XP and leaderboard writes;
+- server-authored practice attempts;
+- atomic attempt limits and scoring;
 - migrate student dashboard, lessons and practice clients;
 - delete answer keys and result writes from browser bundles.
+
+Mock scheduling, daily challenges, XP, and ranking require their own reviewed
+tables and are intentionally shown as migration states rather than reusing the
+retired data plane.
 
 ### Slice 4 — offline and teacher
 
@@ -62,12 +66,20 @@ must not add Supabase calls.
 - server-derived AI context, rate/cost budgets and conversation ownership;
 - background jobs for notification and document processing.
 
-### Slice 7 — Supabase removal
+### Slice 7 — web Supabase removal (complete)
 
-- static check requires zero Supabase imports/table calls;
-- remove Supabase dependencies and environment variables;
-- archive the old project only after backup and restore rehearsal;
-- final data reconciliation, load test, rollback rehearsal and production cutover.
+- `check:web-data-plane` requires zero web SDK imports, packages, and runtime
+  variables;
+- the web dependencies, browser client, old API handlers, and dead dependent
+  modules are removed;
+- the retired `/api/*` namespace remains deny-listed with a uniform `404`;
+- archived database-recovery evidence remains under `supabase/quarantine` and
+  is not executable product code.
+
+The separate Expo application in `mobile/` is not part of the web release and
+still needs a dedicated migration to native first-party bearer auth and `/v1`,
+or a deliberate retirement decision, before the whole repository can be called
+Supabase-free.
 
 ## Deployment gates for every slice
 
@@ -81,7 +93,8 @@ must not add Supabase calls.
 
 ## Current constraint
 
-The live Supabase key is invalid and no trustworthy live schema snapshot is
-available. We therefore do not import or fabricate production user/content data.
-The new API can be deployed internally and exercised with an empty database;
-account/data import is a separate, backed-up and reviewed operation.
+Legacy data has not been imported into the new PostgreSQL database. We therefore
+do not fabricate production users, learning content, scores, or university
+facts. Account/content import remains a separate backed-up and reviewed
+operation; the new API can safely operate with an empty database until it is
+performed.
