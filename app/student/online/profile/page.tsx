@@ -21,7 +21,7 @@ import ProfileProgressCard from '@/components/student/profile/ProfileProgressCar
 import ScoreSparkline from '@/components/student/profile/ScoreSparkline'
 import AchievementsCard from '@/components/student/profile/AchievementsCard'
 import NotificationSettings from '@/components/student/profile/NotificationSettings'
-import { useStudentSession } from '@/components/student/StudentSessionContext'
+import { useStudentProfileUpdate, useStudentSession } from '@/components/student/StudentSessionContext'
 
 interface PlatformDashboardResponse {
   summary: {
@@ -56,6 +56,7 @@ function progressFromDashboard(response: unknown): LearningProgress {
 export default function ProfilePage() {
   const router = useRouter()
   const sessionUser = useStudentSession()
+  const applyProfileUpdate = useStudentProfileUpdate()
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [retryNonce, setRetryNonce] = useState(0)
@@ -96,17 +97,20 @@ export default function ProfilePage() {
   }
 
   const handleGoalUpdate = (newGoal: number) => {
+    if (profile) applyProfileUpdate({ ...profile, targetScore: newGoal })
     setProfile(current => current ? { ...current, targetScore: newGoal } : current)
   }
 
   const handleNameUpdate = async (fullName: string) => {
     const updated = await updatePlatformProfile({ fullName })
     setProfile(updated)
+    applyProfileUpdate(updated)
   }
 
   const handleAvatarUpdate = async (avatarUrl: string | null) => {
     const updated = await updatePlatformProfile({ avatarUrl })
     setProfile(updated)
+    applyProfileUpdate(updated)
   }
 
   if (loading) {
@@ -143,6 +147,7 @@ export default function ProfilePage() {
             <ProfileHeader
               fullName={profile.fullName}
               avatarUrl={profile.avatarUrl}
+              profileColor={profile.profileColor}
               studentType={profile.studentType ?? 'online'}
               latestScore={null}
               streak={0}

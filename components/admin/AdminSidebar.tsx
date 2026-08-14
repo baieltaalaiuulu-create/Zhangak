@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Archive, BarChart2, BookOpen, Brain, ClipboardList, GraduationCap, LayoutDashboard, ListChecks, Megaphone, Menu, PenLine,
-  Trophy, Users, X, Zap,
+  ShieldCheck, Trophy, Users, X, Zap,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -16,6 +16,7 @@ interface NavItem {
   label: string
   icon: LucideIcon
   availability: NavAvailability
+  superAdminOnly?: boolean
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -33,6 +34,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin/archive', label: 'Архив', icon: Archive, availability: 'migration' },
   { href: '/admin/analytics', label: 'Аналитика', icon: BarChart2, availability: 'migration' },
   { href: '/admin/announcements', label: 'Объявления', icon: Megaphone, availability: 'migration' },
+  { href: '/admin/access', label: 'Доступ и аудит', icon: ShieldCheck, availability: 'ready', superAdminOnly: true },
 ]
 
 const NAV_GROUPS: { label: string; availability: NavAvailability; hrefs: string[] }[] = [
@@ -45,11 +47,17 @@ const NAV_GROUPS: { label: string; availability: NavAvailability; hrefs: string[
       '/admin/universities', '/admin/archive', '/admin/analytics', '/admin/announcements',
     ],
   },
+  { label: 'Доступ и безопасность', availability: 'ready', hrefs: ['/admin/access'] },
 ]
 
-export default function AdminSidebar() {
+interface Props {
+  role?: 'admin' | 'super_admin' | null
+}
+
+export default function AdminSidebar({ role = null }: Props) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const visibleItems = NAV_ITEMS.filter(item => !item.superAdminOnly || role === 'super_admin')
 
   return (
     <>
@@ -82,11 +90,14 @@ export default function AdminSidebar() {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 pb-3" aria-label="Административные разделы">
-          {NAV_GROUPS.map(group => (
+          {NAV_GROUPS.map(group => {
+            const groupItems = visibleItems.filter(item => group.hrefs.includes(item.href))
+            if (groupItems.length === 0) return null
+            return (
             <div key={group.label} className="mb-5">
               <p className={`mb-1.5 px-3 text-[10px] font-extrabold uppercase tracking-[0.16em] ${group.availability === 'migration' ? 'text-amber-600' : 'text-slate-400'}`}>{group.label}</p>
               <div className="space-y-1">
-                {NAV_ITEMS.filter(item => group.hrefs.includes(item.href)).map(item => {
+                {groupItems.map(item => {
                   const Icon = item.icon
                   const isActive = item.href === '/admin' ? pathname === item.href : pathname?.startsWith(item.href) ?? false
                   const isMigrating = item.availability === 'migration'
@@ -111,10 +122,13 @@ export default function AdminSidebar() {
                 })}
               </div>
             </div>
-          ))}
+            )
+          })}
         </nav>
         <p className="border-t border-[#C3C6D7]/50 px-6 py-4 text-[11px] font-semibold leading-4 text-slate-400">
-          Разделы «Скоро» открывают безопасную дорожную карту, а не старые данные. Аккаунт и выход — в меню профиля справа вверху.
+          {role === 'super_admin'
+            ? 'Доступ к ролям и журналу действий — в разделе «Доступ и аудит». Инфраструктура VPS не управляется из браузера.'
+            : 'Вы управляете учебным процессом и аккаунтами учеников. Роли сотрудников и журнал действий доступны только супер-администратору.'}
         </p>
       </aside>
     </>

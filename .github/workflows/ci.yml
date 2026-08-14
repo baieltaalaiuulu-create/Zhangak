@@ -14,6 +14,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  database-migrations:
+    name: Verify PostgreSQL migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Deliberately static, non-production values for the disposable CI service.
+      DATABASE_URL: postgresql://zhangak_ci:zhangak_ci_ephemeral_password@127.0.0.1:5432/zhangak_ci
+      DATABASE_SSL: "0"
+      JWT_SECRET: zhangak-ci-jwt-secret-for-ephemeral-postgres-only-57c09e99d2f14b3da8bc
+      ALLOWED_ORIGINS: http://localhost:3000
+      NODE_ENV: test
+      ZHANGAK_API_RELEASE_SHA: ci-migration-verification
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env:
+          POSTGRES_DB: zhangak_ci
+          POSTGRES_USER: zhangak_ci
+          POSTGRES_PASSWORD: zhangak_ci_ephemeral_password
+        options: >-
+          --health-cmd "pg_isready -U zhangak_ci -d zhangak_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22.22.2
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.2
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install locked API dependencies
+        run: npm --prefix backend ci
+
+      - name: Apply and verify first-party database migrations
+        run: npm --prefix backend run verify:migrations
+
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -38,6 +82,9 @@ jobs:
 
       - name: Check types
         run: npm run typecheck
+
+      - name: Lint source
+        run: npm run lint
 
       - name: Check API security invariants
         run: npm run check:security

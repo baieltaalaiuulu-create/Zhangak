@@ -16,11 +16,13 @@ function invalidPatch(body, code) {
   )
 }
 
-test('student profile patch accepts only its three safe, typed fields', () => {
+test('student profile patch accepts only the five safe, typed profile fields', () => {
   assert.deepEqual(parseProfilePatch({
     fullName: '  Айзада Токтосунова  ',
     avatarUrl: 'https://cdn.zhangak.com/avatars/aizada.png',
     targetScore: 210,
+    profileColor: 'violet',
+    dailyStudyGoalMinutes: 45,
   }), {
     hasFullName: true,
     fullName: 'Айзада Токтосунова',
@@ -28,6 +30,10 @@ test('student profile patch accepts only its three safe, typed fields', () => {
     avatarUrl: 'https://cdn.zhangak.com/avatars/aizada.png',
     hasTargetScore: true,
     targetScore: 210,
+    hasProfileColor: true,
+    profileColor: 'violet',
+    hasDailyStudyGoalMinutes: true,
+    dailyStudyGoalMinutes: 45,
   })
 
   assert.deepEqual(parseProfilePatch({ avatarUrl: null }), {
@@ -37,6 +43,10 @@ test('student profile patch accepts only its three safe, typed fields', () => {
     avatarUrl: null,
     hasTargetScore: false,
     targetScore: null,
+    hasProfileColor: false,
+    profileColor: null,
+    hasDailyStudyGoalMinutes: false,
+    dailyStudyGoalMinutes: null,
   })
 })
 
@@ -53,6 +63,10 @@ test('student profile patch fails closed for privilege fields and invalid values
   invalidPatch({ avatarUrl: 'http://example.test/avatar.png' }, 'invalid_avatar_url')
   invalidPatch({ avatarUrl: 'javascript:alert(1)' }, 'invalid_avatar_url')
   invalidPatch({ avatarUrl: '' }, 'invalid_avatar_url')
+  invalidPatch({ profileColor: 'linear-gradient(red, blue)' }, 'invalid_profile_color')
+  invalidPatch({ profileColor: 'blue; background: url(x)' }, 'invalid_profile_color')
+  invalidPatch({ dailyStudyGoalMinutes: 20 }, 'invalid_daily_study_goal')
+  invalidPatch({ dailyStudyGoalMinutes: 30.5 }, 'invalid_daily_study_goal')
 })
 
 test('avatar URL normalization permits only a safe HTTPS external URL or clearing', () => {
@@ -63,9 +77,10 @@ test('avatar URL normalization permits only a safe HTTPS external URL or clearin
 })
 
 test('profile route is registered, student-scoped, and never exposes a deletion path', async () => {
-  const [source, server] = await Promise.all([
+  const [source, server, migration] = await Promise.all([
     readFile(path.join(backendRoot, 'src', 'routes', 'platform-profile.js'), 'utf8'),
     readFile(path.join(backendRoot, 'src', 'server.js'), 'utf8'),
+    readFile(path.join(backendRoot, 'migrations', '004_student_profile_preferences.sql'), 'utf8'),
   ])
   assert.match(server, /import '\.\/routes\/platform-profile\.js'/)
   assert.match(source, /GET\('\/v1\/platform\/profile'/)
@@ -73,6 +88,10 @@ test('profile route is registered, student-scoped, and never exposes a deletion 
   assert.match(source, /STUDENT_ROLES = new Set\(\['student', 'math_student'\]\)/)
   assert.match(source, /await requireAuth\(config, req\)/)
   assert.match(source, /UPDATE profiles/)
+  assert.match(source, /profile_color/)
+  assert.match(source, /daily_study_goal_minutes/)
+  assert.match(migration, /profile_color IN \('blue', 'violet', 'emerald', 'rose'\)/)
+  assert.match(migration, /daily_study_goal_minutes IN \(15, 30, 45, 60, 90\)/)
   assert.match(source, /'update_own_profile'/)
   assert.doesNotMatch(source, /DELETE\('\/v1\/platform\/profile'/)
   assert.doesNotMatch(source, /UPDATE users/)

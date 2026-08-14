@@ -44,6 +44,7 @@ export interface AdminDashboard {
   availability: {
     dailyActiveStudents: false
     payments: false
+    auditFeed: boolean
   }
   recentAttempts: AdminDashboardAttempt[]
   recentChanges: AdminDashboardAudit[]
@@ -151,7 +152,7 @@ export function parseAdminDashboard(value: unknown): AdminDashboard {
   const source = record(value, 'панель администратора')
   const availability = record(source.availability, 'доступность метрик')
   if (availability.dailyActiveStudents !== false || availability.payments !== false
-    || Object.keys(availability).length !== 2) {
+    || typeof availability.auditFeed !== 'boolean' || Object.keys(availability).length !== 3) {
     invalidResponse('доступность метрик')
   }
   if (!Array.isArray(source.recentAttempts) || !Array.isArray(source.recentChanges)) {
@@ -163,7 +164,7 @@ export function parseAdminDashboard(value: unknown): AdminDashboard {
   if (new Set(recentChanges.map(change => change.id)).size !== recentChanges.length) invalidResponse('повторяющиеся изменения')
   return {
     metrics: dashboardMetrics(source.metrics),
-    availability: { dailyActiveStudents: false, payments: false },
+    availability: { dailyActiveStudents: false, payments: false, auditFeed: availability.auditFeed },
     recentAttempts,
     recentChanges,
   }

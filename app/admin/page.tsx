@@ -10,12 +10,12 @@ import {
   FilePlus2,
   FileText,
   History,
-  LoaderCircle,
   PenLine,
   RefreshCw,
   Users,
   UserPlus,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 import AdminTopbar from '@/components/admin/AdminTopbar'
 import {
@@ -95,7 +95,7 @@ function LoadingState() {
   )
 }
 
-function ErrorState({ error, onRetry }: { error: ZhangakApiError | null; onRetry: () => Promise<void> }) {
+function ErrorState({ error, onRetry, onLogin }: { error: ZhangakApiError | null; onRetry: () => Promise<void>; onLogin: () => void }) {
   const loginRequired = error?.status === 401 || error?.status === 403
   const description = loginRequired
     ? 'Сессия администратора не найдена или больше не действует. Войдите снова.'
@@ -108,7 +108,7 @@ function ErrorState({ error, onRetry }: { error: ZhangakApiError | null; onRetry
       <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
       <div className="mt-5 flex justify-center gap-3">
         {loginRequired
-          ? <button type="button" onClick={() => window.location.assign('/login')} className="inline-flex min-h-11 items-center rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white">Войти</button>
+          ? <button type="button" onClick={onLogin} className="inline-flex min-h-11 items-center rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white">Войти</button>
           : <button type="button" onClick={() => void onRetry()} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white"><RefreshCw size={17} aria-hidden="true" />Повторить</button>}
       </div>
     </section>
@@ -136,6 +136,7 @@ function exportStats(dashboard: AdminDashboard) {
 }
 
 export default function AdminDashboardPage() {
+  const router = useRouter()
   const [dashboard, setDashboard] = useState<AdminDashboard | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<ZhangakApiError | null>(null)
@@ -154,7 +155,10 @@ export default function AdminDashboardPage() {
     }
   }, [])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void load() }, 0)
+    return () => window.clearTimeout(timer)
+  }, [load])
 
   const metrics = dashboard?.metrics
 
@@ -170,7 +174,7 @@ export default function AdminDashboardPage() {
           {dashboard && <button type="button" onClick={() => exportStats(dashboard)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm hover:border-[#1B3F92]/30 hover:text-[#1B3F92]"><Download size={17} aria-hidden="true" />Экспорт CSV</button>}
         </div>
 
-        {loading && !dashboard ? <LoadingState /> : !dashboard ? <ErrorState error={error} onRetry={load} /> : (
+        {loading && !dashboard ? <LoadingState /> : !dashboard ? <ErrorState error={error} onRetry={load} onLogin={() => router.replace('/login')} /> : (
           <>
             <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Метрики платформы">
               <MetricCard label="Всего учеников" value={metrics!.totalStudents} hint={`${metrics!.newStudentsLast7Days} новых за 7 дней`} icon={Users} tone="blue" />
@@ -211,15 +215,22 @@ export default function AdminDashboardPage() {
                 </ul>}
               </article>
 
-              <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4"><History size={18} className="text-violet-600" aria-hidden="true" /><h2 className="text-sm font-black text-[#191B23]">Последние изменения</h2></div>
-                {dashboard.recentChanges.length === 0 ? <p className="p-8 text-center text-sm text-slate-400">Изменений в собственной базе пока нет.</p> : <ul>
-                  {dashboard.recentChanges.map((change, index) => <li key={change.id} className={`flex items-center justify-between gap-3 px-5 py-3 ${index < dashboard.recentChanges.length - 1 ? 'border-b border-slate-100' : ''}`}>
-                    <p className="min-w-0 truncate text-sm font-semibold text-[#191B23]">{AUDIT_LABELS[change.action]}</p>
-                    <p className="shrink-0 text-xs text-slate-400">{timeAgo(change.createdAt)}</p>
-                  </li>)}
-                </ul>}
-              </article>
+              {dashboard.availability.auditFeed ? (
+                <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4"><History size={18} className="text-violet-600" aria-hidden="true" /><h2 className="text-sm font-black text-[#191B23]">Последние изменения</h2></div>
+                  {dashboard.recentChanges.length === 0 ? <p className="p-8 text-center text-sm text-slate-400">Изменений в собственной базе пока нет.</p> : <ul>
+                    {dashboard.recentChanges.map((change, index) => <li key={change.id} className={`flex items-center justify-between gap-3 px-5 py-3 ${index < dashboard.recentChanges.length - 1 ? 'border-b border-slate-100' : ''}`}>
+                      <p className="min-w-0 truncate text-sm font-semibold text-[#191B23]">{AUDIT_LABELS[change.action]}</p>
+                      <p className="shrink-0 text-xs text-slate-400">{timeAgo(change.createdAt)}</p>
+                    </li>)}
+                  </ul>}
+                </article>
+              ) : (
+                <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4"><History size={18} className="text-violet-600" aria-hidden="true" /><h2 className="text-sm font-black text-[#191B23]">Журнал действий</h2></div>
+                  <p className="p-8 text-center text-sm leading-6 text-slate-400">Журнал действий и управление ролями доступны только супер-администратору.</p>
+                </article>
+              )}
             </section>
           </>
         )}

@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 import SettingsNotifications from '@/components/student/settings/SettingsNotifications'
 import SettingsInstallCard from '@/components/student/settings/SettingsInstallCard'
 import DangerZoneCard from '@/components/student/settings/DangerZoneCard'
+import PersonalizationSettings from '@/components/student/settings/PersonalizationSettings'
 import { useStudentSession } from '@/components/student/StudentSessionContext'
 
 export default function SettingsPage() {
@@ -17,6 +18,7 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6 sm:px-6">
         <h1 className="text-xl font-bold text-[#191B23]">Настройки</h1>
 
+        <PersonalizationSettings />
         <SettingsNotifications />
         <SettingsInstallCard />
         <DangerZoneCard />

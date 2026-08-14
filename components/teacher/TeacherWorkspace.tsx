@@ -83,7 +83,7 @@ function EmptyGroups() {
 export default function TeacherWorkspace({ dashboard, onRefresh, refreshing }: Props) {
   const logout = async () => {
     await logoutZhangak().catch(() => {})
-    window.location.assign('/login?surface=platform')
+    window.location.replace('/login?surface=platform')
   }
 
   const firstName = dashboard.teacher.fullName.split(' ')[0] || 'Преподаватель'

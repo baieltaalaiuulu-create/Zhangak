@@ -2,10 +2,12 @@ import { requireAuth } from '../auth.js'
 import {
   ACCOUNT_CREATOR_ROLES,
   ACCOUNT_MANAGER_ROLES,
+  canChangeAccountRole,
   canCreateAccount,
   canManageAccount,
   isAccountRole,
   requireRole,
+  requireSuperAdmin,
   visibleAccountRoles,
 } from '../authorization.js'
 import { query as dbQuery, transaction } from '../db.js'
@@ -13,6 +15,7 @@ import { DELETE, GET, HttpError, PATCH, POST, readJson } from '../http.js'
 import { hashPassword } from '../security.js'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const STUDENT_TYPES = new Set(['online', 'offline', 'both'])
 
 function exactBody(body, required, optional = []) {
   const keys = Object.keys(body)
@@ -129,10 +132,11 @@ POST('/v1/admin/users', async ({ req, config }) => {
     throw new HttpError(400, 'Некорректные данные или роль', 'invalid_user')
   }
   if (!canCreateAccount(currentActor.role, role)) throw new HttpError(403, 'Доступ запрещён', 'forbidden')
-  if (role === 'student' && !['online', 'offline', 'both'].includes(studentType)) {
+  if (role === 'student' && !STUDENT_TYPES.has(studentType)) {
     throw new HttpError(400, 'Для ученика требуется тип обучения', 'invalid_student_type')
   }
   if (role !== 'student' && studentType !== null) throw new HttpError(400, 'Тип обучения доступен только ученику', 'invalid_student_type')
+  if (role !== 'student' && targetScore !== null) throw new HttpError(400, 'Целевой балл доступен только ученику', 'invalid_target_score')
   if (targetScore !== null && (!Number.isSafeInteger(targetScore) || targetScore < 0 || targetScore > 245)) {
     throw new HttpError(400, 'Некорректный целевой балл', 'invalid_target_score')
   }
@@ -161,6 +165,80 @@ POST('/v1/admin/users', async ({ req, config }) => {
     if (error?.code === '23505') throw new HttpError(409, 'Пользователь уже существует', 'email_conflict')
     throw error
   }
+})
+
+/**
+ * Role reassignment is a super-admin-only capability. It intentionally does
+ * not permit creating or modifying a super-admin peer; that break-glass path
+ * remains the audited server-side bootstrap command.
+ */
+PATCH('/v1/admin/users/:id/role', async ({ req, params, config }) => {
+  const currentActor = requireSuperAdmin(await requireAuth(config, req))
+  const body = await readJson(req, 4_000)
+  if (!exactBody(body, ['role'], ['studentType']) || !isAccountRole(body.role)) {
+    throw new HttpError(400, 'Некорректная роль', 'invalid_role')
+  }
+
+  const nextRole = body.role
+  const nextStudentType = body.studentType == null ? null : body.studentType
+  if (nextRole === 'student' && !STUDENT_TYPES.has(nextStudentType)) {
+    throw new HttpError(400, 'Для ученика требуется тип обучения', 'invalid_student_type')
+  }
+  if (nextRole !== 'student' && nextStudentType !== null) {
+    throw new HttpError(400, 'Тип обучения доступен только ученику', 'invalid_student_type')
+  }
+
+  await transaction(async client => {
+    const target = await manageableTarget(client, currentActor, params.id)
+    if (!canChangeAccountRole(currentActor.role, target.role, nextRole)) {
+      throw new HttpError(403, 'Доступ запрещён', 'forbidden')
+    }
+    if (target.role === nextRole) throw new HttpError(400, 'Роль уже назначена', 'role_unchanged')
+
+    // Keep active group semantics valid. Historical memberships remain
+    // attributable to the original student and do not prevent a role change.
+    const references = await client.query(
+      `SELECT
+         EXISTS(
+           SELECT 1 FROM group_students
+            WHERE student_id = $1 AND left_at IS NULL
+         ) AS active_student_memberships,
+         EXISTS(
+           SELECT 1 FROM groups
+            WHERE teacher_id = $1
+         ) AS teacher_assignments`,
+      [target.id],
+    )
+    const usage = references.rows[0]
+    if (target.role === 'student' && usage.active_student_memberships && nextRole !== 'student') {
+      throw new HttpError(409, 'Сначала исключите ученика из активных групп', 'active_student_group_memberships')
+    }
+    if (target.role === 'teacher' && usage.teacher_assignments && nextRole !== 'teacher') {
+      throw new HttpError(409, 'Сначала переназначьте преподавателя в группах', 'teacher_group_assignments')
+    }
+
+    await client.query(
+      `UPDATE profiles
+          SET role = $2,
+              student_type = $3,
+              target_score = CASE WHEN $2 = 'student' THEN target_score ELSE NULL END,
+              updated_at = now()
+        WHERE user_id = $1`,
+      [target.id, nextRole, nextStudentType],
+    )
+    // A role is read from PostgreSQL on every protected request, but revoking
+    // active sessions immediately also invalidates any already-loaded client
+    // state and forces the account to sign in with its new workspace scope.
+    await client.query(
+      `UPDATE users
+          SET session_version = session_version + 1, updated_at = now()
+        WHERE id = $1`,
+      [target.id],
+    )
+    await client.query('UPDATE auth_sessions SET revoked_at = COALESCE(revoked_at, now()) WHERE user_id = $1', [target.id])
+    await audit(client, currentActor, 'change_user_role', target.id, { fromRole: target.role, toRole: nextRole })
+  })
+  return { status: 200, body: { success: true } }
 })
 
 PATCH('/v1/admin/users/:id/block', async ({ req, params, config }) => {

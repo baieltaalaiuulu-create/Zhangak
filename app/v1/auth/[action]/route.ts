@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { forwardTrustedClientIp } from '../../../../lib/trusted-client-ip'
+
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
@@ -56,6 +58,7 @@ async function proxyAuth(request: NextRequest, actionValue: string): Promise<Nex
     const value = request.headers.get(name)
     if (value) headers.set(name, value)
   }
+  forwardTrustedClientIp(request.headers, headers)
 
   try {
     const upstream = await fetch(`${internalApiOrigin()}/v1/auth/${action}`, {

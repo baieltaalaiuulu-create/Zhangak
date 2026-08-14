@@ -2,6 +2,7 @@ import { zhangakApiRequest } from './zhangak-api-client.ts'
 
 export type PlatformLessonSubject = 'math' | 'kyr' | 'other'
 export type PlatformLessonStatus = 'done' | 'current' | 'locked'
+export type PlatformLessonCompletionMode = 'self' | 'practice'
 
 /**
  * Minimal view shape shared by the lesson cards. The numeric first-party API
@@ -27,6 +28,10 @@ export interface PlatformLesson extends LessonView {
   lessonDate: string | null
   contentUrl: string | null
   isTest: boolean
+  /** Derived by the own backend; a practice-bound lesson cannot self-complete. */
+  completionMode: PlatformLessonCompletionMode
+  /** Derived by the own backend from persisted predecessor progress. */
+  isLocked: boolean
   completionPercent: number
   completedAt: string | null
   lastViewedAt: string | null
@@ -92,6 +97,11 @@ function boolean(value: unknown, context: string): boolean {
   return value
 }
 
+function completionMode(value: unknown): PlatformLessonCompletionMode {
+  if (value === 'self' || value === 'practice') return value
+  throw new Error('Некорректный ответ сервиса: способ завершения урока')
+}
+
 function nullableTimestamp(value: unknown, context: string): string | null {
   const timestamp = nullableString(value, context)
   if (timestamp !== null && Number.isNaN(new Date(timestamp).getTime())) {
@@ -155,6 +165,8 @@ export function parsePlatformLesson(value: unknown): PlatformLesson {
     contentUrl,
     video_url: contentUrl,
     isTest: boolean(source.isTest, 'тип урока'),
+    completionMode: completionMode(source.completionMode),
+    isLocked: boolean(source.isLocked, 'доступность урока'),
     completionPercent: percentage(source.completionPercent, 'прогресс урока'),
     completedAt: nullableTimestamp(source.completedAt, 'дата завершения урока'),
     lastViewedAt: nullableTimestamp(source.lastViewedAt, 'дата просмотра урока'),
@@ -187,6 +199,22 @@ export async function fetchPlatformLesson(id: string): Promise<PlatformLesson> {
   return parsePlatformLessonDetail(await zhangakApiRequest<unknown>(`/v1/platform/lessons/${id}`))
 }
 
+/**
+ * Explicit self-paced acknowledgement for a normal lesson. The browser sends
+ * no score, percent, timestamp, or identity; the first-party API rejects
+ * locked, test, and practice-bound lessons before writing lesson_progress.
+ */
+export async function completePlatformLesson(id: string): Promise<PlatformLesson> {
+  if (!/^\d+$/.test(id) || !Number.isSafeInteger(Number(id)) || Number(id) <= 0) {
+    throw new Error('Некорректный id урока')
+  }
+  return parsePlatformLessonDetail(await zhangakApiRequest<unknown>(`/v1/platform/lessons/${id}/complete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  }))
+}
+
 export function completedPlatformLessonIds(lessons: PlatformLesson[]): Set<string> {
   return new Set(
     lessons
@@ -199,33 +227,15 @@ export function computePlatformLessonStatuses(
   lessons: PlatformLesson[],
   completedIds = completedPlatformLessonIds(lessons),
 ): Record<string, PlatformLessonStatus> {
-  const statuses: Record<string, PlatformLessonStatus> = {}
-  const byTrack = new Map<string, PlatformLesson[]>()
-
-  for (const lesson of lessons) {
-    const subjectKey = lesson.subject === 'other' ? lesson.sourceSubject ?? 'other' : lesson.subject
-    const trackKey = `${lesson.courseId}:${subjectKey}`
-    const group = byTrack.get(trackKey) ?? []
-    group.push(lesson)
-    byTrack.set(trackKey, group)
-  }
-
-  for (const group of byTrack.values()) {
-    group.sort((a, b) => a.order_number - b.order_number || a.apiId - b.apiId)
-    let currentAssigned = false
-    for (const lesson of group) {
-      if (completedIds.has(lesson.id)) {
-        statuses[lesson.id] = 'done'
-      } else if (!currentAssigned) {
-        statuses[lesson.id] = 'current'
-        currentAssigned = true
-      } else {
-        statuses[lesson.id] = 'locked'
-      }
-    }
-  }
-
-  return statuses
+  // Locking is intentionally *not* reconstructed in the browser. The API
+  // checks every predecessor against lesson_progress before it exposes or
+  // mutates a lesson, so stale frontend data cannot become an authorization
+  // bypass. A completed historical lesson remains readable even if an older
+  // predecessor was later republished.
+  return Object.fromEntries(lessons.map(lesson => [
+    lesson.id,
+    completedIds.has(lesson.id) ? 'done' : lesson.isLocked ? 'locked' : 'current',
+  ]))
 }
 
 export function platformLocalDayKey(value: Date | string): string | null {

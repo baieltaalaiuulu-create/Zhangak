@@ -8,9 +8,11 @@ import AdminTopbar from '@/components/admin/AdminTopbar'
 import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
 import StudentFormModal from '@/components/admin/students/StudentFormModal'
 import ResetPasswordModal from '@/components/admin/students/ResetPasswordModal'
+import RoleChangeModal from '@/components/admin/students/RoleChangeModal'
 import StudentActionsMenu from '@/components/admin/students/StudentActionsMenu'
 import {
   ACCOUNT_ROLE_LABELS,
+  assignableAccountRoles,
   creatableAccountRoles,
   deleteAdminAccount,
   listAdminAccounts,
@@ -50,6 +52,7 @@ export default function AdminStudentsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'blocked'>('all')
   const [createOpen, setCreateOpen] = useState(false)
   const [resetTarget, setResetTarget] = useState<AdminAccount | null>(null)
+  const [roleTarget, setRoleTarget] = useState<AdminAccount | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AdminAccount | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [busyAccountId, setBusyAccountId] = useState<string | null>(null)
@@ -85,6 +88,8 @@ export default function AdminStudentsPage() {
   }, [load])
 
   const creatableRoles = useMemo(() => creatableAccountRoles(actorRole), [actorRole])
+  const assignableRoles = useMemo(() => assignableAccountRoles(actorRole), [actorRole])
+  const canManageRoles = assignableRoles.length > 0
   const visibleRoles = useMemo(() => Array.from(new Set(accounts.map(account => account.role))), [accounts])
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -243,6 +248,9 @@ export default function AdminStudentsPage() {
                     <StudentActionsMenu
                       blocked={account.blocked}
                       disabled={busyAccountId === account.id || account.id === actorId || account.role === 'super_admin'}
+                      onChangeRole={canManageRoles && account.id !== actorId && account.role !== 'super_admin'
+                        ? () => setRoleTarget(account)
+                        : undefined}
                       onResetPassword={() => setResetTarget(account)}
                       onToggleBlock={() => void handleToggleBlock(account)}
                       onDelete={() => setDeleteTarget(account)}
@@ -268,6 +276,14 @@ export default function AdminStudentsPage() {
         />
       )}
       {resetTarget && <ResetPasswordModal account={resetTarget} onClose={() => setResetTarget(null)} onSaved={() => { void load() }} />}
+      {roleTarget && (
+        <RoleChangeModal
+          account={roleTarget}
+          allowedRoles={assignableRoles}
+          onClose={() => setRoleTarget(null)}
+          onSaved={load}
+        />
+      )}
       {deleteTarget && (
         <DeleteConfirmModal
           title="Удаление аккаунта"

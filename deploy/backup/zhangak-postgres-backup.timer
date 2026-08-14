@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the Zhangak PostgreSQL backup every day
+
+[Timer]
+OnCalendar=*-*-* 02:15:00
+RandomizedDelaySec=20m
+Persistent=true
+Unit=zhangak-postgres-backup.service
+
+[Install]
+WantedBy=timers.target

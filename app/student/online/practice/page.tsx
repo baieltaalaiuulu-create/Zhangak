@@ -194,7 +194,23 @@ export default function PracticePage() {
     }
   }, [])
 
-  useEffect(() => { void loadCatalog() }, [loadCatalog])
+  useEffect(() => {
+    let cancelled = false
+
+    const loadInitialCatalog = async () => {
+      try {
+        const response = await zhangakApiRequest<unknown>('/v1/platform/practice-tests')
+        if (!cancelled) setTests(parsePlatformPracticeTests(response))
+      } catch (error) {
+        if (!cancelled) setCatalogError(errorMessage(error, 'Проверь подключение и попробуй ещё раз.'))
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    void loadInitialCatalog()
+    return () => { cancelled = true }
+  }, [])
 
   const selectTest = useCallback((test: PlatformPracticeTest) => {
     setSelectedTest(test)
@@ -220,7 +236,9 @@ export default function PracticePage() {
     const lessonId = rawLessonId ? Number(rawLessonId) : Number.NaN
     if (loading || selectedTest || view !== 'catalog' || !Number.isSafeInteger(lessonId) || lessonId <= 0) return
     const test = tests.find(item => item.lessonId === lessonId)
-    if (test) selectTest(test)
+    if (!test) return
+    const frame = window.requestAnimationFrame(() => selectTest(test))
+    return () => window.cancelAnimationFrame(frame)
   }, [loading, searchParams, selectTest, selectedTest, tests, view])
 
   const startAttempt = useCallback(async () => {

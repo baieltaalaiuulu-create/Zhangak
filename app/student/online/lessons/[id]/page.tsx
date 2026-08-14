@@ -29,6 +29,7 @@ import MobileLessonVideo from '@/components/student/mobile/MobileLessonVideo'
 import MobileAIHelp from '@/components/student/mobile/MobileAIHelp'
 import {
   PLATFORM_LESSON_SUBJECT_META,
+  completePlatformLesson,
   completedPlatformLessonIds,
   computePlatformLessonStatuses,
   fetchPlatformLesson,
@@ -100,6 +101,8 @@ export default function LessonDetailPage() {
   const [lesson, setLesson] = useState<PlatformLesson | null>(null)
   const [allLessons, setAllLessons] = useState<PlatformLesson[]>([])
   const [videoWatched, setVideoWatched] = useState(false)
+  const [completionPending, setCompletionPending] = useState(false)
+  const [completionError, setCompletionError] = useState<string | null>(null)
 
   const loadLesson = useCallback(async () => {
     try {
@@ -140,6 +143,36 @@ export default function LessonDetailPage() {
     setNotFound(false)
     void loadLesson()
   }
+
+  const completeLesson = useCallback(async () => {
+    if (!lesson || lesson.completionMode !== 'self' || completionPending) return
+    setCompletionPending(true)
+    setCompletionError(null)
+    try {
+      const completed = await completePlatformLesson(lesson.id)
+      setLesson(completed)
+      // The server recalculates locks for the entire catalog. Refreshing it
+      // after completion makes the newly unlocked next lesson visible without
+      // ever guessing its status in the browser.
+      try {
+        setAllLessons(await fetchPlatformLessons())
+      } catch {
+        setAllLessons(previous => previous.map(item => item.id === completed.id ? completed : item))
+      }
+    } catch (error) {
+      if (error instanceof ZhangakApiError && error.code === 'lesson_locked') {
+        setCompletionError('Этот урок пока заблокирован. Обнови список уроков и заверши предыдущий.')
+        return
+      }
+      if (error instanceof ZhangakApiError && error.code === 'lesson_requires_practice') {
+        setCompletionError('Для этого урока требуется практика с серверной проверкой.')
+        return
+      }
+      setCompletionError(unavailableMessage(error))
+    } finally {
+      setCompletionPending(false)
+    }
+  }, [completionPending, lesson])
 
   if (loadError) {
     return (
@@ -192,6 +225,7 @@ export default function LessonDetailPage() {
     && (lesson.subject !== 'other' || item.sourceSubject === lesson.sourceSubject))
   const currentIndex = sameSubjectLessons.findIndex(item => item.id === lesson.id)
   const upcoming = currentIndex >= 0 ? sameSubjectLessons[currentIndex + 1] ?? null : null
+  const unlockedUpcoming = upcoming && !upcoming.isLocked ? upcoming : null
   const subjectCompletedCount = sameSubjectLessons.filter(item => completedIds.has(item.id)).length
   const subjectProgress = sameSubjectLessons.length > 0
     ? Math.round((subjectCompletedCount / sameSubjectLessons.length) * 100)
@@ -202,6 +236,7 @@ export default function LessonDetailPage() {
   const subjectLabel = lesson.sourceSubject ?? meta.label
   const embedUrl = youtubeEmbedUrl(lesson.contentUrl)
   const practiceHref = `/student/online/practice?lesson=${lesson.id}`
+  const requiresPractice = lesson.completionMode === 'practice'
 
   const material = embedUrl ? (
     <div className="flex aspect-video items-center justify-center overflow-hidden rounded-2xl bg-gray-900">
@@ -241,18 +276,33 @@ export default function LessonDetailPage() {
           <ShieldCheck size={21} aria-hidden="true" />
         </span>
         <div>
-          <h2 className="text-base font-bold text-gray-900">Практика по уроку</h2>
+          <h2 className="text-base font-bold text-gray-900">{requiresPractice ? 'Практика по уроку' : 'Завершение урока'}</h2>
           <p className="mt-1 text-xs leading-relaxed text-gray-500">
-            Доступные задания и результат проверяет учебный сервер. Ответы и баллы не вычисляются на этой странице.
+            {requiresPractice
+              ? 'Доступные задания и результат проверяет учебный сервер. Ответы и баллы не вычисляются на этой странице.'
+              : 'Разбери материал, затем явно отметь урок пройденным. Сервер сохранит прогресс только для твоего аккаунта.'}
           </p>
         </div>
       </div>
-      <Link
-        href={practiceHref}
-        className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white"
-      >
-        Открыть практику <ArrowRight size={17} aria-hidden="true" />
-      </Link>
+      {requiresPractice ? (
+        <Link
+          href={practiceHref}
+          className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white"
+        >
+          Открыть практику <ArrowRight size={17} aria-hidden="true" />
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={() => void completeLesson()}
+          disabled={isCompleted || completionPending}
+          className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-green-600"
+        >
+          {isCompleted ? <CheckCircle2 size={17} aria-hidden="true" /> : <ArrowRight size={17} aria-hidden="true" />}
+          {isCompleted ? 'Урок пройден' : completionPending ? 'Сохраняем прогресс…' : 'Завершить урок'}
+        </button>
+      )}
+      {completionError && <p role="alert" className="mt-3 text-xs font-medium text-red-600">{completionError}</p>}
     </div>
   )
 
@@ -301,12 +351,12 @@ export default function LessonDetailPage() {
           <MobileAIHelp lessonTitle={lesson.title} />
           {practiceCard}
 
-          {upcoming && (
+          {unlockedUpcoming && (
             <Link
-              href={`/student/online/lessons/${upcoming.id}`}
+              href={`/student/online/lessons/${unlockedUpcoming.id}`}
               className="flex min-h-12 items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 text-sm font-bold text-gray-700 shadow-sm"
             >
-              Следующий урок: {upcoming.title}
+              Следующий урок: {unlockedUpcoming.title}
               <ArrowRight size={17} className="shrink-0 text-[#1B3F92]" aria-hidden="true" />
             </Link>
           )}
@@ -357,7 +407,7 @@ export default function LessonDetailPage() {
             </main>
 
             <aside className="w-full shrink-0 space-y-5 lg:w-80">
-              <UpNextLesson lesson={upcoming} progress={subjectProgress} />
+              <UpNextLesson lesson={unlockedUpcoming} progress={subjectProgress} />
 
               <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                 <h2 className="flex items-center gap-2 text-sm font-bold text-gray-900"><FileText size={17} aria-hidden="true" /> Материалы</h2>
@@ -380,12 +430,14 @@ export default function LessonDetailPage() {
                 <p className="mt-2 text-xs leading-relaxed text-gray-500">Отправка вопросов появится после подключения чата с преподавателем.</p>
               </div>
 
-              <Link
-                href={practiceHref}
-                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white shadow-md shadow-blue-200"
-              >
-                Открыть практику <ArrowRight size={17} aria-hidden="true" />
-              </Link>
+              {requiresPractice && (
+                <Link
+                  href={practiceHref}
+                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white shadow-md shadow-blue-200"
+                >
+                  Открыть практику <ArrowRight size={17} aria-hidden="true" />
+                </Link>
+              )}
 
               <LessonSidebarList lessons={catalog} statuses={statuses} activeId={lesson.id} />
             </aside>

@@ -9,6 +9,7 @@
   "scripts": {
     "start": "node src/server.js",
     "migrate": "node scripts/migrate.js",
+    "verify:migrations": "node scripts/verify-migrations.js",
     "create:super-admin": "node scripts/create-super-admin.js",
     "migration:preflight": "node scripts/supabase-migration-preflight.js",
     "package:release": "node scripts/package-release.js",

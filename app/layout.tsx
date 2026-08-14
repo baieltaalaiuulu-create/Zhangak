@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import Script from "next/script";
 import PWAInstallProvider from "@/components/PWAInstallProvider";
+import CookieInformationNotice from "@/components/CookieInformationNotice";
 import ResourceHints from "@/components/ResourceHints";
 import { ADMIN_ORIGIN, MARKETING_ORIGIN, PLATFORM_ORIGIN, siteSurfaceForHost } from "@/lib/site-hosts";
 import "./globals.css";
@@ -85,6 +86,7 @@ export default function RootLayout({
         <PWAInstallProvider>
           {children}
         </PWAInstallProvider>
+        <CookieInformationNotice />
         <Script
           id="sw-register"
           strategy="afterInteractive"

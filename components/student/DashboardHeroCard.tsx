@@ -8,7 +8,7 @@ interface Props {
   firstName: string
   latestScore: number | null
   targetScore: number
-  minutesRemaining: number
+  dailyGoalMinutes: number
   ctaHref: string
   onGoalUpdate?: (newGoal: number) => void
 }
@@ -19,7 +19,7 @@ function greetingForHour(hour: number): string {
   return 'Добрый вечер'
 }
 
-export default function DashboardHeroCard({ firstName, latestScore, targetScore, minutesRemaining, ctaHref, onGoalUpdate }: Props) {
+export default function DashboardHeroCard({ firstName, latestScore, targetScore, dailyGoalMinutes, ctaHref, onGoalUpdate }: Props) {
   const [modalOpen, setModalOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -68,7 +68,7 @@ export default function DashboardHeroCard({ firstName, latestScore, targetScore,
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold backdrop-blur-sm sm:text-sm">
                 <Timer size={15} aria-hidden="true" />
-                ~{minutesRemaining} мин сегодня
+                Цель: {dailyGoalMinutes} мин сегодня
               </span>
             </div>
 

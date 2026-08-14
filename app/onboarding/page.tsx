@@ -11,8 +11,7 @@ import {
   Trophy,
   type LucideIcon,
 } from 'lucide-react'
-
-const ONBOARDING_KEY = 'zhangak-onboarding-done'
+import { markDismissed, PLATFORM_ONBOARDING_DISMISSED_KEY } from '@/lib/first-visit'
 
 interface Slide {
   eyebrow: string
@@ -47,7 +46,7 @@ export default function OnboardingPage() {
   const router = useRouter()
 
   const finish = () => {
-    localStorage.setItem(ONBOARDING_KEY, 'true')
+    markDismissed(window.localStorage, PLATFORM_ONBOARDING_DISMISSED_KEY)
     router.replace('/login')
   }
 

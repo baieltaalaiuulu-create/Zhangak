@@ -16,6 +16,8 @@ const PROFILE = {
   phone: null,
   targetScore: 210,
   avatarUrl: null,
+  profileColor: 'violet',
+  dailyStudyGoalMinutes: 45,
 }
 
 function json(body: unknown, status = 200): Response {
@@ -45,11 +47,21 @@ test('profile client stays in the same-origin first-party BFF namespace', async 
 
   try {
     assert.deepEqual(await getPlatformProfile(), PROFILE)
-    assert.deepEqual(await updatePlatformProfile({ fullName: 'Нурбек Садыков', targetScore: 220 }), PROFILE)
+    assert.deepEqual(await updatePlatformProfile({
+      fullName: 'Нурбек Садыков',
+      targetScore: 220,
+      profileColor: 'emerald',
+      dailyStudyGoalMinutes: 60,
+    }), PROFILE)
     assert.deepEqual(calls.map(call => call.input), ['/v1/platform/profile', '/v1/platform/profile'])
     assert.deepEqual(calls.map(call => call.init?.method ?? 'GET'), ['GET', 'PATCH'])
     assert.ok(calls.every(call => call.init?.credentials === 'include'))
-    assert.deepEqual(JSON.parse(String(calls[1].init?.body)), { fullName: 'Нурбек Садыков', targetScore: 220 })
+    assert.deepEqual(JSON.parse(String(calls[1].init?.body)), {
+      fullName: 'Нурбек Садыков',
+      targetScore: 220,
+      profileColor: 'emerald',
+      dailyStudyGoalMinutes: 60,
+    })
   } finally {
     globalThis.fetch = originalFetch
     restoreWindow()
@@ -67,6 +79,14 @@ test('profile client rejects malformed server projections before rendering them'
   )
   assert.throws(
     () => parsePlatformProfile({ profile: { ...PROFILE, avatarUrl: 42 } }),
+    /некорректный профиль/,
+  )
+  assert.throws(
+    () => parsePlatformProfile({ profile: { ...PROFILE, profileColor: 'url(javascript:alert(1))' } }),
+    /некорректный профиль/,
+  )
+  assert.throws(
+    () => parsePlatformProfile({ profile: { ...PROFILE, dailyStudyGoalMinutes: 23 } }),
     /некорректный профиль/,
   )
 })

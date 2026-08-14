@@ -72,6 +72,8 @@ function publicProfile(user) {
     phone: user.phone,
     targetScore: user.target_score,
     avatarUrl: user.avatar_url,
+    profileColor: user.profile_color,
+    dailyStudyGoalMinutes: user.daily_study_goal_minutes,
   }
 }
 
@@ -90,19 +92,31 @@ function publicCourse(row) {
 }
 
 function publicLesson(row) {
+  const isLocked = row.is_locked === true || row.is_locked === 't'
   return {
     id: nullableNumber(row.id),
     courseId: nullableNumber(row.course_id),
     lessonNumber: Number(row.lesson_number),
     title: row.title,
-    description: row.description,
+    // A catalog may name a future lesson so the learner understands the
+    // sequence, but it must not leak a direct material URL that bypasses the
+    // detail-route lock. The full metadata is released once it is unlocked.
+    description: isLocked ? null : row.description,
     subject: row.subject,
     section: row.section,
     topic: row.topic,
     lessonDate: row.lesson_date ?? null,
     durationMinutes: nullableNumber(row.duration_minutes),
-    contentUrl: row.content_url,
+    contentUrl: isLocked ? null : row.content_url,
     isTest: row.is_test,
+    // A normal lesson can be acknowledged by the learner unless it has a
+    // currently active, publishable assessment. A draft/empty/scheduled test
+    // must not trap learners in a normal published lesson. `is_test` lessons
+    // always advance exclusively through a server-scored practice attempt.
+    completionMode: row.is_test || row.has_active_bound_practice_test ? 'practice' : 'self',
+    // This value is calculated by the API from the student's persisted
+    // progress.  The browser may render it, but never decides the lock.
+    isLocked,
     completionPercent: Number(row.completion_percent ?? 0),
     completedAt: dateValue(row.completed_at),
     lastViewedAt: dateValue(row.last_viewed_at),
@@ -219,11 +233,127 @@ export function parseSubmitAttemptBody(body) {
   return { idempotencyKey: body.idempotencyKey, elapsedSeconds: body.elapsedSeconds, answers }
 }
 
+/**
+ * A self-paced lesson completion carries no client-controlled progress,
+ * score, lesson ownership, or timestamp. The authenticated route derives
+ * all of those values from its URL and the HttpOnly-cookie session.
+ */
+export function parseCompleteLessonBody(body) {
+  if (!exactKeys(body, [])) {
+    throw new HttpError(400, 'Некорректное завершение урока', 'invalid_lesson_completion')
+  }
+  return {}
+}
+
 async function lockStudent(client, studentId) {
   // Serialize a student's begins/submissions. This prevents two simultaneous
   // begins from consuming more than max_attempts and makes idempotency replay
   // deterministic without relying on a race-prone count-then-insert.
   await client.query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [studentId])
+}
+
+const LESSON_PROGRESS_PROJECTION = `
+  coalesce(lp.completion_percent, 0)::int AS completion_percent,
+  lp.completed_at, lp.last_viewed_at,
+  EXISTS (
+    SELECT 1
+      FROM practice_tests completion_test
+     WHERE completion_test.lesson_id = l.id
+       AND completion_test.is_published = true
+       AND (completion_test.available_from IS NULL OR completion_test.available_from <= now())
+       AND (completion_test.available_until IS NULL OR completion_test.available_until > now())
+       AND EXISTS (
+         SELECT 1
+           FROM practice_questions completion_question
+          WHERE completion_question.practice_test_id = completion_test.id
+            AND completion_question.is_active = true
+       )
+  ) AS has_active_bound_practice_test,
+  EXISTS (
+    SELECT 1
+      FROM lessons previous_lesson
+      LEFT JOIN lesson_progress previous_progress
+        ON previous_progress.lesson_id = previous_lesson.id
+       AND previous_progress.student_id = $1
+     WHERE previous_lesson.course_id = l.course_id
+       AND previous_lesson.is_published = true
+       AND previous_lesson.subject IS NOT DISTINCT FROM l.subject
+       AND (
+         previous_lesson.lesson_number < l.lesson_number
+         OR (previous_lesson.lesson_number = l.lesson_number AND previous_lesson.id < l.id)
+       )
+       AND previous_progress.completed_at IS NULL
+  ) AS is_locked`
+
+/**
+ * The course curriculum is sequenced independently for each subject inside
+ * the course.  `lesson_number` is the authoritative order, and this query is
+ * used by every route that can expose, start, or complete a lesson.
+ */
+async function loadAccessibleLesson(client, studentId, lessonId, { forUpdate = false } = {}) {
+  const lock = forUpdate ? ' FOR UPDATE OF l' : ''
+  const result = await client.query(
+    `SELECT l.id, l.course_id, l.lesson_number, l.title, l.description, l.subject,
+            l.section, l.topic, l.lesson_date, l.duration_minutes, l.content_url, l.is_test,
+            ${LESSON_PROGRESS_PROJECTION}
+       FROM lessons l
+       LEFT JOIN lesson_progress lp ON lp.lesson_id = l.id AND lp.student_id = $1
+      WHERE l.id = $2 AND l.is_published = true
+        AND EXISTS (
+          SELECT 1
+            FROM group_students gs
+            JOIN groups g ON g.id = gs.group_id
+           WHERE gs.student_id = $1 AND gs.left_at IS NULL
+             AND g.is_active = true AND g.course_id = l.course_id
+        )${lock}`,
+    [studentId, lessonId],
+  )
+  return result.rows[0] ?? null
+}
+
+function requireUnlockedLesson(lesson) {
+  if (!lesson) throw new HttpError(404, 'Урок не найден', 'lesson_not_found')
+  if (lesson.is_locked === true || lesson.is_locked === 't') {
+    throw new HttpError(403, 'Сначала заверши предыдущий урок этого предмета', 'lesson_locked')
+  }
+  return lesson
+}
+
+async function completeSelfPacedLesson(client, student, lessonId) {
+  // All student progress mutations take this same row lock. It makes a
+  // simultaneous completion of the previous and next lessons deterministic:
+  // the next lesson is checked only after the prior mutation commits.
+  await lockStudent(client, student.id)
+  const lesson = requireUnlockedLesson(await loadAccessibleLesson(client, student.id, lessonId, { forUpdate: true }))
+  if (lesson.is_test || lesson.has_active_bound_practice_test) {
+    throw new HttpError(
+      409,
+      'Этот урок завершается только после серверной проверки практики',
+      'lesson_requires_practice',
+    )
+  }
+
+  const progress = await client.query(
+    `INSERT INTO lesson_progress (student_id, lesson_id, completion_percent, last_viewed_at, completed_at)
+     VALUES ($1, $2, 100, now(), now())
+     ON CONFLICT (student_id, lesson_id) DO UPDATE
+        SET completion_percent = 100,
+            last_viewed_at = now(),
+            completed_at = COALESCE(lesson_progress.completed_at, now())
+     RETURNING completion_percent, completed_at, last_viewed_at`,
+    [student.id, lesson.id],
+  )
+  await client.query(
+    `INSERT INTO audit_log (actor_user_id, action, target_type, target_id, metadata)
+     VALUES ($1, 'complete_lesson', 'lesson', $2, $3::jsonb)`,
+    [student.id, String(lesson.id), JSON.stringify({ completionMode: 'self' })],
+  )
+  return {
+    ...lesson,
+    completion_percent: progress.rows[0].completion_percent,
+    completed_at: progress.rows[0].completed_at,
+    last_viewed_at: progress.rows[0].last_viewed_at,
+  }
 }
 
 async function loadAccessibleTest(client, studentId, testId, forUpdate = false) {
@@ -284,12 +414,21 @@ async function beginAttempt(client, student, input) {
     if (Number(attempt.practice_test_id) !== input.testId) {
       throw new HttpError(409, 'Ключ попытки уже использован', 'begin_idempotency_conflict')
     }
+    if (attempt.status === 'started' && attempt.lesson_id !== null) {
+      requireUnlockedLesson(await loadAccessibleLesson(client, student.id, Number(attempt.lesson_id), { forUpdate: true }))
+    }
     const items = attempt.status === 'started' ? await loadAttemptItems(client, attempt.id) : []
     return { attempt, questions: items.map(publicAttemptQuestion), replayed: true }
   }
 
   const test = await loadAccessibleTest(client, student.id, input.testId, true)
   if (!test) throw new HttpError(404, 'Тест недоступен', 'test_unavailable')
+  // A lesson-bound test is itself part of the lesson sequence.  Keeping this
+  // check server-side prevents a learner from opening a future lesson's test
+  // through a copied API request, even if a stale UI still lists that test.
+  if (test.lesson_id !== null) {
+    requireUnlockedLesson(await loadAccessibleLesson(client, student.id, Number(test.lesson_id), { forUpdate: true }))
+  }
   if (Number(test.question_count) < 1) throw new HttpError(409, 'В тесте пока нет вопросов', 'test_empty')
 
   // A timed attempt becomes terminal before availability is calculated. The
@@ -427,6 +566,13 @@ async function submitAttempt(client, student, attemptId, input) {
     return { ...await submittedResponse(client, attempt), replayed: true }
   }
   if (attempt.status !== 'started') throw new HttpError(409, 'Попытка уже закрыта', 'attempt_not_open')
+
+  // An attempt could have been started before a curriculum change or before
+  // this guard was introduced. Re-check its bound lesson before scoring so a
+  // stale/open attempt cannot advance a currently locked lesson.
+  if (attempt.lesson_id !== null) {
+    requireUnlockedLesson(await loadAccessibleLesson(client, student.id, Number(attempt.lesson_id), { forUpdate: true }))
+  }
 
   if (attempt.expires_at && new Date(attempt.expires_at).getTime() <= Date.now()) {
     await expireAttempt(client, attempt)
@@ -631,8 +777,7 @@ GET('/v1/platform/lessons', async ({ req, config, query: searchParams }) => {
   const result = await query(
     `SELECT l.id, l.course_id, l.lesson_number, l.title, l.description, l.subject,
             l.section, l.topic, l.lesson_date, l.duration_minutes, l.content_url, l.is_test,
-            coalesce(lp.completion_percent, 0)::int AS completion_percent,
-            lp.completed_at, lp.last_viewed_at
+            ${LESSON_PROGRESS_PROJECTION}
        FROM lessons l
        LEFT JOIN lesson_progress lp ON lp.lesson_id = l.id AND lp.student_id = $1
       WHERE l.is_published = true
@@ -653,25 +798,16 @@ GET('/v1/platform/lessons', async ({ req, config, query: searchParams }) => {
 GET('/v1/platform/lessons/:id', async ({ req, params, config }) => {
   const student = await currentStudent(config, req)
   const lessonId = positiveId(params.id, 'lesson_id')
-  const result = await query(
-    `SELECT l.id, l.course_id, l.lesson_number, l.title, l.description, l.subject,
-            l.section, l.topic, l.lesson_date, l.duration_minutes, l.content_url, l.is_test,
-            coalesce(lp.completion_percent, 0)::int AS completion_percent,
-            lp.completed_at, lp.last_viewed_at
-       FROM lessons l
-       LEFT JOIN lesson_progress lp ON lp.lesson_id = l.id AND lp.student_id = $1
-      WHERE l.id = $2 AND l.is_published = true
-        AND EXISTS (
-          SELECT 1
-            FROM group_students gs
-            JOIN groups g ON g.id = gs.group_id
-           WHERE gs.student_id = $1 AND gs.left_at IS NULL
-             AND g.is_active = true AND g.course_id = l.course_id
-        )`,
-    [student.id, lessonId],
-  )
-  if (!result.rows[0]) throw new HttpError(404, 'Урок не найден', 'lesson_not_found')
-  return { status: 200, body: { lesson: publicLesson(result.rows[0]) } }
+  const lesson = requireUnlockedLesson(await loadAccessibleLesson({ query }, student.id, lessonId))
+  return { status: 200, body: { lesson: publicLesson(lesson) } }
+})
+
+POST('/v1/platform/lessons/:id/complete', async ({ req, params, config }) => {
+  const student = await currentStudent(config, req)
+  const lessonId = positiveId(params.id, 'lesson_id')
+  parseCompleteLessonBody(await readJson(req, 1_000))
+  const lesson = await transaction(client => completeSelfPacedLesson(client, student, lessonId))
+  return { status: 200, body: { lesson: publicLesson(lesson) } }
 })
 
 GET('/v1/platform/practice-tests', async ({ req, config }) => {
@@ -751,6 +887,9 @@ GET('/v1/platform/practice-attempts/:id', async ({ req, params, config }) => {
     )
     const attempt = loaded.rows[0]
     if (!attempt) throw new HttpError(404, 'Попытка не найдена', 'attempt_not_found')
+    if (attempt.status === 'started' && attempt.lesson_id !== null) {
+      requireUnlockedLesson(await loadAccessibleLesson(client, student.id, Number(attempt.lesson_id), { forUpdate: true }))
+    }
     if (attempt.status === 'started' && attempt.expires_at && new Date(attempt.expires_at).getTime() <= Date.now()) {
       await expireAttempt(client, attempt)
       attempt.status = 'expired'

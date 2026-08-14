@@ -1,5 +1,5 @@
 import { requireAuth } from '../auth.js'
-import { requireRole } from '../authorization.js'
+import { isSuperAdmin, requireRole } from '../authorization.js'
 import { query } from '../db.js'
 import { GET, HttpError } from '../http.js'
 
@@ -96,7 +96,8 @@ export function publicDashboardAudit(row) {
 }
 
 GET('/v1/admin/dashboard', async ({ req, config }) => {
-  await requireDashboardAdmin(await requireAuth(config, req))
+  const currentAdmin = requireDashboardAdmin(await requireAuth(config, req))
+  const auditAvailable = isSuperAdmin(currentAdmin.role)
 
   // There is no owned request/event telemetry or payment ledger yet.  The
   // overview deliberately does not invent "active today", revenue, or other
@@ -139,15 +140,17 @@ GET('/v1/admin/dashboard', async ({ req, config }) => {
         LIMIT $1`,
       [RECENT_LIMIT],
     ),
-    query(
-      `SELECT id, action, target_type, created_at
-         FROM audit_log
-        WHERE action = ANY($1::text[])
-          AND target_id IS NOT NULL
-        ORDER BY created_at DESC, id DESC
-        LIMIT $2`,
-      [Array.from(AUDIT_TARGETS.keys()), RECENT_LIMIT],
-    ),
+    auditAvailable
+      ? query(
+        `SELECT id, action, target_type, created_at
+           FROM audit_log
+          WHERE action = ANY($1::text[])
+            AND target_id IS NOT NULL
+          ORDER BY created_at DESC, id DESC
+          LIMIT $2`,
+        [Array.from(AUDIT_TARGETS.keys()), RECENT_LIMIT],
+      )
+      : Promise.resolve({ rows: [] }),
   ])
 
   const metricsRow = metricsResult.rows[0]
@@ -162,6 +165,7 @@ GET('/v1/admin/dashboard', async ({ req, config }) => {
       availability: {
         dailyActiveStudents: false,
         payments: false,
+        auditFeed: auditAvailable,
       },
       recentAttempts: attemptsResult.rows.map(publicDashboardAttempt),
       recentChanges: auditResult.rows.map(publicDashboardAudit),

@@ -1,3 +1,12 @@
+import {
+  DEFAULT_DAILY_STUDY_GOAL_MINUTES,
+  DEFAULT_PROFILE_COLOR,
+  isDailyStudyGoalMinutes,
+  isProfileColor,
+  type DailyStudyGoalMinutes,
+  type ProfileColor,
+} from './profile-preferences.ts'
+
 export interface ZhangakSessionUser {
   id: string
   email: string
@@ -7,6 +16,8 @@ export interface ZhangakSessionUser {
   phone: string | null
   targetScore: number | null
   avatarUrl: string | null
+  profileColor: ProfileColor
+  dailyStudyGoalMinutes: DailyStudyGoalMinutes
 }
 
 interface UserResponse {
@@ -41,17 +52,38 @@ export class ZhangakAuthError extends Error {
   }
 }
 
-function isSessionUser(value: unknown): value is ZhangakSessionUser {
-  if (!value || typeof value !== 'object') return false
+function sessionUser(value: unknown): ZhangakSessionUser | null {
+  if (!value || typeof value !== 'object') return null
   const user = value as Record<string, unknown>
-  return typeof user.id === 'string'
+  const profileColor = user.profileColor === undefined ? DEFAULT_PROFILE_COLOR : user.profileColor
+  const dailyStudyGoalMinutes = user.dailyStudyGoalMinutes === undefined
+    ? DEFAULT_DAILY_STUDY_GOAL_MINUTES
+    : user.dailyStudyGoalMinutes
+  if (!(typeof user.id === 'string'
     && typeof user.email === 'string'
     && typeof user.fullName === 'string'
     && typeof user.role === 'string' && ACCOUNT_ROLES.has(user.role)
     && (user.studentType === null || typeof user.studentType === 'string')
     && (user.phone === null || typeof user.phone === 'string')
     && (user.targetScore === null || typeof user.targetScore === 'number')
-    && (user.avatarUrl === null || typeof user.avatarUrl === 'string')
+    && (user.avatarUrl === null || typeof user.avatarUrl === 'string'))) {
+    return null
+  }
+  if (!isProfileColor(profileColor) || !isDailyStudyGoalMinutes(dailyStudyGoalMinutes)) {
+    return null
+  }
+  return {
+    id: user.id,
+    email: user.email,
+    fullName: user.fullName,
+    role: user.role,
+    studentType: user.studentType,
+    phone: user.phone,
+    targetScore: user.targetScore,
+    avatarUrl: user.avatarUrl,
+    profileColor,
+    dailyStudyGoalMinutes,
+  }
 }
 
 async function payload(response: Response): Promise<unknown> {
@@ -96,8 +128,9 @@ function authError(response: Response, body: unknown): ZhangakAuthError {
 
 function userFrom(body: unknown): ZhangakSessionUser {
   const candidate = body && typeof body === 'object' ? (body as Partial<UserResponse>).user : null
-  if (!isSessionUser(candidate)) throw new ZhangakAuthError('Сервис вернул некорректный профиль', 502, 'invalid_response')
-  return candidate
+  const user = sessionUser(candidate)
+  if (!user) throw new ZhangakAuthError('Сервис вернул некорректный профиль', 502, 'invalid_response')
+  return user
 }
 
 export async function loginZhangak(email: string, password: string): Promise<ZhangakSessionUser> {

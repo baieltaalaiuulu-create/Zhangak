@@ -60,11 +60,37 @@ export default function AdminMigrationNotice({ title, description, plannedCapabi
     }
   }, [])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    let cancelled = false
+
+    const loadInitialAccess = async () => {
+      try {
+        const user = await getCurrentZhangakUser()
+        if (cancelled) return
+        if (!user) {
+          window.location.replace('/login')
+          return
+        }
+        setState(FULL_ADMIN_ROLES.has(user.role)
+          ? { kind: 'ready', user }
+          : { kind: 'wrong_role', user })
+      } catch (cause) {
+        if (!cancelled) {
+          setState({
+            kind: 'error',
+            message: cause instanceof Error ? cause.message : 'Не удалось проверить доступ к панели.',
+          })
+        }
+      }
+    }
+
+    void loadInitialAccess()
+    return () => { cancelled = true }
+  }, [])
 
   const signOut = async () => {
     await logoutZhangak().catch(() => {})
-    window.location.assign('/login')
+    window.location.replace('/login')
   }
 
   if (state.kind === 'checking') return <LoadingState />

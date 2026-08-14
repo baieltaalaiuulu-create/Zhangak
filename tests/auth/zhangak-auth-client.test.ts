@@ -17,6 +17,8 @@ const USER = {
   phone: null,
   targetScore: 200,
   avatarUrl: null,
+  profileColor: 'blue',
+  dailyStudyGoalMinutes: 30,
 }
 
 function json(body: unknown, status = 200): Response {

@@ -1,6 +1,14 @@
 'use client'
 
 import { ZhangakApiError, zhangakApiJson, zhangakApiRequest } from './zhangak-api-client.ts'
+import {
+  DEFAULT_DAILY_STUDY_GOAL_MINUTES,
+  DEFAULT_PROFILE_COLOR,
+  isDailyStudyGoalMinutes,
+  isProfileColor,
+  type DailyStudyGoalMinutes,
+  type ProfileColor,
+} from './profile-preferences.ts'
 
 export const DEFAULT_TARGET_SCORE = 180
 export const MIN_TARGET_SCORE = 100
@@ -15,6 +23,8 @@ export interface PlatformProfile {
   phone: string | null
   targetScore: number | null
   avatarUrl: string | null
+  profileColor: ProfileColor
+  dailyStudyGoalMinutes: DailyStudyGoalMinutes
 }
 
 export interface ProfileScorePoint {
@@ -26,6 +36,8 @@ export interface PlatformProfilePatch {
   fullName?: string
   avatarUrl?: string | null
   targetScore?: number
+  profileColor?: ProfileColor
+  dailyStudyGoalMinutes?: DailyStudyGoalMinutes
 }
 
 function invalidResponse(): never {
@@ -45,6 +57,13 @@ export function parsePlatformProfile(value: unknown): PlatformProfile {
   const phone = nullableString(profile.phone)
   const avatarUrl = nullableString(profile.avatarUrl)
   const targetScore = profile.targetScore
+  // Defaults keep a client rollout compatible with an already-running API
+  // while the accompanying database migration is being applied. Once the
+  // current API is live these values are always explicitly projected.
+  const profileColor = profile.profileColor === undefined ? DEFAULT_PROFILE_COLOR : profile.profileColor
+  const dailyStudyGoalMinutes = profile.dailyStudyGoalMinutes === undefined
+    ? DEFAULT_DAILY_STUDY_GOAL_MINUTES
+    : profile.dailyStudyGoalMinutes
   if (typeof profile.id !== 'string'
     || typeof profile.email !== 'string'
     || typeof profile.fullName !== 'string' || profile.fullName.trim() === ''
@@ -52,6 +71,8 @@ export function parsePlatformProfile(value: unknown): PlatformProfile {
     || studentType === undefined
     || phone === undefined
     || avatarUrl === undefined
+    || !isProfileColor(profileColor)
+    || !isDailyStudyGoalMinutes(dailyStudyGoalMinutes)
     || (targetScore !== null && (typeof targetScore !== 'number'
       || !Number.isSafeInteger(targetScore)
       || targetScore < 0
@@ -67,6 +88,8 @@ export function parsePlatformProfile(value: unknown): PlatformProfile {
     phone,
     targetScore,
     avatarUrl,
+    profileColor,
+    dailyStudyGoalMinutes,
   }
 }
 
@@ -76,7 +99,7 @@ export async function getPlatformProfile(): Promise<PlatformProfile> {
 
 export async function updatePlatformProfile(patch: PlatformProfilePatch): Promise<PlatformProfile> {
   const keys = Object.keys(patch)
-  if (keys.length === 0 || keys.some(key => !['fullName', 'avatarUrl', 'targetScore'].includes(key))) {
+  if (keys.length === 0 || keys.some(key => !['fullName', 'avatarUrl', 'targetScore', 'profileColor', 'dailyStudyGoalMinutes'].includes(key))) {
     throw new Error('Некорректные данные профиля')
   }
   return parsePlatformProfile(await zhangakApiJson<unknown>('/v1/platform/profile', 'PATCH', patch))

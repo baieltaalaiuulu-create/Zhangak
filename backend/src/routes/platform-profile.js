@@ -9,6 +9,8 @@ const STUDENT_ROLES = new Set(['student', 'math_student'])
 const MIN_TARGET_SCORE = 100
 const MAX_TARGET_SCORE = 245
 const MAX_AVATAR_URL_LENGTH = 2_048
+const PROFILE_COLORS = new Set(['blue', 'violet', 'emerald', 'rose'])
+const DAILY_STUDY_GOAL_MINUTES = new Set([15, 30, 45, 60, 90])
 
 function publicProfile(user) {
   return {
@@ -20,6 +22,8 @@ function publicProfile(user) {
     phone: user.phone,
     targetScore: user.target_score,
     avatarUrl: user.avatar_url,
+    profileColor: user.profile_color,
+    dailyStudyGoalMinutes: user.daily_study_goal_minutes,
   }
 }
 
@@ -62,7 +66,7 @@ export function parseProfilePatch(body) {
     throw new HttpError(400, 'Некорректные данные профиля', 'invalid_profile_patch')
   }
   const keys = Object.keys(body)
-  const allowed = new Set(['fullName', 'avatarUrl', 'targetScore'])
+  const allowed = new Set(['fullName', 'avatarUrl', 'targetScore', 'profileColor', 'dailyStudyGoalMinutes'])
   if (keys.length === 0 || keys.some(key => !allowed.has(key))) {
     throw new HttpError(400, 'Некорректные данные профиля', 'invalid_profile_patch')
   }
@@ -74,6 +78,10 @@ export function parseProfilePatch(body) {
     avatarUrl: null,
     hasTargetScore: Object.hasOwn(body, 'targetScore'),
     targetScore: null,
+    hasProfileColor: Object.hasOwn(body, 'profileColor'),
+    profileColor: null,
+    hasDailyStudyGoalMinutes: Object.hasOwn(body, 'dailyStudyGoalMinutes'),
+    dailyStudyGoalMinutes: null,
   }
 
   if (patch.hasFullName) {
@@ -92,6 +100,19 @@ export function parseProfilePatch(body) {
     }
     patch.targetScore = body.targetScore
   }
+  if (patch.hasProfileColor) {
+    if (typeof body.profileColor !== 'string' || !PROFILE_COLORS.has(body.profileColor)) {
+      throw new HttpError(400, 'Некорректный цвет профиля', 'invalid_profile_color')
+    }
+    patch.profileColor = body.profileColor
+  }
+  if (patch.hasDailyStudyGoalMinutes) {
+    if (!Number.isSafeInteger(body.dailyStudyGoalMinutes)
+      || !DAILY_STUDY_GOAL_MINUTES.has(body.dailyStudyGoalMinutes)) {
+      throw new HttpError(400, 'Некорректная ежедневная цель', 'invalid_daily_study_goal')
+    }
+    patch.dailyStudyGoalMinutes = body.dailyStudyGoalMinutes
+  }
   return patch
 }
 
@@ -107,6 +128,8 @@ PATCH('/v1/platform/profile', async ({ req, config }) => {
     patch.hasFullName && 'fullName',
     patch.hasAvatarUrl && 'avatarUrl',
     patch.hasTargetScore && 'targetScore',
+    patch.hasProfileColor && 'profileColor',
+    patch.hasDailyStudyGoalMinutes && 'dailyStudyGoalMinutes',
   ].filter(Boolean)
 
   const profile = await transaction(async client => {
@@ -115,9 +138,12 @@ PATCH('/v1/platform/profile', async ({ req, config }) => {
           SET full_name = CASE WHEN $2::boolean THEN $3::text ELSE full_name END,
               avatar_url = CASE WHEN $4::boolean THEN $5::text ELSE avatar_url END,
               target_score = CASE WHEN $6::boolean THEN $7::integer ELSE target_score END,
+              profile_color = CASE WHEN $8::boolean THEN $9::text ELSE profile_color END,
+              daily_study_goal_minutes = CASE WHEN $10::boolean THEN $11::smallint ELSE daily_study_goal_minutes END,
               updated_at = now()
         WHERE user_id = $1
-        RETURNING full_name, role, student_type, phone, target_score, avatar_url`,
+        RETURNING full_name, role, student_type, phone, target_score, avatar_url,
+                  profile_color, daily_study_goal_minutes`,
       [
         student.id,
         patch.hasFullName,
@@ -126,6 +152,10 @@ PATCH('/v1/platform/profile', async ({ req, config }) => {
         patch.avatarUrl,
         patch.hasTargetScore,
         patch.targetScore,
+        patch.hasProfileColor,
+        patch.profileColor,
+        patch.hasDailyStudyGoalMinutes,
+        patch.dailyStudyGoalMinutes,
       ],
     )
     const row = updated.rows[0]

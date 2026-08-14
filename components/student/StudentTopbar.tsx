@@ -3,10 +3,12 @@
 import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { Bell, Flame, Search, Star, Target } from 'lucide-react'
+import { PROFILE_COLOR_OPTIONS, type ProfileColor } from '@/lib/profile-preferences'
 
 interface Props {
   fullName: string
   avatarUrl: string | null
+  profileColor: ProfileColor
   streak: number
   targetScore: number
   level: number
@@ -28,10 +30,11 @@ function Pill({ children, tone = 'gray', className = '' }: { children: ReactNode
   )
 }
 
-export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore, level, unreadCount = 0, onLogout }: Props) {
+export default function StudentTopbar({ fullName, avatarUrl, profileColor, streak, targetScore, level, unreadCount = 0, onLogout }: Props) {
   const [notifOpen, setNotifOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const initial = fullName?.[0]?.toUpperCase() ?? '?'
+  const accent = PROFILE_COLOR_OPTIONS[profileColor].color
 
   return (
     <header className="sticky top-0 z-20 flex h-[60px] items-center gap-3 border-b border-[#C3C6D7]/50 bg-white px-4 sm:px-6">
@@ -93,10 +96,11 @@ export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore
             type="button"
             onClick={() => setMenuOpen(v => !v)}
             aria-label="Меню профиля"
-            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[#1B3F92] text-xs font-bold text-white"
+            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full text-xs font-bold text-white"
+            style={{ backgroundColor: accent }}
           >
             {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL, no next/image domain config in this project
+              // eslint-disable-next-line @next/next/no-img-element -- externally hosted HTTPS avatar URL, no next/image domain config in this project
               <img src={avatarUrl} alt={fullName} className="h-full w-full object-cover" />
             ) : (
               initial

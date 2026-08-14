@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 import {
   parseBeginAttemptBody,
+  parseCompleteLessonBody,
   parseSubmitAttemptBody,
   publicAttemptQuestion,
 } from '../src/routes/platform-learning.js'
@@ -79,6 +80,21 @@ test('attempt request parsers fail closed for injected score, unknown fields, an
   )
 })
 
+test('self-paced completion accepts no client-controlled progress fields', () => {
+  assert.deepEqual(parseCompleteLessonBody({}), {})
+  for (const forged of [
+    { completionPercent: 100 },
+    { score: 100 },
+    { completedAt: '2026-08-14T00:00:00.000Z' },
+    { studentId: 'forged' },
+  ]) {
+    assert.throws(
+      () => parseCompleteLessonBody(forged),
+      error => error instanceof HttpError && error.code === 'invalid_lesson_completion',
+    )
+  }
+})
+
 test('learning routes use locking, immutable snapshots, and server-side scoring paths', async () => {
   const source = await readFile(path.join(backendRoot, 'src', 'routes', 'platform-learning.js'), 'utf8')
   assert.match(source, /SELECT id FROM users WHERE id = \$1 FOR UPDATE/)
@@ -91,4 +107,16 @@ test('learning routes use locking, immutable snapshots, and server-side scoring 
   assert.match(source, /WHERE id = \$1 AND student_id = \$2\s+FOR UPDATE/)
   assert.match(source, /INSERT INTO lesson_progress \(student_id, lesson_id, completion_percent, last_viewed_at, completed_at\)/)
   assert.match(source, /ON CONFLICT \(student_id, lesson_id\) DO UPDATE/)
+  assert.match(source, /POST\('\/v1\/platform\/lessons\/:id\/complete'/)
+  assert.match(source, /parseCompleteLessonBody\(await readJson\(req, 1_000\)\)/)
+  assert.match(source, /previous_lesson\.subject IS NOT DISTINCT FROM l\.subject/)
+  assert.match(source, /AS is_locked/)
+  assert.match(source, /contentUrl: isLocked \? null : row\.content_url/)
+  assert.match(source, /requireUnlockedLesson\(await loadAccessibleLesson/)
+  assert.match(source, /completion_test\.is_published = true/)
+  assert.match(source, /completion_question\.is_active = true/)
+  assert.match(source, /lesson\.is_test \|\| lesson\.has_active_bound_practice_test/)
+  assert.match(source, /completionMode: 'self'/)
+  assert.match(source, /test\.lesson_id !== null[\s\S]*requireUnlockedLesson/)
+  assert.match(source, /attempt\.lesson_id !== null[\s\S]*requireUnlockedLesson/)
 })

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { PLATFORM_ORIGIN } from '@/lib/site-hosts'
 import MarketingFooter from '@/components/marketing/MarketingFooter'
+import MarketingWelcomeTour from '@/components/marketing/MarketingWelcomeTour'
 
 const PLATFORM_LOGIN_HREF = process.env.NODE_ENV === 'production' ? `${PLATFORM_ORIGIN}/login` : '/login'
 const MATH_HREF = '/math'
@@ -564,6 +565,7 @@ export default function LandingPage() {
       </div>
 
       <MarketingFooter />
+      <MarketingWelcomeTour />
     </main>
   )
 }

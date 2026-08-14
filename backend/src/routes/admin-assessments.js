@@ -472,7 +472,7 @@ async function listPracticeTests({ query: searchParams }, scope, id) {
   return { status: 200, body: testListResponse(result.rows, limit, offset) }
 }
 
-async function createPracticeTest({ req, config }, actor, scope, id) {
+async function createPracticeTest({ req }, actor, scope, id) {
   const input = parsePracticeTestCreateBody(await readJson(req, 128_000))
   if (input.isPublished) {
     // A new test is necessarily empty. Requiring an explicit publish patch

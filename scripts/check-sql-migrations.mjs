@@ -5,8 +5,10 @@ import { fileURLToPath } from 'node:url'
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url))
 const projectRoot = path.resolve(scriptDirectory, '..')
-const migrationsDirectory = path.join(projectRoot, 'supabase', 'migrations')
-const migrationName = /^\d{8,14}_[a-z0-9_]+\.sql$/
+// The executable source of truth is the first-party backend migrator. Old
+// Supabase SQL is deliberately quarantined and must never make this check pass.
+const migrationsDirectory = path.join(projectRoot, 'backend', 'migrations')
+const migrationName = /^(\d+)_[a-z0-9_-]+\.sql$/i
 const proseMarkers = [
   /^===/m,
   /^#/m,
@@ -19,19 +21,32 @@ const proseMarkers = [
 async function main() {
   const entries = await readdir(migrationsDirectory, { withFileTypes: true })
   const files = entries.filter(entry => entry.isFile() && entry.name.endsWith('.sql'))
+    .map(entry => entry.name)
+    .sort()
   const failures = []
+  const seenVersions = new Set()
+
+  if (files.length === 0) {
+    failures.push('no executable backend migrations found')
+  }
 
   for (const file of files) {
-    if (!migrationName.test(file.name)) {
-      failures.push(`${file.name}: expected <UTC timestamp>_<snake_case>.sql`)
+    const match = migrationName.exec(file)
+    if (!match) {
+      failures.push(`${file}: expected <numeric_version>_<snake_case>.sql`)
+      continue
     }
+    if (seenVersions.has(match[1])) {
+      failures.push(`${file}: duplicate migration version ${match[1]}`)
+    }
+    seenVersions.add(match[1])
 
-    const source = await readFile(path.join(migrationsDirectory, file.name), 'utf8')
-    if (!source.trim()) failures.push(`${file.name}: migration is empty`)
-    if (source.includes('\0')) failures.push(`${file.name}: contains a NUL byte`)
+    const source = await readFile(path.join(migrationsDirectory, file), 'utf8')
+    if (!source.trim()) failures.push(`${file}: migration is empty`)
+    if (source.includes('\0')) failures.push(`${file}: contains a NUL byte`)
     for (const marker of proseMarkers) {
       if (marker.test(source)) {
-        failures.push(`${file.name}: contains a non-SQL/AI transcript marker (${marker})`)
+        failures.push(`${file}: contains a non-SQL/AI transcript marker (${marker})`)
       }
     }
   }

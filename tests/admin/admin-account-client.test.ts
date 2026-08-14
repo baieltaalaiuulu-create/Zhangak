@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  assignableAccountRoles,
+  changeAdminAccountRole,
   creatableAccountRoles,
   createAdminAccount,
   deleteAdminAccount,
@@ -47,6 +49,7 @@ test('admin account operations remain in the cookie-authenticated BFF namespace'
     })
     await setAdminAccountBlocked('7d794428-2199-46e5-9149-10b55188bd5b', true)
     await resetAdminAccountPassword('7d794428-2199-46e5-9149-10b55188bd5b', 'NewPassword!10')
+    await changeAdminAccountRole('7d794428-2199-46e5-9149-10b55188bd5b', { role: 'teacher' })
     await deleteAdminAccount('7d794428-2199-46e5-9149-10b55188bd5b')
 
     assert.deepEqual(calls.map(call => call.input), [
@@ -54,9 +57,10 @@ test('admin account operations remain in the cookie-authenticated BFF namespace'
       '/v1/admin/users',
       '/v1/admin/users/7d794428-2199-46e5-9149-10b55188bd5b/block',
       '/v1/admin/users/7d794428-2199-46e5-9149-10b55188bd5b/password',
+      '/v1/admin/users/7d794428-2199-46e5-9149-10b55188bd5b/role',
       '/v1/admin/users/7d794428-2199-46e5-9149-10b55188bd5b',
     ])
-    assert.deepEqual(calls.map(call => call.init?.method ?? 'GET'), ['GET', 'POST', 'PATCH', 'PATCH', 'DELETE'])
+    assert.deepEqual(calls.map(call => call.init?.method ?? 'GET'), ['GET', 'POST', 'PATCH', 'PATCH', 'PATCH', 'DELETE'])
     assert.ok(calls.every(call => call.init?.credentials === 'include'))
     assert.deepEqual(JSON.parse(String(calls[1].init?.body)), {
       email: 'aibek@example.com',
@@ -66,6 +70,7 @@ test('admin account operations remain in the cookie-authenticated BFF namespace'
       studentType: 'online',
       targetScore: 210,
     })
+    assert.deepEqual(JSON.parse(String(calls[4].init?.body)), { role: 'teacher', studentType: null })
   } finally {
     globalThis.fetch = originalFetch
     restoreWindow()
@@ -76,5 +81,8 @@ test('role picker only exposes roles the first-party backend may create', () => 
   assert.deepEqual(creatableAccountRoles('admin'), ['student'])
   assert.deepEqual(creatableAccountRoles('math_admin'), ['math_student', 'math_parent'])
   assert.deepEqual(creatableAccountRoles('teacher'), [])
-  assert.equal(creatableAccountRoles('super_admin').length, 11)
+  assert.equal(creatableAccountRoles('super_admin').length, 10)
+  assert.equal(creatableAccountRoles('super_admin').includes('super_admin'), false)
+  assert.equal(assignableAccountRoles('super_admin').includes('super_admin'), false)
+  assert.equal(assignableAccountRoles('admin').length, 0)
 })

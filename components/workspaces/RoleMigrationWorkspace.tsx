@@ -63,11 +63,35 @@ export default function RoleMigrationWorkspace({
     }
   }, [expectedRole, loginHref])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    let cancelled = false
+
+    const loadInitialAccess = async () => {
+      try {
+        const user = await getCurrentZhangakUser()
+        if (cancelled) return
+        if (!user) {
+          window.location.replace(loginHref)
+          return
+        }
+        setState(user.role === expectedRole ? { kind: 'ready', user } : { kind: 'wrong_role', user })
+      } catch (cause) {
+        if (!cancelled) {
+          setState({
+            kind: 'error',
+            message: cause instanceof Error ? cause.message : 'Не удалось проверить сессию',
+          })
+        }
+      }
+    }
+
+    void loadInitialAccess()
+    return () => { cancelled = true }
+  }, [expectedRole, loginHref])
 
   const signOut = async () => {
     await logoutZhangak().catch(() => {})
-    window.location.assign(loginHref)
+    window.location.replace(loginHref)
   }
 
   if (state.kind === 'loading') return <LoadingState />

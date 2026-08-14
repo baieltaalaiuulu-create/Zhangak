@@ -177,7 +177,7 @@ export default function StudentOnlinePage() {
             firstName={firstName}
             latestScore={data.latestScore}
             targetScore={targetScore}
-            minutesRemaining={0}
+            dailyGoalMinutes={user.dailyStudyGoalMinutes}
             ctaHref={continueHref}
             onGoalUpdate={setTargetScoreOverride}
           />

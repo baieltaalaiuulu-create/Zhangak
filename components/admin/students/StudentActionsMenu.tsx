@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MoreHorizontal, KeyRound, Ban, CheckCircle2, Trash2 } from 'lucide-react'
+import { MoreHorizontal, KeyRound, Ban, CheckCircle2, ShieldCheck, Trash2 } from 'lucide-react'
 
 interface Props {
   blocked: boolean
@@ -9,12 +9,14 @@ interface Props {
   onResetPassword: () => void
   onToggleBlock: () => void
   onDelete: () => void
+  onChangeRole?: () => void
 }
 
-export default function StudentActionsMenu({ blocked, disabled = false, onResetPassword, onToggleBlock, onDelete }: Props) {
+export default function StudentActionsMenu({ blocked, disabled = false, onResetPassword, onToggleBlock, onDelete, onChangeRole }: Props) {
   const [open, setOpen] = useState(false)
 
   const items: { label: string; icon: typeof KeyRound; onClick: () => void; danger?: boolean }[] = [
+    ...(onChangeRole ? [{ label: 'Изменить роль', icon: ShieldCheck, onClick: onChangeRole }] : []),
     { label: 'Сбросить пароль', icon: KeyRound, onClick: onResetPassword },
     { label: blocked ? 'Разблокировать' : 'Заблокировать', icon: blocked ? CheckCircle2 : Ban, onClick: onToggleBlock },
     { label: 'Удалить аккаунт', icon: Trash2, onClick: onDelete, danger: true },

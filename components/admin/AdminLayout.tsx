@@ -18,6 +18,7 @@ export default function AdminLayout({ children }: Props) {
   const pathname = usePathname()
   const [checked, setChecked] = useState(false)
   const [isJuniorAdmin, setIsJuniorAdmin] = useState(false)
+  const [adminRole, setAdminRole] = useState<'admin' | 'super_admin' | null>(null)
   const [serviceError, setServiceError] = useState(false)
   const [attempt, setAttempt] = useState(0)
 
@@ -40,6 +41,7 @@ export default function AdminLayout({ children }: Props) {
           const isJuniorArea = pathname === '/admin/jr' || pathname.startsWith('/admin/jr/')
           if (!isJuniorArea) { router.replace('/admin/jr'); return }
           setIsJuniorAdmin(true)
+          setAdminRole(null)
           setChecked(true)
           return
         }
@@ -56,7 +58,14 @@ export default function AdminLayout({ children }: Props) {
           return
         }
 
+        const isAccessArea = pathname === '/admin/access' || pathname.startsWith('/admin/access/')
+        if (isAccessArea && user.role !== 'super_admin') {
+          router.replace('/admin')
+          return
+        }
+
         setIsJuniorAdmin(false)
+        setAdminRole(user.role as 'admin' | 'super_admin')
         setChecked(true)
       } catch {
         if (active) setServiceError(true)
@@ -98,7 +107,7 @@ export default function AdminLayout({ children }: Props) {
 
   return (
     <div className="min-h-screen bg-[#F4F6FA]">
-      <AdminSidebar />
+      <AdminSidebar role={adminRole} />
       <div className="lg:ml-64 print:ml-0">{children}</div>
     </div>
   )

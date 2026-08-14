@@ -33,7 +33,7 @@ function ErrorState({ error, onRetry }: { error: ZhangakApiError | null; onRetry
         <h1 className="mt-4 text-lg font-black text-slate-950">Кабинет не загрузился</h1>
         <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
         <div className="mt-5 flex flex-wrap justify-center gap-3">
-          {signInRequired || wrongRole ? <button type="button" onClick={() => window.location.assign('/login?surface=platform')} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white"><LogIn size={17} aria-hidden="true" />Войти</button> : <button type="button" onClick={() => void onRetry()} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white"><RefreshCw size={17} aria-hidden="true" />Повторить</button>}
+          {signInRequired || wrongRole ? <button type="button" onClick={() => window.location.replace('/login?surface=platform')} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white"><LogIn size={17} aria-hidden="true" />Войти</button> : <button type="button" onClick={() => void onRetry()} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white"><RefreshCw size={17} aria-hidden="true" />Повторить</button>}
         </div>
       </div>
     </div>
@@ -59,7 +59,27 @@ export default function TeacherPage() {
     }
   }, [])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    let cancelled = false
+
+    const loadInitialDashboard = async () => {
+      try {
+        const nextDashboard = await getPlatformTeacherDashboard()
+        if (!cancelled) setDashboard(nextDashboard)
+      } catch (cause) {
+        if (!cancelled) {
+          setError(cause instanceof ZhangakApiError
+            ? cause
+            : new ZhangakApiError('Сервис временно недоступен', 503, 'teacher_dashboard_unavailable'))
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    void loadInitialDashboard()
+    return () => { cancelled = true }
+  }, [])
 
   if (!dashboard && loading) return <Skeleton />
   if (!dashboard) return <ErrorState error={error} onRetry={load} />

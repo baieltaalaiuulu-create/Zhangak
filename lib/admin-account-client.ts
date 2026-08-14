@@ -54,6 +54,11 @@ export interface CreateAdminAccountPayload {
   targetScore?: number
 }
 
+export interface ChangeAdminAccountRolePayload {
+  role: AccountRole
+  studentType?: 'online' | 'offline' | 'both'
+}
+
 export const ACCOUNT_ROLE_LABELS: Record<AccountRole, string> = {
   student: 'Ученик',
   teacher: 'Преподаватель',
@@ -102,10 +107,32 @@ export async function deleteAdminAccount(id: string): Promise<void> {
   await zhangakApiJson<{ success: true }>(`/v1/admin/users/${accountIdPath(id)}`, 'DELETE')
 }
 
+/**
+ * The API always clears student-only fields for a staff role. The browser
+ * mirrors that explicit contract so a stale form value cannot leak through a
+ * future UI change.
+ */
+export async function changeAdminAccountRole(id: string, payload: ChangeAdminAccountRolePayload): Promise<void> {
+  await zhangakApiJson<{ success: true }>(`/v1/admin/users/${accountIdPath(id)}/role`, 'PATCH', {
+    role: payload.role,
+    studentType: payload.role === 'student' ? payload.studentType : null,
+  })
+}
+
 /** Mirrors backend/src/authorization.js for UI affordances only. */
 export function creatableAccountRoles(actorRole: string | null): AccountRole[] {
-  if (actorRole === 'super_admin') return [...ACCOUNT_ROLES]
+  // Super-admin peers are provisioned only by the server-side break-glass
+  // command. A browser session may create every operational role, but never
+  // another super-admin account.
+  if (actorRole === 'super_admin') return ACCOUNT_ROLES.filter(role => role !== 'super_admin')
   if (actorRole === 'admin' || actorRole === 'admin_jr') return ['student']
   if (actorRole === 'math_admin') return ['math_student', 'math_parent']
   return []
+}
+
+/** Existing account role changes are a super-admin-only operation. */
+export function assignableAccountRoles(actorRole: string | null): AccountRole[] {
+  return actorRole === 'super_admin'
+    ? ACCOUNT_ROLES.filter(role => role !== 'super_admin')
+    : []
 }

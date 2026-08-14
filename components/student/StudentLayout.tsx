@@ -12,6 +12,7 @@ import StudentTopbar from './StudentTopbar'
 import BottomNav from './BottomNav'
 import PWAInstallBanner from '@/components/PWAInstallBanner'
 import { StudentSessionProvider } from './StudentSessionContext'
+import type { PlatformProfile } from '@/lib/platform-profile'
 
 interface Props {
   children: ReactNode
@@ -105,6 +106,23 @@ export default function StudentLayout({ children }: Props) {
       : '/login?surface=platform')
   }
 
+  const applyProfileUpdate = useCallback((profile: PlatformProfile) => {
+    setSessionUser(current => {
+      if (!current || current.id !== profile.id) return current
+      return {
+        ...current,
+        fullName: profile.fullName,
+        targetScore: profile.targetScore,
+        avatarUrl: profile.avatarUrl,
+        profileColor: profile.profileColor,
+        dailyStudyGoalMinutes: profile.dailyStudyGoalMinutes,
+      }
+    })
+    setFullName(profile.fullName || 'Студент')
+    setTargetScore(profile.targetScore ?? DEFAULT_TARGET_SCORE)
+    setAvatarUrl(profile.avatarUrl)
+  }, [])
+
   if (authError) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-[#FAF8FF] px-5">
@@ -134,13 +152,13 @@ export default function StudentLayout({ children }: Props) {
     )
   }
 
-  if (isImmersivePage) return <StudentSessionProvider user={sessionUser}>{children}</StudentSessionProvider>
+  if (isImmersivePage) return <StudentSessionProvider user={sessionUser} onProfileUpdated={applyProfileUpdate}>{children}</StudentSessionProvider>
 
   // AI keeps its focused chat shell, but the five-item mobile navigation
   // remains available just like it does on the other primary destinations.
   if (isAiPage) {
     return (
-      <StudentSessionProvider user={sessionUser}>
+      <StudentSessionProvider user={sessionUser} onProfileUpdated={applyProfileUpdate}>
         {children}
         <BottomNav />
       </StudentSessionProvider>
@@ -148,14 +166,15 @@ export default function StudentLayout({ children }: Props) {
   }
 
   return (
-    <StudentSessionProvider user={sessionUser}>
+    <StudentSessionProvider user={sessionUser} onProfileUpdated={applyProfileUpdate}>
       <div className="min-h-screen bg-[#FAF8FF]">
-        <StudentSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} fullName={fullName} avatarUrl={avatarUrl} />
+        <StudentSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} fullName={fullName} avatarUrl={avatarUrl} profileColor={sessionUser.profileColor} />
 
         <div className="md:ml-64">
           <StudentTopbar
             fullName={fullName}
             avatarUrl={avatarUrl}
+            profileColor={sessionUser.profileColor}
             streak={streak}
             targetScore={targetScore}
             level={level}

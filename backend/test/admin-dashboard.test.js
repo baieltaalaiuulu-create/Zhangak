@@ -84,6 +84,7 @@ test('admin dashboard remains a first-party read-only route without answer keys'
   assert.match(server, /import '\.\/routes\/admin-dashboard\.js'/)
   assert.match(route, /GET\('\/v1\/admin\/dashboard'/)
   assert.match(route, /requireDashboardAdmin\(await requireAuth\(config, req\)\)/)
+  assert.match(route, /const auditAvailable = isSuperAdmin\(currentAdmin\.role\)/)
   assert.match(route, /FULL_ADMIN_ROLES = \['admin', 'super_admin'\]/)
   for (const table of ['users', 'profiles', 'lessons', 'practice_attempts', 'audit_log']) {
     assert.match(route, new RegExp(`\\b${table}\\b`), `dashboard must read owned ${table}`)

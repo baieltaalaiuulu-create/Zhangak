@@ -2,10 +2,12 @@
 
 import { useState, type FormEvent } from 'react'
 import { LogOut, Pencil, Check, X, Camera } from 'lucide-react'
+import { PROFILE_COLOR_OPTIONS, type ProfileColor } from '@/lib/profile-preferences'
 
 interface Props {
   fullName: string
   avatarUrl: string | null
+  profileColor: ProfileColor
   studentType: string
   latestScore: number | null
   streak: number
@@ -21,10 +23,12 @@ function initials(name: string): string {
 }
 
 export default function ProfileHeader({
-  fullName, avatarUrl, studentType, latestScore, streak, level,
+  fullName, avatarUrl, profileColor, studentType, latestScore, streak, level,
   onSignOut, onNameUpdate, onAvatarUpdate,
 }: Props) {
   const isOnline = studentType !== 'offline'
+  const accent = PROFILE_COLOR_OPTIONS[profileColor].color
+  const accentSoft = PROFILE_COLOR_OPTIONS[profileColor].softColor
 
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState(fullName)
@@ -106,7 +110,8 @@ export default function ProfileHeader({
         onClick={handleAvatarClick}
         disabled={savingAvatar}
         aria-label="Изменить фото профиля"
-        className="group relative mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-[#1B3F92] text-2xl font-extrabold text-white"
+        className="group relative mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full text-2xl font-extrabold text-white"
+        style={{ backgroundColor: accent }}
       >
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- user-provided HTTPS avatar domains are not known at build time
@@ -180,7 +185,10 @@ export default function ProfileHeader({
       )}
       {nameError && <p className="mt-1 text-[11px] font-semibold text-red-500">{nameError}</p>}
 
-      <span className={`mt-1 inline-block rounded-full px-2.5 py-1 text-xs font-bold ${isOnline ? 'bg-[#EEF2FF] text-[#1B3F92]' : 'bg-gray-100 text-gray-500'}`}>
+      <span
+        className={`mt-1 inline-block rounded-full px-2.5 py-1 text-xs font-bold ${isOnline ? '' : 'bg-gray-100 text-gray-500'}`}
+        style={isOnline ? { backgroundColor: accentSoft, color: accent } : undefined}
+      >
         {isOnline ? 'Онлайн' : 'Оффлайн'}
       </span>
 

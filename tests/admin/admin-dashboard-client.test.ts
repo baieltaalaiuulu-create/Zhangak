@@ -13,7 +13,7 @@ const DASHBOARD = {
     submittedAttemptCount: 21,
     submittedAttemptCountToday: 2,
   },
-  availability: { dailyActiveStudents: false, payments: false },
+  availability: { dailyActiveStudents: false, payments: false, auditFeed: true },
   recentAttempts: [{
     id: ATTEMPT_ID,
     studentName: 'Айбек Нурланов',
@@ -46,7 +46,7 @@ function installBrowserWindow(): () => void {
 test('admin dashboard parser accepts only the owned summary DTO', () => {
   assert.deepEqual(parseAdminDashboard(DASHBOARD), DASHBOARD)
   assert.throws(
-    () => parseAdminDashboard({ ...DASHBOARD, availability: { dailyActiveStudents: true, payments: false } }),
+    () => parseAdminDashboard({ ...DASHBOARD, availability: { dailyActiveStudents: true, payments: false, auditFeed: true } }),
     /доступность метрик/,
   )
   assert.throws(

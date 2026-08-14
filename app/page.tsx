@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation'
 import { redirectForRole } from '@/lib/auth-redirect'
 import { isDedicatedPlatformHost } from '@/lib/site-hosts'
 import { getCurrentZhangakUser } from '@/lib/zhangak-auth-client'
+import { PLATFORM_ONBOARDING_DISMISSED_KEY, wasDismissed } from '@/lib/first-visit'
 
-const ONBOARDING_KEY = 'zhangak-onboarding-done'
 const DOT_DELAYS_MS = [0, 150, 300]
 
 // Root route — this app's PWA start_url (app/manifest.ts) and every
@@ -46,13 +46,15 @@ export default function RootPage() {
         }
 
         if (isPWA || isPlatformHost) {
-          const done = localStorage.getItem(ONBOARDING_KEY)
+          const done = wasDismissed(window.localStorage, PLATFORM_ONBOARDING_DISMISSED_KEY)
           router.replace(done ? '/login' : '/onboarding')
         } else {
           router.replace('/landing')
         }
       } catch {
-        router.replace('/landing')
+        // A temporary auth API failure must not send a platform visitor to a
+        // marketing-only route. Keep the protected surface's login reachable.
+        router.replace(isDedicatedPlatformHost(window.location.hostname) ? '/login' : '/landing')
       }
     }
     check()

@@ -453,38 +453,50 @@ export default function AdminAssessmentWorkspace({ kind }: AdminAssessmentWorksp
     }
   }, [])
 
-  useEffect(() => { void loadCourses() }, [loadCourses])
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void loadCourses() }, 0)
+    return () => window.clearTimeout(timer)
+  }, [loadCourses])
 
   useEffect(() => {
-    setSelectedLessonId(null)
-    setSelectedTestId(null)
-    setQuestions([])
-    if (selectedCourseId === null) {
-      lessonRequest.current += 1
-      setLessons([])
-      return
-    }
-    void loadLessons(selectedCourseId)
+    const timer = window.setTimeout(() => {
+      setSelectedLessonId(null)
+      setSelectedTestId(null)
+      setQuestions([])
+      if (selectedCourseId === null) {
+        lessonRequest.current += 1
+        setLessons([])
+        return
+      }
+      void loadLessons(selectedCourseId)
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [loadLessons, selectedCourseId])
 
   useEffect(() => {
-    setSelectedTestId(null)
-    setQuestions([])
-    if (selectedCourseId === null) {
-      testRequest.current += 1
-      setTests([])
-      return
-    }
-    void loadTests(selectedCourseId, selectedLessonId)
+    const timer = window.setTimeout(() => {
+      setSelectedTestId(null)
+      setQuestions([])
+      if (selectedCourseId === null) {
+        testRequest.current += 1
+        setTests([])
+        return
+      }
+      void loadTests(selectedCourseId, selectedLessonId)
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [loadTests, selectedCourseId, selectedLessonId])
 
   useEffect(() => {
-    setQuestions([])
-    if (selectedTestId === null) {
-      questionRequest.current += 1
-      return
-    }
-    void loadQuestions(selectedTestId)
+    const timer = window.setTimeout(() => {
+      setQuestions([])
+      if (selectedTestId === null) {
+        questionRequest.current += 1
+        return
+      }
+      void loadQuestions(selectedTestId)
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [loadQuestions, selectedTestId])
 
   const onTestSaved = (saved: AdminPracticeTest) => {

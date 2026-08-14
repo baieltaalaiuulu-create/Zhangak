@@ -147,6 +147,10 @@ export function proxy(request: NextRequest): NextResponse {
     if (surface === 'marketing') {
       return withSurfaceHeaders(internalRewrite(request, '/landing'), surface)
     }
+    // The platform root is a client-side first-visit gate. It checks the
+    // HttpOnly session and only then chooses the skippable onboarding or
+    // login screen; redirecting here would make /onboarding unreachable.
+    if (surface === 'platform') return withSurfaceHeaders(NextResponse.next(), surface)
     return withSurfaceHeaders(redirectTo(request, hostForSurface(surface), '/login'), surface)
   }
 

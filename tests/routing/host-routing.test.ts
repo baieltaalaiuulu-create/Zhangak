@@ -87,19 +87,16 @@ test('Math marketing stays public while Math accounts use workspace hosts', () =
   )
 })
 
-test('login is shared by workspace hosts but leaves the marketing host', () => {
+test('the platform root reaches its client-side first-visit gate while admin and marketing stay isolated', () => {
   assert.equal(
     getRedirectUrl(proxy(request('https://zhangak.com/login'))),
     'https://platform.zhangak.com/login',
   )
   assert.equal(proxy(request('https://admin.zhangak.com/login')).headers.get('x-middleware-next'), '1')
+  assert.equal(proxy(request('https://platform.zhangak.com/')).headers.get('x-middleware-next'), '1')
   assert.equal(
     getRedirectUrl(proxy(request('https://admin.zhangak.com/'))),
     'https://admin.zhangak.com/login',
-  )
-  assert.equal(
-    getRedirectUrl(proxy(request('https://platform.zhangak.com/'))),
-    'https://platform.zhangak.com/login',
   )
 })
 
