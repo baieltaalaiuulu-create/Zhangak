@@ -11,12 +11,13 @@ export const runtime = 'nodejs'
 //
 // `auth` has a dedicated route because it has a narrower body limit and its
 // response may rotate cookies.  Product endpoints must live under either
-// /v1/platform/* or /v1/admin/* and authenticate/authorize themselves in the
+// /v1/platform/*, /v1/admin/* or the intentionally narrow public intake
+// namespace and authenticate/authorize themselves in the
 // Node API; this route is deliberately not a generic upstream proxy.
 const MAX_BODY_BYTES = 512_000
 const MAX_MATERIAL_UPLOAD_BYTES = 210 * 1024 * 1024
 const METHODS = new Set(['GET', 'POST', 'PATCH', 'DELETE'])
-const SURFACES = new Set(['platform', 'admin'])
+const SURFACES = new Set(['platform', 'admin', 'public'])
 const PATH_SEGMENT = /^[a-z0-9-]+$/
 
 function internalApiOrigin(): string {

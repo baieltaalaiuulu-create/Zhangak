@@ -139,6 +139,12 @@ test('first-party auth is available only on workspace hosts', async () => {
   assert.equal(proxy(request('https://admin.zhangak.com/v1/auth/me')).headers.get('x-middleware-next'), '1')
 })
 
+test('public application intake is available only from the marketing host', () => {
+  assert.equal(proxy(request('https://zhangak.com/v1/public/courses')).headers.get('x-middleware-next'), '1')
+  assert.equal(proxy(request('https://platform.zhangak.com/v1/public/applications', 'POST')).status, 404)
+  assert.equal(proxy(request('https://admin.zhangak.com/v1/public/applications', 'POST')).status, 404)
+})
+
 test('workspace hosts are noindex at both header and robots layers', async () => {
   const platform = proxy(request('https://platform.zhangak.com/student/online'))
   assert.equal(platform.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive')

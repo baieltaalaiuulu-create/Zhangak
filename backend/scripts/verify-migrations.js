@@ -45,6 +45,8 @@ const requiredTables = [
   'trainer_question_issues',
   'trainer_question_mastery',
   'trainer_progress_resets',
+  'public_applications',
+  'public_application_events',
 ]
 
 function fail(message) {
@@ -149,6 +151,17 @@ async function verifySchema(client) {
   const presentMaterialColumns = new Set(materialResult.rows.map(row => row.column_name))
   const missingMaterialColumns = materialColumns.filter(column => !presentMaterialColumns.has(column))
   if (missingMaterialColumns.length > 0) fail(`private material columns are missing: ${missingMaterialColumns.join(', ')}`)
+
+  const applicationColumns = ['status', 'course_id', 'enrollment_id', 'payment_confirmed_at', 'payment_confirmed_by']
+  const applicationResult = await client.query(
+    `SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'public_applications'
+        AND column_name = ANY($1::text[])`,
+    [applicationColumns],
+  )
+  const presentApplicationColumns = new Set(applicationResult.rows.map(row => row.column_name))
+  const missingApplicationColumns = applicationColumns.filter(column => !presentApplicationColumns.has(column))
+  if (missingApplicationColumns.length > 0) fail(`public application columns are missing: ${missingApplicationColumns.join(', ')}`)
 }
 
 async function main() {

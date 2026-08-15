@@ -19,6 +19,7 @@ import {
 import { OFFLINE_ORIGIN, PLATFORM_ORIGIN } from '@/lib/site-hosts'
 import MarketingFooter from '@/components/marketing/MarketingFooter'
 import MarketingWelcomeTour from '@/components/marketing/MarketingWelcomeTour'
+import PublicApplicationForm from '@/components/marketing/PublicApplicationForm'
 
 const PLATFORM_LOGIN_HREF = process.env.NODE_ENV === 'production' ? `${PLATFORM_ORIGIN}/login` : '/login'
 const OFFLINE_LOGIN_HREF = process.env.NODE_ENV === 'production' ? `${OFFLINE_ORIGIN}/login` : '/login?surface=offline'
@@ -160,6 +161,7 @@ export default function LandingPage() {
           .footer-inner{flex-direction:column!important;align-items:flex-start!important;gap:10px!important;padding:18px 16px!important}
           .cta-final-btns{flex-direction:column!important;gap:10px!important}
           .cta-final-btns a,.cta-final-btns button{width:100%!important;text-align:center!important}
+          .application-cta-grid{grid-template-columns:1fr!important}
           .section-pad-lg{padding-top:56px!important;padding-bottom:56px!important}
           .faq-q-text{font-size:13px!important}
         }
@@ -544,7 +546,8 @@ export default function LandingPage() {
       <div className="s-pad section-pad-lg" style={{ padding: '72px 32px', background: '#1B3F92', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '500px', height: '500px', background: 'radial-gradient(circle,rgba(255,255,255,0.07) 0%,transparent 70%)', pointerEvents: 'none' }} />
         <Reveal>
-          <div style={{ maxWidth: '560px', margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+          <div style={{ maxWidth: '960px', margin: '0 auto', position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(320px,420px)', gap: '32px', alignItems: 'center' }} className="application-cta-grid">
+            <div style={{ textAlign: 'center' }}>
             <div style={{ marginBottom: '20px', animation: 'wobble 3s ease infinite', display: 'flex', justifyContent: 'center' }}><Rocket size={48} strokeWidth={1.8} aria-hidden="true" style={{ color: '#fff' }} /></div>
             <h2 style={{ fontSize: 'clamp(26px,4vw,44px)', fontWeight: '900', letterSpacing: '-1.5px', marginBottom: '14px', lineHeight: '1.1', color: '#fff' }}>
               Келечегиңди<br /><span style={{ color: '#BFDBFE' }}>бүгүн баштагыз</span>
@@ -562,6 +565,8 @@ export default function LandingPage() {
                 <LogIn size={18} aria-hidden="true" /> Кирүү
               </a>
             </div>
+            </div>
+            <PublicApplicationForm />
           </div>
         </Reveal>
       </div>

@@ -37,6 +37,7 @@ function matchesPrefix(pathname: string, prefix: string): boolean {
 
 function routeSurface(pathname: string): RouteSurface {
   if (pathname === '/api/health') return 'shared'
+  if (matchesPrefix(pathname, '/v1/public')) return 'marketing'
   if (matchesPrefix(pathname, '/v1/auth')) return 'workspace-auth-api'
   // First-party product APIs are deliberately namespace-scoped. The Next BFF
   // forwards them only to the loopback Node API, while this host gate prevents

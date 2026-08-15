@@ -120,7 +120,7 @@ async function checkFirstPartyBffBoundary() {
     readFile(path.join(repoRoot, 'app/v1/[...path]/route.ts'), 'utf8'),
   ])
   expect(!/supabase/i.test(`${authProxy}\n${apiProxy}`), '/v1 BFF routes must not import or call Supabase')
-  expect(apiProxy.includes("new Set(['platform', 'admin'])"), '/v1 BFF must expose only first-party platform and admin namespaces')
+  expect(apiProxy.includes("new Set(['platform', 'admin', 'public'])"), '/v1 BFF must expose only first-party platform, admin and narrow public-intake namespaces')
 }
 
 await checkAppApiRetirement()
