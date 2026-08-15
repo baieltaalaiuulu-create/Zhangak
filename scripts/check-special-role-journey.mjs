@@ -9,7 +9,6 @@ const read = file => readFile(path.join(root, file), 'utf8')
 const expect = (condition, message) => { if (!condition) failures.push(message) }
 
 const pages = [
-  ['app/manager/page.tsx', 'manager', 'admin'],
   ['app/director/page.tsx', 'director', 'admin'],
   ['app/finance/page.tsx', 'finance', 'admin'],
   ['app/math/admin/page.tsx', 'math_admin', 'admin'],
@@ -18,8 +17,10 @@ const pages = [
   ['app/admin/jr/page.tsx', 'admin_jr', 'admin'],
 ]
 
-const [workspace, redirect, ...sources] = await Promise.all([
+const [workspace, managerWorkspace, managerPage, redirect, ...sources] = await Promise.all([
   read('components/workspaces/RoleMigrationWorkspace.tsx'),
+  read('components/applications/ApplicationQueueWorkspace.tsx'),
+  read('app/manager/page.tsx'),
   read('lib/auth-redirect.ts'),
   ...pages.map(([file]) => read(file)),
 ])
@@ -29,6 +30,16 @@ expect(!/supabase/i.test(workspace), 'special-role workspace must not initialize
 expect(workspace.includes('window.location.replace(loginHref)'), 'missing special-role sessions must return to the correct first-party login')
 expect(workspace.includes("user.role === expectedRole"), 'special-role workspace must verify the exact first-party role')
 expect(workspace.includes('Раздел переносится без старой базы'), 'unmigrated special-role functions must be explicit')
+
+// Manager now has one real first-party responsibility: intake and the
+// manual-payment queue. It must use an equally strict cookie-auth gate, not
+// the generic migration screen used by intentionally unavailable roles.
+expect(managerPage.includes('ApplicationQueueWorkspace'), 'manager page must use the first-party application queue workspace')
+expect(managerPage.includes('managerMode'), 'manager page must render the manager-only workspace mode')
+expect(managerWorkspace.includes('getCurrentZhangakUser'), 'manager workspace must check the first-party session')
+expect(managerWorkspace.includes("['manager', 'admin', 'super_admin']"), 'manager workspace must allow only intake staff roles')
+expect(managerWorkspace.includes("window.location.replace('/login')"), 'missing manager sessions must return to the first-party login')
+expect(!/supabase|api\.anthropic\.com|@\/lib\/supabase/i.test(`${managerPage}\n${managerWorkspace}`), 'manager workspace must not retain legacy data or direct AI calls')
 
 for (const [index, [file, role, surface]] of pages.entries()) {
   const source = sources[index]
@@ -45,6 +56,7 @@ for (const role of ['manager', 'director', 'finance', 'math_admin', 'math_studen
 const pictograph = /\p{Extended_Pictographic}/u
 for (const [index, [file]] of pages.entries()) expect(!pictograph.test(sources[index]), `${file} contains an emoji instead of an icon`)
 expect(!pictograph.test(workspace), 'special-role workspace contains an emoji instead of an icon')
+expect(!pictograph.test(managerPage) && !pictograph.test(managerWorkspace), 'manager workspace contains an emoji instead of an icon')
 
 if (failures.length > 0) {
   console.error(`Special-role journey check failed (${failures.length}):`)
