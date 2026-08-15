@@ -1,13 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { BookOpenCheck, CalendarPlus, Check, ClipboardCheck, LoaderCircle, Save, UsersRound } from 'lucide-react'
+import { BookOpenCheck, Check, ClipboardCheck, LoaderCircle, Save, UsersRound, type LucideIcon } from 'lucide-react'
 
 import {
   type OfflineAttendance,
   createOfflineComment,
   createOfflineHomework,
-  createOfflineSession,
   getOfflineTeacherWorkspace,
   recordOfflineAttendance,
   recordOfflineGrade,
@@ -17,18 +16,13 @@ import { ZhangakApiError } from '@/lib/zhangak-api-client'
 
 type Notice = { kind: 'success' | 'error'; text: string } | null
 
-function localDateTime(value = new Date(Date.now() + 60 * 60 * 1000)) {
-  const offset = value.getTimezoneOffset() * 60_000
-  return new Date(value.getTime() - offset).toISOString().slice(0, 16)
-}
-
 function formatDate(value: string | null) {
   if (!value) return 'не назначен'
   const date = new Date(value)
   return Number.isFinite(date.getTime()) ? date.toLocaleString('ru', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'не назначен'
 }
 
-function Panel({ title, description, icon: Icon, children }: { title: string; description: string; icon: typeof CalendarPlus; children: React.ReactNode }) {
+function Panel({ title, description, icon: Icon, children }: { title: string; description: string; icon: LucideIcon; children: React.ReactNode }) {
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="flex gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#1B3F92]"><Icon size={20} aria-hidden="true" /></span><div><h2 className="font-black text-slate-950">{title}</h2><p className="mt-1 text-sm leading-5 text-slate-500">{description}</p></div></div>
@@ -82,7 +76,6 @@ export default function OfflineTeacherJournal({ groupId }: { groupId: number }) 
     return () => { cancelled = true }
   }, [groupId])
 
-  const firstLessonId = workspace?.lessons[0]?.id ?? ''
   const firstStudentId = workspace?.students[0]?.id ?? ''
   const firstSessionId = workspace?.sessions.find(item => item.status !== 'cancelled')?.id ?? ''
   const [attendance, setAttendance] = useState<Record<string, OfflineAttendance>>({})
@@ -104,16 +97,6 @@ export default function OfflineTeacherJournal({ groupId }: { groupId: number }) 
       {workspace.students.length === 0 && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">В группе пока нет активных учеников. Администратор управляет составом группы.</div>}
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <Panel title="Запланировать урок" description="Выберите опубликованный урок курса и укажите время. Изменять курс и группу может только администратор." icon={CalendarPlus}>
-          <form className="grid gap-3" onSubmit={event => { event.preventDefault(); const form = new FormData(event.currentTarget); void save(() => createOfflineSession(groupId, { lessonId: Number(form.get('lessonId')), startsAt: new Date(String(form.get('startsAt'))).toISOString(), endsAt: form.get('endsAt') ? new Date(String(form.get('endsAt'))).toISOString() : null, room: String(form.get('room') || '') || null }), 'Урок добавлен в расписание.') }}>
-            <Select name="lessonId" required defaultValue={firstLessonId}><option value="" disabled>Выберите урок</option>{workspace.lessons.map(lesson => <option key={lesson.id} value={lesson.id}>Урок {lesson.lessonNumber}: {lesson.title}</option>)}</Select>
-            <div className="grid gap-3 sm:grid-cols-2"><Input name="startsAt" type="datetime-local" required defaultValue={localDateTime()} /><Input name="endsAt" type="datetime-local" /></div>
-            <Input name="room" maxLength={160} placeholder="Кабинет (необязательно)" />
-            <Button disabled={saving || workspace.lessons.length === 0}>Добавить в расписание</Button>
-          </form>
-          {workspace.sessions.length > 0 && <p className="mt-4 text-xs leading-5 text-slate-500">Ближайшее: {workspace.sessions.filter(item => item.status === 'scheduled')[0] ? `${workspace.sessions.filter(item => item.status === 'scheduled')[0].lessonTitle} — ${formatDate(workspace.sessions.filter(item => item.status === 'scheduled')[0].startsAt)}` : 'нет запланированных уроков'}.</p>}
-        </Panel>
-
         <Panel title="Посещаемость" description="Отметьте всех учеников после занятия. Ученик видит только свою отметку." icon={UsersRound}>
           <form className="space-y-3" onSubmit={event => { event.preventDefault(); const form = new FormData(event.currentTarget); const sessionId = Number(form.get('sessionId')); void save(() => recordOfflineAttendance(groupId, sessionId, workspace.students.map(student => ({ studentId: student.id, status: attendance[student.id] ?? 'present' }))), 'Посещаемость сохранена.') }}>
             <Select name="sessionId" required defaultValue={firstSessionId}><option value="" disabled>Выберите занятие</option>{workspace.sessions.filter(item => item.status !== 'cancelled').map(item => <option key={item.id} value={item.id}>{item.lessonTitle} — {formatDate(item.startsAt)}</option>)}</Select>

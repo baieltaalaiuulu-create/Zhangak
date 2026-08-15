@@ -150,10 +150,20 @@ function comment(value: unknown): OfflineStudentDashboard['comments'][number] {
   return { id: positiveInteger(source.id), body: requiredText(source.body), createdAt: dateOrTime(source.createdAt) as string }
 }
 
+function announcement(value: unknown): OfflineStudentDashboard['announcements'][number] {
+  const source = record(value)
+  return {
+    id: positiveInteger(source.id),
+    title: requiredText(source.title),
+    body: requiredText(source.body),
+    publishedAt: dateOrTime(source.publishedAt) as string,
+  }
+}
+
 /** Strictly parse the first-party offline classroom projection. */
 export function parseOfflineStudentDashboard(value: unknown): OfflineStudentDashboard {
   const source = record(value)
-  if (!Array.isArray(source.lessons) || !Array.isArray(source.homework) || !Array.isArray(source.grades) || !Array.isArray(source.comments)) invalidResponse()
+  if (!Array.isArray(source.lessons) || !Array.isArray(source.homework) || !Array.isArray(source.grades) || !Array.isArray(source.comments) || !Array.isArray(source.announcements)) invalidResponse()
   const parsedProfile = profile(source.profile)
   const progress = record(source.progress)
   const availability = record(source.availability)
@@ -170,6 +180,7 @@ export function parseOfflineStudentDashboard(value: unknown): OfflineStudentDash
     homework: source.homework.map(homework),
     grades: source.grades.map(grade),
     comments: source.comments.map(comment),
+    announcements: source.announcements.map(announcement),
     progress: { latestOrtScore: null, targetScore: parsedProfile.targetScore },
     availability: { exactSchedule: availability.exactSchedule, materials: false },
   }

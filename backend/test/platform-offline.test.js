@@ -9,6 +9,7 @@ import {
   emptyOfflineDashboard,
   publicOfflineGrade,
   publicOfflineComment,
+  publicOfflineAnnouncement,
   publicOfflineGroup,
   publicOfflineHomework,
   publicOfflineLesson,
@@ -32,6 +33,7 @@ test('offline dashboard returns only data represented by the owned learning sche
     homework: [],
     grades: [],
     comments: [],
+    announcements: [],
     progress: { latestOrtScore: null, targetScore: 200 },
     availability: { exactSchedule: false, materials: false },
   })
@@ -64,6 +66,9 @@ test('offline dashboard returns only data represented by the owned learning sche
   assert.deepEqual(publicOfflineComment({ id: '9', body: 'Хорошая работа', created_at: '2026-09-12T08:00:00.000Z' }), {
     id: 9, body: 'Хорошая работа', createdAt: '2026-09-12T08:00:00.000Z',
   })
+  assert.deepEqual(publicOfflineAnnouncement({ id: '11', title: 'Расписание', body: 'Кабинет 12', published_at: '2026-09-12T08:00:00.000Z' }), {
+    id: 11, title: 'Расписание', body: 'Кабинет 12', publishedAt: '2026-09-12T08:00:00.000Z',
+  })
 })
 
 test('offline dashboard denies non-students and accounts without the offline learning type', () => {
@@ -93,6 +98,7 @@ test('offline dashboard is bearer-scoped and reads only owned classroom records'
   assert.match(source, /offline_homework/)
   assert.match(source, /offline_grades/)
   assert.match(source, /offline_comments/)
+  assert.match(source, /offline_announcements/)
   for (const forbidden of [/\bFROM attendance\b/i, /\bFROM test_results\b/i, /\bFROM practice_results\b/i, /\bcorrect_answer\b/i, /\bPOST\('/, /\bPATCH\('/, /\bDELETE\('/, /supabase/i]) {
     assert.equal(forbidden.test(source), false, `offline route must not contain ${forbidden}`)
   }

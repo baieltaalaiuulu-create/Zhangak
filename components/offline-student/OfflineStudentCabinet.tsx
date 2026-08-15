@@ -245,8 +245,10 @@ function HomeSection({ dashboard, goTo }: { dashboard: OfflineStudentDashboard; 
           </div>
           <button type="button" onClick={() => goTo('homework')} className="min-h-11 text-sm font-bold text-[#1B3F92]">Все задания</button>
         </div>
-        {pendingHomework[0] ? <HomeworkCard item={pendingHomework[0]} /> : <EmptyState icon={ClipboardCheck} title="Домашние задания пока не подключены" text="Этот раздел появится после отдельного переноса заданий в наш сервер. Сейчас кабинет показывает только подтверждённую программу курса." />}
+        {pendingHomework[0] ? <HomeworkCard item={pendingHomework[0]} /> : <EmptyState icon={ClipboardCheck} title="Новых заданий нет" text="Когда преподаватель задаст домашнюю работу, она появится здесь." />}
       </section>
+
+      {dashboard.announcements.length > 0 && <section className="rounded-3xl border border-amber-100 bg-white p-5 shadow-sm"><div className="flex items-center gap-2"><Info size={18} className="text-amber-700" aria-hidden="true" /><h2 className="font-black text-slate-950">Объявления</h2></div><div className="mt-3 space-y-3">{dashboard.announcements.slice(0, 3).map(item => <article key={item.id} className="rounded-2xl bg-amber-50 p-3"><h3 className="text-sm font-black text-slate-900">{item.title}</h3><p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">{item.body}</p><p className="mt-2 text-xs font-semibold text-slate-500">{formatDate(item.publishedAt)}</p></article>)}</div></section>}
 
       {dashboard.comments.length > 0 && <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm"><div className="flex items-center gap-2"><Info size={18} className="text-[#1B3F92]" aria-hidden="true" /><h2 className="font-black text-slate-950">От преподавателя</h2></div><div className="mt-3 space-y-3">{dashboard.comments.slice(0, 3).map(comment => <article key={comment.id} className="rounded-2xl bg-blue-50 p-3"><p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{comment.body}</p><p className="mt-2 text-xs font-semibold text-slate-500">{formatDate(comment.createdAt)}</p></article>)}</div></section>}
     </div>

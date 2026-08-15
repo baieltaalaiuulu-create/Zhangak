@@ -52,7 +52,9 @@ async function main() {
   expect(classroomClient.includes("/v1/platform/offline/teacher/groups/${groupId}") && classroomClient.includes('zhangakApiJson'), 'teacher journal client must use the first-party offline BFF only')
   expect(classroomRoute.includes("GET('/v1/platform/offline/teacher/groups/:groupId'"), 'teacher classroom projection must live on the offline API')
   expect(classroomRoute.includes("actor.role === 'teacher' && group.teacher_id !== actor.id"), 'teacher classroom access must stay group-owner scoped')
-  expect(classroomRoute.includes("POST('/v1/platform/offline/groups/:groupId/sessions'"), 'teacher classroom must audit first-party session writes')
+  expect(classroomRoute.includes("POST('/v1/admin/offline/groups/:groupId/sessions'"), 'offline timetable writes must stay on the first-party admin API')
+  expect(!classroomRoute.includes("POST('/v1/platform/offline/groups/:groupId/sessions'"), 'teachers must not be able to change the offline timetable')
+  expect(!classroomClient.includes('createOfflineSession'), 'teacher journal must not expose timetable writes')
   expect(proxy.includes("pathname === '/v1/platform/teacher-dashboard'"), 'teacher BFF must remain on the offline host')
 
   const scanFiles = [

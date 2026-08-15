@@ -111,6 +111,17 @@ export function publicOfflineComment(row) {
   }
 }
 
+export function publicOfflineAnnouncement(row) {
+  const publishedAt = dateOrTime(row.published_at)
+  if (!publishedAt) throw new HttpError(500, 'Некорректные данные: announcement_published_at', 'invalid_offline_dashboard')
+  return {
+    id: positiveInteger(row.id, 'announcement_id'),
+    title: requiredText(row.title, 'announcement_title'),
+    body: requiredText(row.body, 'announcement_body'),
+    publishedAt,
+  }
+}
+
 export function emptyOfflineDashboard(user) {
   const student = requireOfflineStudent(user)
   const targetScore = nullableTargetScore(student.target_score)
@@ -126,6 +137,7 @@ export function emptyOfflineDashboard(user) {
     homework: [],
     grades: [],
     comments: [],
+    announcements: [],
     progress: { latestOrtScore: null, targetScore },
     availability: { exactSchedule: false, materials: false },
   }
@@ -174,7 +186,7 @@ GET('/v1/platform/offline-dashboard', async ({ req, config }) => {
   }
 
   const group = publicOfflineGroup(groupRow)
-  const [lessons, homework, grades, comments] = await Promise.all([
+  const [lessons, homework, grades, comments, announcements] = await Promise.all([
     query(
       `SELECT l.id, l.lesson_number, l.title, l.topic, l.lesson_date, l.duration_minutes, l.is_test,
               s.starts_at, a.attendance_status
@@ -209,6 +221,14 @@ GET('/v1/platform/offline-dashboard', async ({ req, config }) => {
         ORDER BY created_at DESC, id DESC`,
       [group.id, student.id],
     ),
+    query(
+      `SELECT id, title, body, published_at
+         FROM offline_announcements
+        WHERE group_id = $1 AND is_published = true
+        ORDER BY published_at DESC, id DESC
+        LIMIT 30`,
+      [group.id],
+    ),
   ])
 
   return {
@@ -221,6 +241,7 @@ GET('/v1/platform/offline-dashboard', async ({ req, config }) => {
       homework: homework.rows.map(publicOfflineHomework),
       grades: grades.rows.map(publicOfflineGrade),
       comments: comments.rows.map(publicOfflineComment),
+      announcements: announcements.rows.map(publicOfflineAnnouncement),
       availability: { exactSchedule: lessons.rows.some(row => row.starts_at != null), materials: false },
     },
   }

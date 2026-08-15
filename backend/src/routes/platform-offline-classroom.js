@@ -3,6 +3,7 @@ import { transaction } from '../db.js'
 import { GET, HttpError, POST, readJson } from '../http.js'
 
 const STAFF_ROLES = new Set(['teacher', 'admin', 'super_admin'])
+const OFFLINE_ADMIN_ROLES = new Set(['admin', 'super_admin'])
 const ATTENDANCE = new Set(['present', 'late', 'absent'])
 const VISIBILITY = new Set(['student', 'internal'])
 const GRADE_TYPES = new Set(['lesson', 'homework', 'manual'])
@@ -76,6 +77,14 @@ async function requireOfflineStaff(config, req) {
   return actor
 }
 
+async function requireOfflineAdmin(config, req) {
+  const actor = await requireAuth(config, req)
+  if (!OFFLINE_ADMIN_ROLES.has(actor.role)) {
+    throw new HttpError(403, 'Расписание и объявления настраивает администратор', 'offline_admin_required')
+  }
+  return actor
+}
+
 async function offlineGroup(client, actor, groupId) {
   const result = await client.query(
     `SELECT g.id, g.course_id, g.teacher_id, g.name, c.name AS course_name
@@ -124,6 +133,18 @@ async function homeworkInGroup(client, groupId, homeworkId) {
     [homeworkId, groupId],
   )
   if (!result.rows[0]) throw new HttpError(404, 'Домашнее задание не найдено', 'offline_homework_not_found')
+  return result.rows[0]
+}
+
+async function gradeForStudentInGroup(client, groupId, studentId, gradeId) {
+  const result = await client.query(
+    `SELECT id
+       FROM offline_grades
+      WHERE id = $1 AND group_id = $2 AND student_id = $3
+      FOR UPDATE`,
+    [gradeId, groupId, studentId],
+  )
+  if (!result.rows[0]) throw new HttpError(404, 'Оценка не найдена', 'offline_grade_not_found')
   return result.rows[0]
 }
 
@@ -180,6 +201,18 @@ export function parseHomework(value) {
   }
 }
 
+export function parseAnnouncement(value) {
+  const body = only(value, ['title', 'body', 'publish'], 'invalid_offline_announcement', ['title', 'body'])
+  if (body.publish !== undefined && typeof body.publish !== 'boolean') {
+    throw new HttpError(400, 'Некорректный статус публикации', 'invalid_offline_announcement_publish')
+  }
+  return {
+    title: requiredText(body.title, 300, 'invalid_offline_announcement_title'),
+    body: requiredText(body.body, 20_000, 'invalid_offline_announcement_body'),
+    publish: body.publish ?? true,
+  }
+}
+
 export function parseGrade(value) {
   const body = only(value, ['studentId', 'gradeType', 'sessionId', 'homeworkId', 'title', 'score', 'publish'], 'invalid_grade', ['studentId', 'gradeType', 'title', 'score'])
   const gradeType = body.gradeType
@@ -206,8 +239,8 @@ export function parseComment(value) {
   }
 }
 
-POST('/v1/platform/offline/groups/:groupId/sessions', async ({ req, params, config }) => {
-  const actor = await requireOfflineStaff(config, req)
+async function createOfflineSession({ req, params, config }) {
+  const actor = await requireOfflineAdmin(config, req)
   const groupId = positiveId(params.groupId, 'group_id')
   const input = parseSession(await readJson(req, 16_000))
   const created = await transaction(async client => {
@@ -225,7 +258,11 @@ POST('/v1/platform/offline/groups/:groupId/sessions', async ({ req, params, conf
     return { ...row, lesson_title: (await client.query('SELECT title FROM lessons WHERE id = $1', [input.lessonId])).rows[0].title }
   })
   return { status: 201, body: { session: publicSession(created) } }
-})
+}
+
+// The schedule belongs to the administrator.  A teacher can record work only
+// against a preconfigured class session, never change a group's timetable.
+POST('/v1/admin/offline/groups/:groupId/sessions', createOfflineSession)
 
 POST('/v1/platform/offline/groups/:groupId/sessions/:sessionId/attendance', async ({ req, params, config }) => {
   const actor = await requireOfflineStaff(config, req)
@@ -328,6 +365,7 @@ POST('/v1/platform/offline/groups/:groupId/comments', async ({ req, params, conf
     await studentInGroup(client, groupId, input.studentId)
     if (input.sessionId) await sessionInGroup(client, groupId, input.sessionId)
     if (input.homeworkId) await homeworkInGroup(client, groupId, input.homeworkId)
+    if (input.gradeId) await gradeForStudentInGroup(client, groupId, input.studentId, input.gradeId)
     const result = await client.query(
       `INSERT INTO offline_comments (group_id, student_id, class_session_id, homework_id, grade_id, visibility, body, author_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, created_at`,
@@ -337,6 +375,36 @@ POST('/v1/platform/offline/groups/:groupId/comments', async ({ req, params, conf
     return result.rows[0]
   })
   return { status: 201, body: { comment: { id: Number(comment.id), createdAt: new Date(comment.created_at).toISOString() } } }
+})
+
+POST('/v1/admin/offline/groups/:groupId/announcements', async ({ req, params, config }) => {
+  const actor = await requireOfflineAdmin(config, req)
+  const groupId = positiveId(params.groupId, 'group_id')
+  const input = parseAnnouncement(await readJson(req, 32_000))
+  const announcement = await transaction(async client => {
+    await offlineGroup(client, actor, groupId)
+    const result = await client.query(
+      `INSERT INTO offline_announcements (group_id, title, body, is_published, published_at, created_by, updated_by)
+       VALUES ($1, $2, $3, $4, CASE WHEN $4 THEN now() ELSE NULL END, $5, $5)
+       RETURNING id, title, body, is_published, published_at, created_at`,
+      [groupId, input.title, input.body, input.publish, actor.id],
+    )
+    await audit(client, actor, 'create_offline_announcement', 'offline_announcement', result.rows[0].id, { groupId, published: input.publish })
+    return result.rows[0]
+  })
+  return {
+    status: 201,
+    body: {
+      announcement: {
+        id: Number(announcement.id),
+        title: announcement.title,
+        body: announcement.body,
+        published: announcement.is_published,
+        publishedAt: announcement.published_at ? new Date(announcement.published_at).toISOString() : null,
+        createdAt: new Date(announcement.created_at).toISOString(),
+      },
+    },
+  }
 })
 
 POST('/v1/platform/offline/homework/:homeworkId/submission', async ({ req, params, config }) => {
@@ -407,6 +475,57 @@ GET('/v1/platform/offline/teacher/groups/:groupId', async ({ req, params, config
       lessons: workspace.lessons.map(row => ({ id: Number(row.id), lessonNumber: Number(row.lesson_number), title: row.title })),
       sessions: workspace.sessions.map(publicSession),
       homework: workspace.homework.map(row => ({ id: Number(row.id), title: row.title, dueAt: row.due_at ? new Date(row.due_at).toISOString() : null, published: row.is_published })),
+    },
+  }
+})
+
+GET('/v1/admin/offline/groups/:groupId/schedule', async ({ req, params, config }) => {
+  const actor = await requireOfflineAdmin(config, req)
+  const groupId = positiveId(params.groupId, 'group_id')
+  const workspace = await transaction(async client => {
+    const group = await offlineGroup(client, actor, groupId)
+    const [lessons, sessions, announcements] = await Promise.all([
+      client.query(
+        `SELECT id, lesson_number, title
+           FROM lessons
+          WHERE course_id = $1 AND is_published = true
+          ORDER BY lesson_number, id`,
+        [group.course_id],
+      ),
+      client.query(
+        `SELECT s.id, s.lesson_id, l.title AS lesson_title, s.starts_at, s.ends_at, s.room, s.status
+           FROM offline_class_sessions s
+           JOIN lessons l ON l.id = s.lesson_id
+          WHERE s.group_id = $1
+          ORDER BY s.starts_at, s.id`,
+        [groupId],
+      ),
+      client.query(
+        `SELECT id, title, body, is_published, published_at, created_at
+           FROM offline_announcements
+          WHERE group_id = $1
+          ORDER BY created_at DESC, id DESC
+          LIMIT 30`,
+        [groupId],
+      ),
+    ])
+    return { group, lessons: lessons.rows, sessions: sessions.rows, announcements: announcements.rows }
+  })
+  return {
+    status: 200,
+    headers: { 'Cache-Control': 'private, no-store' },
+    body: {
+      group: { id: Number(workspace.group.id), name: workspace.group.name, courseName: workspace.group.course_name },
+      lessons: workspace.lessons.map(row => ({ id: Number(row.id), lessonNumber: Number(row.lesson_number), title: row.title })),
+      sessions: workspace.sessions.map(publicSession),
+      announcements: workspace.announcements.map(row => ({
+        id: Number(row.id),
+        title: row.title,
+        body: row.body,
+        published: row.is_published,
+        publishedAt: row.published_at ? new Date(row.published_at).toISOString() : null,
+        createdAt: new Date(row.created_at).toISOString(),
+      })),
     },
   }
 })

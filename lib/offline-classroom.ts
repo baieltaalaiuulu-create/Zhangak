@@ -79,10 +79,6 @@ export function getOfflineTeacherWorkspace(groupId: number): Promise<OfflineTeac
   return zhangakApiRequest<unknown>(`/v1/platform/offline/teacher/groups/${groupId}`).then(parseOfflineTeacherWorkspace)
 }
 
-export function createOfflineSession(groupId: number, value: { lessonId: number; startsAt: string; endsAt?: string | null; room?: string | null }) {
-  return zhangakApiJson(`/v1/platform/offline/groups/${groupId}/sessions`, 'POST', value)
-}
-
 export function recordOfflineAttendance(groupId: number, sessionId: number, entries: { studentId: string; status: OfflineAttendance; note?: string | null }[]) {
   return zhangakApiJson(`/v1/platform/offline/groups/${groupId}/sessions/${sessionId}/attendance`, 'POST', { entries })
 }
