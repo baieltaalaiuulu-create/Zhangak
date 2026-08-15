@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import {
   completedLessonIds,
   computeLessonStatuses,
-  fetchLessons,
+  fetchLessonsWithCache,
   LESSON_SUBJECT_META,
   type LessonStatus,
   type LessonSubject,
@@ -18,11 +18,18 @@ const SECTIONS: LessonSubject[] = ['math', 'kyr', 'other']
 interface LessonsState {
   lessons: PlatformLesson[]
   completedIds: Set<string>
+  source: 'network' | 'cache'
+  savedAt: number | null
 }
 
 async function loadLessons(): Promise<LessonsState> {
-  const lessons = await fetchLessons()
-  return { lessons, completedIds: completedLessonIds(lessons) }
+  const result = await fetchLessonsWithCache()
+  return { lessons: result.value, completedIds: completedLessonIds(result.value), source: result.source, savedAt: result.savedAt }
+}
+
+function cachedAtLabel(savedAt: number | null) {
+  if (savedAt === null) return ''
+  return new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(savedAt))
 }
 
 function lessonDuration(lesson: PlatformLesson) {
@@ -125,6 +132,12 @@ export default function LessonsScreen() {
       >
         <View style={styles.card}>
           <Text style={styles.title}>Мои уроки</Text>
+          {data.source === 'cache' && (
+            <View style={styles.offlineNotice}>
+              <Ionicons name="cloud-offline-outline" size={16} color="#9A6700" />
+              <Text style={styles.offlineNoticeText}>Офлайн-режим: сохранённые данные от {cachedAtLabel(data.savedAt)}. Видео и материалы требуют интернет.</Text>
+            </View>
+          )}
           <Text style={styles.subtitle}>Пройдено {completedCount}/{total}</Text>
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${total > 0 ? Math.round((completedCount / total) * 100) : 0}%` }]} />
@@ -205,6 +218,8 @@ const styles = StyleSheet.create({
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#F1F1F4' },
   title: { fontSize: 17, fontWeight: '800', color: '#191B23' },
   subtitle: { fontSize: 13, color: '#6B7280', marginTop: 4 },
+  offlineNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, marginTop: 10, padding: 10, borderRadius: 10, backgroundColor: '#FFF7D6' },
+  offlineNoticeText: { flex: 1, fontSize: 12, lineHeight: 17, color: '#7A4A00', fontWeight: '600' },
   progressTrack: { height: 8, borderRadius: 999, backgroundColor: '#E5E7EB', marginTop: 8, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 999, backgroundColor: BRAND_BLUE },
   primaryButton: { marginTop: 16, height: 52, borderRadius: 16, backgroundColor: BRAND_BLUE, alignItems: 'center', justifyContent: 'center' },

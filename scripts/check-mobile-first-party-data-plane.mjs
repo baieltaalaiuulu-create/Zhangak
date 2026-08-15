@@ -17,13 +17,14 @@ async function files(directory) {
   return nested.flat()
 }
 
-const [runtimeSources, envExample, packageJson, packageLock, authSource, lessonSource] = await Promise.all([
+const [runtimeSources, envExample, packageJson, packageLock, authSource, lessonSource, learningCacheSource] = await Promise.all([
   Promise.all(['app', 'components', 'lib'].map(files)).then(groups => groups.flat()),
   readFile(resolve(mobileRoot, '.env.example'), 'utf8'),
   readFile(resolve(mobileRoot, 'package.json'), 'utf8'),
   readFile(resolve(mobileRoot, 'package-lock.json'), 'utf8'),
   readFile(resolve(mobileRoot, 'lib/native-auth.ts'), 'utf8'),
   readFile(resolve(mobileRoot, 'lib/lessons.ts'), 'utf8'),
+  readFile(resolve(mobileRoot, 'lib/learning-cache.ts'), 'utf8'),
 ])
 
 const offenders = runtimeSources.filter(file => forbidden.test(file.content)).map(file => file.path)
@@ -36,6 +37,15 @@ if (!authSource.includes('refreshInFlight') || !authSource.includes("'Authorizat
 }
 if (!lessonSource.includes("'/platform/dashboard'") || !lessonSource.includes("'/platform/lessons'")) {
   throw new Error('Mobile dashboard and lesson reads must use first-party platform endpoints.')
+}
+if (!learningCacheSource.includes("@react-native-async-storage/async-storage") || !learningCacheSource.includes('MAX_CACHE_AGE_MS')) {
+  throw new Error('Mobile lessons must use a bounded AsyncStorage cache.')
+}
+if (!learningCacheSource.includes('FORBIDDEN_FIELD') || !lessonSource.includes('cacheSafeLesson')) {
+  throw new Error('Mobile cache must reject credentials/answer keys and strip material URLs.')
+}
+if (!authSource.includes('clearLearningCacheForUser')) {
+  throw new Error('Native sign-out must clear the current user learning cache.')
 }
 
 console.log('Mobile first-party data-plane checks passed.')

@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store'
 import { Platform } from 'react-native'
+import { clearLearningCacheForUser } from './learning-cache'
 
 const DEFAULT_API_BASE_URL = 'https://platform.zhangak.com/v1'
 const SESSION_STORAGE_KEY = 'zhangak.native.session.v1'
@@ -208,6 +209,7 @@ async function persistSession(session: NativeSession) {
 }
 
 async function clearStoredSession() {
+  const learningCacheUserId = cachedSession?.user.id ?? snapshot.session?.user.id ?? null
   cachedSession = null
   sessionRevision += 1
   try {
@@ -216,6 +218,7 @@ async function clearStoredSession() {
     // Local sign-out must still complete in memory when a platform keystore
     // refuses deletion. A later launch will attempt cleanup again.
   }
+  if (learningCacheUserId) await clearLearningCacheForUser(learningCacheUserId)
   emit({ status: 'signed_out', session: null, error: null })
 }
 

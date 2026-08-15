@@ -4,8 +4,8 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import {
   completedLessonIds,
-  fetchLessonById,
-  fetchLessons,
+  fetchLessonByIdWithCache,
+  fetchLessonsWithCache,
   LESSON_SUBJECT_META,
   type PlatformLesson,
 } from '@/lib/lessons'
@@ -17,10 +17,14 @@ interface DetailState {
   lesson: PlatformLesson
   isCompleted: boolean
   nextLesson: PlatformLesson | null
+  source: 'network' | 'cache'
+  savedAt: number | null
 }
 
 async function loadLesson(lessonId: string): Promise<DetailState> {
-  const [lesson, allLessons] = await Promise.all([fetchLessonById(lessonId), fetchLessons()])
+  const [lessonResult, listResult] = await Promise.all([fetchLessonByIdWithCache(lessonId), fetchLessonsWithCache()])
+  const lesson = lessonResult.value
+  const allLessons = listResult.value
   const completedIds = completedLessonIds(allLessons)
   const sameTrack = allLessons
     .filter(item => item.courseId === lesson.courseId && item.subject === lesson.subject)
@@ -28,7 +32,18 @@ async function loadLesson(lessonId: string): Promise<DetailState> {
   const index = sameTrack.findIndex(item => item.id === lesson.id)
   const nextLesson = index >= 0 ? sameTrack[index + 1] ?? null : null
 
-  return { lesson, isCompleted: completedIds.has(lesson.id), nextLesson }
+  return {
+    lesson,
+    isCompleted: completedIds.has(lesson.id),
+    nextLesson,
+    source: lessonResult.source === 'cache' || listResult.source === 'cache' ? 'cache' : 'network',
+    savedAt: lessonResult.savedAt ?? listResult.savedAt,
+  }
+}
+
+function cachedAtLabel(savedAt: number | null) {
+  if (savedAt === null) return ''
+  return new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(savedAt))
 }
 
 export default function LessonDetailScreen() {
@@ -76,6 +91,13 @@ export default function LessonDetailScreen() {
         <Ionicons name="chevron-back" size={18} color="#6B7280" />
         <Text style={styles.backText}>Ко всем урокам</Text>
       </Pressable>
+
+      {state.source === 'cache' && (
+        <View style={styles.offlineNotice}>
+          <Ionicons name="cloud-offline-outline" size={16} color="#9A6700" />
+          <Text style={styles.offlineNoticeText}>Офлайн-режим: данные от {cachedAtLabel(state.savedAt)}. Видео и закрытые материалы недоступны без интернета.</Text>
+        </View>
+      )}
 
       <LessonVideoPlayer videoUrl={state.lesson.videoUrl} />
 
@@ -128,6 +150,8 @@ const styles = StyleSheet.create({
   retryButtonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 44 },
   backText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
+  offlineNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, padding: 10, borderRadius: 10, backgroundColor: '#FFF7D6' },
+  offlineNoticeText: { flex: 1, color: '#7A4A00', fontSize: 12, fontWeight: '600', lineHeight: 17 },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#F1F1F4' },
   badge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   badgeText: { fontSize: 12, fontWeight: '700' },

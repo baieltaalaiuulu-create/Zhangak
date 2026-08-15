@@ -1,4 +1,5 @@
-import { nativeApiJson } from '@/lib/native-auth'
+import { currentNativeAuth, nativeApiJson, ZhangakApiError } from '@/lib/native-auth'
+import { readLearningCache, saveLearningCache } from '@/lib/learning-cache'
 
 export type LessonSubject = 'math' | 'kyr' | 'other'
 export type LessonStatus = 'done' | 'current' | 'locked'
@@ -54,6 +55,12 @@ export interface PlatformDashboard {
       submittedAt: string | null
     } | null
   }
+}
+
+export interface CachedPlatformValue<T> {
+  value: T
+  source: 'network' | 'cache'
+  savedAt: number | null
 }
 
 export const LESSON_SUBJECT_META: Record<LessonSubject, { label: string; icon: LessonIcon; color: string }> = {
@@ -259,6 +266,65 @@ export async function fetchLessonById(id: string): Promise<PlatformLesson> {
 
 export async function fetchPlatformDashboard(): Promise<PlatformDashboard> {
   return parsePlatformDashboard(await nativeApiJson<unknown>('/platform/dashboard'))
+}
+
+function activeCacheUserId() {
+  return currentNativeAuth().session?.user.id ?? null
+}
+
+function cacheSafeLesson(lesson: PlatformLesson): PlatformLesson {
+  // Private files and video URLs are never put in AsyncStorage. An offline
+  // lesson can show its already-opened metadata, but protected media still
+  // requires a live, authorized request.
+  return { ...lesson, contentUrl: null, videoUrl: null }
+}
+
+function cacheSafeLessons(lessons: PlatformLesson[]) {
+  return lessons.map(cacheSafeLesson)
+}
+
+function transportUnavailable(error: unknown) {
+  return error instanceof ZhangakApiError && error.status === 0
+}
+
+export async function fetchLessonsWithCache(): Promise<CachedPlatformValue<PlatformLesson[]>> {
+  const userId = activeCacheUserId()
+  try {
+    const lessons = await fetchLessons()
+    if (userId) void saveLearningCache(userId, 'lessons', cacheSafeLessons(lessons))
+    return { value: lessons, source: 'network', savedAt: null }
+  } catch (error) {
+    if (!userId || !transportUnavailable(error)) throw error
+    const cached = await readLearningCache(userId, 'lessons')
+    if (!cached) throw error
+    return {
+      value: parsePlatformLessons({ items: cached.payload }),
+      source: 'cache',
+      savedAt: cached.savedAt,
+    }
+  }
+}
+
+export async function fetchLessonByIdWithCache(id: string): Promise<CachedPlatformValue<PlatformLesson>> {
+  if (!/^\d+$/.test(id) || !Number.isSafeInteger(Number(id)) || Number(id) <= 0) {
+    throw new NativeDtoError('id урока')
+  }
+  const userId = activeCacheUserId()
+  const resource = `lesson:${id}`
+  try {
+    const lesson = await fetchLessonById(id)
+    if (userId) void saveLearningCache(userId, resource, cacheSafeLesson(lesson))
+    return { value: lesson, source: 'network', savedAt: null }
+  } catch (error) {
+    if (!userId || !transportUnavailable(error)) throw error
+    const cached = await readLearningCache(userId, resource)
+    if (!cached) throw error
+    return {
+      value: parsePlatformLesson(cached.payload),
+      source: 'cache',
+      savedAt: cached.savedAt,
+    }
+  }
 }
 
 export function completedLessonIds(lessons: PlatformLesson[]): Set<string> {
