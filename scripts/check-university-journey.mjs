@@ -67,7 +67,7 @@ async function main() {
   expect(!/POST\('\/v1\/platform\/universities/.test(firstPartyRoute), 'student catalog API must remain read-only')
 
   const aiPage = await source('app/student/online/ai/page.tsx')
-  expect(aiPage.includes('AI-коуч готовится'), 'AI coach must expose its honest first-party migration state')
+  expect(aiPage.includes('/v1/platform/ai/consent') && aiPage.includes('/v1/platform/ai/messages'), 'AI coach must use its consented first-party route')
   const universityCta = await source('components/student/universities/UniversitiesBottomCTA.tsx')
   expect(!universityCta.includes('/student/online/ai?prompt='), 'university CTA must not hand study context to the retired AI flow')
   expect(universityCta.includes('href="/student/online/lessons"'), 'university CTA needs a safe lesson destination while AI is migrating')

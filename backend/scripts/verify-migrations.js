@@ -47,6 +47,9 @@ const requiredTables = [
   'trainer_progress_resets',
   'public_applications',
   'public_application_events',
+  'ai_consents',
+  'ai_conversations',
+  'ai_messages',
 ]
 
 function fail(message) {

@@ -20,6 +20,7 @@ import './routes/platform-offline-classroom.js'
 import './routes/platform-universities.js'
 import './routes/platform-profile.js'
 import './routes/platform-gamification.js'
+import './routes/platform-ai.js'
 import './routes/admin-gamification.js'
 import './routes/public-applications.js'
 

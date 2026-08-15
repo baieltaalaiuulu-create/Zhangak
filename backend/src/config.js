@@ -56,6 +56,11 @@ export function loadConfig() {
     allowedOrigins: origins(),
     trustProxy: process.env.TRUST_PROXY === '1',
     storageRoot: optionalAbsolutePath('ZHANGAK_STORAGE_ROOT'),
+    aiEnabled: process.env.AI_ENABLED === '1',
+    aiProvider: (process.env.AI_PROVIDER ?? '').trim().toLowerCase(),
+    deepseekApiKey: process.env.DEEPSEEK_API_KEY?.trim() || null,
+    deepseekBaseUrl: (process.env.DEEPSEEK_BASE_URL ?? 'https://api.deepseek.com').replace(/\/$/, ''),
+    deepseekFastModel: process.env.DEEPSEEK_FAST_MODEL?.trim() || 'deepseek-v4-flash',
     releaseSha: process.env.ZHANGAK_API_RELEASE_SHA?.trim() || 'dev',
   })
 }

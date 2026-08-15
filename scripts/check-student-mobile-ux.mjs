@@ -106,12 +106,14 @@ async function main() {
   expect(checklist.includes('challengeAvailable') && checklist.includes('Скоро'), 'unmigrated daily tasks must be disabled instead of linking into a legacy flow')
 
   const aiPage = await source('app/student/online/ai/page.tsx')
-  expect(aiPage.includes('AI-коуч готовится'), 'AI route must give students an explicit safe migration state')
+  expect(aiPage.includes('AI-коуч Zhangak'), 'AI route must identify the first-party AI coach')
   expect(aiPage.includes('useStudentSession'), 'AI route must stay inside the first-party student session')
   expect(!aiPage.includes("from '@/lib/supabase'"), 'AI route must not query retired Supabase data')
   expect(!aiPage.includes('streamMentorMessage'), 'AI route must not send a student context through the retired chat flow')
-  expect(aiPage.includes('href="/student/online/lessons"'), 'AI migration state needs a safe lessons destination')
-  expect(aiPage.includes('href="/student/online/practice"'), 'AI migration state needs a safe practice destination')
+  expect(aiPage.includes('/v1/platform/ai/consent'), 'AI route must request explicit first-party consent')
+  expect(aiPage.includes('/v1/platform/ai/messages'), 'AI route must use the first-party AI message route')
+  expect(aiPage.includes('href="/student/online/lessons"'), 'AI unavailable state needs a safe lessons destination')
+  expect(aiPage.includes('href="/student/online/practice"'), 'AI unavailable state needs a safe practice destination')
   expect(aiPage.includes('100dvh-64px-env(safe-area-inset-bottom)'), 'AI viewport must leave room for mobile navigation')
 
   const leaderboardPage = await source('app/student/online/leaderboard/page.tsx')
@@ -149,7 +151,7 @@ async function main() {
     return
   }
 
-  console.log(`Student mobile UX check passed (${scannedFiles.length} source files, five destinations, three daily tasks, safe AI and ranking migration states).`)
+  console.log(`Student mobile UX check passed (${scannedFiles.length} source files, five destinations, three daily tasks, consented AI and safe ranking state).`)
 }
 
 main().catch((error) => {
