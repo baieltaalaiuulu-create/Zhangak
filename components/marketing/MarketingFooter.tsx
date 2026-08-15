@@ -9,9 +9,10 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 
-import { ADMIN_ORIGIN, PLATFORM_ORIGIN } from '@/lib/site-hosts'
+import { ADMIN_ORIGIN, OFFLINE_ORIGIN, PLATFORM_ORIGIN } from '@/lib/site-hosts'
 
 const platformHref = process.env.NODE_ENV === 'production' ? `${PLATFORM_ORIGIN}/login` : '/login?surface=platform'
+const offlineHref = process.env.NODE_ENV === 'production' ? `${OFFLINE_ORIGIN}/login` : '/login?surface=offline'
 const adminHref = process.env.NODE_ENV === 'production' ? `${ADMIN_ORIGIN}/login` : '/login?surface=admin'
 
 const navigation = [
@@ -44,6 +45,13 @@ export default function MarketingFooter() {
             >
               Открыть учебную платформу
               <ArrowRight size={17} aria-hidden="true" />
+            </a>
+            <a
+              href={offlineHref}
+              className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-bold text-blue-200 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/40"
+            >
+              Учитесь в очной группе? Открыть офлайн-кабинет
+              <ArrowRight size={16} aria-hidden="true" />
             </a>
           </div>
 

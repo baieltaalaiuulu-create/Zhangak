@@ -16,11 +16,12 @@ import {
   Trophy,
   Users,
 } from 'lucide-react'
-import { PLATFORM_ORIGIN } from '@/lib/site-hosts'
+import { OFFLINE_ORIGIN, PLATFORM_ORIGIN } from '@/lib/site-hosts'
 import MarketingFooter from '@/components/marketing/MarketingFooter'
 import MarketingWelcomeTour from '@/components/marketing/MarketingWelcomeTour'
 
 const PLATFORM_LOGIN_HREF = process.env.NODE_ENV === 'production' ? `${PLATFORM_ORIGIN}/login` : '/login'
+const OFFLINE_LOGIN_HREF = process.env.NODE_ENV === 'production' ? `${OFFLINE_ORIGIN}/login` : '/login?surface=offline'
 const MATH_HREF = '/math'
 
 function useInView(threshold = 0.15) {
@@ -205,7 +206,7 @@ export default function LandingPage() {
               <button style={{ padding: '6px 14px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '700', cursor: 'pointer', background: '#1B3F92', color: '#fff' }}>ЖРТ</button>
               <a href={MATH_HREF} style={{ padding: '6px 14px', borderRadius: '9px', border: 'none', fontSize: '13px', fontWeight: '600', cursor: 'pointer', background: 'transparent', color: '#64748B', textDecoration: 'none' }}>Math</a>
             </div>
-            <a href={PLATFORM_LOGIN_HREF} style={{ background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '8px 16px', fontWeight: '600', fontSize: '13px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><LogIn size={15} aria-hidden="true" /> Кирүү</a>
+            <a href={PLATFORM_LOGIN_HREF} style={{ background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '8px 16px', fontWeight: '600', fontSize: '13px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><LogIn size={15} aria-hidden="true" /> Онлайн кирүү</a>
             <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ background: '#1B3F92', color: '#fff', borderRadius: '10px', padding: '8px 16px', fontWeight: '800', fontSize: '13px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s', boxShadow: '0 4px 14px rgba(27,63,146,0.3)' }}><MessageCircle size={15} aria-hidden="true" /> Жазылуу</a>
           </div>
 
@@ -229,7 +230,8 @@ export default function LandingPage() {
             <a href="#courses" onClick={() => setMenuOpen(false)} style={{ padding: '7px 4px', color: '#334155', fontWeight: '700', fontSize: '14px', textDecoration: 'none' }}>Программалар</a>
             <a href="#results" onClick={() => setMenuOpen(false)} style={{ padding: '7px 4px', color: '#334155', fontWeight: '700', fontSize: '14px', textDecoration: 'none' }}>Жыйынтыктар</a>
             <a href="#office" onClick={() => setMenuOpen(false)} style={{ padding: '7px 4px', color: '#334155', fontWeight: '700', fontSize: '14px', textDecoration: 'none' }}>Дарек жана байланыш</a>
-            <a href={PLATFORM_LOGIN_HREF} onClick={() => setMenuOpen(false)} style={{ width: '100%', background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '13px', fontWeight: '600', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}><LogIn size={17} aria-hidden="true" /> Кирүү</a>
+            <a href={PLATFORM_LOGIN_HREF} onClick={() => setMenuOpen(false)} style={{ width: '100%', background: '#F8FAFF', color: '#0D1E4A', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '13px', fontWeight: '600', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}><LogIn size={17} aria-hidden="true" /> Онлайн кирүү</a>
+            <a href={OFFLINE_LOGIN_HREF} onClick={() => setMenuOpen(false)} style={{ width: '100%', color: '#2D6A4F', border: '1px solid #B7D8C4', borderRadius: '12px', padding: '13px', fontWeight: '700', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}><Users size={17} aria-hidden="true" /> Офлайн кабинет</a>
             <a href={wa} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', textAlign: 'center', background: '#1B3F92', color: '#fff', borderRadius: '12px', padding: '13px', fontWeight: '800', fontSize: '14px', textDecoration: 'none', boxShadow: '0 4px 14px rgba(27,63,146,0.3)' }}><MessageCircle size={17} aria-hidden="true" /> Жазылуу</a>
           </div>
         )}
