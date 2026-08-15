@@ -101,6 +101,16 @@ export function publicOfflineGrade(row) {
   }
 }
 
+export function publicOfflineComment(row) {
+  const createdAt = dateOrTime(row.created_at)
+  if (!createdAt) throw new HttpError(500, 'Некорректные данные: comment_created_at', 'invalid_offline_dashboard')
+  return {
+    id: positiveInteger(row.id, 'comment_id'),
+    body: requiredText(row.body, 'comment_body'),
+    createdAt,
+  }
+}
+
 export function emptyOfflineDashboard(user) {
   const student = requireOfflineStudent(user)
   const targetScore = nullableTargetScore(student.target_score)
@@ -115,6 +125,7 @@ export function emptyOfflineDashboard(user) {
     lessons: [],
     homework: [],
     grades: [],
+    comments: [],
     progress: { latestOrtScore: null, targetScore },
     availability: { exactSchedule: false, materials: false },
   }
@@ -163,7 +174,7 @@ GET('/v1/platform/offline-dashboard', async ({ req, config }) => {
   }
 
   const group = publicOfflineGroup(groupRow)
-  const [lessons, homework, grades] = await Promise.all([
+  const [lessons, homework, grades, comments] = await Promise.all([
     query(
       `SELECT l.id, l.lesson_number, l.title, l.topic, l.lesson_date, l.duration_minutes, l.is_test,
               s.starts_at, a.attendance_status
@@ -184,6 +195,14 @@ GET('/v1/platform/offline-dashboard', async ({ req, config }) => {
       [group.id, student.id],
     ),
     query(
+      `SELECT id, body, created_at
+         FROM offline_comments
+        WHERE group_id = $1 AND student_id = $2 AND visibility = 'student'
+        ORDER BY created_at DESC, id DESC
+        LIMIT 30`,
+      [group.id, student.id],
+    ),
+    query(
       `SELECT id, class_session_id, homework_id, title, score
          FROM offline_grades
         WHERE group_id = $1 AND student_id = $2 AND is_published = true
@@ -201,6 +220,7 @@ GET('/v1/platform/offline-dashboard', async ({ req, config }) => {
       lessons: lessons.rows.map(publicOfflineLesson),
       homework: homework.rows.map(publicOfflineHomework),
       grades: grades.rows.map(publicOfflineGrade),
+      comments: comments.rows.map(publicOfflineComment),
       availability: { exactSchedule: lessons.rows.some(row => row.starts_at != null), materials: false },
     },
   }

@@ -46,6 +46,12 @@ export interface OfflineGrade {
   total: number | null
 }
 
+export interface OfflineComment {
+  id: number
+  body: string
+  createdAt: string
+}
+
 export interface OfflineProgress {
   latestOrtScore: number | null
   targetScore: number | null
@@ -57,6 +63,7 @@ export interface OfflineStudentDashboard {
   lessons: OfflineLesson[]
   homework: OfflineHomework[]
   grades: OfflineGrade[]
+  comments: OfflineComment[]
   progress: OfflineProgress
   availability: {
     exactSchedule: boolean

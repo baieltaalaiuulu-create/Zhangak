@@ -145,10 +145,15 @@ function grade(value: unknown): OfflineStudentDashboard['grades'][number] {
   }
 }
 
+function comment(value: unknown): OfflineStudentDashboard['comments'][number] {
+  const source = record(value)
+  return { id: positiveInteger(source.id), body: requiredText(source.body), createdAt: dateOrTime(source.createdAt) as string }
+}
+
 /** Strictly parse the first-party offline classroom projection. */
 export function parseOfflineStudentDashboard(value: unknown): OfflineStudentDashboard {
   const source = record(value)
-  if (!Array.isArray(source.lessons) || !Array.isArray(source.homework) || !Array.isArray(source.grades)) invalidResponse()
+  if (!Array.isArray(source.lessons) || !Array.isArray(source.homework) || !Array.isArray(source.grades) || !Array.isArray(source.comments)) invalidResponse()
   const parsedProfile = profile(source.profile)
   const progress = record(source.progress)
   const availability = record(source.availability)
@@ -164,6 +169,7 @@ export function parseOfflineStudentDashboard(value: unknown): OfflineStudentDash
     lessons,
     homework: source.homework.map(homework),
     grades: source.grades.map(grade),
+    comments: source.comments.map(comment),
     progress: { latestOrtScore: null, targetScore: parsedProfile.targetScore },
     availability: { exactSchedule: availability.exactSchedule, materials: false },
   }
