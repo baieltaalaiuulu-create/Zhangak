@@ -73,6 +73,22 @@ export interface AdminLessonList {
   offset: number
 }
 
+export interface AdminLessonMaterial {
+  id: number
+  lessonId: number
+  materialType: 'rich_text' | 'video' | 'document' | 'image'
+  title: string
+  position: number
+  bodyMarkdown: string | null
+  externalUrl: string | null
+  mimeType: string | null
+  byteSize: number | null
+  isPublished: boolean
+  scanStatus: 'pending' | 'clean' | 'rejected'
+  originalFilename: string | null
+  createdAt: string
+}
+
 function invalidResponse(context: string): never {
   throw new Error(`Некорректный ответ сервиса: ${context}`)
 }
@@ -174,6 +190,23 @@ export function parseAdminLesson(value: unknown): AdminLesson {
   }
 }
 
+export function parseAdminLessonMaterial(value: unknown): AdminLessonMaterial {
+  const source = record(value, 'материал урока')
+  const materialType = source.materialType
+  const scanStatus = source.scanStatus
+  if (!['rich_text', 'video', 'document', 'image'].includes(String(materialType)) || !['pending', 'clean', 'rejected'].includes(String(scanStatus))) invalidResponse('материал урока')
+  const byteSize = source.byteSize === null ? null : positiveInteger(source.byteSize, 'размер материала')
+  return {
+    id: positiveInteger(source.id, 'id материала'), lessonId: positiveInteger(source.lessonId, 'id урока материала'),
+    materialType: materialType as AdminLessonMaterial['materialType'], title: text(source.title, 'название материала'),
+    position: positiveInteger(source.position, 'позиция материала'), bodyMarkdown: nullableText(source.bodyMarkdown, 'текст материала'),
+    externalUrl: nullableHttpsUrl(source.externalUrl, 'ссылка материала'), mimeType: nullableText(source.mimeType, 'тип материала'),
+    byteSize, isPublished: boolean(source.isPublished, 'публикация материала'),
+    scanStatus: scanStatus as AdminLessonMaterial['scanStatus'], originalFilename: nullableText(source.originalFilename, 'имя файла'),
+    createdAt: timestamp(source.createdAt, 'дата материала'),
+  }
+}
+
 function parsePage(value: unknown, context: string): { items: unknown[]; total: number; limit: number; offset: number } {
   const source = record(value, context)
   if (!Array.isArray(source.items)) invalidResponse(context)
@@ -247,4 +280,34 @@ export async function createAdminLesson(courseId: number, input: AdminLessonInpu
 export async function updateAdminLesson(lessonId: number, input: Partial<AdminLessonInput>): Promise<AdminLesson> {
   const result = await zhangakApiJson<unknown>(`/v1/admin/lessons/${lessonPath(lessonId)}`, 'PATCH', input)
   return parseAdminLesson(record(result, 'обновлённый урок').lesson)
+}
+
+export async function listAdminLessonMaterials(lessonId: number): Promise<AdminLessonMaterial[]> {
+  const result = record(await zhangakApiRequest<unknown>(`/v1/admin/lessons/${lessonPath(lessonId)}/materials`), 'материалы урока')
+  if (!Array.isArray(result.items)) invalidResponse('материалы урока')
+  return result.items.map(parseAdminLessonMaterial)
+}
+
+export async function createAdminTextMaterial(lessonId: number, input: {
+  materialType: 'rich_text' | 'video'; title: string; position: number; bodyMarkdown?: string; externalUrl?: string; isPublished?: boolean
+}): Promise<AdminLessonMaterial> {
+  const result = record(await zhangakApiJson<unknown>(`/v1/admin/lessons/${lessonPath(lessonId)}/materials`, 'POST', input), 'созданный материал')
+  return parseAdminLessonMaterial(result.material)
+}
+
+export async function uploadAdminLessonMaterial(lessonId: number, fields: { materialType: 'document' | 'image'; title: string; position: number }, file: File): Promise<AdminLessonMaterial> {
+  if (file.size < 1) throw new Error('Выберите непустой файл')
+  const form = new FormData()
+  form.set('materialType', fields.materialType)
+  form.set('title', fields.title)
+  form.set('position', String(fields.position))
+  form.set('isPublished', 'false')
+  form.set('file', file, file.name)
+  const result = record(await zhangakApiRequest<unknown>(`/v1/admin/lessons/${lessonPath(lessonId)}/materials/upload`, { method: 'POST', body: form }), 'загруженный материал')
+  return parseAdminLessonMaterial(result.material)
+}
+
+export async function reviewAdminLessonMaterial(materialId: number, status: 'clean' | 'rejected', publish = false): Promise<AdminLessonMaterial> {
+  const result = record(await zhangakApiJson<unknown>(`/v1/admin/materials/${lessonPath(materialId)}/review`, 'POST', { status, publish }), 'проверенный материал')
+  return parseAdminLessonMaterial(result.material)
 }

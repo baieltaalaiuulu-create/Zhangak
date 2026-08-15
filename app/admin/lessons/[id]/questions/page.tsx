@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { ArrowLeft, BookOpen, ShieldCheck, Wrench } from 'lucide-react'
 import AdminTopbar from '@/components/admin/AdminTopbar'
 
@@ -14,6 +15,7 @@ import AdminTopbar from '@/components/admin/AdminTopbar'
  * editor or creating an empty local-only form.
  */
 export default function AdminLessonQuestionsMigrationPage() {
+  const params = useParams<{ id: string }>()
   return (
     <div className="min-h-screen bg-[#FAF8FF]">
       <AdminTopbar title="Задания урока" />
@@ -41,7 +43,7 @@ export default function AdminLessonQuestionsMigrationPage() {
             </div>
           </div>
 
-          <Link href="/admin/lessons" className="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white hover:bg-blue-700">Вернуться к урокам</Link>
+          <Link href={`/admin/lessons/${params.id}/materials`} className="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white hover:bg-blue-700">Открыть материалы урока</Link>
         </section>
       </main>
     </div>

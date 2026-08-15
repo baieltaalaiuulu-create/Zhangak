@@ -25,6 +25,8 @@ connectDatabase(config)
 await query('SELECT 1')
 
 const server = createServer(createHandler(config))
+// Most requests have a tight global deadline. The multipart route opts into a
+// longer, per-request deadline only after its exact path is recognised.
 server.requestTimeout = 30_000
 server.headersTimeout = 15_000
 server.keepAliveTimeout = 5_000

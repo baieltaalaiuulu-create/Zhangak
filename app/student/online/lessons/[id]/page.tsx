@@ -38,6 +38,7 @@ import {
   type PlatformLessonSubject,
 } from '@/lib/platform-lessons'
 import { ZhangakApiError } from '@/lib/zhangak-api-client'
+import { fetchPlatformLessonMaterials, type PlatformLessonMaterial } from '@/lib/platform-materials'
 
 const SUBJECT_ICON = {
   math: Calculator,
@@ -100,6 +101,7 @@ export default function LessonDetailPage() {
   const [notFound, setNotFound] = useState(false)
   const [lesson, setLesson] = useState<PlatformLesson | null>(null)
   const [allLessons, setAllLessons] = useState<PlatformLesson[]>([])
+  const [materials, setMaterials] = useState<PlatformLessonMaterial[]>([])
   const [videoWatched, setVideoWatched] = useState(false)
   const [completionPending, setCompletionPending] = useState(false)
   const [completionError, setCompletionError] = useState<string | null>(null)
@@ -127,6 +129,11 @@ export default function LessonDetailPage() {
         if (!active) return
         setLesson(result.detail)
         setAllLessons(result.catalog)
+        // A temporary material-service error must not hide the otherwise
+        // valid lesson. The lesson route remains the source of truth.
+        void fetchPlatformLessonMaterials(lessonId)
+          .then(items => { if (active) setMaterials(items) })
+          .catch(() => { if (active) setMaterials([]) })
       })
       .catch(error => {
         if (!active) return
@@ -237,6 +244,8 @@ export default function LessonDetailPage() {
   const embedUrl = youtubeEmbedUrl(lesson.contentUrl)
   const practiceHref = `/student/online/practice?lesson=${lesson.id}`
   const requiresPractice = lesson.completionMode === 'practice'
+
+  const extraMaterials = materials.filter(item => item.materialType !== 'video')
 
   const material = embedUrl ? (
     <div className="flex aspect-video items-center justify-center overflow-hidden rounded-2xl bg-gray-900">
@@ -404,6 +413,24 @@ export default function LessonDetailPage() {
               </div>
 
               {practiceCard}
+
+              {extraMaterials.length > 0 && (
+                <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                  <h2 className="flex items-center gap-2 text-base font-bold text-gray-900"><FileText size={18} aria-hidden="true" /> Материалы урока</h2>
+                  <div className="mt-4 space-y-3">
+                    {extraMaterials.map(item => item.materialType === 'rich_text' ? (
+                      <article key={item.id} className="rounded-xl bg-gray-50 p-4">
+                        <h3 className="font-bold text-gray-800">{item.title}</h3>
+                        <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{item.bodyMarkdown}</p>
+                      </article>
+                    ) : item.viewerPath ? (
+                      <a key={item.id} href={item.viewerPath} target="_blank" rel="noreferrer" className="flex min-h-12 items-center justify-between rounded-xl bg-gray-50 px-4 text-sm font-semibold text-gray-700 hover:bg-blue-50">
+                        {item.title} <ExternalLink size={16} className="text-[#1B3F92]" aria-hidden="true" />
+                      </a>
+                    ) : null)}
+                  </div>
+                </section>
+              )}
             </main>
 
             <aside className="w-full shrink-0 space-y-5 lg:w-80">

@@ -1,6 +1,7 @@
 import { requireAuth } from '../auth.js'
 import { query, transaction } from '../db.js'
 import { GET, HttpError, POST, readJson } from '../http.js'
+import { privateFile, safeFilename } from '../storage.js'
 
 const STUDENT_ROLES = ['student', 'math_student']
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -141,6 +142,25 @@ function publicPracticeTest(row) {
     availableFrom: dateValue(row.available_from),
     availableUntil: dateValue(row.available_until),
     questionCount: Number(row.question_count ?? 0),
+  }
+}
+
+function publicLessonMaterial(row) {
+  return {
+    id: nullableNumber(row.id),
+    lessonId: nullableNumber(row.lesson_id),
+    materialType: row.material_type,
+    title: row.title,
+    position: Number(row.position),
+    bodyMarkdown: row.material_type === 'rich_text' ? row.body_markdown : null,
+    externalUrl: row.material_type === 'video' ? row.external_url : null,
+    mimeType: row.mime_type ?? null,
+    byteSize: nullableNumber(row.byte_size),
+    // The object key stays server-only.  This URL is authenticated through
+    // the first-party session and is intentionally inline-only.
+    viewerPath: ['document', 'image'].includes(row.material_type)
+      ? `/v1/platform/materials/${row.id}/content`
+      : null,
   }
 }
 
@@ -822,6 +842,53 @@ GET('/v1/platform/lessons/:id', async ({ req, params, config }) => {
   const lessonId = positiveId(params.id, 'lesson_id')
   const lesson = requireUnlockedLesson(await loadAccessibleLesson({ query }, student.id, lessonId))
   return { status: 200, body: { lesson: publicLesson(lesson) } }
+})
+
+GET('/v1/platform/lessons/:id/materials', async ({ req, params, config }) => {
+  const student = await currentStudent(config, req)
+  const lessonId = positiveId(params.id, 'lesson_id')
+  requireUnlockedLesson(await loadAccessibleLesson({ query }, student.id, lessonId))
+  const materials = await query(
+    `SELECT id, lesson_id, material_type, title, position, body_markdown, external_url, mime_type, byte_size
+       FROM lesson_materials
+      WHERE lesson_id = $1 AND is_published = true AND scan_status = 'clean'
+      ORDER BY position, id`,
+    [lessonId],
+  )
+  return { status: 200, body: { items: materials.rows.map(publicLessonMaterial) } }
+})
+
+GET('/v1/platform/materials/:id/content', async ({ req, params, config }) => {
+  const student = await currentStudent(config, req)
+  const materialId = positiveId(params.id, 'material_id')
+  const materialResult = await query(
+    `SELECT m.id, m.lesson_id, m.material_type, m.storage_key, m.mime_type, m.byte_size, m.original_filename
+       FROM lesson_materials m
+       JOIN lessons l ON l.id = m.lesson_id
+      WHERE m.id = $1 AND m.is_published = true AND m.scan_status = 'clean'
+        AND m.material_type IN ('document', 'image')
+        AND EXISTS (
+          SELECT 1 FROM course_enrollments ce
+          JOIN courses c ON c.id = ce.course_id AND c.is_active = true AND c.delivery_mode = 'online'
+          WHERE ce.student_id = $2 AND ce.course_id = l.course_id AND ce.status = 'active'
+        )`,
+    [materialId, student.id],
+  )
+  const material = materialResult.rows[0]
+  if (!material) throw new HttpError(404, 'Материал не найден', 'material_not_found')
+  requireUnlockedLesson(await loadAccessibleLesson({ query }, student.id, Number(material.lesson_id)))
+  const file = await privateFile(config, material.storage_key)
+  const filename = safeFilename(material.original_filename ?? `${material.title}.${material.material_type === 'document' ? 'pdf' : 'file'}`)
+  return {
+    status: 200,
+    stream: file.stream,
+    headers: {
+      'Content-Type': material.mime_type,
+      'Content-Length': String(file.size),
+      'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(filename)}`,
+      'Cross-Origin-Resource-Policy': 'same-site',
+    },
+  }
 })
 
 POST('/v1/platform/lessons/:id/complete', async ({ req, params, config }) => {

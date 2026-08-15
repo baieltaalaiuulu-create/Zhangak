@@ -2,6 +2,8 @@ import { requireAuth } from '../auth.js'
 import { query as dbQuery, transaction } from '../db.js'
 import { GET, HttpError, PATCH, POST, readJson } from '../http.js'
 import { requireRole } from '../authorization.js'
+import { receiveMaterialUpload } from '../multipart.js'
+import { removePrivateObject } from '../storage.js'
 
 // Curriculum publishing is intentionally narrower than user management.  A
 // junior administrator can administer assigned student accounts, but cannot
@@ -31,6 +33,15 @@ const LESSON_FIELDS = Object.freeze({
   durationMinutes: 'duration_minutes',
   contentUrl: 'content_url',
   isTest: 'is_test',
+  isPublished: 'is_published',
+})
+
+const MATERIAL_FIELDS = Object.freeze({
+  materialType: 'material_type',
+  title: 'title',
+  position: 'position',
+  bodyMarkdown: 'body_markdown',
+  externalUrl: 'external_url',
   isPublished: 'is_published',
 })
 
@@ -106,6 +117,51 @@ function positiveId(value, field) {
   const parsed = typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : Number.NaN
   if (!Number.isSafeInteger(parsed) || parsed < 1) throw new HttpError(400, `Некорректный ${field}`, `invalid_${field}`)
   return parsed
+}
+
+function positivePosition(value) {
+  if (!Number.isSafeInteger(value) || value < 1 || value > 10_000) {
+    throw new HttpError(400, 'Некорректная позиция материала', 'invalid_material_position')
+  }
+  return value
+}
+
+function youtubeUrl(value) {
+  const url = nullableHttpsUrl(value, 'invalid_material_video_url')
+  if (url === null || !/^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//.test(url)) {
+    throw new HttpError(400, 'Разрешены только ссылки YouTube', 'invalid_material_video_url')
+  }
+  return url
+}
+
+function publicMaterial(row) {
+  return {
+    id: Number(row.id), lessonId: Number(row.lesson_id), materialType: row.material_type,
+    title: row.title, position: Number(row.position), bodyMarkdown: row.body_markdown ?? null,
+    externalUrl: row.external_url ?? null, mimeType: row.mime_type ?? null,
+    byteSize: row.byte_size == null ? null : Number(row.byte_size),
+    isPublished: row.is_published, scanStatus: row.scan_status,
+    originalFilename: row.original_filename ?? null, createdAt: row.created_at,
+  }
+}
+
+export function parseMaterialTextBody(body) {
+  const keys = hasOnly(body, MATERIAL_FIELDS, 'invalid_lesson_material', {
+    required: ['materialType', 'title', 'position'],
+  })
+  const materialType = body.materialType
+  if (materialType !== 'rich_text' && materialType !== 'video') {
+    throw new HttpError(400, 'Для файла используйте загрузку, а не JSON', 'invalid_material_type')
+  }
+  if (typeof body.isPublished !== 'undefined' && typeof body.isPublished !== 'boolean') {
+    throw new HttpError(400, 'Некорректный статус публикации', 'invalid_material_publish')
+  }
+  if (materialType === 'rich_text') {
+    if (keys.some(key => !['materialType', 'title', 'position', 'bodyMarkdown', 'isPublished'].includes(key))) throw new HttpError(400, 'Некорректный текстовый материал', 'invalid_lesson_material')
+    return { materialType, title: requiredText(body.title, 300, 'invalid_material_title'), position: positivePosition(body.position), bodyMarkdown: requiredText(body.bodyMarkdown, 500_000, 'invalid_material_body'), externalUrl: null, isPublished: body.isPublished ?? false }
+  }
+  if (keys.some(key => !['materialType', 'title', 'position', 'externalUrl', 'isPublished'].includes(key))) throw new HttpError(400, 'Некорректный видео-материал', 'invalid_lesson_material')
+  return { materialType, title: requiredText(body.title, 300, 'invalid_material_title'), position: positivePosition(body.position), bodyMarkdown: null, externalUrl: youtubeUrl(body.externalUrl), isPublished: body.isPublished ?? false }
 }
 
 function pagination(searchParams) {
@@ -282,6 +338,128 @@ function updateSql(table, idColumn, id, fields, fieldMap) {
   assignments.push('updated_at = now()')
   return { text: `UPDATE ${table} SET ${assignments.join(', ')} WHERE ${idColumn} = $1`, values }
 }
+
+async function lessonExists(execute, lessonId) {
+  const result = await execute('SELECT id FROM lessons WHERE id = $1', [lessonId])
+  if (!result.rows[0]) throw new HttpError(404, 'Урок не найден', 'lesson_not_found')
+}
+
+async function insertTextMaterial(client, actor, lessonId, input) {
+  await lessonExists((text, values) => client.query(text, values), lessonId)
+  const inserted = await client.query(
+    `INSERT INTO lesson_materials (
+       lesson_id, material_type, title, position, body_markdown, external_url,
+       is_published, scan_status, scanned_at, scanned_by, created_by
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'clean', now(), $8, $8)
+     RETURNING id, lesson_id, material_type, title, position, body_markdown, external_url,
+               mime_type, byte_size, is_published, scan_status, original_filename, created_at`,
+    [lessonId, input.materialType, input.title, input.position, input.bodyMarkdown, input.externalUrl, input.isPublished, actor.id],
+  )
+  const row = inserted.rows[0]
+  await audit(client, actor, 'create_lesson_material', 'lesson_material', row.id, [input.materialType, 'text'])
+  return row
+}
+
+GET('/v1/admin/lessons/:lessonId/materials', async ({ req, params, config }) => {
+  await adminContentManager(config, req)
+  const lessonId = positiveId(params.lessonId, 'lesson_id')
+  await lessonExists(dbQuery, lessonId)
+  const result = await dbQuery(
+    `SELECT id, lesson_id, material_type, title, position, body_markdown, external_url,
+            mime_type, byte_size, is_published, scan_status, original_filename, created_at
+       FROM lesson_materials WHERE lesson_id = $1 ORDER BY position, id`,
+    [lessonId],
+  )
+  return { status: 200, body: { items: result.rows.map(publicMaterial) } }
+})
+
+POST('/v1/admin/lessons/:lessonId/materials', async ({ req, params, config }) => {
+  const actor = await adminContentManager(config, req)
+  const lessonId = positiveId(params.lessonId, 'lesson_id')
+  const input = parseMaterialTextBody(await readJson(req, 512_000))
+  try {
+    const material = await transaction(client => insertTextMaterial(client, actor, lessonId, input))
+    return { status: 201, body: { material: publicMaterial(material) } }
+  } catch (error) {
+    if (error?.code === '23505') throw new HttpError(409, 'Эта позиция материала уже занята', 'material_position_conflict')
+    throw error
+  }
+})
+
+POST('/v1/admin/lessons/:lessonId/materials/upload', async ({ req, params, config }) => {
+  const actor = await adminContentManager(config, req)
+  const lessonId = positiveId(params.lessonId, 'lesson_id')
+  await lessonExists(dbQuery, lessonId)
+  const upload = await receiveMaterialUpload(req, config, lessonId)
+  let storagePersisted = false
+  try {
+    const title = requiredText(upload.fields.title, 300, 'invalid_material_title')
+    const position = positivePosition(Number(upload.fields.position))
+    // Binary files are never publishable on upload. They remain inaccessible
+    // until a trusted administrator records a clean review.
+    if (upload.fields.isPublished != null && upload.fields.isPublished !== 'false') {
+      throw new HttpError(400, 'Файл можно опубликовать только после проверки', 'material_review_required')
+    }
+    const material = await transaction(async client => {
+      const inserted = await client.query(
+        `INSERT INTO lesson_materials (
+           lesson_id, material_type, title, position, storage_key, mime_type, byte_size,
+           is_published, scan_status, original_filename, content_sha256, created_by
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, false, 'pending', $8, $9, $10)
+         RETURNING id, lesson_id, material_type, title, position, body_markdown, external_url,
+                   mime_type, byte_size, is_published, scan_status, original_filename, created_at`,
+        [lessonId, upload.file.materialType, title, position, upload.key, upload.file.mimeType,
+          upload.file.bytes, upload.file.originalFilename, upload.file.sha256, actor.id],
+      )
+      const row = inserted.rows[0]
+      await audit(client, actor, 'upload_lesson_material_pending_review', 'lesson_material', row.id, [upload.file.materialType, upload.file.bytes])
+      return row
+    })
+    storagePersisted = true
+    return { status: 202, body: { material: publicMaterial(material) } }
+  } catch (error) {
+    if (!storagePersisted) await removePrivateObject(config, upload.key).catch(() => {})
+    if (error?.code === '23505') throw new HttpError(409, 'Эта позиция материала уже занята', 'material_position_conflict')
+    throw error
+  }
+})
+
+POST('/v1/admin/materials/:materialId/review', async ({ req, params, config }) => {
+  const actor = await adminContentManager(config, req)
+  const materialId = positiveId(params.materialId, 'material_id')
+  const body = objectBody(await readJson(req, 2_000), 'invalid_material_review')
+  if (!hasOnly(body, { status: 'status', publish: 'publish' }, 'invalid_material_review', { required: ['status'] })
+    || !['clean', 'rejected'].includes(body.status)
+    || (Object.hasOwn(body, 'publish') && typeof body.publish !== 'boolean')) {
+    throw new HttpError(400, 'Некорректное решение по материалу', 'invalid_material_review')
+  }
+  if (body.status === 'rejected' && body.publish === true) throw new HttpError(400, 'Отклонённый материал нельзя публиковать', 'invalid_material_review')
+  const result = await transaction(async client => {
+    const current = await client.query(
+      `SELECT id, lesson_id, material_type, title, position, body_markdown, external_url, storage_key,
+              mime_type, byte_size, is_published, scan_status, original_filename, created_at
+         FROM lesson_materials WHERE id = $1 FOR UPDATE`, [materialId],
+    )
+    const row = current.rows[0]
+    if (!row) throw new HttpError(404, 'Материал не найден', 'material_not_found')
+    if (!['document', 'image'].includes(row.material_type) || row.scan_status !== 'pending') {
+      throw new HttpError(409, 'Материал уже проверен или не требует проверки', 'material_review_not_available')
+    }
+    const published = body.status === 'clean' ? (body.publish ?? false) : false
+    const updated = await client.query(
+      `UPDATE lesson_materials
+          SET scan_status = $2, scanned_at = now(), scanned_by = $3, is_published = $4
+        WHERE id = $1
+        RETURNING id, lesson_id, material_type, title, position, body_markdown, external_url,
+                  mime_type, byte_size, is_published, scan_status, original_filename, created_at`,
+      [materialId, body.status, actor.id, published],
+    )
+    await audit(client, actor, `review_lesson_material_${body.status}`, 'lesson_material', materialId, [published])
+    return { material: updated.rows[0], storageKey: row.storage_key }
+  })
+  if (body.status === 'rejected') await removePrivateObject(config, result.storageKey).catch(() => {})
+  return { status: 200, body: { material: publicMaterial(result.material) } }
+})
 
 GET('/v1/admin/courses', async ({ req, config, query: searchParams }) => {
   await adminContentManager(config, req)

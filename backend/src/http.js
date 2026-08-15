@@ -36,6 +36,16 @@ export function json(res, status, body, extraHeaders = {}) {
   res.end(payload)
 }
 
+function stream(res, status, body, extraHeaders = {}) {
+  res.writeHead(status, {
+    'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
+    ...extraHeaders,
+  })
+  body.once('error', () => res.destroy())
+  body.pipe(res)
+}
+
 export async function readJson(req, maxBytes = MAX_JSON_BYTES) {
   const contentType = req.headers['content-type']?.split(';', 1)[0]?.trim().toLowerCase()
   if (contentType !== 'application/json') throw new HttpError(415, 'Требуется application/json', 'unsupported_media_type')
@@ -129,6 +139,13 @@ export function createHandler(config) {
     try { url = new URL(req.url, 'http://localhost') }
     catch { return json(res, 400, { error: 'Некорректный URL', code: 'invalid_url' }) }
 
+    // A PDF travels as a stream rather than JSON and can legitimately take
+    // longer on a slow administrator connection. No other endpoint receives
+    // this exception to the server's 30s deadline.
+    if (req.method === 'POST' && /^\/v1\/admin\/lessons\/\d+\/materials\/upload$/.test(url.pathname)) {
+      req.setTimeout(300_000)
+    }
+
     for (const entry of routes) {
       if (entry.method !== req.method) continue
       let params
@@ -143,6 +160,7 @@ export function createHandler(config) {
         if (res.writableEnded) return
         const status = result?.status ?? 200
         const headers = result?.headers ?? {}
+        if (result?.stream) return stream(res, status, result.stream, headers)
         return json(res, status, result?.body ?? result ?? { success: true }, headers)
       } catch (error) {
         const status = error instanceof HttpError ? error.status : 500

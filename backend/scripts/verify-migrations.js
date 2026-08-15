@@ -36,6 +36,7 @@ const requiredTables = [
   'offline_grades',
   'offline_comments',
   'offline_announcements',
+  'lesson_materials',
 ]
 
 function fail(message) {
@@ -129,6 +130,17 @@ async function verifySchema(client) {
   const presentColumns = new Set(columnResult.rows.map(row => row.column_name))
   const missingColumns = profileColumns.filter(column => !presentColumns.has(column))
   if (missingColumns.length > 0) fail(`latest profile preference columns are missing: ${missingColumns.join(', ')}`)
+
+  const materialColumns = ['scan_status', 'scanned_at', 'scanned_by', 'original_filename', 'content_sha256']
+  const materialResult = await client.query(
+    `SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'lesson_materials'
+        AND column_name = ANY($1::text[])`,
+    [materialColumns],
+  )
+  const presentMaterialColumns = new Set(materialResult.rows.map(row => row.column_name))
+  const missingMaterialColumns = materialColumns.filter(column => !presentMaterialColumns.has(column))
+  if (missingMaterialColumns.length > 0) fail(`private material columns are missing: ${missingMaterialColumns.join(', ')}`)
 }
 
 async function main() {

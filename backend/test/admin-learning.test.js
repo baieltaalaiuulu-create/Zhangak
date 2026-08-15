@@ -9,6 +9,7 @@ import {
   parseCoursePatchBody,
   parseLessonCreateBody,
   parseLessonPatchBody,
+  parseMaterialTextBody,
 } from '../src/routes/admin-learning.js'
 import { HttpError } from '../src/http.js'
 
@@ -93,6 +94,19 @@ test('lesson administration rejects cross-course mutation, invalid dates, and un
   invalid(parseLessonPatchBody, { createdBy: 'forged' }, 'invalid_lesson')
 })
 
+test('lesson materials accept only rich text or YouTube metadata before file upload', () => {
+  assert.deepEqual(parseMaterialTextBody({
+    materialType: 'video', title: 'Разбор', position: 2,
+    externalUrl: 'https://www.youtube.com/watch?v=abc12345678', isPublished: true,
+  }), {
+    materialType: 'video', title: 'Разбор', position: 2, bodyMarkdown: null,
+    externalUrl: 'https://www.youtube.com/watch?v=abc12345678', isPublished: true,
+  })
+  invalid(parseMaterialTextBody, { materialType: 'document', title: 'PDF', position: 1 }, 'invalid_material_type')
+  invalid(parseMaterialTextBody, { materialType: 'video', title: 'Видео', position: 1, externalUrl: 'https://example.com/x' }, 'invalid_material_video_url')
+  invalid(parseMaterialTextBody, { materialType: 'rich_text', title: 'Текст', position: 0, bodyMarkdown: 'x' }, 'invalid_material_position')
+})
+
 test('admin learning routes are first-party, role-gated, and audited', async () => {
   const [route, server] = await Promise.all([
     readFile(path.join(backendRoot, 'src', 'routes', 'admin-learning.js'), 'utf8'),
@@ -106,6 +120,9 @@ test('admin learning routes are first-party, role-gated, and audited', async () 
   assert.match(route, /GET\('\/v1\/admin\/courses\/:courseId\/lessons'/)
   assert.match(route, /POST\('\/v1\/admin\/courses\/:courseId\/lessons'/)
   assert.match(route, /PATCH\('\/v1\/admin\/lessons\/:lessonId'/)
+  assert.match(route, /POST\('\/v1\/admin\/lessons\/:lessonId\/materials\/upload'/)
+  assert.match(route, /POST\('\/v1\/admin\/materials\/:materialId\/review'/)
+  assert.match(route, /scan_status/)
   assert.match(route, /INSERT INTO audit_log/)
   assert.match(route, /created_by/)
   assert.doesNotMatch(route, /supabase/i)

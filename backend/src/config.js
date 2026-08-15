@@ -30,6 +30,13 @@ function origins() {
   return new Set(values.map(value => value.replace(/\/$/, '')))
 }
 
+function optionalAbsolutePath(name) {
+  const value = process.env[name]?.trim()
+  if (!value) return null
+  if (!value.startsWith('/') || value.includes('\0')) throw new Error(`${name} must be an absolute filesystem path`)
+  return value
+}
+
 export function loadConfig() {
   const jwtSecret = required('JWT_SECRET')
   if (jwtSecret.length < MIN_SECRET_LENGTH) throw new Error(`JWT_SECRET must be at least ${MIN_SECRET_LENGTH} characters`)
@@ -48,6 +55,7 @@ export function loadConfig() {
     refreshTtlDays: integer('REFRESH_TOKEN_TTL_DAYS', 30, 1, 90),
     allowedOrigins: origins(),
     trustProxy: process.env.TRUST_PROXY === '1',
+    storageRoot: optionalAbsolutePath('ZHANGAK_STORAGE_ROOT'),
     releaseSha: process.env.ZHANGAK_API_RELEASE_SHA?.trim() || 'dev',
   })
 }
