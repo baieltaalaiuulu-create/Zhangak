@@ -23,9 +23,11 @@ const PATH_SEGMENT = /^[a-z0-9-]+$/
 function internalApiOrigin(): string {
   const value = process.env.ZHANGAK_API_INTERNAL_URL ?? 'http://127.0.0.1:3210'
   const url = new URL(value)
-  if (url.protocol !== 'http:' || url.hostname !== '127.0.0.1' || url.port !== '3210'
+  const port = Number(url.port)
+  if (url.protocol !== 'http:' || url.hostname !== '127.0.0.1'
+    || !Number.isSafeInteger(port) || port < 1 || port > 65_535
     || url.username || url.password || url.pathname !== '/' || url.search || url.hash) {
-    throw new Error('ZHANGAK_API_INTERNAL_URL must be http://127.0.0.1:3210')
+    throw new Error('ZHANGAK_API_INTERNAL_URL must be an explicit http://127.0.0.1:<port> origin')
   }
   return url.origin
 }

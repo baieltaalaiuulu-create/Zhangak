@@ -92,7 +92,7 @@ export default function RootLayout({
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
-              var platformHosts = ['platform.zhangak.com', 'localhost', '127.0.0.1'];
+              var platformHosts = ['platform.zhangak.com', 'preprod.zhangak.com', 'localhost', '127.0.0.1'];
               if ('serviceWorker' in navigator && platformHosts.indexOf(window.location.hostname) !== -1) {
                 navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function(reg) {
                   reg.addEventListener('updatefound', function() {

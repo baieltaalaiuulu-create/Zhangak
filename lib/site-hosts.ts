@@ -2,6 +2,10 @@ export const MARKETING_HOST = 'zhangak.com'
 export const PLATFORM_HOST = 'platform.zhangak.com'
 export const OFFLINE_HOST = 'offline.zhangak.com'
 export const ADMIN_HOST = 'admin.zhangak.com'
+// A platform-only, noindex deployment used for release verification. It is
+// intentionally not an alternative public workspace: admin and offline
+// routes still redirect to their dedicated production hosts.
+export const PREPROD_HOST = 'preprod.zhangak.com'
 
 export const MARKETING_ORIGIN = `https://${MARKETING_HOST}`
 export const PLATFORM_ORIGIN = `https://${PLATFORM_HOST}`
@@ -24,14 +28,15 @@ export function normalizeHostname(value: string | null | undefined): string {
 export function siteSurfaceForHost(value: string | null | undefined): SiteSurface | null {
   const hostname = normalizeHostname(value)
   if (hostname === MARKETING_HOST || hostname === `www.${MARKETING_HOST}`) return 'marketing'
-  if (hostname === PLATFORM_HOST) return 'platform'
+  if (hostname === PLATFORM_HOST || hostname === PREPROD_HOST) return 'platform'
   if (hostname === OFFLINE_HOST) return 'offline'
   if (hostname === ADMIN_HOST) return 'admin'
   return null
 }
 
 export function isDedicatedPlatformHost(value: string | null | undefined): boolean {
-  return normalizeHostname(value) === PLATFORM_HOST
+  const hostname = normalizeHostname(value)
+  return hostname === PLATFORM_HOST || hostname === PREPROD_HOST
 }
 
 export function workspaceSurfaceForRole(

@@ -4,7 +4,7 @@ import test from 'node:test'
 import { NextRequest } from 'next/server.js'
 
 import { proxy } from '../../proxy.ts'
-import { normalizeHostname, siteSurfaceForHost, workspaceSurfaceForRole } from '../../lib/site-hosts.ts'
+import { isDedicatedPlatformHost, normalizeHostname, siteSurfaceForHost, workspaceSurfaceForRole } from '../../lib/site-hosts.ts'
 
 function request(url: string, method = 'GET', host?: string): NextRequest {
   return new NextRequest(url, {
@@ -33,6 +33,8 @@ test('host normalization is strict and supports development ports', () => {
   assert.equal(normalizeHostname('Platform.Zhangak.com:443'), 'platform.zhangak.com')
   assert.equal(normalizeHostname('[::1]:3000'), '::1')
   assert.equal(siteSurfaceForHost('www.zhangak.com'), 'marketing')
+  assert.equal(siteSurfaceForHost('preprod.zhangak.com'), 'platform')
+  assert.equal(isDedicatedPlatformHost('preprod.zhangak.com'), true)
   assert.equal(siteSurfaceForHost('preview.example.com'), null)
 })
 
