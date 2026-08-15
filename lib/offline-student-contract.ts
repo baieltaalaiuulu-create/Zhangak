@@ -28,7 +28,7 @@ export interface OfflineLesson {
 
 export interface OfflineHomework {
   id: number
-  lessonId: number
+  lessonId: number | null
   lessonTitle: string
   title: string
   description: string | null

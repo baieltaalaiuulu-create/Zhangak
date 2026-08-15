@@ -33,7 +33,7 @@ function ErrorState({ error, onRetry }: { error: ZhangakApiError | null; onRetry
         <h1 className="mt-4 text-lg font-black text-slate-950">Кабинет не загрузился</h1>
         <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
         <div className="mt-5 flex flex-wrap justify-center gap-3">
-          {signInRequired || wrongRole ? <button type="button" onClick={() => window.location.replace('/login?surface=platform')} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white"><LogIn size={17} aria-hidden="true" />Войти</button> : <button type="button" onClick={() => void onRetry()} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white"><RefreshCw size={17} aria-hidden="true" />Повторить</button>}
+          {signInRequired || wrongRole ? <button type="button" onClick={() => window.location.replace('/login')} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white"><LogIn size={17} aria-hidden="true" />Войти</button> : <button type="button" onClick={() => void onRetry()} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white"><RefreshCw size={17} aria-hidden="true" />Повторить</button>}
         </div>
       </div>
     </div>

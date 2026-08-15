@@ -29,6 +29,13 @@ const requiredTables = [
   'universities',
   'university_specialties',
   'university_advantages',
+  'offline_class_sessions',
+  'offline_attendance_records',
+  'offline_homework',
+  'offline_homework_submissions',
+  'offline_grades',
+  'offline_comments',
+  'offline_announcements',
 ]
 
 function fail(message) {

@@ -36,17 +36,18 @@ function nullableTargetScore(value) {
   return score
 }
 
-function dateOnly(value) {
+function dateOrTime(value) {
   if (value == null) return null
-  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10)
-  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString()
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
 }
 
 /**
  * The offline cabinet is deliberately a narrow, read-only projection of the
- * first-party learning schema.  It does not imply that attendance, homework,
- * grades, files, or an ОРТ score have been migrated: those tables do not
- * exist in the owned schema yet, so the response must keep them unavailable.
+ * first-party learning and offline-classroom schemas. Private PDF/video
+ * delivery is still absent until the owned storage stage introduces viewer URLs.
  */
 export function requireOfflineStudent(user) {
   if (user.role !== 'student' || !OFFLINE_STUDENT_TYPES.has(user.student_type)) {
@@ -56,9 +57,9 @@ export function requireOfflineStudent(user) {
 }
 
 export function publicOfflineLesson(row) {
-  const lessonDate = dateOnly(row.lesson_date)
-  if (row.lesson_date != null && !lessonDate) {
-    throw new HttpError(500, 'Некорректные данные: lesson_date', 'invalid_offline_dashboard')
+  const startsAt = dateOrTime(row.starts_at ?? row.lesson_date)
+  if ((row.starts_at ?? row.lesson_date) != null && !startsAt) {
+    throw new HttpError(500, 'Некорректные данные: starts_at', 'invalid_offline_dashboard')
   }
   if (typeof row.is_test !== 'boolean') {
     throw new HttpError(500, 'Некорректные данные: is_test', 'invalid_offline_dashboard')
@@ -68,13 +69,35 @@ export function publicOfflineLesson(row) {
     id: positiveInteger(row.id, 'lesson_id'),
     lessonNumber: positiveInteger(row.lesson_number, 'lesson_number'),
     title: requiredText(row.title, 'lesson_title'),
-    startsAt: lessonDate,
+    startsAt,
     durationMinutes: nullablePositiveInteger(row.duration_minutes, 'duration_minutes'),
     isTest: row.is_test,
-    // There is no owned attendance model yet.  "pending" is intentionally
-    // the only possible value, not a synthetic presence record.
-    attendance: 'pending',
+    attendance: ['present', 'late', 'absent'].includes(row.attendance_status) ? row.attendance_status : 'pending',
     topics: topic ? [topic] : [],
+  }
+}
+
+export function publicOfflineHomework(row) {
+  const dueAt = dateOrTime(row.due_at)
+  if (row.due_at != null && !dueAt) throw new HttpError(500, 'Некорректные данные: due_at', 'invalid_offline_dashboard')
+  return {
+    id: positiveInteger(row.id, 'homework_id'),
+    lessonId: row.lesson_id == null ? null : positiveInteger(row.lesson_id, 'lesson_id'),
+    lessonTitle: text(row.lesson_title, 'Домашнее задание'),
+    title: requiredText(row.title, 'homework_title'),
+    description: text(row.body),
+    dueAt,
+    completed: ['submitted', 'returned', 'accepted'].includes(row.submission_status),
+  }
+}
+
+export function publicOfflineGrade(row) {
+  const score = Number(row.score)
+  if (!Number.isSafeInteger(score) || score < 0 || score > 100) throw new HttpError(500, 'Некорректные данные: grade_score', 'invalid_offline_dashboard')
+  return {
+    lessonId: positiveInteger(row.class_session_id ?? row.homework_id ?? row.id, 'grade_source_id'),
+    lessonTitle: requiredText(row.title, 'grade_title'),
+    math: null, analogy: null, reading: null, grammar: null, total: score,
   }
 }
 
@@ -90,9 +113,6 @@ export function emptyOfflineDashboard(user) {
     },
     group: null,
     lessons: [],
-    // These domains are intentionally unavailable until their own schema and
-    // audited write flows are introduced.  Do not backfill them from a legacy
-    // data source or fabricate client-side values.
     homework: [],
     grades: [],
     progress: { latestOrtScore: null, targetScore },
@@ -143,14 +163,34 @@ GET('/v1/platform/offline-dashboard', async ({ req, config }) => {
   }
 
   const group = publicOfflineGroup(groupRow)
-  const lessons = await query(
-    `SELECT id, lesson_number, title, topic, lesson_date, duration_minutes, is_test
-       FROM lessons
-      WHERE course_id = $1
-        AND is_published = true
-      ORDER BY lesson_number, id`,
-    [groupRow.course_id],
-  )
+  const [lessons, homework, grades] = await Promise.all([
+    query(
+      `SELECT l.id, l.lesson_number, l.title, l.topic, l.lesson_date, l.duration_minutes, l.is_test,
+              s.starts_at, a.attendance_status
+         FROM lessons l
+    LEFT JOIN offline_class_sessions s ON s.group_id = $1 AND s.lesson_id = l.id AND s.status <> 'cancelled'
+    LEFT JOIN offline_attendance_records a ON a.session_id = s.id AND a.student_id = $2
+        WHERE l.course_id = $3 AND l.is_published = true
+        ORDER BY COALESCE(s.starts_at, l.lesson_date::timestamptz), l.lesson_number, l.id`,
+      [group.id, student.id, groupRow.course_id],
+    ),
+    query(
+      `SELECT h.id, h.lesson_id, h.title, h.body, h.due_at, l.title AS lesson_title, sub.status AS submission_status
+         FROM offline_homework h
+    LEFT JOIN lessons l ON l.id = h.lesson_id
+    LEFT JOIN offline_homework_submissions sub ON sub.homework_id = h.id AND sub.student_id = $2
+        WHERE h.group_id = $1 AND h.is_published = true
+        ORDER BY h.due_at NULLS LAST, h.id DESC`,
+      [group.id, student.id],
+    ),
+    query(
+      `SELECT id, class_session_id, homework_id, title, score
+         FROM offline_grades
+        WHERE group_id = $1 AND student_id = $2 AND is_published = true
+        ORDER BY created_at DESC, id DESC`,
+      [group.id, student.id],
+    ),
+  ])
 
   return {
     status: 200,
@@ -159,6 +199,9 @@ GET('/v1/platform/offline-dashboard', async ({ req, config }) => {
       ...dashboard,
       group,
       lessons: lessons.rows.map(publicOfflineLesson),
+      homework: homework.rows.map(publicOfflineHomework),
+      grades: grades.rows.map(publicOfflineGrade),
+      availability: { exactSchedule: lessons.rows.some(row => row.starts_at != null), materials: false },
     },
   }
 })

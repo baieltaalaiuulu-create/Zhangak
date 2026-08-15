@@ -16,6 +16,7 @@ import './routes/admin-access.js'
 import './routes/platform-learning.js'
 import './routes/platform-teacher.js'
 import './routes/platform-offline.js'
+import './routes/platform-offline-classroom.js'
 import './routes/platform-universities.js'
 import './routes/platform-profile.js'
 

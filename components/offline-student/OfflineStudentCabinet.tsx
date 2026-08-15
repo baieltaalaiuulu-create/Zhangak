@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState, type TouchEvent } from 'react'
@@ -22,7 +21,6 @@ import {
   LogOut,
   Menu,
   PenLine,
-  PlayCircle,
   Target,
   TrendingUp,
   UserRoundCheck,
@@ -32,6 +30,7 @@ import {
 } from 'lucide-react'
 
 import { logoutZhangak } from '@/lib/zhangak-auth-client'
+import { submitOfflineHomework } from '@/lib/offline-classroom'
 import {
   activeHomework,
   attendanceSummary,
@@ -130,7 +129,17 @@ function LessonRow({ lesson }: { lesson: OfflineLesson }) {
   )
 }
 
-function HomeworkCard({ item }: { item: OfflineHomework }) {
+function HomeworkCard({ item, onSubmitted }: { item: OfflineHomework; onSubmitted?: () => Promise<void> }) {
+  const [answer, setAnswer] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const submit = async () => {
+    if (!answer.trim() || !onSubmitted) return
+    setSaving(true); setError(null)
+    try { await submitOfflineHomework(item.id, answer.trim()); await onSubmitted(); setAnswer('') }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Не удалось сдать задание') }
+    finally { setSaving(false) }
+  }
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start gap-3">
@@ -145,6 +154,7 @@ function HomeworkCard({ item }: { item: OfflineHomework }) {
             <Clock3 size={14} aria-hidden="true" />
             {item.completed ? 'Выполнено' : item.dueAt ? `Срок: ${formatDate(item.dueAt)}` : 'Срок не указан'}
           </p>
+          {!item.completed && onSubmitted && <div className="mt-4 border-t border-slate-100 pt-4"><label className="text-xs font-bold text-slate-600" htmlFor={`homework-${item.id}`}>Текст сдачи</label><textarea id={`homework-${item.id}`} value={answer} onChange={event => setAnswer(event.target.value)} maxLength={50000} rows={3} className="mt-2 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]" placeholder="Напиши ответ или опиши выполненную работу" /><div className="mt-2 flex flex-wrap items-center justify-between gap-2"><p className="text-xs text-slate-500">Файлы будут добавлены в следующем этапе хранилища.</p><button type="button" onClick={() => void submit()} disabled={saving || !answer.trim()} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#1B3F92] px-3 text-sm font-bold text-white disabled:opacity-50"><CheckCircle2 size={16} />{saving ? 'Отправляем…' : 'Сдать'}</button></div>{error && <p role="alert" className="mt-2 text-xs font-semibold text-red-700">{error}</p>}</div>}
         </div>
       </div>
     </article>
@@ -310,16 +320,11 @@ function MaterialsSection({ lessons, available }: { lessons: OfflineLesson[]; av
   )
 }
 
-function PracticeSection({ canUseOnline }: { canUseOnline: boolean }) {
+function PracticeSection() {
   return (
     <div className="space-y-5">
       <SectionTitle title="Практика" description="Ученик решает задания в общем тренажёре — отдельные копии результатов не создаются." />
-      {canUseOnline ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Link href="/student/online/practice" className="rounded-3xl bg-orange-500 p-5 text-white shadow-lg shadow-orange-500/15"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15"><PenLine size={22} /></span><h2 className="mt-4 text-xl font-black">Свободная практика</h2><p className="mt-2 text-sm leading-6 text-orange-50">Выбери предмет и тему, затем решай в своём темпе.</p><span className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-orange-600">Открыть <ArrowRight size={16} /></span></Link>
-          <Link href="/student/online/practice?type=mock" className="rounded-3xl bg-[#1B3F92] p-5 text-white shadow-lg shadow-blue-700/15"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15"><CalendarDays size={22} /></span><h2 className="mt-4 text-xl font-black">Пробный тест</h2><p className="mt-2 text-sm leading-6 text-blue-50">Открой опубликованный пробный тест в общем тренажёре.</p><span className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-[#1B3F92]">Открыть <PlayCircle size={17} /></span></Link>
-        </div>
-      ) : <EmptyState icon={PenLine} title="Онлайн-тренажёр не подключён к аккаунту" text="Обратись к администратору, чтобы включить тип обучения «оба». Офлайн-данные при этом сохранятся." />}
+      <EmptyState icon={PenLine} title="Онлайн-тренажёр недоступен в офлайн-курсе" text="У каждого ученика один активный тип обучения. Администратор поможет сменить курс после завершения или отмены текущего обучения." />
     </div>
   )
 }
@@ -339,15 +344,15 @@ function ProgressSection({ dashboard }: { dashboard: OfflineStudentDashboard }) 
   )
 }
 
-function HomeworkSection({ homework }: { homework: OfflineHomework[] }) {
+function HomeworkSection({ homework, onSubmitted }: { homework: OfflineHomework[]; onSubmitted: () => Promise<void> }) {
   const active = homework.filter(item => !item.completed)
   const completed = homework.filter(item => item.completed)
   return (
     <div className="space-y-5">
-      <SectionTitle title="Домашние задания" description="Этот раздел будет подключён после отдельного переноса заданий и сдач в наш сервер." />
-      {homework.length === 0 ? <EmptyState icon={ClipboardCheck} title="Домашние задания ещё не подключены" text="Мы не показываем задания из старой системы. После безопасного переноса они появятся в этом разделе." /> : (
+      <SectionTitle title="Домашние задания" description="Сдай текстовый ответ до срока. После отправки преподаватель увидит его в журнале." />
+      {homework.length === 0 ? <EmptyState icon={ClipboardCheck} title="Новых заданий нет" text="Когда преподаватель опубликует задание для твоей группы, оно появится здесь." /> : (
         <>
-          <section><h2 className="mb-3 text-sm font-black uppercase tracking-wide text-slate-500">Нужно сделать</h2>{active.length > 0 ? <div className="space-y-3">{active.map(item => <HomeworkCard key={item.id} item={item} />)}</div> : <p className="rounded-2xl bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">Все опубликованные задания выполнены.</p>}</section>
+          <section><h2 className="mb-3 text-sm font-black uppercase tracking-wide text-slate-500">Нужно сделать</h2>{active.length > 0 ? <div className="space-y-3">{active.map(item => <HomeworkCard key={item.id} item={item} onSubmitted={onSubmitted} />)}</div> : <p className="rounded-2xl bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">Все опубликованные задания выполнены.</p>}</section>
           {completed.length > 0 && <section><h2 className="mb-3 text-sm font-black uppercase tracking-wide text-slate-500">Выполненные</h2><div className="space-y-3">{completed.map(item => <HomeworkCard key={item.id} item={item} />)}</div></section>}
         </>
       )}
@@ -369,7 +374,7 @@ function useSwipe(onMove: (delta: number) => void) {
   }
 }
 
-export default function OfflineStudentCabinet({ dashboard }: { dashboard: OfflineStudentDashboard }) {
+export default function OfflineStudentCabinet({ dashboard, onRefresh }: { dashboard: OfflineStudentDashboard; onRefresh: () => Promise<void> }) {
   const router = useRouter()
   const [section, setSection] = useState<Section>('home')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -384,10 +389,10 @@ export default function OfflineStudentCabinet({ dashboard }: { dashboard: Offlin
     if (section === 'schedule') return <ScheduleSection lessons={dashboard.lessons} />
     if (section === 'attendance') return <AttendanceSection lessons={dashboard.lessons} />
     if (section === 'materials') return <MaterialsSection lessons={dashboard.lessons} available={dashboard.availability.materials} />
-    if (section === 'practice') return <PracticeSection canUseOnline={false} />
+    if (section === 'practice') return <PracticeSection />
     if (section === 'progress') return <ProgressSection dashboard={dashboard} />
-    return <HomeworkSection homework={dashboard.homework} />
-  }, [dashboard, section])
+    return <HomeworkSection homework={dashboard.homework} onSubmitted={onRefresh} />
+  }, [dashboard, onRefresh, section])
 
   const goTo = (next: Section) => { setSection(next); setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   const logout = async () => {

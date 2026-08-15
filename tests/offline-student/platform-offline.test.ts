@@ -26,25 +26,25 @@ const response = {
     startsAt: '2026-09-10',
     durationMinutes: 90,
     isTest: false,
-    attendance: 'pending',
+    attendance: 'present',
     topics: ['Дискриминант'],
   }],
-  homework: [],
-  grades: [],
+  homework: [{ id: 8, lessonId: 3, lessonTitle: 'Квадратные уравнения', title: 'Решить №1–10', description: null, dueAt: '2026-09-12T08:00:00.000Z', completed: false }],
+  grades: [{ lessonId: 3, lessonTitle: 'Контрольная', math: null, analogy: null, reading: null, grammar: null, total: 90 }],
   progress: { latestOrtScore: null, targetScore: 200 },
-  availability: { exactSchedule: false, materials: false },
+  availability: { exactSchedule: true, materials: false },
 }
 
-test('first-party offline client accepts the limited owned-schema projection', () => {
+test('first-party offline client accepts the owned classroom projection', () => {
   assert.deepEqual(parseOfflineStudentDashboard(response), response)
 })
 
-test('offline client fails closed if an unmigrated attendance, grade, or schedule field appears', () => {
+test('offline client fails closed for malformed classroom data', () => {
   const unsafeResponses = [
     { ...response, homework: [{ id: 1 }] },
     { ...response, grades: [{ lessonId: 3 }] },
-    { ...response, availability: { exactSchedule: true, materials: false } },
-    { ...response, lessons: [{ ...response.lessons[0], attendance: 'present' }] },
+    { ...response, availability: { exactSchedule: 'yes', materials: false } },
+    { ...response, lessons: [{ ...response.lessons[0], attendance: 'remote' }] },
     { ...response, progress: { latestOrtScore: 180, targetScore: 200 } },
   ]
   for (const value of unsafeResponses) {

@@ -7,7 +7,9 @@ import { fileURLToPath } from 'node:url'
 import { HttpError } from '../src/http.js'
 import {
   emptyOfflineDashboard,
+  publicOfflineGrade,
   publicOfflineGroup,
+  publicOfflineHomework,
   publicOfflineLesson,
   requireOfflineStudent,
 } from '../src/routes/platform-offline.js'
@@ -49,6 +51,14 @@ test('offline dashboard returns only data represented by the owned learning sche
     attendance: 'pending',
     topics: ['Дискриминант'],
   })
+  assert.deepEqual(publicOfflineHomework({
+    id: '5', lesson_id: '3', lesson_title: 'Квадратные уравнения', title: 'Решить №1–10', body: 'Покажите ход решения', due_at: '2026-09-12T08:00:00.000Z', submission_status: 'submitted',
+  }), {
+    id: 5, lessonId: 3, lessonTitle: 'Квадратные уравнения', title: 'Решить №1–10', description: 'Покажите ход решения', dueAt: '2026-09-12T08:00:00.000Z', completed: true,
+  })
+  assert.deepEqual(publicOfflineGrade({ id: '8', class_session_id: '3', homework_id: null, title: 'Контрольная', score: '90' }), {
+    lessonId: 3, lessonTitle: 'Контрольная', math: null, analogy: null, reading: null, grammar: null, total: 90,
+  })
 })
 
 test('offline dashboard denies non-students and accounts without the offline learning type', () => {
@@ -64,7 +74,7 @@ test('offline dashboard denies non-students and accounts without the offline lea
   }
 })
 
-test('offline route is bearer-scoped, read-only, and does not revive unmigrated legacy domains', async () => {
+test('offline dashboard is bearer-scoped and reads only owned classroom records', async () => {
   const source = await readFile(path.join(backendRoot, 'src', 'routes', 'platform-offline.js'), 'utf8')
   assert.match(source, /GET\('\/v1\/platform\/offline-dashboard'/)
   assert.match(source, /requireOfflineStudent\(await requireAuth\(config, req\)\)/)
@@ -73,10 +83,11 @@ test('offline route is bearer-scoped, read-only, and does not revive unmigrated 
   assert.match(source, /g\.delivery_mode = 'offline'/)
   assert.match(source, /c\.delivery_mode = 'offline'/)
   assert.match(source, /is_published = true/)
-  assert.match(source, /attendance: 'pending'/)
-  assert.match(source, /homework: \[\]/)
-  assert.match(source, /grades: \[\]/)
-  for (const forbidden of [/\bFROM attendance\b/i, /\bFROM homework/i, /\bFROM test_results\b/i, /\bFROM practice_results\b/i, /\bcorrect_answer\b/i, /\bPOST\('/, /\bPATCH\('/, /\bDELETE\('/, /supabase/i]) {
+  assert.match(source, /offline_class_sessions/)
+  assert.match(source, /offline_attendance_records/)
+  assert.match(source, /offline_homework/)
+  assert.match(source, /offline_grades/)
+  for (const forbidden of [/\bFROM attendance\b/i, /\bFROM test_results\b/i, /\bFROM practice_results\b/i, /\bcorrect_answer\b/i, /\bPOST\('/, /\bPATCH\('/, /\bDELETE\('/, /supabase/i]) {
     assert.equal(forbidden.test(source), false, `offline route must not contain ${forbidden}`)
   }
 })

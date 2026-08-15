@@ -14,6 +14,7 @@ import {
 
 import { logoutZhangak } from '@/lib/zhangak-auth-client'
 import type { PlatformTeacherDashboard, PlatformTeacherGroup } from '@/lib/platform-teacher'
+import OfflineTeacherJournal from './OfflineTeacherJournal'
 
 interface Props {
   dashboard: PlatformTeacherDashboard
@@ -77,7 +78,7 @@ function EmptyGroups() {
 export default function TeacherWorkspace({ dashboard, onRefresh, refreshing }: Props) {
   const logout = async () => {
     await logoutZhangak().catch(() => {})
-    window.location.replace('/login?surface=platform')
+    window.location.replace('/login')
   }
 
   const firstName = dashboard.teacher.fullName.split(' ')[0] || 'Преподаватель'
@@ -107,14 +108,15 @@ export default function TeacherWorkspace({ dashboard, onRefresh, refreshing }: P
           </div>
         </section>
 
-        <section className="mt-5 rounded-3xl border border-amber-200 bg-amber-50 p-5 text-amber-950">
-          <div className="flex gap-3"><CircleAlert className="mt-0.5 shrink-0 text-amber-700" size={20} aria-hidden="true" /><div><h2 className="font-black">Журнал и задания переносятся</h2><p className="mt-1 text-sm leading-6">Посещаемость, оценки, домашние задания и карточки учеников пока не отображаются и не принимаются. Они появятся только после отдельной безопасной миграции на наш backend.</p></div></div>
+        <section className="mt-5 rounded-3xl border border-blue-200 bg-blue-50 p-5 text-blue-950">
+          <div className="flex gap-3"><CircleAlert className="mt-0.5 shrink-0 text-[#1B3F92]" size={20} aria-hidden="true" /><div><h2 className="font-black">Журнал группы</h2><p className="mt-1 text-sm leading-6">Отмечайте посещаемость, назначайте задания, ставьте оценки и оставляйте комментарии. Состав группы и курс редактирует администратор.</p></div></div>
         </section>
 
         <section className="mt-6" aria-labelledby="teacher-groups-title">
           <div className="mb-4 flex items-center justify-between gap-4"><h2 id="teacher-groups-title" className="text-lg font-black text-slate-950">Назначенные группы</h2><span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-slate-600 shadow-sm">{dashboard.groups.length}</span></div>
           {dashboard.groups.length === 0 ? <EmptyGroups /> : <div className="grid gap-4 lg:grid-cols-2">{dashboard.groups.map(group => <GroupCard key={group.id} group={group} />)}</div>}
         </section>
+        {dashboard.groups.map(group => <OfflineTeacherJournal key={group.id} groupId={group.id} />)}
       </main>
     </div>
   )

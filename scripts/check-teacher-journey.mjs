@@ -20,12 +20,14 @@ async function collect(directory) {
 }
 
 async function main() {
-  const [route, server, page, workspace, client, proxy] = await Promise.all([
+  const [route, classroomRoute, server, page, workspace, client, classroomClient, proxy] = await Promise.all([
     source('backend/src/routes/platform-teacher.js'),
+    source('backend/src/routes/platform-offline-classroom.js'),
     source('backend/src/server.js'),
     source('app/teacher/page.tsx'),
     source('components/teacher/TeacherWorkspace.tsx'),
     source('lib/platform-teacher.ts'),
+    source('lib/offline-classroom.ts'),
     source('proxy.ts'),
   ])
 
@@ -41,13 +43,17 @@ async function main() {
   expect(server.includes("import './routes/platform-teacher.js'"), 'teacher dashboard route must be registered')
 
   expect(page.includes('getPlatformTeacherDashboard') && page.includes('TeacherWorkspace'), 'teacher page must load the first-party dashboard')
-  expect(page.includes("'/login?surface=platform'"), 'expired teacher sessions must offer the first-party login')
+  expect(page.includes("'/login'"), 'expired teacher sessions must offer the first-party login')
   expect(!/teacher-data|teacher-contract|\/api\/teacher|supabase/i.test(page), 'mounted teacher page must not depend on the retired teacher API or Supabase')
   expect(workspace.includes('activeStudentCount') && workspace.includes('publishedLessonCount'), 'teacher UI must render server-authoritative counts')
-  expect(workspace.includes('Журнал и задания переносятся'), 'teacher UI must state that unmigrated workflows are unavailable')
+  expect(workspace.includes('OfflineTeacherJournal'), 'teacher UI must expose the owned offline classroom journal')
   expect(!/teacher-data|teacher-contract|saveTeacher|createTeacherHomework|supabase/i.test(workspace), 'mounted teacher workspace must not call legacy teacher or Supabase code')
   expect(client.includes("zhangakApiRequest<unknown>('/v1/platform/teacher-dashboard')"), 'teacher browser client must use the same-origin first-party BFF')
-  expect(proxy.includes("if (matchesPrefix(pathname, '/v1/platform')) return 'platform'"), 'teacher BFF must remain on the platform host')
+  expect(classroomClient.includes("/v1/platform/offline/teacher/groups/${groupId}") && classroomClient.includes('zhangakApiJson'), 'teacher journal client must use the first-party offline BFF only')
+  expect(classroomRoute.includes("GET('/v1/platform/offline/teacher/groups/:groupId'"), 'teacher classroom projection must live on the offline API')
+  expect(classroomRoute.includes("actor.role === 'teacher' && group.teacher_id !== actor.id"), 'teacher classroom access must stay group-owner scoped')
+  expect(classroomRoute.includes("POST('/v1/platform/offline/groups/:groupId/sessions'"), 'teacher classroom must audit first-party session writes')
+  expect(proxy.includes("pathname === '/v1/platform/teacher-dashboard'"), 'teacher BFF must remain on the offline host')
 
   const scanFiles = [
     ...(await collect('components/teacher')),
@@ -63,7 +69,7 @@ async function main() {
     process.exitCode = 1
     return
   }
-  console.log(`Teacher journey check passed (${scanFiles.length} mounted files, first-party session, count-only dashboard).`)
+  console.log(`Teacher journey check passed (${scanFiles.length} mounted files, first-party session and offline classroom journal).`)
 }
 
 main().catch(error => {

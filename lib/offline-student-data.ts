@@ -66,17 +66,14 @@ function studentType(value: unknown): OfflineStudentProfile['studentType'] {
   return value
 }
 
-function dateOnly(value: unknown): string | null {
+function dateOrTime(value: unknown): string | null {
   if (value === null) return null
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) invalidResponse()
+  if (typeof value !== 'string' || (!/^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isFinite(new Date(value).getTime()))) invalidResponse()
   return value
 }
 
-function pendingAttendance(value: unknown): AttendanceState {
-  // The owned schema deliberately has no attendance table yet.  Accepting
-  // only `pending` prevents the retired API from silently reappearing with
-  // legacy marks under an otherwise first-party route.
-  if (value !== 'pending') invalidResponse()
+function attendance(value: unknown): AttendanceState {
+  if (value !== 'pending' && value !== 'present' && value !== 'late' && value !== 'absent') invalidResponse()
   return value
 }
 
@@ -114,28 +111,49 @@ function lesson(value: unknown): OfflineLesson {
     id: positiveInteger(source.id),
     lessonNumber: positiveInteger(source.lessonNumber),
     title: requiredText(source.title),
-    startsAt: dateOnly(source.startsAt),
+    startsAt: dateOrTime(source.startsAt),
     durationMinutes: nullablePositiveInteger(source.durationMinutes),
     isTest: source.isTest,
-    attendance: pendingAttendance(source.attendance),
+    attendance: attendance(source.attendance),
     topics: topics(source.topics),
   }
 }
 
-/**
- * Strictly parse the limited first-party offline projection.  Homework,
- * grades, attendance and exact timing are purposefully not accepted until
- * they have a dedicated owned-schema migration and audited server contract.
- */
+function homework(value: unknown): OfflineStudentDashboard['homework'][number] {
+  const source = record(value)
+  return {
+    id: positiveInteger(source.id),
+    lessonId: source.lessonId === null ? null : positiveInteger(source.lessonId),
+    lessonTitle: requiredText(source.lessonTitle),
+    title: requiredText(source.title),
+    description: source.description === null ? null : requiredText(source.description),
+    dueAt: dateOrTime(source.dueAt),
+    completed: source.completed === true,
+  }
+}
+
+function grade(value: unknown): OfflineStudentDashboard['grades'][number] {
+  const source = record(value)
+  const score = (candidate: unknown): number | null => {
+    if (candidate === null) return null
+    if (!Number.isSafeInteger(candidate) || (candidate as number) < 0 || (candidate as number) > 100) invalidResponse()
+    return candidate as number
+  }
+  return {
+    lessonId: positiveInteger(source.lessonId), lessonTitle: requiredText(source.lessonTitle),
+    math: score(source.math), analogy: score(source.analogy), reading: score(source.reading), grammar: score(source.grammar), total: score(source.total),
+  }
+}
+
+/** Strictly parse the first-party offline classroom projection. */
 export function parseOfflineStudentDashboard(value: unknown): OfflineStudentDashboard {
   const source = record(value)
   if (!Array.isArray(source.lessons) || !Array.isArray(source.homework) || !Array.isArray(source.grades)) invalidResponse()
-  if (source.homework.length !== 0 || source.grades.length !== 0) invalidResponse()
   const parsedProfile = profile(source.profile)
   const progress = record(source.progress)
   const availability = record(source.availability)
   if (progress.latestOrtScore !== null || nullableTargetScore(progress.targetScore) !== parsedProfile.targetScore) invalidResponse()
-  if (availability.exactSchedule !== false || availability.materials !== false) invalidResponse()
+  if (typeof availability.exactSchedule !== 'boolean' || availability.materials !== false) invalidResponse()
 
   const lessons = source.lessons.map(lesson)
   if (new Set(lessons.map(item => item.id)).size !== lessons.length) invalidResponse()
@@ -144,10 +162,10 @@ export function parseOfflineStudentDashboard(value: unknown): OfflineStudentDash
     profile: parsedProfile,
     group: group(source.group),
     lessons,
-    homework: [],
-    grades: [],
+    homework: source.homework.map(homework),
+    grades: source.grades.map(grade),
     progress: { latestOrtScore: null, targetScore: parsedProfile.targetScore },
-    availability: { exactSchedule: false, materials: false },
+    availability: { exactSchedule: availability.exactSchedule, materials: false },
   }
 }
 

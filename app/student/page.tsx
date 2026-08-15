@@ -89,5 +89,5 @@ export default function OfflineStudentPage() {
     )
   }
 
-  return <OfflineStudentCabinet dashboard={dashboard} />
+  return <OfflineStudentCabinet dashboard={dashboard} onRefresh={retry} />
 }

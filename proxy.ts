@@ -45,7 +45,9 @@ function routeSurface(pathname: string): RouteSurface {
   // The same first-party API namespace serves both learning modes. The
   // offline dashboard and teacher view are reachable only from the offline
   // host; all other platform APIs are the online student surface.
-  if (pathname === '/v1/platform/offline-dashboard' || pathname === '/v1/platform/teacher-dashboard') return 'offline'
+  if (pathname === '/v1/platform/offline-dashboard'
+    || matchesPrefix(pathname, '/v1/platform/offline')
+    || pathname === '/v1/platform/teacher-dashboard') return 'offline'
   if (matchesPrefix(pathname, '/v1/platform')) return 'platform'
   if (matchesPrefix(pathname, '/v1/admin')) return 'admin'
   if (RETIRED_LEGACY_API_PREFIXES.some(prefix => matchesPrefix(pathname, prefix))) return 'retired-api'
