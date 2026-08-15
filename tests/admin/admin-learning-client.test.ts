@@ -20,6 +20,7 @@ const COURSE = {
   subject: 'Математика',
   description: 'Базовая программа',
   coverImageUrl: null,
+  deliveryMode: 'online',
   isActive: true,
   lessonCount: 1,
   createdAt: '2026-08-13T08:00:00.000Z',

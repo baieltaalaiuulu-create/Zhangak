@@ -10,6 +10,7 @@ export interface AdminCourse {
   subject: string | null
   description: string | null
   coverImageUrl: string | null
+  deliveryMode: 'online' | 'offline'
   isActive: boolean
   lessonCount: number
   createdAt: string
@@ -41,6 +42,7 @@ export interface AdminCourseInput {
   subject?: string | null
   description?: string | null
   coverImageUrl?: string | null
+  deliveryMode?: 'online' | 'offline'
   isActive?: boolean
 }
 
@@ -149,6 +151,7 @@ function nullableHttpsUrl(value: unknown, context: string): string | null {
 
 export function parseAdminCourse(value: unknown): AdminCourse {
   const source = record(value, 'курс')
+  if (source.deliveryMode !== 'online' && source.deliveryMode !== 'offline') invalidResponse('формат обучения курса')
   return {
     id: positiveInteger(source.id, 'id курса'),
     name: text(source.name, 'название курса'),
@@ -157,6 +160,7 @@ export function parseAdminCourse(value: unknown): AdminCourse {
     subject: nullableText(source.subject, 'предмет курса'),
     description: nullableText(source.description, 'описание курса'),
     coverImageUrl: nullableHttpsUrl(source.coverImageUrl, 'обложка курса'),
+    deliveryMode: source.deliveryMode,
     isActive: boolean(source.isActive, 'статус курса'),
     lessonCount: count(source.lessonCount, 'количество уроков'),
     createdAt: timestamp(source.createdAt, 'дата создания курса'),

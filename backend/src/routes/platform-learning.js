@@ -8,6 +8,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3
 const ANSWERS = new Set(['a', 'b', 'c', 'd'])
 const MAX_ANSWERS = 200
 const MAX_ELAPSED_SECONDS = 86_400
+const LESSON_COMPLETION_XP = 20
 
 class AttemptDeadlineElapsed extends Error {}
 
@@ -197,6 +198,9 @@ function publicAttempt(row) {
     questionCount: Number(row.question_count),
     correctCount: row.status === 'submitted' ? nullableNumber(row.correct_count) : null,
     scorePercent: row.status === 'submitted' ? nullableNumber(row.score_percent) : null,
+    starCount: row.status === 'submitted'
+      ? (Number(row.score_percent) >= 90 ? 3 : Number(row.score_percent) >= 75 ? 2 : Number(row.score_percent) >= 50 ? 1 : 0)
+      : null,
     passed: row.status === 'submitted' ? row.passed : null,
     elapsedSeconds: row.status === 'submitted' ? nullableNumber(row.elapsed_seconds) : null,
     startedAt: dateValue(row.started_at),
@@ -346,6 +350,17 @@ function requireUnlockedLesson(lesson) {
   return lesson
 }
 
+async function awardLessonXp(client, studentId, courseId, lessonId) {
+  // The award key is an immutable business identifier. Replaying a request,
+  // reopening a lesson, or resetting trainer progress cannot grant it again.
+  await client.query(
+    `INSERT INTO student_xp_awards (student_id, course_id, award_key, source_type, source_id, xp_amount)
+     VALUES ($1, $2, $3, 'lesson', $4, $5)
+     ON CONFLICT (student_id, award_key) DO NOTHING`,
+    [studentId, courseId, `lesson:${lessonId}`, String(lessonId), LESSON_COMPLETION_XP],
+  )
+}
+
 async function completeSelfPacedLesson(client, student, lessonId) {
   // All student progress mutations take this same row lock. It makes a
   // simultaneous completion of the previous and next lessons deterministic:
@@ -375,6 +390,7 @@ async function completeSelfPacedLesson(client, student, lessonId) {
      VALUES ($1, 'complete_lesson', 'lesson', $2, $3::jsonb)`,
     [student.id, String(lesson.id), JSON.stringify({ completionMode: 'self' })],
   )
+  await awardLessonXp(client, student.id, lesson.course_id, lesson.id)
   return {
     ...lesson,
     completion_percent: progress.rows[0].completion_percent,
@@ -692,6 +708,7 @@ async function submitAttempt(client, student, attemptId, input) {
               completed_at = COALESCE(lesson_progress.completed_at, now())`,
       [student.id, submitted.lesson_id],
     )
+    await awardLessonXp(client, student.id, submitted.course_id, submitted.lesson_id)
   }
   await client.query(
     `INSERT INTO audit_log (actor_user_id, action, target_type, target_id, metadata)

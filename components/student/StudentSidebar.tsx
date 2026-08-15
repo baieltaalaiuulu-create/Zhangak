@@ -96,7 +96,7 @@ export default function StudentSidebar({ isOpen, onClose, fullName = 'Студе
 
         <div className="space-y-2 border-t border-white/5 px-3 py-4">
           <Link
-            href="/student/online/practice"
+            href="/student/online/trainer"
             onClick={onClose}
             className="block w-full rounded-xl py-2.5 text-center text-sm font-bold text-white shadow-md transition-opacity hover:opacity-90"
             style={{ background: 'linear-gradient(135deg, #6C3DE0 0%, #4338CA 100%)' }}

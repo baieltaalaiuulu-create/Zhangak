@@ -143,7 +143,7 @@ export default function StudentOnlinePage() {
   const continueHref = summary.courseCount > 0 ? '/student/online/lessons' : '/student/online/practice'
   const subjects = [
     { key: 'math' as const, label: 'Уроки', topicLabel: summary.courseCount > 0 ? 'Продолжай программу курса' : 'Курс появится после назначения группы', color: '#1B3F92', completed: summary.lessons.completed, total: summary.lessons.total, hoursRemaining: 0, href: '/student/online/lessons' },
-    { key: 'kyr' as const, label: 'Тренажёр', topicLabel: summary.practice.attempts > 0 ? `Попыток: ${summary.practice.attempts}, успешно: ${summary.practice.passed}` : 'Начни первую безопасную попытку', color: '#14B8A6', completed: summary.practice.passed, total: summary.practice.attempts, hoursRemaining: 0, href: '/student/online/practice' },
+    { key: 'kyr' as const, label: 'Тренажёр', topicLabel: 'Выбери предмет, раздел и сложность — правильные вопросы не повторяются', color: '#14B8A6', completed: summary.practice.passed, total: summary.practice.attempts, hoursRemaining: 0, href: '/student/online/trainer' },
   ]
 
   return (
@@ -164,10 +164,10 @@ export default function StudentOnlinePage() {
             lessonDone={summary.lessons.total > 0 && summary.lessons.completed >= summary.lessons.total}
             lessonHref="/student/online/lessons"
             practiceDone={summary.practice.attempts > 0}
-            practiceHref="/student/online/practice"
+            practiceHref="/student/online/trainer"
             challengeDone={false}
             challengeHref="/student/online/practice/daily"
-            challengeAvailable={false}
+            challengeAvailable
           />
         </div>
 

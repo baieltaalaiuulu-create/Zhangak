@@ -37,6 +37,14 @@ const requiredTables = [
   'offline_comments',
   'offline_announcements',
   'lesson_materials',
+  'student_xp_awards',
+  'daily_challenges',
+  'daily_challenge_questions',
+  'daily_challenge_attempts',
+  'trainer_answers',
+  'trainer_question_issues',
+  'trainer_question_mastery',
+  'trainer_progress_resets',
 ]
 
 function fail(message) {

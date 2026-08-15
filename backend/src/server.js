@@ -19,6 +19,8 @@ import './routes/platform-offline.js'
 import './routes/platform-offline-classroom.js'
 import './routes/platform-universities.js'
 import './routes/platform-profile.js'
+import './routes/platform-gamification.js'
+import './routes/admin-gamification.js'
 
 const config = loadConfig()
 connectDatabase(config)

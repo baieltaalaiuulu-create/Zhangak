@@ -27,7 +27,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin/practice', label: 'Практика', icon: ListChecks, availability: 'ready' },
   { href: '/admin/questions', label: 'Вопросы', icon: PenLine, availability: 'ready' },
   { href: '/admin/mock', label: 'Пробный ОРТ', icon: ClipboardList, availability: 'ready' },
-  { href: '/admin/daily-challenge', label: 'Задание дня', icon: Zap, availability: 'migration' },
+  { href: '/admin/daily-challenge', label: 'Задание дня', icon: Zap, availability: 'ready' },
   { href: '/admin/prizes', label: 'Рейтинг и призы', icon: Trophy, availability: 'migration' },
   { href: '/admin/knowledge-base', label: 'База знаний AI', icon: Brain, availability: 'migration' },
   { href: '/admin/universities', label: 'Университеты', icon: GraduationCap, availability: 'migration' },
@@ -38,12 +38,12 @@ const NAV_ITEMS: NavItem[] = [
 ]
 
 const NAV_GROUPS: { label: string; availability: NavAvailability; hrefs: string[] }[] = [
-  { label: 'Рабочие разделы', availability: 'ready', hrefs: ['/admin', '/admin/lessons', '/admin/groups', '/admin/students', '/admin/practice', '/admin/questions', '/admin/mock'] },
+  { label: 'Рабочие разделы', availability: 'ready', hrefs: ['/admin', '/admin/lessons', '/admin/groups', '/admin/students', '/admin/practice', '/admin/questions', '/admin/mock', '/admin/daily-challenge'] },
   {
     label: 'Перенос на наш backend',
     availability: 'migration',
     hrefs: [
-      '/admin/daily-challenge', '/admin/prizes', '/admin/knowledge-base',
+      '/admin/prizes', '/admin/knowledge-base',
       '/admin/universities', '/admin/archive', '/admin/analytics', '/admin/announcements',
     ],
   },
