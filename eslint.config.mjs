@@ -18,6 +18,9 @@ const eslintConfig = defineConfig([
     // mobile/ is a separate Expo/React Native project with its own
     // tooling (see mobile/package.json) — not part of this Next.js app.
     "mobile/**",
+    // Raw owner-provided content is not application source code. It is
+    // validated by the content manifest pipeline before any review/import.
+    "sorted_data/**",
   ]),
 ]);
 

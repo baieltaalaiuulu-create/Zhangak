@@ -31,6 +31,7 @@ env-файлы по шаблонам; реальные production-значени
 | `backend/test/` | Контрактные и security-тесты API/схемы |
 | `tests/` | Web-контракты, DTO, host-routing и пользовательские инварианты |
 | `scripts/` | Статические quality/security/data-plane проверки |
+| `backend/scripts/build-sorted-data-manifest.js` | Локальная инвентаризация raw-материалов до human review и импорта |
 | `mobile/` | Отдельный Expo-клиент с bearer-сессией собственного API |
 | `docs/` | Продуктовые, учебные, операционные и технические инструкции |
 | `deploy/` | systemd, Nginx, backup и атомарная активация релизов |
@@ -109,6 +110,11 @@ git diff --check
 Для изменения маршрутов дополнительно запускайте подходящие `check:*` из
 `package.json`. Для миграций CI поднимает disposable PostgreSQL и применяет
 весь ledger дважды. Для release обязателен `npm run build` и standalone smoke.
+
+Материалы из локального `sorted_data` сначала проходят
+[инвентаризацию и методическую проверку](content-import-pipeline.md). Скрипт
+импорта не должен получать доступ к Telegram-архивам, публиковать контент или
+создавать вопросы без отдельного утверждения.
 
 ## Git и review
 

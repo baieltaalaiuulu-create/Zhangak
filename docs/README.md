@@ -10,6 +10,7 @@
 | Кому | Начать здесь | Затем читать |
 | --- | --- | --- |
 | Разработчик | [Руководство разработчика](development/README.md) | [Архитектура и границы](development/architecture.md), [production](operations/production.md) |
+| Контент-импортёр | [Pipeline импорта материалов](development/content-import-pipeline.md) | [Подготовка учебного контента](education/content-authoring.md) |
 | Преподаватель | [Рабочее место преподавателя](education/teacher-guide.md) | [Регламент офлайн-группы](operations/offline-classroom.md) |
 | Методист / автор контента | [Подготовка учебного контента](education/content-authoring.md) | [Контент и регулярные обновления](operations/content-and-data.md) |
 | Admin / super-admin | [Операционная документация](operations/README.md) | [Аккаунты и роли](operations/accounts-and-roles.md) |
