@@ -20,16 +20,19 @@ async function walk(directory) {
 
 // The migration-preparation kit is quarantined from API runtime and has its
 // own static guard below; its source terminology must not weaken this check.
-const migrationPreparationFiles = new Set([
+const sourceMigrationFiles = new Set([
   'backend/scripts/supabase-migration-preflight.js',
   'backend/test/supabase-migration-preflight.test.js',
+  'backend/src/legacy-demo-content.js',
+  'backend/scripts/import-supabase-demo-content.js',
+  'backend/test/legacy-demo-content.test.js',
 ])
 const files = (await walk('backend')).filter(file =>
   /\.(?:js|sql|json)$/.test(file)
   && !file.includes('/node_modules/')
   && !file.includes('/dist/')
   && !file.includes('/migration-prep/')
-  && !migrationPreparationFiles.has(file),
+  && !sourceMigrationFiles.has(file),
 )
 const combined = (await Promise.all(files.map(read))).join('\n')
 expect(!/@supabase|supabase-js|supabase\.co/i.test(combined), 'first-party backend must not depend on Supabase')
@@ -48,6 +51,11 @@ const migrationPreflight = await read('backend/scripts/supabase-migration-prefli
 expect(!/from ['"]pg['"]|connectDatabase|\bfetch\s*\(|node:child_process|writeFile/.test(migrationPreflight), 'migration preflight must remain a local read-only preparation tool')
 expect(migrationPreflight.includes('SUPABASE_SOURCE_DATABASE_URL') && migrationPreflight.includes('ZHANGAK_TARGET_DATABASE_URL') && migrationPreflight.includes("'--apply'"), 'migration preflight must require explicit source, target, and --apply consent')
 
+const legacyDemoImporter = await read('backend/scripts/import-supabase-demo-content.js')
+const legacyDemoSource = await read('backend/src/legacy-demo-content.js')
+expect(legacyDemoImporter.includes("'--apply'") && legacyDemoImporter.includes('005_legacy_demo_import_ledger.sql'), 'legacy demo import must require an explicit apply mode and ledger migration')
+expect(legacyDemoSource.includes('private_image_migration_required'), 'legacy image questions must stay deferred until private assets are migrated')
+
 const auth = await read('backend/src/auth.js')
 expect(auth.includes('user.session_version !== claims.sv'), 'protected requests must enforce current session version')
 expect(auth.includes('s.revoked_at IS NULL') && auth.includes('s.expires_at > now()'), 'protected requests must check live session state')
@@ -59,6 +67,7 @@ expect(authRoutes.includes("POST('/v1/auth/refresh'"), 'refresh rotation endpoin
 expect(authRoutes.includes("GET('/v1/auth/me'"), 'current-account endpoint is required')
 
 const server = await read('backend/src/server.js')
+expect(!server.includes('legacy-demo-content'), 'legacy source import must not be part of the API runtime')
 expect(server.includes("import './routes/health.js'"), 'health routes must be registered')
 expect(server.includes("import './routes/admin-users.js'"), 'first-party account administration routes must be registered')
 expect(server.includes("import './routes/platform-profile.js'"), 'first-party student profile routes must be registered')

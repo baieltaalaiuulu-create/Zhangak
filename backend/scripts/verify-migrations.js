@@ -25,6 +25,7 @@ const requiredTables = [
   'practice_questions',
   'practice_attempts',
   'practice_attempt_items',
+  'legacy_content_imports',
   'universities',
   'university_specialties',
   'university_advantages',

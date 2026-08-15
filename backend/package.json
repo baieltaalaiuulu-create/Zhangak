@@ -12,6 +12,7 @@
     "verify:migrations": "node scripts/verify-migrations.js",
     "create:super-admin": "node scripts/create-super-admin.js",
     "migration:preflight": "node scripts/supabase-migration-preflight.js",
+    "import:legacy-demo": "node scripts/import-supabase-demo-content.js --dry-run",
     "package:release": "node scripts/package-release.js",
     "check": "node scripts/check-syntax.js",
     "test": "node --test test/*.test.js"
