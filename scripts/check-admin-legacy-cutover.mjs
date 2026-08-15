@@ -7,6 +7,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const failures = []
 const read = file => readFile(path.join(root, file), 'utf8')
 const expect = (condition, message) => { if (!condition) failures.push(message) }
+const pictograph = /\p{Extended_Pictographic}/u
 
 const migrationPages = [
   'app/admin/mock/[id]/questions/page.tsx',
@@ -68,7 +69,6 @@ expect(daily.includes('listAdminPracticeQuestions') && daily.includes('chosen.le
 expect(!/supabase|authenticatedFetch|\/api\/admin\//i.test(daily), 'daily challenge editor must not invoke retired admin data paths')
 expect(!pictograph.test(daily), 'daily challenge editor contains an emoji instead of an icon')
 
-const pictograph = /\p{Extended_Pictographic}/u
 for (const [index, page] of pages.entries()) {
   const file = migrationPages[index]
   expect(page.includes('AdminMigrationNotice'), `${file} must mount the shared first-party migration notice`)
