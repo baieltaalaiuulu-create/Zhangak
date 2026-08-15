@@ -12,6 +12,9 @@ class AttemptDeadlineElapsed extends Error {}
 
 function requireStudent(user) {
   if (!STUDENT_ROLES.includes(user.role)) throw new HttpError(403, 'Доступен только ученику', 'student_required')
+  if (user.role === 'student' && user.student_type !== 'online') {
+    throw new HttpError(403, 'Онлайн-платформа доступна только ученику онлайн-курса', 'online_student_required')
+  }
   return user
 }
 
@@ -301,10 +304,14 @@ async function loadAccessibleLesson(client, studentId, lessonId, { forUpdate = f
       WHERE l.id = $2 AND l.is_published = true
         AND EXISTS (
           SELECT 1
-            FROM group_students gs
-            JOIN groups g ON g.id = gs.group_id
-           WHERE gs.student_id = $1 AND gs.left_at IS NULL
-             AND g.is_active = true AND g.course_id = l.course_id
+            FROM course_enrollments ce
+            JOIN courses course_access
+              ON course_access.id = ce.course_id
+             AND course_access.is_active = true
+             AND course_access.delivery_mode = 'online'
+           WHERE ce.student_id = $1
+             AND ce.course_id = l.course_id
+             AND ce.status = 'active'
         )${lock}`,
     [studentId, lessonId],
   )
@@ -373,12 +380,14 @@ async function loadAccessibleTest(client, studentId, testId, forUpdate = false) 
         AND (
           t.course_id IS NULL OR EXISTS (
             SELECT 1
-              FROM group_students gs
-              JOIN groups g ON g.id = gs.group_id
-             WHERE gs.student_id = $1
-               AND gs.left_at IS NULL
-               AND g.course_id = t.course_id
-               AND g.is_active = true
+              FROM course_enrollments ce
+              JOIN courses course_access
+                ON course_access.id = ce.course_id
+               AND course_access.is_active = true
+               AND course_access.delivery_mode = 'online'
+             WHERE ce.student_id = $1
+               AND ce.course_id = t.course_id
+               AND ce.status = 'active'
           )
         )${lock}`,
     [studentId, testId],
@@ -676,10 +685,13 @@ GET('/v1/platform/dashboard', async ({ req, config }) => {
   const student = await currentStudent(config, req)
   const [courses, lessons, practice, latest] = await Promise.all([
     query(
-      `SELECT count(DISTINCT g.course_id)::int AS count
-         FROM group_students gs
-         JOIN groups g ON g.id = gs.group_id
-        WHERE gs.student_id = $1 AND gs.left_at IS NULL AND g.is_active = true`,
+      `SELECT count(*)::int AS count
+         FROM course_enrollments ce
+         JOIN courses c ON c.id = ce.course_id
+        WHERE ce.student_id = $1
+          AND ce.status = 'active'
+          AND c.is_active = true
+          AND c.delivery_mode = 'online'`,
       [student.id],
     ),
     query(
@@ -690,10 +702,14 @@ GET('/v1/platform/dashboard', async ({ req, config }) => {
         WHERE l.is_published = true
           AND EXISTS (
             SELECT 1
-              FROM group_students gs
-              JOIN groups g ON g.id = gs.group_id
-             WHERE gs.student_id = $1 AND gs.left_at IS NULL
-               AND g.is_active = true AND g.course_id = l.course_id
+              FROM course_enrollments ce
+              JOIN courses course_access
+                ON course_access.id = ce.course_id
+               AND course_access.is_active = true
+               AND course_access.delivery_mode = 'online'
+             WHERE ce.student_id = $1
+               AND ce.course_id = l.course_id
+               AND ce.status = 'active'
           )`,
       [student.id],
     ),
@@ -758,11 +774,13 @@ GET('/v1/platform/courses', async ({ req, config }) => {
             count(DISTINCT l.id) FILTER (WHERE l.is_published)::int AS lesson_count,
             count(DISTINCT lp.lesson_id) FILTER (WHERE lp.completed_at IS NOT NULL)::int AS completed_lesson_count
        FROM courses c
-       JOIN groups g ON g.course_id = c.id AND g.is_active = true
-       JOIN group_students gs ON gs.group_id = g.id AND gs.student_id = $1 AND gs.left_at IS NULL
+       JOIN course_enrollments ce
+         ON ce.course_id = c.id
+        AND ce.student_id = $1
+        AND ce.status = 'active'
        LEFT JOIN lessons l ON l.course_id = c.id AND l.is_published = true
        LEFT JOIN lesson_progress lp ON lp.lesson_id = l.id AND lp.student_id = $1
-      WHERE c.is_active = true
+      WHERE c.is_active = true AND c.delivery_mode = 'online'
       GROUP BY c.id
       ORDER BY c.name, c.id`,
     [student.id],
@@ -783,11 +801,15 @@ GET('/v1/platform/lessons', async ({ req, config, query: searchParams }) => {
       WHERE l.is_published = true
         AND ($2::bigint IS NULL OR l.course_id = $2)
         AND EXISTS (
-          SELECT 1
-            FROM group_students gs
-            JOIN groups g ON g.id = gs.group_id
-           WHERE gs.student_id = $1 AND gs.left_at IS NULL
-             AND g.is_active = true AND g.course_id = l.course_id
+            SELECT 1
+              FROM course_enrollments ce
+              JOIN courses course_access
+                ON course_access.id = ce.course_id
+               AND course_access.is_active = true
+               AND course_access.delivery_mode = 'online'
+             WHERE ce.student_id = $1
+               AND ce.course_id = l.course_id
+               AND ce.status = 'active'
         )
       ORDER BY l.course_id, l.lesson_number, l.id`,
     [student.id, courseId],
@@ -824,10 +846,14 @@ GET('/v1/platform/practice-tests', async ({ req, config }) => {
         AND (
           t.course_id IS NULL OR EXISTS (
             SELECT 1
-              FROM group_students gs
-              JOIN groups g ON g.id = gs.group_id
-             WHERE gs.student_id = $1 AND gs.left_at IS NULL
-               AND g.is_active = true AND g.course_id = t.course_id
+              FROM course_enrollments ce
+              JOIN courses course_access
+                ON course_access.id = ce.course_id
+               AND course_access.is_active = true
+               AND course_access.delivery_mode = 'online'
+             WHERE ce.student_id = $1
+               AND ce.course_id = t.course_id
+               AND ce.status = 'active'
           )
         )
       GROUP BY t.id

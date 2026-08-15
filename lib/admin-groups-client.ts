@@ -2,8 +2,8 @@
 
 import { zhangakApiJson, zhangakApiRequest } from './zhangak-api-client.ts'
 
-export type AdminGroupDeliveryMode = 'online' | 'offline' | 'hybrid'
-export type AdminGroupStudentType = 'online' | 'offline' | 'both'
+export type AdminGroupDeliveryMode = 'offline'
+export type AdminGroupStudentType = 'offline'
 
 export interface AdminGroupCourse {
   id: number
@@ -142,12 +142,12 @@ function nullableDate(value: unknown, context: string): string | null {
 }
 
 function deliveryMode(value: unknown, context: string): AdminGroupDeliveryMode {
-  if (value !== 'online' && value !== 'offline' && value !== 'hybrid') invalidResponse(context)
+  if (value !== 'offline') invalidResponse(context)
   return value
 }
 
 function studentType(value: unknown, context: string): AdminGroupStudentType {
-  if (value !== 'online' && value !== 'offline' && value !== 'both') invalidResponse(context)
+  if (value !== 'offline') invalidResponse(context)
   return value
 }
 

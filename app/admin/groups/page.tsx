@@ -35,11 +35,7 @@ import {
 } from '@/lib/admin-groups-client'
 import { listAdminCourses, type AdminCourse } from '@/lib/admin-learning-client'
 
-const MODE_LABELS: Record<AdminGroupDeliveryMode, string> = {
-  online: 'Онлайн',
-  offline: 'Оффлайн',
-  hybrid: 'Гибрид',
-}
+const MODE_LABELS: Record<AdminGroupDeliveryMode, string> = { offline: 'Оффлайн' }
 
 function errorMessage(cause: unknown, fallback: string): string {
   return cause instanceof Error && cause.message ? cause.message : fallback
@@ -50,7 +46,7 @@ function courseMeta(course: AdminCourse): string {
 }
 
 function studentTypeLabel(value: AdminGroupMember['studentType']): string {
-  return value === 'both' ? 'Онлайн и оффлайн' : MODE_LABELS[value]
+  return MODE_LABELS[value]
 }
 
 function dateValue(value: string | null): string {
@@ -66,8 +62,7 @@ function formatDate(value: string | null): string {
 
 function modeForStudent(group: AdminGroup, student: AdminGroupAssignee): boolean {
   if (!student.studentType) return false
-  if (group.deliveryMode === 'hybrid') return student.studentType === 'both'
-  return student.studentType === group.deliveryMode || student.studentType === 'both'
+  return student.studentType === group.deliveryMode
 }
 
 function ModalFrame({ title, children, onClose, closeDisabled = false }: {

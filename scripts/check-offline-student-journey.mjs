@@ -38,10 +38,10 @@ async function main() {
   expect(route.includes("GET('/v1/platform/offline-dashboard'"), 'offline dashboard must be served by the first-party API')
   expect(route.includes('requireOfflineStudent(await requireAuth(config, req))'), 'offline API must require the first-party session and offline student type')
   expect(route.includes("user.role !== 'student'"), 'offline API must limit access to student accounts')
-  expect(route.includes("new Set(['offline', 'both'])"), 'offline API must allow only offline/both student types')
+  expect(route.includes("new Set(['offline'])"), 'offline API must allow only offline student types')
   expect(route.includes('WHERE gs.student_id = $1') && route.includes('[student.id]'), 'offline group lookup must stay scoped to the session user')
   expect(route.includes('gs.left_at IS NULL'), 'offline dashboard must exclude historic memberships')
-  expect(route.includes("g.delivery_mode IN ('offline', 'hybrid')"), 'offline dashboard must not present an online-only group as offline')
+  expect(route.includes("g.delivery_mode = 'offline'"), 'offline dashboard must not present an online-only group as offline')
   expect(route.includes('is_published = true'), 'offline dashboard must expose only published lessons')
   expect(route.includes("attendance: 'pending'"), 'offline dashboard must fail closed while attendance has no owned schema')
   expect(route.includes('homework: []') && route.includes('grades: []') && route.includes('latestOrtScore: null'), 'unmigrated offline records must remain explicitly unavailable')
@@ -67,7 +67,7 @@ async function main() {
     expect(cabinet.includes(`id: '${section}'`), `offline cabinet is missing ${section}`)
   }
   expect(cabinet.includes('Math.abs(distance) >= 70'), 'mobile swipe must have an intentional threshold')
-  expect(cabinet.includes("dashboard.profile.studentType === 'both'"), 'online practice must be limited to both-type students')
+  expect(cabinet.includes('PracticeSection canUseOnline={false}'), 'offline cabinet must not expose online practice')
   expect(cabinet.includes('Мы не показываем выдуманное расписание'), 'unknown schedule must be explicit')
   expect(cabinet.includes('logoutZhangak'), 'offline logout must use first-party auth')
   expect(!/supabase|practice\/daily/i.test(cabinet), 'offline cabinet must not retain Supabase logout or the retired daily route')
@@ -75,7 +75,7 @@ async function main() {
 
   const redirect = await source('lib/auth-redirect.ts')
   expect(redirect.includes("role === 'student' && studentType === 'online'"), 'online routing must stay explicit')
-  expect(redirect.includes("else if (role === 'student') router.replace('/student')"), 'offline/both users must land in /student')
+  expect(redirect.includes("else if (role === 'student') router.replace('/student')"), 'offline students must land in /student')
 
   const proxy = await source('proxy.ts')
   expect(proxy.includes("matchesPrefix(pathname, '/v1/platform')"), 'first-party offline API must belong to the platform host')

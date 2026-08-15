@@ -51,8 +51,7 @@ test('offline dashboard returns only data represented by the owned learning sche
   })
 })
 
-test('offline dashboard denies non-students and accounts without an offline learning type', () => {
-  assert.equal(requireOfflineStudent({ ...student, student_type: 'both' }).student_type, 'both')
+test('offline dashboard denies non-students and accounts without the offline learning type', () => {
   for (const candidate of [
     { ...student, role: 'teacher' },
     { ...student, student_type: 'online' },
@@ -71,7 +70,8 @@ test('offline route is bearer-scoped, read-only, and does not revive unmigrated 
   assert.match(source, /requireOfflineStudent\(await requireAuth\(config, req\)\)/)
   assert.match(source, /WHERE gs\.student_id = \$1/)
   assert.match(source, /gs\.left_at IS NULL/)
-  assert.match(source, /g\.delivery_mode IN \('offline', 'hybrid'\)/)
+  assert.match(source, /g\.delivery_mode = 'offline'/)
+  assert.match(source, /c\.delivery_mode = 'offline'/)
   assert.match(source, /is_published = true/)
   assert.match(source, /attendance: 'pending'/)
   assert.match(source, /homework: \[\]/)

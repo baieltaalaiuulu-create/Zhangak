@@ -17,7 +17,6 @@ interface Props {
 const STUDENT_TYPES = [
   { value: 'online', label: 'Онлайн' },
   { value: 'offline', label: 'Оффлайн' },
-  { value: 'both', label: 'Онлайн и оффлайн' },
 ] as const
 
 const MIN_PASSWORD_LENGTH = 10

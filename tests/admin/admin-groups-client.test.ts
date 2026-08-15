@@ -22,7 +22,7 @@ const GROUP = {
   course: { id: 4, name: 'Подготовка к ОРТ', code: 'ort-11', level: '11 класс', subject: 'Математика' },
   teacher: { id: TEACHER_ID, fullName: 'Айдана Эсенова' },
   name: 'ОРТ-11 / вечер',
-  deliveryMode: 'hybrid',
+  deliveryMode: 'offline',
   capacity: 20,
   startsOn: '2026-09-01',
   endsOn: '2027-05-20',
@@ -37,7 +37,7 @@ const MEMBER = {
   id: STUDENT_ID,
   fullName: 'Бекзат Токтогулов',
   email: 'bekzat@example.test',
-  studentType: 'both',
+  studentType: 'offline',
   joinedAt: '2026-08-13T08:00:00.000Z',
 }
 
@@ -95,7 +95,7 @@ test('group client uses only cookie-authenticated first-party admin endpoints', 
     await listAdminGroups({ courseId: 4, isActive: true, limit: 25 })
     await listAdminGroupMembers(9, { limit: 50 })
     await listAdminGroupAssignees('teacher', { limit: 10 })
-    await createAdminGroup({ courseId: 4, name: GROUP.name, deliveryMode: 'hybrid', capacity: 20 })
+    await createAdminGroup({ courseId: 4, name: GROUP.name, deliveryMode: 'offline', capacity: 20 })
     await updateAdminGroup(9, { isActive: false })
     await setAdminGroupTeacher(9, TEACHER_ID)
     await addAdminGroupStudent(9, STUDENT_ID)
@@ -113,7 +113,7 @@ test('group client uses only cookie-authenticated first-party admin endpoints', 
     ])
     assert.deepEqual(calls.map(call => call.init?.method ?? 'GET'), ['GET', 'GET', 'GET', 'POST', 'PATCH', 'PATCH', 'POST', 'DELETE'])
     assert.ok(calls.every(call => call.init?.credentials === 'include'))
-    assert.deepEqual(JSON.parse(String(calls[3].init?.body)), { courseId: 4, name: GROUP.name, deliveryMode: 'hybrid', capacity: 20 })
+    assert.deepEqual(JSON.parse(String(calls[3].init?.body)), { courseId: 4, name: GROUP.name, deliveryMode: 'offline', capacity: 20 })
     assert.deepEqual(JSON.parse(String(calls[5].init?.body)), { teacherId: TEACHER_ID })
   } finally {
     globalThis.fetch = originalFetch

@@ -5,8 +5,8 @@ import { requireRole } from '../authorization.js'
 
 const GROUP_MANAGER_ROLES = ['admin', 'super_admin']
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-const DELIVERY_MODES = new Set(['online', 'offline', 'hybrid'])
-const STUDENT_TYPES = new Set(['online', 'offline', 'both'])
+const DELIVERY_MODES = new Set(['offline'])
+const STUDENT_TYPES = new Set(['offline'])
 
 const GROUP_FIELDS = Object.freeze({
   name: 'name',
@@ -373,8 +373,7 @@ async function lockedStudent(client, studentId) {
 }
 
 function canJoinDeliveryMode(studentType, groupDeliveryMode) {
-  if (groupDeliveryMode === 'hybrid') return studentType === 'both'
-  return studentType === groupDeliveryMode || studentType === 'both'
+  return studentType === groupDeliveryMode
 }
 
 async function activeStudentCount(client, groupId) {

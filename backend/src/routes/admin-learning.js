@@ -16,6 +16,7 @@ const COURSE_FIELDS = Object.freeze({
   subject: 'subject',
   description: 'description',
   coverImageUrl: 'cover_image_url',
+  deliveryMode: 'delivery_mode',
   isActive: 'is_active',
 })
 
@@ -129,6 +130,7 @@ function publicCourse(row) {
     subject: row.subject,
     description: row.description,
     coverImageUrl: row.cover_image_url,
+    deliveryMode: row.delivery_mode,
     isActive: row.is_active,
     lessonCount: Number(row.lesson_count ?? 0),
     createdAt: row.created_at,
@@ -166,6 +168,12 @@ function courseInput(body, { requireName }) {
   if (Object.hasOwn(body, 'subject')) input.subject = nullableText(body.subject, 80, 'invalid_course_subject')
   if (Object.hasOwn(body, 'description')) input.description = nullableText(body.description, 20_000, 'invalid_course_description')
   if (Object.hasOwn(body, 'coverImageUrl')) input.coverImageUrl = nullableHttpsUrl(body.coverImageUrl, 'invalid_course_cover_image_url')
+  if (Object.hasOwn(body, 'deliveryMode')) {
+    if (body.deliveryMode !== 'online' && body.deliveryMode !== 'offline') {
+      throw new HttpError(400, 'Некорректный формат обучения', 'invalid_course_delivery_mode')
+    }
+    input.deliveryMode = body.deliveryMode
+  }
   if (Object.hasOwn(body, 'isActive')) {
     if (typeof body.isActive !== 'boolean') throw new HttpError(400, 'Некорректный статус курса', 'invalid_course_active')
     input.isActive = body.isActive
@@ -183,6 +191,7 @@ export function parseCourseCreateBody(body) {
     subject: input.subject ?? null,
     description: input.description ?? null,
     coverImageUrl: input.coverImageUrl ?? null,
+    deliveryMode: input.deliveryMode ?? 'online',
     isActive: input.isActive ?? true,
   }
 }
@@ -279,7 +288,7 @@ GET('/v1/admin/courses', async ({ req, config, query: searchParams }) => {
   const { limit, offset } = pagination(searchParams)
   const search = String(searchParams.get('q') ?? '').trim().slice(0, 100)
   const result = await dbQuery(
-    `SELECT c.id, c.name, c.code, c.level, c.subject, c.description, c.cover_image_url,
+    `SELECT c.id, c.name, c.code, c.level, c.subject, c.description, c.cover_image_url, c.delivery_mode,
             c.is_active, c.created_at, c.updated_at, count(l.id)::int AS lesson_count,
             count(*) OVER()::int AS total
        FROM courses c
@@ -309,10 +318,10 @@ POST('/v1/admin/courses', async ({ req, config }) => {
   try {
     const course = await transaction(async client => {
       const inserted = await client.query(
-        `INSERT INTO courses (name, code, level, subject, description, cover_image_url, is_active, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING id, name, code, level, subject, description, cover_image_url, is_active, created_at, updated_at`,
-        [input.name, input.code, input.level, input.subject, input.description, input.coverImageUrl, input.isActive, actor.id],
+        `INSERT INTO courses (name, code, level, subject, description, cover_image_url, delivery_mode, is_active, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id, name, code, level, subject, description, cover_image_url, delivery_mode, is_active, created_at, updated_at`,
+        [input.name, input.code, input.level, input.subject, input.description, input.coverImageUrl, input.deliveryMode, input.isActive, actor.id],
       )
       const row = inserted.rows[0]
       await audit(client, actor, 'create_course', 'course', row.id, Object.keys(input))
@@ -334,7 +343,7 @@ PATCH('/v1/admin/courses/:courseId', async ({ req, params, config }) => {
       const statement = updateSql('courses', 'id', courseId, input, COURSE_FIELDS)
       const updated = await client.query(
         `${statement.text}
-         RETURNING id, name, code, level, subject, description, cover_image_url, is_active, created_at, updated_at`,
+         RETURNING id, name, code, level, subject, description, cover_image_url, delivery_mode, is_active, created_at, updated_at`,
         statement.values,
       )
       const row = updated.rows[0]

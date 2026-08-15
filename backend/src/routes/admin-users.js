@@ -15,7 +15,7 @@ import { DELETE, GET, HttpError, PATCH, POST, readJson } from '../http.js'
 import { hashPassword } from '../security.js'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-const STUDENT_TYPES = new Set(['online', 'offline', 'both'])
+const STUDENT_TYPES = new Set(['online', 'offline'])
 
 function exactBody(body, required, optional = []) {
   const keys = Object.keys(body)

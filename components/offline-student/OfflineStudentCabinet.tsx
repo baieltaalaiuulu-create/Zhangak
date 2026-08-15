@@ -384,7 +384,7 @@ export default function OfflineStudentCabinet({ dashboard }: { dashboard: Offlin
     if (section === 'schedule') return <ScheduleSection lessons={dashboard.lessons} />
     if (section === 'attendance') return <AttendanceSection lessons={dashboard.lessons} />
     if (section === 'materials') return <MaterialsSection lessons={dashboard.lessons} available={dashboard.availability.materials} />
-    if (section === 'practice') return <PracticeSection canUseOnline={dashboard.profile.studentType === 'both'} />
+    if (section === 'practice') return <PracticeSection canUseOnline={false} />
     if (section === 'progress') return <ProgressSection dashboard={dashboard} />
     return <HomeworkSection homework={dashboard.homework} />
   }, [dashboard, section])

@@ -9,7 +9,7 @@ const RESPONSE = {
     id: 14,
     name: 'ОРТ-11 А',
     course: { id: 7, name: 'Подготовка к ОРТ', level: '11 класс', subject: 'Математика' },
-    deliveryMode: 'hybrid',
+    deliveryMode: 'offline',
     startsOn: '2026-09-01',
     endsOn: null,
     activeStudentCount: 22,

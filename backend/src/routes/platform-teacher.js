@@ -37,7 +37,7 @@ function dateOnly(value) {
 }
 
 function deliveryMode(value) {
-  if (value === 'online' || value === 'offline' || value === 'hybrid') return value
+  if (value === 'offline') return value
   throw new HttpError(500, 'Некорректные данные: delivery_mode', 'invalid_teacher_dashboard')
 }
 

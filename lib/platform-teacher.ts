@@ -2,7 +2,7 @@
 
 import { ZhangakApiError, zhangakApiRequest } from './zhangak-api-client.ts'
 
-export type TeacherDeliveryMode = 'online' | 'offline' | 'hybrid'
+export type TeacherDeliveryMode = 'offline'
 
 export interface PlatformTeacherGroup {
   id: number
@@ -46,7 +46,7 @@ function dateOnly(value: unknown): string | null | undefined {
 }
 
 function deliveryMode(value: unknown): TeacherDeliveryMode | null {
-  return value === 'online' || value === 'offline' || value === 'hybrid' ? value : null
+  return value === 'offline' ? value : null
 }
 
 export function parsePlatformTeacherDashboard(value: unknown): PlatformTeacherDashboard {

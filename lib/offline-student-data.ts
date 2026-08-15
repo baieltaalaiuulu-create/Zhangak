@@ -62,7 +62,7 @@ function nullableTargetScore(value: unknown): number | null {
 }
 
 function studentType(value: unknown): OfflineStudentProfile['studentType'] {
-  if (value !== 'offline' && value !== 'both') invalidResponse()
+  if (value !== 'offline') invalidResponse()
   return value
 }
 

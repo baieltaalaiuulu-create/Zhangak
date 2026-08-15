@@ -27,7 +27,7 @@ test('group creation accepts only a bounded first-party learning shape', () => {
   assert.deepEqual(parseGroupCreateBody({
     courseId: 12,
     name: '  ОРТ-11 / вечер  ',
-    deliveryMode: 'hybrid',
+    deliveryMode: 'offline',
     capacity: 18,
     startsOn: '2026-09-01',
     endsOn: '2027-05-20',
@@ -35,7 +35,7 @@ test('group creation accepts only a bounded first-party learning shape', () => {
   }), {
     courseId: 12,
     name: 'ОРТ-11 / вечер',
-    deliveryMode: 'hybrid',
+    deliveryMode: 'offline',
     capacity: 18,
     startsOn: '2026-09-01',
     endsOn: '2027-05-20',
@@ -67,6 +67,7 @@ test('group patch cannot mutate its course, teacher, or invalid capacity/date wi
   invalid(parseGroupPatchBody, { courseId: 3 }, 'invalid_group')
   invalid(parseGroupPatchBody, { teacherId: TEACHER_ID }, 'invalid_group')
   invalid(parseGroupPatchBody, { deliveryMode: 'remote' }, 'invalid_group_delivery_mode')
+  invalid(parseGroupPatchBody, { deliveryMode: 'online' }, 'invalid_group_delivery_mode')
 })
 
 test('teacher and student assignment bodies fail closed and allow an explicit teacher removal', () => {

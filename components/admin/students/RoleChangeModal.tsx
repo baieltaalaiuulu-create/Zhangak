@@ -20,7 +20,6 @@ interface Props {
 const STUDENT_TYPES = [
   { value: 'online', label: 'Онлайн' },
   { value: 'offline', label: 'Оффлайн' },
-  { value: 'both', label: 'Онлайн и оффлайн' },
 ] as const
 
 function initialStudentType(value: string | null): (typeof STUDENT_TYPES)[number]['value'] {

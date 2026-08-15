@@ -28,12 +28,6 @@ function formatDate(value: string | null): string {
   return date.toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-function deliveryModeLabel(value: PlatformTeacherGroup['deliveryMode']): string {
-  if (value === 'online') return 'Онлайн'
-  if (value === 'hybrid') return 'Смешанный'
-  return 'Очно'
-}
-
 function GroupCard({ group }: { group: PlatformTeacherGroup }) {
   const courseDetails = [group.course.subject, group.course.level].filter((value): value is string => Boolean(value))
 
@@ -46,7 +40,7 @@ function GroupCard({ group }: { group: PlatformTeacherGroup }) {
           <p className="mt-2 break-words text-sm font-semibold text-[#1B3F92]">{group.course.name}</p>
           {courseDetails.length > 0 && <p className="mt-1 text-sm text-slate-500">{courseDetails.join(' • ')}</p>}
         </div>
-        <span className="inline-flex min-h-8 items-center rounded-full bg-blue-50 px-3 text-xs font-bold text-[#1B3F92]">{deliveryModeLabel(group.deliveryMode)}</span>
+        <span className="inline-flex min-h-8 items-center rounded-full bg-blue-50 px-3 text-xs font-bold text-[#1B3F92]">Очно</span>
       </div>
 
       <dl className="mt-5 grid gap-3 sm:grid-cols-2">

@@ -1,6 +1,6 @@
 # Жангак — mobile (Expo)
 
-Native-only companion app for the Zhangak online and hybrid student cabinet. Built
+Native-only companion app for the Zhangak online student cabinet. Built
 with Expo + expo-router and backed by the first-party Zhangak API at
 `https://platform.zhangak.com/v1`.
 
@@ -48,7 +48,7 @@ components/
   screens (`ScreenPlaceholder`) — only the dashboard and lessons flow are
   wired to real data per the initial scaffold.
 - **Auth**: this app only serves student roles with online learning enabled
-  (`role='student'`, `student_type='online'` or `'both'`). Login, session
+  (`role='student'`, `student_type='online'`). Login, session
   restore, refresh, and logout use
   the first-party API with an `Authorization: Bearer` token; refresh tokens
   are rotated by the API and both tokens are held only in Expo SecureStore.

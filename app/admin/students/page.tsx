@@ -236,7 +236,7 @@ export default function AdminStudentsPage() {
                   </td>
                   <td className="px-3 py-3 text-gray-500">{account.phone || '—'}</td>
                   <td className="px-3 py-3 text-gray-500">
-                    {account.role === 'student' ? `${account.studentType === 'online' ? 'Онлайн' : account.studentType === 'both' ? 'Онлайн и оффлайн' : 'Оффлайн'} · цель ${account.targetScore ?? '—'}` : '—'}
+                    {account.role === 'student' ? `${account.studentType === 'online' ? 'Онлайн' : 'Оффлайн'} · цель ${account.targetScore ?? '—'}` : '—'}
                   </td>
                   <td className="px-3 py-3 text-gray-500">{formatCreatedAt(account.createdAt)}</td>
                   <td className="px-3 py-3">

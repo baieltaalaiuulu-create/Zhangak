@@ -49,14 +49,14 @@ export interface CreateAdminAccountPayload {
   password: string
   fullName: string
   role: AccountRole
-  studentType?: 'online' | 'offline' | 'both'
+  studentType?: 'online' | 'offline'
   phone?: string
   targetScore?: number
 }
 
 export interface ChangeAdminAccountRolePayload {
   role: AccountRole
-  studentType?: 'online' | 'offline' | 'both'
+  studentType?: 'online' | 'offline'
 }
 
 export const ACCOUNT_ROLE_LABELS: Record<AccountRole, string> = {

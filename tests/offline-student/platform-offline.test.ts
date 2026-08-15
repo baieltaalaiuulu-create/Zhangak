@@ -10,7 +10,7 @@ const response = {
   profile: {
     id: 'student-1',
     fullName: 'Алия Тестова',
-    studentType: 'both',
+    studentType: 'offline',
     targetScore: 200,
   },
   group: {

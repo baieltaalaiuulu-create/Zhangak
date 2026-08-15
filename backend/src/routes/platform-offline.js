@@ -2,7 +2,7 @@ import { requireAuth } from '../auth.js'
 import { query } from '../db.js'
 import { GET, HttpError } from '../http.js'
 
-const OFFLINE_STUDENT_TYPES = new Set(['offline', 'both'])
+const OFFLINE_STUDENT_TYPES = new Set(['offline'])
 
 function text(value, fallback = null) {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback
@@ -114,7 +114,7 @@ GET('/v1/platform/offline-dashboard', async ({ req, config }) => {
   const dashboard = emptyOfflineDashboard(student)
 
   // The current UI is a single-group cabinet.  Memberships are retained for
-  // history, so choose the most recently joined active offline/hybrid group
+  // history, so choose the most recently joined active offline group
   // deterministically rather than allowing a caller-selected group id.
   const membership = await query(
     `SELECT g.id AS group_id, g.name AS group_name, g.course_id, c.name AS course_name,
@@ -123,10 +123,11 @@ GET('/v1/platform/offline-dashboard', async ({ req, config }) => {
        JOIN groups g
          ON g.id = gs.group_id
         AND g.is_active = true
-        AND g.delivery_mode IN ('offline', 'hybrid')
+        AND g.delivery_mode = 'offline'
        JOIN courses c
          ON c.id = g.course_id
         AND c.is_active = true
+        AND c.delivery_mode = 'offline'
   LEFT JOIN profiles teacher_profile
          ON teacher_profile.user_id = g.teacher_id
         AND teacher_profile.role = 'teacher'

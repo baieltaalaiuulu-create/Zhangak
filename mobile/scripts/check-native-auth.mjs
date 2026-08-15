@@ -43,7 +43,7 @@ assert(auth.includes('refreshInFlight'), 'Native auth must keep refresh single-f
 assert(auth.includes("'/auth/refresh'"), 'Native auth must use the first-party refresh endpoint.')
 assert(auth.includes("'/auth/login'"), 'Native auth must use the first-party login endpoint.')
 assert(auth.includes("'/auth/logout'"), 'Native auth must use the first-party logout endpoint.')
-assert(auth.includes("user?.role === 'student' && (user.studentType === 'online' || user.studentType === 'both')"), 'Online and hybrid students must be allowed into the native app.')
+assert(auth.includes("user?.role === 'student' && user.studentType === 'online'"), 'Only online students must be allowed into the native app.')
 assert(auth.includes('if (!isSupportedNativeStudent(user))'), 'A restored session must be rechecked against the native student audience.')
 assert(!/password\s*[:=].*SecureStore|SecureStore[^\n]*password/i.test(auth), 'Passwords must not be persisted in SecureStore.')
 assert(provider.includes('restoreNativeSession'), 'The provider must restore the first-party session.')

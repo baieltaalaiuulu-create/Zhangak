@@ -1,4 +1,4 @@
-export type OfflineStudentType = 'offline' | 'both'
+export type OfflineStudentType = 'offline'
 export type AttendanceState = 'present' | 'late' | 'absent' | 'pending'
 
 export interface OfflineStudentProfile {

@@ -12,14 +12,14 @@ const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 test('teacher public DTO contains counts and course metadata, never roster or teaching records', () => {
   const group = publicTeacherGroup({
     id: '12', name: 'ОРТ-11 А', course_id: '3', course_name: 'Подготовка к ОРТ',
-    course_level: '11 класс', course_subject: 'Математика', delivery_mode: 'hybrid',
+    course_level: '11 класс', course_subject: 'Математика', delivery_mode: 'offline',
     starts_on: '2026-09-01', ends_on: null, active_student_count: '18', published_lesson_count: '6',
   })
   assert.deepEqual(group, {
     id: 12,
     name: 'ОРТ-11 А',
     course: { id: 3, name: 'Подготовка к ОРТ', level: '11 класс', subject: 'Математика' },
-    deliveryMode: 'hybrid',
+    deliveryMode: 'offline',
     startsOn: '2026-09-01',
     endsOn: null,
     activeStudentCount: 18,

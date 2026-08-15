@@ -29,6 +29,7 @@ test('course administration accepts a bounded, normalized content shape', () => 
     subject: 'Математика',
     description: 'Базовый курс.',
     coverImageUrl: 'https://cdn.zhangak.com/courses/ort.webp',
+    deliveryMode: 'offline',
     isActive: false,
   }), {
     name: 'Подготовка к ОРТ',
@@ -37,15 +38,17 @@ test('course administration accepts a bounded, normalized content shape', () => 
     subject: 'Математика',
     description: 'Базовый курс.',
     coverImageUrl: 'https://cdn.zhangak.com/courses/ort.webp',
+    deliveryMode: 'offline',
     isActive: false,
   })
-  assert.deepEqual(parseCoursePatchBody({ code: null, isActive: true }), { code: null, isActive: true })
+  assert.deepEqual(parseCoursePatchBody({ code: null, deliveryMode: 'online', isActive: true }), { code: null, deliveryMode: 'online', isActive: true })
 })
 
 test('course administration fails closed for injected ownership and unsafe links', () => {
   invalid(parseCourseCreateBody, { name: 'Курс', createdBy: 'forged' }, 'invalid_course')
   invalid(parseCourseCreateBody, { name: 'Курс', code: 'bad code' }, 'invalid_course_code')
   invalid(parseCourseCreateBody, { name: 'Курс', coverImageUrl: 'javascript:alert(1)' }, 'invalid_course_cover_image_url')
+  invalid(parseCourseCreateBody, { name: 'Курс', deliveryMode: 'hybrid' }, 'invalid_course_delivery_mode')
   invalid(parseCoursePatchBody, {}, 'invalid_course_patch')
   invalid(parseCoursePatchBody, { groupId: 2 }, 'invalid_course')
   invalid(parseCoursePatchBody, { isActive: 'true' }, 'invalid_course_active')

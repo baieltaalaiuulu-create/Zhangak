@@ -6,7 +6,7 @@ const SESSION_STORAGE_KEY = 'zhangak.native.session.v1'
 const SESSION_VERSION = 1
 
 export type ZhangakRole = 'student' | 'admin' | 'super_admin' | 'admin_jr' | 'teacher' | 'manager' | 'director' | 'finance' | 'math_student' | 'math_parent' | 'math_admin'
-export type ZhangakStudentType = 'online' | 'offline' | 'both' | null
+export type ZhangakStudentType = 'online' | 'offline' | null
 
 export interface ZhangakNativeUser {
   id: string
@@ -36,7 +36,7 @@ export interface NativeAuthSnapshot {
 
 /** The Expo companion is intentionally native-only. */
 export function isSupportedNativeStudent(user: ZhangakNativeUser | null | undefined): user is ZhangakNativeUser {
-  return user?.role === 'student' && (user.studentType === 'online' || user.studentType === 'both')
+  return user?.role === 'student' && user.studentType === 'online'
 }
 
 interface LoginResponse {
@@ -113,7 +113,7 @@ function validUser(value: unknown): value is ZhangakNativeUser {
   return typeof user.id === 'string'
     && typeof user.email === 'string'
     && typeof user.role === 'string'
-    && (user.studentType === 'online' || user.studentType === 'offline' || user.studentType === 'both' || user.studentType === null)
+    && (user.studentType === 'online' || user.studentType === 'offline' || user.studentType === null)
 }
 
 function validSession(value: unknown): value is NativeSession {
