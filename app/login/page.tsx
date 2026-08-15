@@ -11,12 +11,12 @@ export default async function LoginPage({ searchParams }: { searchParams: LoginS
   const surfaceFromHost = siteSurfaceForHost((await headers()).get('host'))
   const query = await searchParams
   // Unknown preview/direct hosts can select a visual surface explicitly for
-  // QA. The three owned domains always win, so a query parameter can never
+  // QA. The four owned domains always win, so a query parameter can never
   // turn the real platform login into an admin surface or vice versa.
   const previewSurface = !surfaceFromHost && query.surface === 'admin'
     ? 'admin'
     : null
-  const surface: Exclude<SiteSurface, 'marketing'> = surfaceFromHost === 'admin' || surfaceFromHost === 'platform'
+  const surface: Exclude<SiteSurface, 'marketing'> = surfaceFromHost === 'admin' || surfaceFromHost === 'platform' || surfaceFromHost === 'offline'
     ? surfaceFromHost
     : previewSurface ?? 'platform'
 

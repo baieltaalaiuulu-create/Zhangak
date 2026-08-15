@@ -47,8 +47,11 @@ export default function AdminLayout({ children }: Props) {
         }
 
         if (user.role === 'student' || user.role === 'teacher' || user.role === 'math_student' || user.role === 'math_parent') {
+          const target = user.role === 'teacher' || (user.role === 'student' && user.studentType === 'offline')
+            ? 'https://offline.zhangak.com/login'
+            : 'https://platform.zhangak.com/login'
           window.location.assign(process.env.NODE_ENV === 'production'
-            ? 'https://platform.zhangak.com/login'
+            ? target
             : '/login?surface=platform')
           return
         }

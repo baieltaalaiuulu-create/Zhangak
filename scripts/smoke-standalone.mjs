@@ -85,6 +85,10 @@ async function assertDomainRouting(port) {
     { host: 'zhangak.com', pathname: '/math', status: 200, includes: 'https://platform.zhangak.com/login', excludes: 'type="password"' },
     { host: 'zhangak.com', pathname: '/student/online', status: 308, location: 'https://platform.zhangak.com/student/online' },
     { host: 'platform.zhangak.com', pathname: '/student/online', status: 200, noindex: true },
+    { host: 'platform.zhangak.com', pathname: '/student', status: 308, location: 'https://offline.zhangak.com/student', noindex: true },
+    { host: 'offline.zhangak.com', pathname: '/', status: 308, location: 'https://offline.zhangak.com/login', noindex: true },
+    { host: 'offline.zhangak.com', pathname: '/student', status: 200, noindex: true },
+    { host: 'offline.zhangak.com', pathname: '/teacher', status: 200, noindex: true },
     { host: 'platform.zhangak.com', pathname: '/admin', status: 308, location: 'https://admin.zhangak.com/admin', noindex: true },
     { host: 'admin.zhangak.com', pathname: '/', status: 308, location: 'https://admin.zhangak.com/login', noindex: true },
     { host: 'admin.zhangak.com', pathname: '/admin', status: 200, noindex: true },
@@ -112,7 +116,7 @@ async function assertDomainRouting(port) {
     }
   }
 
-  for (const host of ['platform.zhangak.com', 'admin.zhangak.com']) {
+  for (const host of ['platform.zhangak.com', 'offline.zhangak.com', 'admin.zhangak.com']) {
     const response = await fetchAsHost(port, host, '/robots.txt')
     const body = await response.text()
     if (response.status !== 200 || !body.includes('Disallow: /')) {

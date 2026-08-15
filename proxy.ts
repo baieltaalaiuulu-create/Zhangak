@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server.js'
 import {
   ADMIN_HOST,
   MARKETING_HOST,
+  OFFLINE_HOST,
   PLATFORM_HOST,
   normalizeHostname,
   siteSurfaceForHost,
@@ -12,7 +13,8 @@ import {
 type RouteSurface = SiteSurface | 'shared-auth' | 'workspace-auth-api' | 'retired-api' | 'shared' | null
 
 const ADMIN_PAGE_PREFIXES = ['/admin', '/director', '/finance', '/manager', '/math/admin']
-const PLATFORM_PAGE_PREFIXES = ['/student', '/teacher', '/onboarding', '/offline', '/math/student', '/math/parent']
+const PLATFORM_PAGE_PREFIXES = ['/student/online', '/onboarding', '/math/student', '/math/parent']
+const OFFLINE_PAGE_PREFIXES = ['/teacher']
 // These paths were Supabase-backed Next route handlers.  The mounted product
 // flows now use the first-party `/v1/platform` and `/v1/admin` BFF routes.
 // Keep an explicit deny-list while old bookmarks, clients or probes exist so
@@ -40,12 +42,18 @@ function routeSurface(pathname: string): RouteSurface {
   // forwards them only to the loopback Node API, while this host gate prevents
   // an admin endpoint from being called through platform.zhangak.com (and vice
   // versa). Other /v1 paths remain undiscoverable.
+  // The same first-party API namespace serves both learning modes. The
+  // offline dashboard and teacher view are reachable only from the offline
+  // host; all other platform APIs are the online student surface.
+  if (pathname === '/v1/platform/offline-dashboard' || pathname === '/v1/platform/teacher-dashboard') return 'offline'
   if (matchesPrefix(pathname, '/v1/platform')) return 'platform'
   if (matchesPrefix(pathname, '/v1/admin')) return 'admin'
   if (RETIRED_LEGACY_API_PREFIXES.some(prefix => matchesPrefix(pathname, prefix))) return 'retired-api'
   if (pathname === '/login') return 'shared-auth'
   if (pathname === '/sw.js' || pathname === '/platform.webmanifest') return 'platform'
   if (ADMIN_PAGE_PREFIXES.some(prefix => matchesPrefix(pathname, prefix))) return 'admin'
+  if (pathname === '/student') return 'offline'
+  if (OFFLINE_PAGE_PREFIXES.some(prefix => matchesPrefix(pathname, prefix))) return 'offline'
   if (PLATFORM_PAGE_PREFIXES.some(prefix => matchesPrefix(pathname, prefix))) return 'platform'
   if (pathname === '/' || pathname === '/landing' || pathname === '/math' || pathname === '/privacy' || pathname === '/sitemap.xml') {
     return 'marketing'
@@ -55,6 +63,7 @@ function routeSurface(pathname: string): RouteSurface {
 
 function hostForSurface(surface: SiteSurface): string {
   if (surface === 'admin') return ADMIN_HOST
+  if (surface === 'offline') return OFFLINE_HOST
   if (surface === 'platform') return PLATFORM_HOST
   return MARKETING_HOST
 }

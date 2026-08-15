@@ -20,15 +20,13 @@ import {
 } from 'lucide-react'
 
 import { redirectForRole } from '@/lib/auth-redirect'
-import { MARKETING_ORIGIN, workspaceSurfaceForRole } from '@/lib/site-hosts'
+import { MARKETING_ORIGIN, workspaceSurfaceForRole, type WorkspaceSurface } from '@/lib/site-hosts'
 import {
   getCurrentZhangakUser,
   loginZhangak,
   logoutZhangak,
   ZhangakAuthError,
 } from '@/lib/zhangak-auth-client'
-
-type WorkspaceSurface = 'platform' | 'admin'
 
 interface LoginExperienceProps {
   surface: WorkspaceSurface
@@ -46,6 +44,12 @@ const adminBenefits = [
   { icon: ShieldCheck, text: 'Разделы доступны только по назначенной роли' },
   { icon: LockKeyhole, text: 'Защищённая рабочая зона без публичной индексации' },
   { icon: CheckCircle2, text: 'Единая точка управления учебной платформой' },
+]
+
+const offlineBenefits = [
+  { icon: BookOpenCheck, text: 'Расписание, материалы и задания вашей группы' },
+  { icon: Users, text: 'Связь с преподавателем и видимый прогресс' },
+  { icon: CheckCircle2, text: 'Один кабинет для очного курса' },
 ]
 
 function messageForLoginError(cause: unknown): string {
@@ -69,16 +73,19 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
   const [error, setError] = useState('')
   const [checkingSession, setCheckingSession] = useState(true)
   const isAdmin = surface === 'admin'
-  const benefits = isAdmin ? adminBenefits : platformBenefits
+  const isOffline = surface === 'offline'
+  const benefits = isAdmin ? adminBenefits : isOffline ? offlineBenefits : platformBenefits
 
-  const rejectWrongWorkspace = useCallback(async (role: string | undefined): Promise<boolean> => {
-    const expectedSurface = workspaceSurfaceForRole(role)
+  const rejectWrongWorkspace = useCallback(async (role: string | undefined, studentType?: string | null): Promise<boolean> => {
+    const expectedSurface = workspaceSurfaceForRole(role, studentType)
     if (!expectedSurface || expectedSurface === surface) return false
 
     await logoutZhangak().catch(() => {})
     setError(expectedSurface === 'admin'
       ? 'Это служебная учётная запись. Войдите на admin.zhangak.com.'
-      : 'Это аккаунт ученика или преподавателя. Войдите на platform.zhangak.com.')
+      : expectedSurface === 'offline'
+        ? 'Это аккаунт офлайн-курса. Войдите на offline.zhangak.com.'
+        : 'Это аккаунт онлайн-курса. Войдите на platform.zhangak.com.')
     return true
   }, [surface])
 
@@ -89,7 +96,7 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
       try {
         const user = await getCurrentZhangakUser()
         if (!active || !user || interactionStarted.current) return
-        if (await rejectWrongWorkspace(user.role)) return
+        if (await rejectWrongWorkspace(user.role, user.studentType)) return
         redirectForRole(user.role, user.studentType ?? undefined, router)
       } catch {
         // The form stays usable when the session check or backend is down.
@@ -111,11 +118,16 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
 
     try {
       const user = await loginZhangak(email, password)
-      if (await rejectWrongWorkspace(user.role)) {
+      if (await rejectWrongWorkspace(user.role, user.studentType)) {
         setLoading(false)
         return
       }
-      redirectForRole(user.role, user.studentType ?? undefined, router, surface === 'admin' ? '/admin' : '/student')
+      redirectForRole(
+        user.role,
+        user.studentType ?? undefined,
+        router,
+        surface === 'admin' ? '/admin' : surface === 'offline' ? '/student' : '/student/online',
+      )
     } catch (cause) {
       setError(messageForLoginError(cause))
       setLoading(false)
@@ -123,9 +135,9 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
   }
 
   return (
-    <main className={`min-h-dvh px-4 py-4 sm:px-6 sm:py-8 ${isAdmin ? 'bg-[#07142E]' : 'bg-[#EEF4FF]'}`}>
+    <main className={`min-h-dvh px-4 py-4 sm:px-6 sm:py-8 ${isAdmin ? 'bg-[#07142E]' : isOffline ? 'bg-[#F4F8F2]' : 'bg-[#EEF4FF]'}`}>
       <div className="mx-auto grid min-h-[calc(100dvh-2rem)] w-full max-w-6xl overflow-hidden rounded-[28px] bg-white shadow-[0_28px_80px_rgba(13,30,74,0.16)] sm:min-h-[calc(100dvh-4rem)] lg:grid-cols-2">
-        <section className={`relative flex flex-col overflow-hidden p-12 text-white max-lg:hidden ${isAdmin ? 'bg-[#0D1E4A]' : 'bg-[#1B3F92]'}`}>
+        <section className={`relative flex flex-col overflow-hidden p-12 text-white max-lg:hidden ${isAdmin ? 'bg-[#0D1E4A]' : isOffline ? 'bg-[#2D6A4F]' : 'bg-[#1B3F92]'}`}>
           <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full border border-white/10" />
           <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-white/[0.05]" />
 
@@ -143,15 +155,17 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
               {isAdmin ? <ShieldCheck size={28} aria-hidden="true" /> : <GraduationCap size={30} aria-hidden="true" />}
             </div>
             <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-blue-200">
-              {isAdmin ? 'Административный контур' : 'Учебная платформа'}
+              {isAdmin ? 'Административный контур' : isOffline ? 'Офлайн-курс' : 'Онлайн-платформа'}
             </p>
             <h2 className="mt-4 text-4xl font-black leading-[1.08] tracking-[-0.04em]">
-              {isAdmin ? 'Управляйте платформой уверенно' : 'Сосредоточься на следующем шаге'}
+              {isAdmin ? 'Управляйте платформой уверенно' : isOffline ? 'Учитесь вместе с группой' : 'Сосредоточься на следующем шаге'}
             </h2>
             <p className="mt-5 text-base font-medium leading-7 text-white/70">
               {isAdmin
                 ? 'Отдельное рабочее пространство для команды Жангак, контента и операционных процессов.'
-                : 'Простой маршрут подготовки для старшеклассников и удобные инструменты преподавателя.'}
+                : isOffline
+                  ? 'Расписание, материалы и задания очного курса — в отдельном кабинете.'
+                  : 'Простой маршрут подготовки для старшеклассников и удобные инструменты преподавателя.'}
             </p>
 
             <div className="mt-9 space-y-4">
@@ -167,7 +181,7 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
           </div>
 
           <p className="relative z-10 text-xs font-medium text-white/45">
-            {isAdmin ? 'Доступ только для сотрудников с назначенной ролью.' : 'Подготовка к ОРТ — шаг за шагом.'}
+            {isAdmin ? 'Доступ только для сотрудников с назначенной ролью.' : isOffline ? 'Очное обучение — в своём темпе и с поддержкой преподавателя.' : 'Подготовка к ОРТ — шаг за шагом.'}
           </p>
         </section>
 
@@ -177,24 +191,26 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
               <a href={marketingHref} className="inline-flex items-center gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100">
                 {/* eslint-disable-next-line @next/next/no-img-element -- local brand asset */}
                 <img src="/images/logo.png" alt="Логотип Жангак" className="h-11 w-11 rounded-xl object-cover shadow-sm" />
-                <span className={`text-lg font-black tracking-wide ${isAdmin ? 'text-[#0D1E4A]' : 'text-[#1B3F92]'}`}>ZHANGAK</span>
+                <span className={`text-lg font-black tracking-wide ${isAdmin ? 'text-[#0D1E4A]' : isOffline ? 'text-[#2D6A4F]' : 'text-[#1B3F92]'}`}>ZHANGAK</span>
               </a>
-              <span className={`rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] ${isAdmin ? 'bg-slate-100 text-slate-600' : 'bg-blue-50 text-[#1B3F92]'}`}>
-                {isAdmin ? 'Админ' : 'Платформа'}
+              <span className={`rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] ${isAdmin ? 'bg-slate-100 text-slate-600' : isOffline ? 'bg-emerald-50 text-[#2D6A4F]' : 'bg-blue-50 text-[#1B3F92]'}`}>
+                {isAdmin ? 'Админ' : isOffline ? 'Офлайн' : 'Онлайн'}
               </span>
             </div>
 
             <div className="mt-9 lg:mt-0">
               <p className={`text-xs font-extrabold uppercase tracking-[0.18em] ${isAdmin ? 'text-slate-500' : 'text-[#1B3F92]'}`}>
-                {isAdmin ? 'Для команды Жангак' : 'Для учеников и преподавателей'}
+                {isAdmin ? 'Для команды Жангак' : isOffline ? 'Для учеников и преподавателей очного курса' : 'Для учеников онлайн-курса'}
               </p>
               <h1 className="mt-3 text-3xl font-black tracking-[-0.035em] text-[#0D1E4A] sm:text-4xl">
-                {isAdmin ? 'Вход в панель управления' : 'Продолжай подготовку'}
+                {isAdmin ? 'Вход в панель управления' : isOffline ? 'Вход в офлайн-кабинет' : 'Продолжай подготовку'}
               </h1>
               <p className="mt-3 text-sm font-medium leading-6 text-slate-500">
                 {isAdmin
                   ? 'Используйте рабочую учётную запись администратора.'
-                  : 'Войдите, чтобы открыть свой план, уроки и прогресс.'}
+                  : isOffline
+                    ? 'Войдите, чтобы открыть расписание, материалы и задания своей группы.'
+                    : 'Войдите, чтобы открыть свой план, уроки и прогресс.'}
               </p>
             </div>
 

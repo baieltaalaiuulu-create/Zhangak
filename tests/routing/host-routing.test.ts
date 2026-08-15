@@ -61,17 +61,27 @@ test('workspace pages move to their dedicated hosts', () => {
   )
   assert.equal(
     getRedirectUrl(proxy(request('https://admin.zhangak.com/teacher'))),
-    'https://platform.zhangak.com/teacher',
+    'https://offline.zhangak.com/teacher',
+  )
+  assert.equal(
+    getRedirectUrl(proxy(request('https://platform.zhangak.com/student'))),
+    'https://offline.zhangak.com/student',
+  )
+  assert.equal(
+    getRedirectUrl(proxy(request('https://offline.zhangak.com/student/online'))),
+    'https://platform.zhangak.com/student/online',
   )
 })
 
-test('students and teachers share the platform while administrators stay isolated', () => {
-  assert.equal(workspaceSurfaceForRole('student'), 'platform')
-  assert.equal(workspaceSurfaceForRole('teacher'), 'platform')
+test('online and offline learning workspaces are isolated from administration', () => {
+  assert.equal(workspaceSurfaceForRole('student', 'online'), 'platform')
+  assert.equal(workspaceSurfaceForRole('student', 'offline'), 'offline')
+  assert.equal(workspaceSurfaceForRole('teacher'), 'offline')
   assert.equal(workspaceSurfaceForRole('admin'), 'admin')
   assert.equal(workspaceSurfaceForRole('director'), 'admin')
 
-  assert.equal(proxy(request('https://platform.zhangak.com/v1/platform/teacher-dashboard')).headers.get('x-middleware-next'), '1')
+  assert.equal(proxy(request('https://offline.zhangak.com/v1/platform/teacher-dashboard')).headers.get('x-middleware-next'), '1')
+  assert.equal(proxy(request('https://platform.zhangak.com/v1/platform/offline-dashboard', 'POST')).status, 404)
   assert.equal(proxy(request('https://admin.zhangak.com/v1/platform/teacher-dashboard', 'POST')).status, 404)
 })
 
@@ -87,13 +97,17 @@ test('Math marketing stays public while Math accounts use workspace hosts', () =
   )
 })
 
-test('the platform root reaches its client-side first-visit gate while admin and marketing stay isolated', () => {
+test('the online root reaches its first-visit gate while offline and admin start at login', () => {
   assert.equal(
     getRedirectUrl(proxy(request('https://zhangak.com/login'))),
     'https://platform.zhangak.com/login',
   )
   assert.equal(proxy(request('https://admin.zhangak.com/login')).headers.get('x-middleware-next'), '1')
   assert.equal(proxy(request('https://platform.zhangak.com/')).headers.get('x-middleware-next'), '1')
+  assert.equal(
+    getRedirectUrl(proxy(request('https://offline.zhangak.com/'))),
+    'https://offline.zhangak.com/login',
+  )
   assert.equal(
     getRedirectUrl(proxy(request('https://admin.zhangak.com/'))),
     'https://admin.zhangak.com/login',
@@ -121,10 +135,11 @@ test('first-party auth is available only on workspace hosts', async () => {
   assert.equal(marketing.status, 404)
   assert.equal(marketing.headers.get('location'), null)
   assert.equal(proxy(request('https://platform.zhangak.com/v1/auth/login', 'POST')).headers.get('x-middleware-next'), '1')
+  assert.equal(proxy(request('https://offline.zhangak.com/v1/auth/login', 'POST')).headers.get('x-middleware-next'), '1')
   assert.equal(proxy(request('https://admin.zhangak.com/v1/auth/me')).headers.get('x-middleware-next'), '1')
 })
 
-test('platform and admin hosts are noindex at both header and robots layers', async () => {
+test('workspace hosts are noindex at both header and robots layers', async () => {
   const platform = proxy(request('https://platform.zhangak.com/student/online'))
   assert.equal(platform.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive')
 
@@ -132,6 +147,9 @@ test('platform and admin hosts are noindex at both header and robots layers', as
   assert.equal(robots.status, 200)
   assert.match(await robots.text(), /Disallow: \/(?:\r?\n|$)/)
   assert.equal(robots.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive')
+
+  const offline = proxy(request('https://offline.zhangak.com/student'))
+  assert.equal(offline.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive')
 })
 
 test('PWA assets belong to the platform host only', () => {
