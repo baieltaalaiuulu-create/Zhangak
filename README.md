@@ -23,6 +23,13 @@ npm run dev
 
 The web app is available at `http://localhost:3000`.
 
+## Documentation
+
+The documentation portal is [`docs/README.md`](docs/README.md). It routes
+developers, teachers, content authors, administrators and technical operators
+to the current source of truth. Start there instead of using historical audit
+notes or archived Supabase documents as operating instructions.
+
 ## Required checks
 
 ```sh
@@ -66,6 +73,7 @@ Server setup, atomic activation, health checks, and rollback are documented in
 
 - `zhangak.com` — public marketing website
 - `platform.zhangak.com` — student learning platform and installable PWA
+- `offline.zhangak.com` — offline students and teacher classroom journal
 - `admin.zhangak.com` — administration and staff workspaces
 
 The host boundary is enforced by `proxy.ts`. Browser page requests are

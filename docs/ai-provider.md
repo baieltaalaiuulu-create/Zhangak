@@ -1,46 +1,52 @@
-# AI provider operation
+# Эксплуатация AI-провайдера
 
-All server-side AI calls go through `lib/ai-gateway.ts`. Browser code must
-never call an AI vendor directly or receive a provider API key.
+Активный AI-контур находится в собственном API:
+`backend/src/routes/platform-ai.js` → `backend/src/ai.js` → DeepSeek. Браузер
+работает только с `/v1/platform/ai/*` и никогда не получает provider key.
 
-## DeepSeek production profile
+## Доступ и защита
 
-Set these runtime-only variables in `/etc/zhangak/zhangak.env`:
+AI-коуч доступен только `student` с типом `online`, active enrollment на
+активный online-курс и сохранённым согласием. История scoped по authenticated
+user. Лимит — 8 пользовательских сообщений за 15 минут; вход до 2000 символов,
+ответ до 4000 символов и ограниченный output token budget.
+
+AI не выставляет оценки, не начисляет XP и не меняет ответы/прогресс. Он
+помогает только по математике, кыргызскому языку и подготовке к ОРТ. Ответ
+может ошибаться, поэтому важные факты сверяются с учебными материалами.
+
+## Runtime-конфигурация API
+
+Переменные живут только в `/etc/zhangak-api/zhangak-api.env`:
 
 ```dotenv
+AI_ENABLED=0
 AI_PROVIDER=deepseek
-DEEPSEEK_API_KEY=replace-me
+DEEPSEEK_API_KEY=replace-with-rotated-server-only-key
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_FAST_MODEL=deepseek-v4-flash
-DEEPSEEK_REASONING_MODEL=deepseek-v4-pro
-DEEPSEEK_FAST_MAX_TOKENS=1200
-DEEPSEEK_REASONING_MAX_TOKENS=2400
 ```
 
-The gateway selects the model on the server:
+`AI_ENABLED=0` — обязательное fail-closed состояние при отсутствии нового
+ключа, инциденте или контроле расходов. Наличие ключа само по себе не включает
+функцию.
 
-- ordinary explanations, motivation and short questions use V4 Flash with
-  thinking disabled;
-- analysis, plans and long student prompts use V4 Pro with thinking enabled
-  at `high` effort;
-- only final `content` is returned to the application. Provider
-  `reasoning_content` is intentionally discarded;
-- output caps limit latency and accidental spend. Invalid overrides fall back
-  to the documented defaults.
+## Включение
 
-The legacy `deepseek-chat` and `deepseek-reasoner` aliases must not be used.
-They were retired on 2026-07-24. Confirm current model names against the
-official DeepSeek model list before changing them.
+1. Убедиться, что release содержит миграцию `011_ai_conversations.sql`.
+2. Выпустить новый provider key; не использовать ключ, появлявшийся в чате.
+3. Записать ключ в root-owned API env, выставить `AI_ENABLED=1`.
+4. Перезапустить `zhangak-api` и проверить `/v1/ready`.
+5. Тестовым online-учеником принять согласие и отправить один безопасный вопрос.
+6. Проверить, что другой ученик не видит историю, а девятый быстрый запрос
+   получает `429`.
+7. Не логировать prompt, completion, Authorization или ключ.
 
-## Activation and rotation
+## Отключение и ротация
 
-Do not set `AI_PROVIDER=deepseek` on a release that predates DeepSeek gateway
-support. Store the key first, deploy the supporting Git SHA, then change the
-provider and restart the service. Verify a student mentor response and an
-admin analytics response without logging prompts, completions, authorization
-headers, or the key.
+При подозрении на утечку сначала установить `AI_ENABLED=0` и перезапустить API,
+затем отозвать старый ключ, создать новый и повторить тест включения. Историю
+чата не экспортировать в задачи или общий чат.
 
-To rotate the key, update only the root-owned runtime env file, restart the
-service, verify both model tiers, and revoke the old key. Never place a real
-key in `.env.example`, a CI variable exposed to builds, a release artifact, or
-a `NEXT_PUBLIC_` variable.
+Генерация вопросов должна создавать только черновики; автоматическая
+публикация AI-вопросов запрещена до проверки admin/super-admin.

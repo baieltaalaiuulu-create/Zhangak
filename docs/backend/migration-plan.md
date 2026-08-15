@@ -1,5 +1,12 @@
 # Migration to the Zhangak backend
 
+> [!NOTE]
+> Это исторический план перехода с Supabase. Номера и статусы slices ниже не
+> являются актуальным roadmap проекта. Для текущей навигации используйте
+> [портал документации](../README.md), а для фактической схемы — каталог
+> `backend/migrations/` и [архитектурную карту](../development/architecture.md).
+> Документ сохранён как журнал принятых решений и ограничений миграции.
+
 ## Target architecture
 
 - `zhangak.com`: public marketing pages only.

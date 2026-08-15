@@ -1,5 +1,13 @@
 # Database contract inferred from the application
 
+> [!WARNING]
+> Это исторический снимок старого Supabase-контракта, сохранённый только для
+> аудита и сверки при переносе данных. Он **не описывает текущую схему Zhangak**
+> и не должен использоваться для новых запросов, миграций или типов.
+> Актуальный источник истины — `backend/migrations/001_*.sql` и последующие
+> миграции, проверяемые `backend/scripts/verify-migrations.js`. Карта текущей
+> архитектуры находится в [руководстве разработчика](../development/architecture.md).
+
 This is a static contract extracted from the canonical web/mobile code. It is
 not a claim about the current live database; the live schema still needs a
 credentialed, read-only snapshot.
