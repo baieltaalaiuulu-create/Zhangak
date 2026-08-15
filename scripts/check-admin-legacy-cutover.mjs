@@ -10,7 +10,6 @@ const expect = (condition, message) => { if (!condition) failures.push(message) 
 
 const migrationPages = [
   'app/admin/mock/[id]/questions/page.tsx',
-  'app/admin/daily-challenge/page.tsx',
   'app/admin/daily-challenge/[id]/page.tsx',
   'app/admin/prizes/page.tsx',
   'app/admin/knowledge-base/page.tsx',
@@ -49,6 +48,7 @@ expect(sidebar.includes('aria-label={isMigrating'), 'sidebar must expose migrati
 for (const route of ['/admin/practice', '/admin/questions', '/admin/mock']) {
   expect(new RegExp(`href: '${route.replaceAll('/', '\\/')}'.*availability: 'ready'`).test(sidebar), `${route} must be shown as a working own-backend section`)
 }
+expect(/href: '\/admin\/daily-challenge'.*availability: 'ready'/.test(sidebar), '/admin/daily-challenge must be shown as a working own-backend section')
 
 for (const file of assessmentPages) {
   const page = await read(file)
@@ -61,6 +61,12 @@ expect(workspace.includes('ключ ответа виден только адм�
 expect(!/supabase|admin-data|authenticatedFetch|\/api\/admin\//i.test(workspace), 'assessment workspace must not invoke retired admin data paths')
 expect(client.includes("/v1/admin/practice-tests/") && client.includes('correctAnswer'), 'admin assessment client must use the own admin-only answer-key projection')
 expect(!/supabase|authenticatedFetch|\/api\/admin\//i.test(client), 'admin assessment client must stay on the cookie-authenticated BFF')
+
+const daily = await read('app/admin/daily-challenge/page.tsx')
+expect(daily.includes('createAdminDailyChallenge') && daily.includes('publishAdminDailyChallenge'), 'daily challenge editor must create drafts and publish only through the own backend')
+expect(daily.includes('listAdminPracticeQuestions') && daily.includes('chosen.length !== 15'), 'daily challenge editor must select exactly fifteen first-party questions')
+expect(!/supabase|authenticatedFetch|\/api\/admin\//i.test(daily), 'daily challenge editor must not invoke retired admin data paths')
+expect(!pictograph.test(daily), 'daily challenge editor contains an emoji instead of an icon')
 
 const pictograph = /\p{Extended_Pictographic}/u
 for (const [index, page] of pages.entries()) {
