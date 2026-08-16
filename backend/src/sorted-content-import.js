@@ -1,11 +1,18 @@
 import { createHash } from 'node:crypto'
 import { readFile, realpath } from 'node:fs/promises'
-import { relative, resolve, sep } from 'node:path'
+import { isAbsolute, relative, resolve, sep } from 'node:path'
 
 import mammoth from 'mammoth'
 
 const REPOSITORY_ROOT = resolve(import.meta.dirname, '../..')
-const SORTED_DATA_ROOT = resolve(REPOSITORY_ROOT, 'sorted_data')
+const configuredSourceRoot = process.env.ZHANGAK_SORTED_DATA_ROOT?.trim()
+if (configuredSourceRoot && !isAbsolute(configuredSourceRoot)) {
+  throw new Error('Sorted DOCX importer blocked: ZHANGAK_SORTED_DATA_ROOT must be an absolute path')
+}
+// Releases intentionally do not embed the raw sorted-data archive. Operators
+// may stage the two approved documents in a private, absolute directory for a
+// one-time import; all source paths remain allowlisted below.
+const SORTED_DATA_ROOT = configuredSourceRoot ? resolve(configuredSourceRoot) : resolve(REPOSITORY_ROOT, 'sorted_data')
 const MAX_QUESTIONS_PER_TEST = 200
 
 const SOURCE_BANKS = [
