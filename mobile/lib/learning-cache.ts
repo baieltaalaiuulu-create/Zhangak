@@ -1,11 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-const CACHE_SCHEMA_VERSION = 1
+const CACHE_SCHEMA_VERSION = 2
 const CACHE_PREFIX = `zhangak.native.learning-cache.v${CACHE_SCHEMA_VERSION}`
 const MAX_CACHE_BYTES = 512 * 1024
 const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000
 const USER_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-const RESOURCE = /^(?:lessons|lesson:[1-9]\d*)$/
+const RESOURCE = /^(?:lessons|lesson:[1-9]\d*|materials:[1-9]\d*)$/
 const FORBIDDEN_FIELD = /^(?:accessToken|refreshToken|password|authorization|correctAnswer|correct_answer)$/
 
 interface CacheEnvelope {

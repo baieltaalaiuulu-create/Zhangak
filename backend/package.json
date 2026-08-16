@@ -13,6 +13,8 @@
     "create:super-admin": "node scripts/create-super-admin.js",
     "migration:preflight": "node scripts/supabase-migration-preflight.js",
     "content:manifest": "node scripts/build-sorted-data-manifest.js",
+    "content:import": "node scripts/import_content.mjs --dry-run",
+    "universities:import": "node scripts/import-university-catalog.mjs --dry-run",
     "import:legacy-demo": "node scripts/import-supabase-demo-content.js --dry-run",
     "package:release": "node scripts/package-release.js",
     "check": "node scripts/check-syntax.js",
@@ -20,6 +22,7 @@
   },
   "dependencies": {
     "busboy": "1.6.0",
+    "mammoth": "1.12.0",
     "pg": "8.16.3"
   }
 }

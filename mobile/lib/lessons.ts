@@ -57,6 +57,24 @@ export interface PlatformDashboard {
   }
 }
 
+export type LessonMaterialType = 'rich_text' | 'video' | 'document' | 'image'
+
+export interface PlatformLessonMaterial {
+  id: number
+  lessonId: number
+  materialType: LessonMaterialType
+  title: string
+  position: number
+  /** Available offline only for server-sanitized rich text. */
+  bodyMarkdown: string | null
+  /** Network-only YouTube URL; never cached. */
+  externalUrl: string | null
+  mimeType: string | null
+  byteSize: number | null
+  /** Authenticated private-file endpoint; never cached. */
+  viewerPath: string | null
+}
+
 export interface CachedPlatformValue<T> {
   value: T
   source: 'network' | 'cache'
@@ -155,6 +173,30 @@ function nullableWebUrl(value: unknown, context: string) {
   return raw
 }
 
+function materialType(value: unknown): LessonMaterialType {
+  if (value === 'rich_text' || value === 'video' || value === 'document' || value === 'image') return value
+  throw new NativeDtoError('тип материала')
+}
+
+function nullableBodyMarkdown(value: unknown): string | null {
+  const body = nullableText(value, 'текст материала')
+  if (body !== null && body.length > 500_000) throw new NativeDtoError('текст материала')
+  return body
+}
+
+function nullableMimeType(value: unknown): string | null {
+  const mime = nullableText(value, 'MIME-тип материала')
+  if (mime !== null && (mime.length < 3 || mime.length > 160)) throw new NativeDtoError('MIME-тип материала')
+  return mime
+}
+
+function nullableViewerPath(value: unknown, materialId: number): string | null {
+  const path = nullableText(value, 'путь просмотра материала')
+  if (path === null) return null
+  if (path !== `/v1/platform/materials/${materialId}/content`) throw new NativeDtoError('путь просмотра материала')
+  return path
+}
+
 function lessonSubject(value: unknown): { subject: LessonSubject; sourceSubject: string | null } {
   if (value === null) return { subject: 'other', sourceSubject: null }
   const sourceSubject = nonEmptyString(value, 'предмет урока').trim()
@@ -204,6 +246,40 @@ export function parsePlatformLessons(value: unknown): PlatformLesson[] {
 
 export function parsePlatformLessonDetail(value: unknown): PlatformLesson {
   return parsePlatformLesson(record(value, 'страница урока').lesson)
+}
+
+export function parsePlatformLessonMaterial(value: unknown): PlatformLessonMaterial {
+  const source = record(value, 'материал урока')
+  const id = positiveInteger(source.id, 'id материала')
+  const kind = materialType(source.materialType)
+  const bodyMarkdown = nullableBodyMarkdown(source.bodyMarkdown)
+  const externalUrl = nullableWebUrl(source.externalUrl, 'ссылка на видео')
+  const viewerPath = nullableViewerPath(source.viewerPath, id)
+
+  if (kind === 'rich_text' && (bodyMarkdown === null || externalUrl !== null || viewerPath !== null)) throw new NativeDtoError('текстовый материал')
+  if (kind === 'video' && (externalUrl === null || bodyMarkdown !== null || viewerPath !== null)) throw new NativeDtoError('видеоматериал')
+  if (['document', 'image'].includes(kind) && (bodyMarkdown !== null || externalUrl !== null || viewerPath === null)) throw new NativeDtoError('файловый материал')
+
+  return {
+    id,
+    lessonId: positiveInteger(source.lessonId, 'id урока материала'),
+    materialType: kind,
+    title: nonEmptyString(source.title, 'название материала'),
+    position: positiveInteger(source.position, 'позиция материала'),
+    bodyMarkdown,
+    externalUrl,
+    mimeType: nullableMimeType(source.mimeType),
+    byteSize: nullableNonNegativeInteger(source.byteSize, 'размер материала'),
+    viewerPath,
+  }
+}
+
+export function parsePlatformLessonMaterials(value: unknown): PlatformLessonMaterial[] {
+  const source = record(value, 'материалы урока')
+  if (!Array.isArray(source.items)) throw new NativeDtoError('материалы урока')
+  const items = source.items.map(parsePlatformLessonMaterial)
+  if (new Set(items.map(item => item.id)).size !== items.length) throw new NativeDtoError('повторяющиеся материалы урока')
+  return items.sort((left, right) => left.position - right.position || left.id - right.id)
 }
 
 function parseLatestResult(value: unknown): PlatformDashboard['summary']['latestResult'] {
@@ -268,6 +344,13 @@ export async function fetchPlatformDashboard(): Promise<PlatformDashboard> {
   return parsePlatformDashboard(await nativeApiJson<unknown>('/platform/dashboard'))
 }
 
+export async function fetchLessonMaterials(lessonId: string): Promise<PlatformLessonMaterial[]> {
+  if (!/^\d+$/.test(lessonId) || !Number.isSafeInteger(Number(lessonId)) || Number(lessonId) <= 0) {
+    throw new NativeDtoError('id урока')
+  }
+  return parsePlatformLessonMaterials(await nativeApiJson<unknown>(`/platform/lessons/${lessonId}/materials`))
+}
+
 function activeCacheUserId() {
   return currentNativeAuth().session?.user.id ?? null
 }
@@ -281,6 +364,18 @@ function cacheSafeLesson(lesson: PlatformLesson): PlatformLesson {
 
 function cacheSafeLessons(lessons: PlatformLesson[]) {
   return lessons.map(cacheSafeLesson)
+}
+
+function cacheSafeMaterials(materials: PlatformLessonMaterial[]) {
+  // AsyncStorage is unencrypted. Rich text is the only material payload that
+  // can support offline reading; private paths and external video URLs always
+  // require a fresh authenticated request.
+  return materials.map(material => ({
+    ...material,
+    externalUrl: null,
+    viewerPath: null,
+    bodyMarkdown: material.materialType === 'rich_text' ? material.bodyMarkdown : null,
+  }))
 }
 
 function transportUnavailable(error: unknown) {
@@ -324,6 +419,24 @@ export async function fetchLessonByIdWithCache(id: string): Promise<CachedPlatfo
       source: 'cache',
       savedAt: cached.savedAt,
     }
+  }
+}
+
+export async function fetchLessonMaterialsWithCache(lessonId: string): Promise<CachedPlatformValue<PlatformLessonMaterial[]>> {
+  if (!/^\d+$/.test(lessonId) || !Number.isSafeInteger(Number(lessonId)) || Number(lessonId) <= 0) {
+    throw new NativeDtoError('id урока')
+  }
+  const userId = activeCacheUserId()
+  const resource = `materials:${lessonId}`
+  try {
+    const materials = await fetchLessonMaterials(lessonId)
+    if (userId) void saveLearningCache(userId, resource, cacheSafeMaterials(materials))
+    return { value: materials, source: 'network', savedAt: null }
+  } catch (error) {
+    if (!userId || !transportUnavailable(error)) throw error
+    const cached = await readLearningCache(userId, resource)
+    if (!cached) throw error
+    return { value: parsePlatformLessonMaterials({ items: cached.payload }), source: 'cache', savedAt: cached.savedAt }
   }
 }
 

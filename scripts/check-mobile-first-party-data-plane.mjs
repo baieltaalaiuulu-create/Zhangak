@@ -41,8 +41,11 @@ if (!lessonSource.includes("'/platform/dashboard'") || !lessonSource.includes("'
 if (!learningCacheSource.includes("@react-native-async-storage/async-storage") || !learningCacheSource.includes('MAX_CACHE_AGE_MS')) {
   throw new Error('Mobile lessons must use a bounded AsyncStorage cache.')
 }
-if (!learningCacheSource.includes('FORBIDDEN_FIELD') || !lessonSource.includes('cacheSafeLesson')) {
+if (!learningCacheSource.includes('FORBIDDEN_FIELD') || !lessonSource.includes('cacheSafeLesson') || !lessonSource.includes('cacheSafeMaterials')) {
   throw new Error('Mobile cache must reject credentials/answer keys and strip material URLs.')
+}
+if (!lessonSource.includes('/platform/lessons/${lessonId}/materials') || !lessonSource.includes('fetchLessonMaterialsWithCache')) {
+  throw new Error('Mobile lesson materials must use a bounded first-party offline cache.')
 }
 if (!authSource.includes('clearLearningCacheForUser')) {
   throw new Error('Native sign-out must clear the current user learning cache.')

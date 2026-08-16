@@ -5,9 +5,11 @@ import { Ionicons } from '@expo/vector-icons'
 import {
   completedLessonIds,
   fetchLessonByIdWithCache,
+  fetchLessonMaterialsWithCache,
   fetchLessonsWithCache,
   LESSON_SUBJECT_META,
   type PlatformLesson,
+  type PlatformLessonMaterial,
 } from '@/lib/lessons'
 import LessonVideoPlayer from '@/components/LessonVideoPlayer'
 
@@ -19,10 +21,15 @@ interface DetailState {
   nextLesson: PlatformLesson | null
   source: 'network' | 'cache'
   savedAt: number | null
+  materials: PlatformLessonMaterial[]
 }
 
 async function loadLesson(lessonId: string): Promise<DetailState> {
-  const [lessonResult, listResult] = await Promise.all([fetchLessonByIdWithCache(lessonId), fetchLessonsWithCache()])
+  const [lessonResult, listResult, materialsResult] = await Promise.all([
+    fetchLessonByIdWithCache(lessonId),
+    fetchLessonsWithCache(),
+    fetchLessonMaterialsWithCache(lessonId),
+  ])
   const lesson = lessonResult.value
   const allLessons = listResult.value
   const completedIds = completedLessonIds(allLessons)
@@ -36,8 +43,9 @@ async function loadLesson(lessonId: string): Promise<DetailState> {
     lesson,
     isCompleted: completedIds.has(lesson.id),
     nextLesson,
-    source: lessonResult.source === 'cache' || listResult.source === 'cache' ? 'cache' : 'network',
-    savedAt: lessonResult.savedAt ?? listResult.savedAt,
+    source: lessonResult.source === 'cache' || listResult.source === 'cache' || materialsResult.source === 'cache' ? 'cache' : 'network',
+    savedAt: lessonResult.savedAt ?? listResult.savedAt ?? materialsResult.savedAt,
+    materials: materialsResult.value,
   }
 }
 
@@ -111,6 +119,26 @@ export default function LessonDetailScreen() {
         {state.lesson.description && <Text style={styles.description}>{state.lesson.description}</Text>}
       </View>
 
+      {state.materials.length > 0 && (
+        <View style={styles.card}>
+          <Text style={styles.eyebrow}>МАТЕРИАЛЫ УРОКА</Text>
+          {state.materials.map(material => (
+            <View key={material.id} style={styles.materialRow}>
+              <Ionicons
+                name={material.materialType === 'rich_text' ? 'document-text-outline' : material.materialType === 'video' ? 'play-circle-outline' : 'lock-closed-outline'}
+                size={18}
+                color={BRAND_BLUE}
+              />
+              <View style={styles.materialCopy}>
+                <Text style={styles.materialTitle}>{material.title}</Text>
+                {material.materialType === 'rich_text' && material.bodyMarkdown && <Text style={styles.materialBody}>{material.bodyMarkdown}</Text>}
+                {material.materialType !== 'rich_text' && <Text style={styles.materialHint}>{state.source === 'cache' ? 'Нужен интернет для защищённого просмотра' : 'Открой материал в веб-кабинете'}</Text>}
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
       {state.isCompleted ? (
         <View style={styles.card}>
           <Text style={styles.doneText}>Урок пройден</Text>
@@ -161,6 +189,11 @@ const styles = StyleSheet.create({
   eyebrow: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5, textTransform: 'uppercase' },
   doneText: { fontSize: 15, fontWeight: '700', color: '#16A34A' },
   migrationNote: { fontSize: 13, color: '#64748B', marginTop: 10, lineHeight: 19 },
+  materialRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingTop: 14 },
+  materialCopy: { flex: 1 },
+  materialTitle: { fontSize: 14, fontWeight: '700', color: '#263041' },
+  materialBody: { fontSize: 13, color: '#4B5563', lineHeight: 19, marginTop: 5 },
+  materialHint: { fontSize: 12, color: '#64748B', lineHeight: 17, marginTop: 4 },
   primaryButton: { marginTop: 16, height: 52, borderRadius: 16, backgroundColor: BRAND_BLUE, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.85 },
   primaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
