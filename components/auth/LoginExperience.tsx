@@ -135,8 +135,8 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
   }
 
   return (
-    <main className={`min-h-dvh px-4 py-4 sm:px-6 sm:py-8 ${isAdmin ? 'bg-[#07142E]' : isOffline ? 'bg-[#F4F8F2]' : 'bg-[#EEF4FF]'}`}>
-      <div className="mx-auto grid min-h-[calc(100dvh-2rem)] w-full max-w-6xl overflow-hidden rounded-[28px] bg-white shadow-[0_28px_80px_rgba(13,30,74,0.16)] sm:min-h-[calc(100dvh-4rem)] lg:grid-cols-2">
+    <main className={`min-h-dvh min-w-0 overflow-x-clip px-4 py-4 sm:px-6 sm:py-8 ${isAdmin ? 'bg-[#07142E]' : isOffline ? 'bg-[#F4F8F2]' : 'bg-[#EEF4FF]'}`}>
+      <div className="mx-auto grid min-h-[calc(100dvh-2rem)] min-w-0 w-full max-w-6xl overflow-hidden rounded-[28px] bg-white shadow-[0_28px_80px_rgba(13,30,74,0.16)] sm:min-h-[calc(100dvh-4rem)] lg:grid-cols-2">
         <section className={`relative flex flex-col overflow-hidden p-12 text-white max-lg:hidden ${isAdmin ? 'bg-[#0D1E4A]' : isOffline ? 'bg-[#2D6A4F]' : 'bg-[#1B3F92]'}`}>
           <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full border border-white/10" />
           <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-white/[0.05]" />
@@ -185,8 +185,8 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
           </p>
         </section>
 
-        <section className="flex items-center justify-center px-5 py-7 sm:px-10 lg:px-14">
-          <div className="w-full max-w-md">
+        <section className="flex min-w-0 items-center justify-center px-5 py-7 sm:px-10 lg:px-14">
+          <div className="min-w-0 w-full max-w-md">
             <div className="flex items-center justify-between lg:hidden">
               <a href={marketingHref} className="inline-flex items-center gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100">
                 {/* eslint-disable-next-line @next/next/no-img-element -- local brand asset */}
@@ -202,10 +202,10 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
               <p className={`text-xs font-extrabold uppercase tracking-[0.18em] ${isAdmin ? 'text-slate-500' : 'text-[#1B3F92]'}`}>
                 {isAdmin ? 'Для команды Жангак' : isOffline ? 'Для учеников и преподавателей очного курса' : 'Для учеников онлайн-курса'}
               </p>
-              <h1 className="mt-3 text-3xl font-black tracking-[-0.035em] text-[#0D1E4A] sm:text-4xl">
+              <h1 className="mt-3 break-words text-3xl font-black tracking-[-0.035em] text-[#0D1E4A] sm:text-4xl">
                 {isAdmin ? 'Вход в панель управления' : isOffline ? 'Вход в офлайн-кабинет' : 'Продолжай подготовку'}
               </h1>
-              <p className="mt-3 text-sm font-medium leading-6 text-slate-500">
+              <p className="mt-3 break-words text-sm font-medium leading-6 text-slate-500">
                 {isAdmin
                   ? 'Используйте рабочую учётную запись администратора.'
                   : isOffline
@@ -221,7 +221,7 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} method="post" action="/v1/auth/login" className="mt-7 space-y-5">
+            <form onSubmit={handleSubmit} method="post" action="/v1/auth/login" className="mt-7 min-w-0 space-y-5">
               <div>
                 <label htmlFor="login-email" className="mb-2 block text-sm font-bold text-[#26324D]">
                   Электронная почта
@@ -244,9 +244,9 @@ export default function LoginExperience({ surface }: LoginExperienceProps) {
               </div>
 
               <div>
-                <div className="mb-2 flex items-center justify-between gap-3">
+                <div className="mb-2 flex min-w-0 items-center justify-between gap-3">
                   <label htmlFor="login-password" className="text-sm font-bold text-[#26324D]">Пароль</label>
-                  <span className="text-xs font-medium text-slate-400">Не менее 8 символов</span>
+                  <span className="shrink-0 text-xs font-medium text-slate-400">Не менее 8 символов</span>
                 </div>
                 <div className="relative">
                   <input

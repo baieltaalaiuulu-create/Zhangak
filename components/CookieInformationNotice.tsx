@@ -41,7 +41,7 @@ export default function CookieInformationNotice() {
   return (
     <aside
       aria-label="Информация о cookie"
-      className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:inset-x-5 sm:bottom-5 sm:p-5"
+      className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:inset-x-5 sm:bottom-5 sm:p-5"
     >
       <div className="flex items-start gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#1B3F92]">
@@ -61,7 +61,7 @@ export default function CookieInformationNotice() {
               <ShieldCheck size={15} aria-hidden="true" />
               Понятно
             </button>
-            <Link href="/privacy" className="inline-flex min-h-10 items-center px-2 text-xs font-bold text-[#1B3F92] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3F92]">
+            <Link href="/privacy" className="inline-flex min-h-10 max-w-full items-center px-2 text-left text-xs font-bold text-[#1B3F92] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3F92]">
               Политика конфиденциальности
             </Link>
           </div>
@@ -70,7 +70,7 @@ export default function CookieInformationNotice() {
           type="button"
           onClick={dismiss}
           aria-label="Закрыть информацию о cookie"
-          className="flex min-h-10 min-w-10 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3F92]"
+          className="flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3F92]"
         >
           <X size={18} aria-hidden="true" />
         </button>
