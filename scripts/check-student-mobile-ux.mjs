@@ -32,13 +32,13 @@ async function main() {
   const navHrefs = [...bottomNav.matchAll(/href: '([^']+)'/g)].map(match => match[1])
   expect(
     JSON.stringify(navHrefs) === JSON.stringify([
-      '/student/online/roadmap',
       '/student/online',
       '/student/online/practice',
-      '/student/online/mock',
+      '/student/online/roadmap',
       '/student/online/ai',
+      '/student/online/profile',
     ]),
-    'mobile navigation must prioritize Roadmap, then Home, Practice, ORT and AI in that order',
+    'mobile navigation must keep Home, Practice, Roadmap, AI and Profile in that order',
   )
   expect(bottomNav.includes('aria-label="Основная навигация"'), 'mobile navigation needs an accessible label')
   expect(bottomNav.includes("aria-current={isActive ? 'page' : undefined}"), 'active mobile destination needs aria-current="page"')
@@ -56,29 +56,13 @@ async function main() {
     dashboard.indexOf('MOBILE (< 768px)'),
     dashboard.indexOf('DESKTOP (>= 768px)'),
   )
-  for (const forbidden of [
-    'AnnouncementBanner',
-    'MobileDailyChallengeCard',
-    'MobileLeaderboardCard',
-    'MobileStatsGrid',
-    'AIMentorRecommendationCard',
-    'ActivityHeatmap',
-    'RecentAchievementsCard',
-  ]) {
+  for (const forbidden of ['AnnouncementBanner', 'MobileDailyChallengeCard', 'MobileLeaderboardCard', 'MobileStatsGrid', 'AIMentorRecommendationCard', 'ActivityHeatmap', 'RecentAchievementsCard']) {
     expect(!mobileDashboard.includes(forbidden), `mobile home must not render secondary block ${forbidden}`)
   }
-  expect(mobileDashboard.includes('<MobileHero'), 'mobile home needs one primary continue action')
-  expect(mobileDashboard.includes('<MobileTodayChecklist'), 'mobile home needs the three-item daily plan')
-  expect(mobileDashboard.includes('challengeHref="/student/online/practice/daily"'), 'daily task must retain its canonical route')
-  expect(
-    mobileDashboard.includes('challengeAvailable={false}') || mobileDashboard.includes('challengeAvailable'),
-    'daily task must explicitly declare whether its first-party flow is available',
-  )
-
-  const hero = await source('components/student/mobile/MobileHero.tsx')
-  expect(hero.includes('href={`/student/online/lessons/${heroLesson.id}`}'), 'continue CTA must open the exact next lesson')
-  expect(hero.includes('min-h-14'), 'primary lesson CTA must keep a large touch target')
-  expect(hero.includes('role="progressbar"'), 'score-to-goal progress needs progressbar semantics')
+  expect(mobileDashboard.includes('Открыть Roadmap'), 'mobile home needs one dominant Roadmap action')
+  expect(mobileDashboard.includes('href="/student/online/roadmap"'), 'mobile home must link directly to the course map')
+  expect(mobileDashboard.includes('Тренажёр без повторов'), 'mobile home needs an honest trainer explanation')
+  expect(mobileDashboard.includes('min-h-14'), 'primary Roadmap action must keep a large touch target')
 
   const mobileAiHelp = await source('components/student/mobile/MobileAIHelp.tsx')
   expect(mobileAiHelp.includes('AI-помощник обновляется'), 'mobile lesson AI entry must explicitly state its first-party migration status')

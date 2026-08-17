@@ -37,12 +37,16 @@ export default function StudentTopbar({ fullName, avatarUrl, profileColor, strea
   const accent = PROFILE_COLOR_OPTIONS[profileColor].color
 
   return (
-    <header className="sticky top-0 z-20 flex h-[60px] items-center gap-3 border-b border-[#C3C6D7]/50 bg-white px-4 sm:px-6">
-      {/* Logo — only needed on mobile, where the sidebar (which normally
-          carries it) is hidden in favor of the bottom nav. */}
-      <div className="flex items-center gap-2 md:hidden">
-        <span className="text-base font-extrabold tracking-tight text-[#1B3F92]">ZHANGAK</span>
-        <span className="h-1.5 w-1.5 rounded-full" style={{ background: '#8B5CF6' }} />
+    <header className="sticky top-0 z-20 flex h-[56px] items-center gap-3 border-b border-[#E2E8F0] bg-white px-4 sm:px-6">
+      {/* Compact HUD for the mobile-first student experience. It only shows
+          values the first-party backend currently owns, never mock XP. */}
+      <div className="flex min-w-0 flex-1 items-center gap-3 md:hidden">
+        <span className="inline-flex items-center gap-1 text-sm font-extrabold text-[#0F172A]">
+          <Flame size={19} className="text-[#D97706]" aria-hidden="true" /> {streak}
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-[#E8EDFA] px-2.5 py-1.5 text-[12px] font-extrabold text-[#1B3F92]">
+          <Target size={15} aria-hidden="true" /> {targetScore}
+        </span>
       </div>
 
       <div className="relative hidden max-w-xs flex-1 md:block">
@@ -70,7 +74,7 @@ export default function StudentTopbar({ fullName, avatarUrl, profileColor, strea
           Ур. {level}
         </Pill>
 
-        <div className="relative">
+        <div className="relative hidden md:block">
           <button
             type="button"
             onClick={() => setNotifOpen(v => !v)}

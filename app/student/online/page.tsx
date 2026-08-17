@@ -2,15 +2,14 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { RefreshCw } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowRight, BookOpenCheck, Dumbbell, Map, RefreshCw, Sparkles } from 'lucide-react'
 import { useStudentSession } from '@/components/student/StudentSessionContext'
 import { DEFAULT_TARGET_SCORE, type StudentDashboardData } from '@/lib/student-dashboard-contract'
 import { zhangakApiRequest } from '@/lib/zhangak-api-client'
 
 import DashboardHeroCard from '@/components/student/DashboardHeroCard'
 import SubjectsGrid from '@/components/student/SubjectsGrid'
-import MobileHero from '@/components/student/mobile/MobileHero'
-import MobileTodayChecklist from '@/components/student/mobile/MobileTodayChecklist'
 
 interface FirstPartyDashboardResponse {
   profile: {
@@ -151,24 +150,61 @@ export default function StudentOnlinePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 min-w-0">
 
         {/* ============ MOBILE (< 768px) ============ */}
-        <div className="block space-y-5 md:hidden">
-          <MobileHero
-            firstName={firstName}
-            currentScore={0}
-            targetScore={targetScore}
-            heroLesson={null}
-            loading={false}
-          />
+        <div className="-mx-4 -mt-6 block bg-[#F1F4FB] pb-4 md:hidden">
+          <header className="rounded-b-[28px] bg-[#1B3F92] px-4 pb-8 pt-5 text-white shadow-[0_5px_0_#102C69]">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.1em] text-blue-100">Твой план подготовки</p>
+            <div className="mt-1 flex items-center justify-between gap-3">
+              <h1 className="truncate text-[24px] font-black">Привет, {firstName}</h1>
+              <Link href="/student/online/profile" aria-label="Открыть профиль" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-white/45 bg-white/15 text-sm font-black">
+                {firstName.slice(0, 1).toUpperCase()}
+              </Link>
+            </div>
+            <div className="mt-4 flex items-center justify-between gap-3 text-[12px] font-bold text-blue-100">
+              <span>Цель: {targetScore} баллов</span>
+              <span>{summary.lessons.completed}/{summary.lessons.total} уроков</span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/20">
+              <div className="h-full rounded-full bg-[#70C942] transition-all duration-700" style={{ width: `${summary.lessons.completionPercent}%` }} />
+            </div>
+          </header>
 
-          <MobileTodayChecklist
-            lessonDone={summary.lessons.total > 0 && summary.lessons.completed >= summary.lessons.total}
-            lessonHref="/student/online/roadmap"
-            practiceDone={summary.practice.attempts > 0}
-            practiceHref="/student/online/trainer"
-            challengeDone={false}
-            challengeHref="/student/online/practice/daily"
-            challengeAvailable
-          />
+          <div className="-mt-4 space-y-4 px-4">
+            <section className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-[0_6px_18px_rgba(15,23,42,0.07)]">
+              <div className="flex items-start gap-3">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#E8EDFA] text-[#1B3F92]"><Map size={26} aria-hidden="true" /></span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#8A96AC]">Главное на сегодня</p>
+                  <h2 className="mt-0.5 text-[17px] font-black leading-tight text-[#0F172A]">Продолжай путь по карте</h2>
+                  <p className="mt-1 text-[12px] leading-5 text-[#475569]">Уроки открываются по порядку, а прогресс и звёзды сохраняются автоматически.</p>
+                </div>
+              </div>
+              <Link href="/student/online/roadmap" className="mt-4 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#1B3F92] px-4 text-[16px] font-extrabold text-white shadow-[0_4px_0_#102C69] active:translate-y-1 active:shadow-none">
+                Открыть Roadmap <ArrowRight size={20} aria-hidden="true" />
+              </Link>
+            </section>
+
+            <section className="grid grid-cols-2 gap-3" aria-label="Текущий прогресс">
+              <Link href="/student/online/roadmap" className="rounded-2xl border border-[#DCE8FF] bg-[#F7FAFF] p-3.5">
+                <BookOpenCheck size={22} className="text-[#1B3F92]" aria-hidden="true" />
+                <p className="mt-3 text-[22px] font-black text-[#0F172A]">{summary.lessons.completionPercent}%</p>
+                <p className="text-[11px] font-bold text-[#64748B]">программы курса</p>
+              </Link>
+              <Link href="/student/online/trainer" className="rounded-2xl border border-[#D8F3EC] bg-[#F4FFFC] p-3.5">
+                <Dumbbell size={22} className="text-[#0D9488]" aria-hidden="true" />
+                <p className="mt-3 text-[22px] font-black text-[#0F172A]">{summary.practice.attempts}</p>
+                <p className="text-[11px] font-bold text-[#64748B]">попыток в практике</p>
+              </Link>
+            </section>
+
+            <Link href="/student/online/trainer" className="flex items-center gap-3 rounded-2xl border border-[#F2E4BB] bg-[#FFF9EA] px-4 py-3.5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFE7A5] text-[#A66500]"><Sparkles size={22} aria-hidden="true" /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14px] font-extrabold text-[#0F172A]">Тренажёр без повторов</span>
+                <span className="mt-0.5 block text-[11px] leading-4 text-[#64748B]">Выбери предмет и тему — решённые правильно вопросы больше не покажутся.</span>
+              </span>
+              <ArrowRight size={20} className="shrink-0 text-[#A66500]" aria-hidden="true" />
+            </Link>
+          </div>
         </div>
 
         {/* ============ DESKTOP (>= 768px) ============ */}
