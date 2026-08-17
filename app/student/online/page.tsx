@@ -174,8 +174,8 @@ export default function StudentOnlinePage() {
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#E8EDFA] text-[#1B3F92]"><Map size={26} aria-hidden="true" /></span>
                 <div className="min-w-0 flex-1">
                   <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#8A96AC]">Главное на сегодня</p>
-                  <h2 className="mt-0.5 text-[17px] font-black leading-tight text-[#0F172A]">Продолжай путь по карте</h2>
-                  <p className="mt-1 text-[12px] leading-5 text-[#475569]">Уроки открываются по порядку, а прогресс и звёзды сохраняются автоматически.</p>
+                  <h2 className="mt-0.5 text-[17px] font-black leading-tight text-[#0F172A]">Открой свой следующий шаг</h2>
+                  <p className="mt-1 text-[12px] leading-5 text-[#475569]">В Roadmap видны опубликованный порядок уроков, доступные шаги и прогресс по разделам.</p>
                 </div>
               </div>
               <Link href="/student/online/roadmap" className="mt-4 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#1B3F92] px-4 text-[16px] font-extrabold text-white shadow-[0_4px_0_#102C69] active:translate-y-1 active:shadow-none">
@@ -187,7 +187,7 @@ export default function StudentOnlinePage() {
               <Link href="/student/online/roadmap" className="rounded-2xl border border-[#DCE8FF] bg-[#F7FAFF] p-3.5">
                 <BookOpenCheck size={22} className="text-[#1B3F92]" aria-hidden="true" />
                 <p className="mt-3 text-[22px] font-black text-[#0F172A]">{summary.lessons.completionPercent}%</p>
-                <p className="text-[11px] font-bold text-[#64748B]">программы курса</p>
+                <p className="text-[11px] font-bold text-[#64748B]">уроков пройдено</p>
               </Link>
               <Link href="/student/online/trainer" className="rounded-2xl border border-[#D8F3EC] bg-[#F4FFFC] p-3.5">
                 <Dumbbell size={22} className="text-[#0D9488]" aria-hidden="true" />
