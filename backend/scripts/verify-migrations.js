@@ -45,6 +45,8 @@ const requiredTables = [
   'trainer_question_issues',
   'trainer_question_mastery',
   'trainer_progress_resets',
+  'course_units',
+  'course_unit_lessons',
   'public_applications',
   'public_application_events',
   'ai_consents',

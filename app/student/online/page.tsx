@@ -140,9 +140,9 @@ export default function StudentOnlinePage() {
 
   const firstName = (data.profile?.full_name ?? profileName ?? 'Студент').split(' ')[0]
   const targetScore = targetScoreOverride ?? data.profile?.target_score ?? DEFAULT_TARGET_SCORE
-  const continueHref = summary.courseCount > 0 ? '/student/online/lessons' : '/student/online/practice'
+  const continueHref = summary.courseCount > 0 ? '/student/online/roadmap' : '/student/online/practice'
   const subjects = [
-    { key: 'math' as const, label: 'Уроки', topicLabel: summary.courseCount > 0 ? 'Продолжай программу курса' : 'Курс появится после назначения группы', color: '#1B3F92', completed: summary.lessons.completed, total: summary.lessons.total, hoursRemaining: 0, href: '/student/online/lessons' },
+    { key: 'math' as const, label: 'Дорожная карта', topicLabel: summary.courseCount > 0 ? 'Продолжай программу курса по шагам' : 'Курс появится после назначения группы', color: '#1B3F92', completed: summary.lessons.completed, total: summary.lessons.total, hoursRemaining: 0, href: '/student/online/roadmap' },
     { key: 'kyr' as const, label: 'Тренажёр', topicLabel: 'Выбери предмет, раздел и сложность — правильные вопросы не повторяются', color: '#14B8A6', completed: summary.practice.passed, total: summary.practice.attempts, hoursRemaining: 0, href: '/student/online/trainer' },
   ]
 
@@ -162,7 +162,7 @@ export default function StudentOnlinePage() {
 
           <MobileTodayChecklist
             lessonDone={summary.lessons.total > 0 && summary.lessons.completed >= summary.lessons.total}
-            lessonHref="/student/online/lessons"
+            lessonHref="/student/online/roadmap"
             practiceDone={summary.practice.attempts > 0}
             practiceHref="/student/online/trainer"
             challengeDone={false}

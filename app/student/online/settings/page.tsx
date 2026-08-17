@@ -6,6 +6,7 @@ import SettingsInstallCard from '@/components/student/settings/SettingsInstallCa
 import DangerZoneCard from '@/components/student/settings/DangerZoneCard'
 import PersonalizationSettings from '@/components/student/settings/PersonalizationSettings'
 import { useStudentSession } from '@/components/student/StudentSessionContext'
+import AccountLogoutCard from '@/components/auth/AccountLogoutCard'
 
 export default function SettingsPage() {
   // The parent StudentLayout has already verified this own first-party
@@ -21,6 +22,7 @@ export default function SettingsPage() {
         <PersonalizationSettings />
         <SettingsNotifications />
         <SettingsInstallCard />
+        <AccountLogoutCard />
         <DangerZoneCard />
       </div>
     </div>

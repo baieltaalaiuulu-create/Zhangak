@@ -40,6 +40,18 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
 .env*
 !.env.example
 
@@ -49,3 +61,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Large raw dataset archive
+/sorted_data/
+
+# Local QA exports and temporary processing work. These are deliberately kept
+# outside release commits; published documentation belongs under docs/ instead.
+/artifacts/
+/scratch/
+/sorted_data_preview/
+/docs/screenshots/
+/backend/scripts/materials_processor/
+/PROMPT_FOR_NEXT_AGENT.md
+/VERIFICATION_REPORT.md

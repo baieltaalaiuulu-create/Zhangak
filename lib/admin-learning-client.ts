@@ -91,6 +91,43 @@ export interface AdminLessonMaterial {
   createdAt: string
 }
 
+export interface AdminRoadmapUnit {
+  id: number
+  courseId: number
+  unitNumber: number
+  title: string
+  description: string | null
+  accentColor: 'green' | 'blue' | 'violet' | 'red'
+  isPublished: boolean
+  lessonCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AdminRoadmapPlacement {
+  unitId: number
+  lessonId: number
+  position: number
+  lessonNumber: number
+  title: string
+  isPublished: boolean
+}
+
+export interface AdminCourseRoadmap {
+  courseId: number
+  units: AdminRoadmapUnit[]
+  placements: AdminRoadmapPlacement[]
+  unassignedLessons: AdminLesson[]
+}
+
+export interface AdminRoadmapUnitInput {
+  unitNumber: number
+  title: string
+  description?: string | null
+  accentColor?: AdminRoadmapUnit['accentColor']
+  isPublished?: boolean
+}
+
 function invalidResponse(context: string): never {
   throw new Error(`Некорректный ответ сервиса: ${context}`)
 }
@@ -194,6 +231,43 @@ export function parseAdminLesson(value: unknown): AdminLesson {
   }
 }
 
+function roadmapAccent(value: unknown): AdminRoadmapUnit['accentColor'] {
+  if (value === 'green' || value === 'blue' || value === 'violet' || value === 'red') return value
+  invalidResponse('цвет раздела дорожной карты')
+}
+
+export function parseAdminRoadmapUnit(value: unknown): AdminRoadmapUnit {
+  const source = record(value, 'раздел дорожной карты')
+  return {
+    id: positiveInteger(source.id, 'id раздела'), courseId: positiveInteger(source.courseId, 'id курса раздела'),
+    unitNumber: positiveInteger(source.unitNumber, 'номер раздела'), title: text(source.title, 'название раздела'),
+    description: nullableText(source.description, 'описание раздела'), accentColor: roadmapAccent(source.accentColor),
+    isPublished: boolean(source.isPublished, 'публикация раздела'), lessonCount: count(source.lessonCount, 'количество уроков раздела'),
+    createdAt: timestamp(source.createdAt, 'дата создания раздела'), updatedAt: timestamp(source.updatedAt, 'дата обновления раздела'),
+  }
+}
+
+function parseAdminRoadmapPlacement(value: unknown): AdminRoadmapPlacement {
+  const source = record(value, 'урок раздела')
+  return {
+    unitId: positiveInteger(source.unitId, 'id раздела урока'), lessonId: positiveInteger(source.lessonId, 'id урока раздела'),
+    position: positiveInteger(source.position, 'позиция урока'), lessonNumber: positiveInteger(source.lessonNumber, 'номер урока раздела'),
+    title: text(source.title, 'название урока раздела'), isPublished: boolean(source.isPublished, 'публикация урока раздела'),
+  }
+}
+
+export function parseAdminCourseRoadmap(value: unknown): AdminCourseRoadmap {
+  const source = record(value, 'карта курса')
+  if (!Array.isArray(source.units) || !Array.isArray(source.placements) || !Array.isArray(source.unassignedLessons)) invalidResponse('карта курса')
+  const courseId = positiveInteger(source.courseId, 'id курса карты')
+  const units = source.units.map(parseAdminRoadmapUnit)
+  const placements = source.placements.map(parseAdminRoadmapPlacement)
+  const unassignedLessons = source.unassignedLessons.map(parseAdminLesson)
+  if (units.some(unit => unit.courseId !== courseId) || unassignedLessons.some(lesson => lesson.courseId !== courseId)) invalidResponse('привязка карты к курсу')
+  if (new Set(units.map(unit => unit.id)).size !== units.length || new Set(placements.map(item => item.lessonId)).size !== placements.length) invalidResponse('повтор в карте курса')
+  return { courseId, units, placements, unassignedLessons }
+}
+
 export function parseAdminLessonMaterial(value: unknown): AdminLessonMaterial {
   const source = record(value, 'материал урока')
   const materialType = source.materialType
@@ -256,6 +330,30 @@ export async function listAdminCourses(options: { query?: string; limit?: number
   if (options.offset != null) params.set('offset', String(options.offset))
   const suffix = params.size > 0 ? `?${params.toString()}` : ''
   return parseAdminCourseList(await zhangakApiRequest<unknown>(`/v1/admin/courses${suffix}`))
+}
+
+export async function getAdminCourseRoadmap(courseId: number): Promise<AdminCourseRoadmap> {
+  return parseAdminCourseRoadmap(await zhangakApiRequest<unknown>(`/v1/admin/courses/${coursePath(courseId)}/roadmap`))
+}
+
+export async function createAdminRoadmapUnit(courseId: number, input: AdminRoadmapUnitInput): Promise<AdminRoadmapUnit> {
+  const response = record(await zhangakApiJson<unknown>(`/v1/admin/courses/${coursePath(courseId)}/roadmap/units`, 'POST', input), 'создание раздела')
+  return parseAdminRoadmapUnit(response.unit)
+}
+
+export async function patchAdminRoadmapUnit(unitId: number, input: Partial<AdminRoadmapUnitInput>): Promise<AdminRoadmapUnit> {
+  const response = record(await zhangakApiJson<unknown>(`/v1/admin/roadmap/units/${positiveInteger(unitId, 'id раздела')}`, 'PATCH', input), 'обновление раздела')
+  return parseAdminRoadmapUnit(response.unit)
+}
+
+export async function placeAdminRoadmapLesson(unitId: number, lessonId: number, position: number): Promise<void> {
+  await zhangakApiJson<unknown>(`/v1/admin/roadmap/units/${positiveInteger(unitId, 'id раздела')}/lessons`, 'POST', {
+    lessonId: positiveInteger(lessonId, 'id урока'), position: positiveInteger(position, 'позиция урока'),
+  })
+}
+
+export async function removeAdminRoadmapLesson(unitId: number, lessonId: number): Promise<void> {
+  await zhangakApiJson<unknown>(`/v1/admin/roadmap/units/${positiveInteger(unitId, 'id раздела')}/lessons/${positiveInteger(lessonId, 'id урока')}`, 'DELETE')
 }
 
 export async function createAdminCourse(input: AdminCourseInput): Promise<AdminCourse> {

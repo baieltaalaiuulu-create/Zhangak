@@ -32,13 +32,13 @@ async function main() {
   const navHrefs = [...bottomNav.matchAll(/href: '([^']+)'/g)].map(match => match[1])
   expect(
     JSON.stringify(navHrefs) === JSON.stringify([
+      '/student/online/roadmap',
       '/student/online',
-      '/student/online/lessons',
       '/student/online/practice',
       '/student/online/mock',
       '/student/online/ai',
     ]),
-    'mobile navigation must keep exactly Home, Lessons, Practice, ORT and AI in that order',
+    'mobile navigation must prioritize Roadmap, then Home, Practice, ORT and AI in that order',
   )
   expect(bottomNav.includes('aria-label="Основная навигация"'), 'mobile navigation needs an accessible label')
   expect(bottomNav.includes("aria-current={isActive ? 'page' : undefined}"), 'active mobile destination needs aria-current="page"')
@@ -128,6 +128,7 @@ async function main() {
     'app/student/online/practice',
     'app/student/online/mock',
     'app/student/online/ai',
+    'app/student/online/roadmap',
     'components/student/mobile',
   ]
   const standaloneFiles = [

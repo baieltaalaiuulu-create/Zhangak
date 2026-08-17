@@ -18,6 +18,7 @@ const files = {
   courseEditModal: 'components/admin/lessons/CourseEditModal.tsx',
   editModal: 'components/admin/lessons/LessonEditModal.tsx',
   questions: 'app/admin/lessons/[id]/questions/page.tsx',
+  roadmap: 'app/admin/roadmap/page.tsx',
 }
 
 const contents = Object.fromEntries(await Promise.all(
@@ -29,6 +30,9 @@ expect(contents.route.includes("POST('/v1/admin/courses'"), 'admin courses must 
 expect(contents.route.includes("GET('/v1/admin/courses/:courseId/lessons'"), 'admin lessons must be scoped to a course')
 expect(contents.route.includes("POST('/v1/admin/courses/:courseId/lessons'"), 'admin lessons must be created through the first-party API')
 expect(contents.route.includes("PATCH('/v1/admin/lessons/:lessonId'"), 'admin lessons must be updated through the first-party API')
+expect(contents.route.includes("GET('/v1/admin/courses/:courseId/roadmap'"), 'course roadmap must load through the first-party API')
+expect(contents.route.includes("POST('/v1/admin/courses/:courseId/roadmap/units'"), 'roadmap units must be created through the first-party API')
+expect(contents.route.includes("POST('/v1/admin/roadmap/units/:unitId/lessons'"), 'roadmap lesson placements must use the first-party API')
 expect(contents.route.includes('CONTENT_MANAGER_ROLES'), 'curriculum changes must remain role-gated')
 expect(contents.server.includes("import './routes/admin-learning.js'"), 'admin learning routes must be registered')
 
@@ -50,6 +54,8 @@ expect(contents.editModal.includes('updateAdminLesson') && contents.editModal.in
 expect(contents.courseEditModal.includes('updateAdminCourse') && contents.courseEditModal.includes('isActive'), 'course editor must update archival state through the first-party API')
 expect(contents.questions.includes('Редактор заданий переносится'), 'unmigrated question editor must present an explicit migration state')
 expect(!/QuestionImageUploader|fetchQuestionsForTest|ensurePracticeTestForLesson|correct_answer/i.test(contents.questions), 'question migration page must not invoke the legacy answer-key editor')
+expect(contents.roadmap.includes('getAdminCourseRoadmap') && contents.roadmap.includes('createAdminRoadmapUnit'), 'mounted roadmap editor must use the own-backend roadmap client')
+expect(contents.roadmap.includes('placeAdminRoadmapLesson') && contents.roadmap.includes('removeAdminRoadmapLesson'), 'roadmap editor must safely place and remove lessons')
 
 const pictograph = /\p{Extended_Pictographic}/u
 for (const [key, content] of Object.entries(contents)) {

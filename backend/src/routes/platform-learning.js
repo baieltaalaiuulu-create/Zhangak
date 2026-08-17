@@ -310,6 +310,38 @@ const LESSON_PROGRESS_PROJECTION = `
          OR (previous_lesson.lesson_number = l.lesson_number AND previous_lesson.id < l.id)
        )
        AND previous_progress.completed_at IS NULL
+  )
+  OR EXISTS (
+    -- Once a lesson is assigned to a published Roadmap unit, the global unit
+    -- order is also authoritative. This closes a direct-URL bypass between
+    -- subjects while preserving the existing subject-order behaviour for
+    -- courses that have not yet been mapped into units.
+    SELECT 1
+      FROM course_unit_lessons current_item
+      JOIN course_units current_unit
+        ON current_unit.id = current_item.unit_id
+       AND current_unit.course_id = current_item.course_id
+       AND current_unit.is_published = true
+      JOIN course_unit_lessons previous_item
+        ON previous_item.course_id = current_item.course_id
+      JOIN course_units previous_unit
+        ON previous_unit.id = previous_item.unit_id
+       AND previous_unit.course_id = previous_item.course_id
+       AND previous_unit.is_published = true
+      JOIN lessons previous_lesson ON previous_lesson.id = previous_item.lesson_id
+      LEFT JOIN lesson_progress previous_progress
+        ON previous_progress.lesson_id = previous_lesson.id
+       AND previous_progress.student_id = $1
+     WHERE current_item.lesson_id = l.id
+       AND previous_lesson.is_published = true
+       AND (
+         previous_unit.unit_number < current_unit.unit_number
+         OR (
+           previous_unit.unit_number = current_unit.unit_number
+           AND previous_item.position < current_item.position
+         )
+       )
+       AND previous_progress.completed_at IS NULL
   ) AS is_locked`
 
 /**

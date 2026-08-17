@@ -4,10 +4,15 @@ import test from 'node:test'
 import {
   createAdminCourse,
   createAdminLesson,
+  createAdminRoadmapUnit,
+  getAdminCourseRoadmap,
   listAdminCourses,
   listAdminLessons,
   parseAdminCourseList,
   parseAdminLessonList,
+  parseAdminCourseRoadmap,
+  placeAdminRoadmapLesson,
+  removeAdminRoadmapLesson,
   updateAdminCourse,
   updateAdminLesson,
 } from '../../lib/admin-learning-client.ts'
@@ -45,6 +50,13 @@ const LESSON = {
   updatedAt: '2026-08-13T08:00:00.000Z',
 }
 
+const ROADMAP = {
+  courseId: 4,
+  units: [{ id: 7, courseId: 4, unitNumber: 1, title: 'Алгебра', description: null, accentColor: 'green', isPublished: true, lessonCount: 1, createdAt: COURSE.createdAt, updatedAt: COURSE.updatedAt }],
+  placements: [{ unitId: 7, lessonId: 9, position: 1, lessonNumber: 1, title: LESSON.title, isPublished: false }],
+  unassignedLessons: [],
+}
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 }
@@ -73,6 +85,8 @@ test('admin learning parsers accept only course-scoped first-party DTOs', () => 
     () => parseAdminLessonList({ courseId: 4, items: [{ ...LESSON, courseId: 5 }], total: 1, limit: 100, offset: 0 }),
     /курс урока не совпадает/,
   )
+  assert.equal(parseAdminCourseRoadmap(ROADMAP).units[0].accentColor, 'green')
+  assert.throws(() => parseAdminCourseRoadmap({ ...ROADMAP, placements: [{ ...ROADMAP.placements[0] }, { ...ROADMAP.placements[0], position: 2 }] }), /повтор в карте/)
 })
 
 test('admin learning operations stay inside the cookie-authenticated BFF namespace', async () => {
@@ -88,6 +102,10 @@ test('admin learning operations stay inside the cookie-authenticated BFF namespa
     if (path === '/v1/admin/courses/4' && init?.method === 'PATCH') return json({ course: COURSE })
     if (path === '/v1/admin/courses/4/lessons' && init?.method === 'POST') return json({ lesson: LESSON }, 201)
     if (path === '/v1/admin/lessons/9' && init?.method === 'PATCH') return json({ lesson: LESSON })
+    if (path === '/v1/admin/courses/4/roadmap') return json(ROADMAP)
+    if (path === '/v1/admin/courses/4/roadmap/units' && init?.method === 'POST') return json({ unit: ROADMAP.units[0] }, 201)
+    if (path === '/v1/admin/roadmap/units/7/lessons' && init?.method === 'POST') return json({ placement: ROADMAP.placements[0] }, 201)
+    if (path === '/v1/admin/roadmap/units/7/lessons/9' && init?.method === 'DELETE') return json({ removed: { unitId: 7, lessonId: 9 } })
     throw new Error(`Unexpected request ${path}`)
   }
 
@@ -98,6 +116,10 @@ test('admin learning operations stay inside the cookie-authenticated BFF namespa
     await updateAdminCourse(4, { isActive: false })
     await createAdminLesson(4, { lessonNumber: 1, title: LESSON.title, isPublished: false })
     await updateAdminLesson(9, { isPublished: true })
+    await getAdminCourseRoadmap(4)
+    await createAdminRoadmapUnit(4, { unitNumber: 1, title: 'Алгебра' })
+    await placeAdminRoadmapLesson(7, 9, 1)
+    await removeAdminRoadmapLesson(7, 9)
 
     assert.deepEqual(calls.map(call => call.input), [
       '/v1/admin/courses?limit=25',
@@ -106,8 +128,12 @@ test('admin learning operations stay inside the cookie-authenticated BFF namespa
       '/v1/admin/courses/4',
       '/v1/admin/courses/4/lessons',
       '/v1/admin/lessons/9',
+      '/v1/admin/courses/4/roadmap',
+      '/v1/admin/courses/4/roadmap/units',
+      '/v1/admin/roadmap/units/7/lessons',
+      '/v1/admin/roadmap/units/7/lessons/9',
     ])
-    assert.deepEqual(calls.map(call => call.init?.method ?? 'GET'), ['GET', 'GET', 'POST', 'PATCH', 'POST', 'PATCH'])
+    assert.deepEqual(calls.map(call => call.init?.method ?? 'GET'), ['GET', 'GET', 'POST', 'PATCH', 'POST', 'PATCH', 'GET', 'POST', 'POST', 'DELETE'])
     assert.ok(calls.every(call => call.init?.credentials === 'include'))
     assert.deepEqual(JSON.parse(String(calls[4].init?.body)), { lessonNumber: 1, title: LESSON.title, isPublished: false })
   } finally {

@@ -4,8 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Archive, BarChart2, BookOpen, Brain, ClipboardList, GraduationCap, LayoutDashboard, ListChecks, Megaphone, Menu, PenLine, ReceiptText,
-  ShieldCheck, Trophy, Users, X, Zap,
+  Archive, BarChart2, BookOpen, Brain, ClipboardList, GraduationCap, LayoutDashboard, ListChecks, ListTree, Megaphone, Menu, PenLine, ReceiptText,
+  Settings, ShieldCheck, Trophy, Users, X, Zap,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -22,6 +22,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: '/admin', label: 'Обзор', icon: LayoutDashboard, availability: 'ready' },
   { href: '/admin/lessons', label: 'Уроки', icon: BookOpen, availability: 'ready' },
+  { href: '/admin/roadmap', label: 'Дорожная карта', icon: ListTree, availability: 'ready' },
   { href: '/admin/groups', label: 'Группы', icon: Users, availability: 'ready' },
   { href: '/admin/students', label: 'Ученики', icon: Users, availability: 'ready' },
   { href: '/admin/applications', label: 'Заявки и оплаты', icon: ReceiptText, availability: 'ready' },
@@ -29,6 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin/questions', label: 'Вопросы', icon: PenLine, availability: 'ready' },
   { href: '/admin/mock', label: 'Пробный ОРТ', icon: ClipboardList, availability: 'ready' },
   { href: '/admin/daily-challenge', label: 'Задание дня', icon: Zap, availability: 'ready' },
+  { href: '/admin/settings', label: 'Настройки', icon: Settings, availability: 'ready' },
   { href: '/admin/prizes', label: 'Рейтинг и призы', icon: Trophy, availability: 'migration' },
   { href: '/admin/knowledge-base', label: 'База знаний AI', icon: Brain, availability: 'migration' },
   { href: '/admin/universities', label: 'Университеты', icon: GraduationCap, availability: 'migration' },
@@ -39,7 +41,7 @@ const NAV_ITEMS: NavItem[] = [
 ]
 
 const NAV_GROUPS: { label: string; availability: NavAvailability; hrefs: string[] }[] = [
-  { label: 'Рабочие разделы', availability: 'ready', hrefs: ['/admin', '/admin/lessons', '/admin/groups', '/admin/students', '/admin/applications', '/admin/practice', '/admin/questions', '/admin/mock', '/admin/daily-challenge'] },
+  { label: 'Рабочие разделы', availability: 'ready', hrefs: ['/admin', '/admin/lessons', '/admin/roadmap', '/admin/groups', '/admin/students', '/admin/applications', '/admin/practice', '/admin/questions', '/admin/mock', '/admin/daily-challenge', '/admin/settings'] },
   {
     label: 'Перенос на наш backend',
     availability: 'migration',

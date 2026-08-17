@@ -1,6 +1,6 @@
 import { requireAuth } from '../auth.js'
 import { query as dbQuery, transaction } from '../db.js'
-import { GET, HttpError, PATCH, POST, readJson } from '../http.js'
+import { DELETE, GET, HttpError, PATCH, POST, readJson } from '../http.js'
 import { requireRole } from '../authorization.js'
 import { receiveMaterialUpload } from '../multipart.js'
 import { removePrivateObject } from '../storage.js'
@@ -43,6 +43,19 @@ const MATERIAL_FIELDS = Object.freeze({
   bodyMarkdown: 'body_markdown',
   externalUrl: 'external_url',
   isPublished: 'is_published',
+})
+
+const ROADMAP_UNIT_FIELDS = Object.freeze({
+  unitNumber: 'unit_number',
+  title: 'title',
+  description: 'description',
+  accentColor: 'accent_color',
+  isPublished: 'is_published',
+})
+
+const ROADMAP_PLACEMENT_FIELDS = Object.freeze({
+  lessonId: 'lesson_id',
+  position: 'position',
 })
 
 function adminContentManager(config, req) {
@@ -124,6 +137,64 @@ function positivePosition(value) {
     throw new HttpError(400, 'Некорректная позиция материала', 'invalid_material_position')
   }
   return value
+}
+
+function roadmapUnitNumber(value) {
+  if (!Number.isSafeInteger(value) || value < 1 || value > 10_000) {
+    throw new HttpError(400, 'Некорректный номер раздела', 'invalid_roadmap_unit_number')
+  }
+  return value
+}
+
+function roadmapPosition(value) {
+  if (!Number.isSafeInteger(value) || value < 1 || value > 10_000) {
+    throw new HttpError(400, 'Некорректная позиция урока', 'invalid_roadmap_position')
+  }
+  return value
+}
+
+function roadmapAccent(value) {
+  if (!['green', 'blue', 'violet', 'red'].includes(value)) {
+    throw new HttpError(400, 'Некорректный цвет раздела', 'invalid_roadmap_accent_color')
+  }
+  return value
+}
+
+function roadmapUnitInput(body, { requireTitleAndNumber }) {
+  const keys = hasOnly(body, ROADMAP_UNIT_FIELDS, 'invalid_roadmap_unit', {
+    required: requireTitleAndNumber ? ['unitNumber', 'title'] : [],
+  })
+  if (!requireTitleAndNumber && keys.length === 0) throw new HttpError(400, 'Некорректные данные', 'invalid_roadmap_unit_patch')
+  const input = {}
+  if (Object.hasOwn(body, 'unitNumber')) input.unitNumber = roadmapUnitNumber(body.unitNumber)
+  if (Object.hasOwn(body, 'title')) input.title = requiredText(body.title, 200, 'invalid_roadmap_unit_title')
+  if (Object.hasOwn(body, 'description')) input.description = nullableText(body.description, 10_000, 'invalid_roadmap_unit_description')
+  if (Object.hasOwn(body, 'accentColor')) input.accentColor = roadmapAccent(body.accentColor)
+  if (Object.hasOwn(body, 'isPublished')) {
+    if (typeof body.isPublished !== 'boolean') throw new HttpError(400, 'Некорректный статус раздела', 'invalid_roadmap_unit_publish')
+    input.isPublished = body.isPublished
+  }
+  return input
+}
+
+export function parseRoadmapUnitCreateBody(body) {
+  const input = roadmapUnitInput(body, { requireTitleAndNumber: true })
+  return {
+    unitNumber: input.unitNumber, title: input.title, description: input.description ?? null,
+    accentColor: input.accentColor ?? 'green', isPublished: input.isPublished ?? false,
+  }
+}
+
+export function parseRoadmapUnitPatchBody(body) {
+  return roadmapUnitInput(body, { requireTitleAndNumber: false })
+}
+
+export function parseRoadmapPlacementBody(body) {
+  hasOnly(body, ROADMAP_PLACEMENT_FIELDS, 'invalid_roadmap_placement', { required: ['lessonId', 'position'] })
+  return {
+    lessonId: positiveId(String(body.lessonId), 'lesson_id'),
+    position: roadmapPosition(body.position),
+  }
 }
 
 function youtubeUrl(value) {
@@ -211,6 +282,21 @@ function publicLesson(row) {
     isPublished: row.is_published,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  }
+}
+
+function publicRoadmapUnit(row) {
+  return {
+    id: Number(row.id), courseId: Number(row.course_id), unitNumber: Number(row.unit_number), title: row.title,
+    description: row.description ?? null, accentColor: row.accent_color, isPublished: row.is_published,
+    lessonCount: Number(row.lesson_count ?? 0), createdAt: row.created_at, updatedAt: row.updated_at,
+  }
+}
+
+function publicRoadmapPlacement(row) {
+  return {
+    unitId: Number(row.unit_id), lessonId: Number(row.lesson_id), position: Number(row.position),
+    lessonNumber: Number(row.lesson_number), title: row.title, isPublished: row.is_published,
   }
 }
 
@@ -617,4 +703,142 @@ PATCH('/v1/admin/lessons/:lessonId', async ({ req, params, config }) => {
     if (error?.code === '23505') throw new HttpError(409, 'Номер урока уже используется в этом курсе', 'lesson_number_conflict')
     throw error
   }
+})
+
+GET('/v1/admin/courses/:courseId/roadmap', async ({ req, params, config }) => {
+  await adminContentManager(config, req)
+  const courseId = positiveId(params.courseId, 'course_id')
+  await courseExists(dbQuery, courseId)
+  const [unitResult, placementResult, unassignedResult] = await Promise.all([
+    dbQuery(
+      `SELECT u.id, u.course_id, u.unit_number, u.title, u.description, u.accent_color, u.is_published,
+              u.created_at, u.updated_at, count(ul.lesson_id)::int AS lesson_count
+         FROM course_units u
+         LEFT JOIN course_unit_lessons ul ON ul.unit_id = u.id
+        WHERE u.course_id = $1
+        GROUP BY u.id
+        ORDER BY u.unit_number, u.id`, [courseId],
+    ),
+    dbQuery(
+      `SELECT ul.unit_id, ul.lesson_id, ul.position, l.lesson_number, l.title, l.is_published
+         FROM course_unit_lessons ul
+         JOIN lessons l ON l.id = ul.lesson_id AND l.course_id = ul.course_id
+        WHERE ul.course_id = $1
+        ORDER BY ul.unit_id, ul.position, ul.lesson_id`, [courseId],
+    ),
+    dbQuery(
+      `SELECT l.id, l.course_id, l.lesson_number, l.title, l.description, l.subject, l.section, l.topic,
+              l.lesson_date, l.duration_minutes, l.content_url, l.is_test, l.is_published, l.created_at, l.updated_at
+         FROM lessons l
+        WHERE l.course_id = $1
+          AND NOT EXISTS (
+            SELECT 1 FROM course_unit_lessons ul WHERE ul.course_id = l.course_id AND ul.lesson_id = l.id
+          )
+        ORDER BY l.lesson_number, l.id`, [courseId],
+    ),
+  ])
+  return {
+    status: 200,
+    body: {
+      courseId,
+      units: unitResult.rows.map(publicRoadmapUnit),
+      placements: placementResult.rows.map(publicRoadmapPlacement),
+      unassignedLessons: unassignedResult.rows.map(publicLesson),
+    },
+  }
+})
+
+POST('/v1/admin/courses/:courseId/roadmap/units', async ({ req, params, config }) => {
+  const actor = await adminContentManager(config, req)
+  const courseId = positiveId(params.courseId, 'course_id')
+  const input = parseRoadmapUnitCreateBody(await readJson(req, 32_000))
+  try {
+    const unit = await transaction(async client => {
+      await courseExists((text, values) => client.query(text, values), courseId)
+      const inserted = await client.query(
+        `INSERT INTO course_units (course_id, unit_number, title, description, accent_color, is_published, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id, course_id, unit_number, title, description, accent_color, is_published, created_at, updated_at`,
+        [courseId, input.unitNumber, input.title, input.description, input.accentColor, input.isPublished, actor.id],
+      )
+      const row = inserted.rows[0]
+      await audit(client, actor, 'create_course_roadmap_unit', 'course_unit', row.id, Object.keys(input))
+      return row
+    })
+    return { status: 201, body: { unit: publicRoadmapUnit(unit) } }
+  } catch (error) {
+    if (error?.code === '23505') throw new HttpError(409, 'Номер раздела уже используется в этом курсе', 'roadmap_unit_number_conflict')
+    throw error
+  }
+})
+
+PATCH('/v1/admin/roadmap/units/:unitId', async ({ req, params, config }) => {
+  const actor = await adminContentManager(config, req)
+  const unitId = positiveId(params.unitId, 'unit_id')
+  const input = parseRoadmapUnitPatchBody(await readJson(req, 32_000))
+  try {
+    const unit = await transaction(async client => {
+      const statement = updateSql('course_units', 'id', unitId, input, ROADMAP_UNIT_FIELDS)
+      const updated = await client.query(
+        `${statement.text}
+         RETURNING id, course_id, unit_number, title, description, accent_color, is_published, created_at, updated_at`, statement.values,
+      )
+      const row = updated.rows[0]
+      if (!row) throw new HttpError(404, 'Раздел дорожной карты не найден', 'roadmap_unit_not_found')
+      await audit(client, actor, 'update_course_roadmap_unit', 'course_unit', row.id, Object.keys(input))
+      return row
+    })
+    return { status: 200, body: { unit: publicRoadmapUnit(unit) } }
+  } catch (error) {
+    if (error?.code === '23505') throw new HttpError(409, 'Номер раздела уже используется в этом курсе', 'roadmap_unit_number_conflict')
+    throw error
+  }
+})
+
+POST('/v1/admin/roadmap/units/:unitId/lessons', async ({ req, params, config }) => {
+  const actor = await adminContentManager(config, req)
+  const unitId = positiveId(params.unitId, 'unit_id')
+  const input = parseRoadmapPlacementBody(await readJson(req, 8_000))
+  try {
+    const placement = await transaction(async client => {
+      const unitResult = await client.query('SELECT id, course_id FROM course_units WHERE id = $1 FOR UPDATE', [unitId])
+      const unit = unitResult.rows[0]
+      if (!unit) throw new HttpError(404, 'Раздел дорожной карты не найден', 'roadmap_unit_not_found')
+      const lessonResult = await client.query('SELECT id, course_id FROM lessons WHERE id = $1 FOR UPDATE', [input.lessonId])
+      const lesson = lessonResult.rows[0]
+      if (!lesson) throw new HttpError(404, 'Урок не найден', 'lesson_not_found')
+      if (Number(lesson.course_id) !== Number(unit.course_id)) {
+        throw new HttpError(409, 'Урок относится к другому курсу', 'roadmap_course_mismatch')
+      }
+      const inserted = await client.query(
+        `INSERT INTO course_unit_lessons (unit_id, course_id, lesson_id, position)
+         VALUES ($1, $2, $3, $4)
+         RETURNING unit_id, lesson_id, position`,
+        [unit.id, unit.course_id, lesson.id, input.position],
+      )
+      const row = inserted.rows[0]
+      await audit(client, actor, 'place_course_roadmap_lesson', 'course_unit_lesson', `${row.unit_id}:${row.lesson_id}`, [input.position])
+      return row
+    })
+    return { status: 201, body: { placement: { unitId: Number(placement.unit_id), lessonId: Number(placement.lesson_id), position: Number(placement.position) } } }
+  } catch (error) {
+    if (error?.code === '23505') throw new HttpError(409, 'Урок уже размещён в карте или эта позиция занята', 'roadmap_placement_conflict')
+    throw error
+  }
+})
+
+DELETE('/v1/admin/roadmap/units/:unitId/lessons/:lessonId', async ({ req, params, config }) => {
+  const actor = await adminContentManager(config, req)
+  const unitId = positiveId(params.unitId, 'unit_id')
+  const lessonId = positiveId(params.lessonId, 'lesson_id')
+  const removed = await transaction(async client => {
+    const result = await client.query(
+      'DELETE FROM course_unit_lessons WHERE unit_id = $1 AND lesson_id = $2 RETURNING unit_id, lesson_id', [unitId, lessonId],
+    )
+    const row = result.rows[0]
+    if (!row) throw new HttpError(404, 'Урок не найден в этом разделе', 'roadmap_placement_not_found')
+    await audit(client, actor, 'remove_course_roadmap_lesson', 'course_unit_lesson', `${row.unit_id}:${row.lesson_id}`, [])
+    return row
+  })
+  return { status: 200, body: { removed: { unitId: Number(removed.unit_id), lessonId: Number(removed.lesson_id) } } }
 })
