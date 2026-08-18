@@ -270,6 +270,12 @@ export default function LessonDetailPage() {
         Открыть материал <ExternalLink size={16} aria-hidden="true" />
       </a>
     </div>
+  ) : extraMaterials.length > 0 ? (
+    <div className="flex aspect-video flex-col items-center justify-center rounded-[22px] bg-[var(--student-brand)] px-6 text-center text-white">
+      <BookOpen size={38} aria-hidden="true" />
+      <p className="mt-3 text-base font-extrabold">Материалы урока готовы</p>
+      <p className="mt-1 text-xs leading-5 text-white/75">Открой авторские книги и конспекты ниже.</p>
+    </div>
   ) : (
     <div className="flex aspect-video flex-col items-center justify-center rounded-2xl bg-gray-900 px-6 text-center text-gray-300">
       <Video size={36} aria-hidden="true" />
@@ -277,6 +283,27 @@ export default function LessonDetailPage() {
       <p className="mt-1 text-xs text-gray-400">Когда преподаватель добавит материал, он появится здесь.</p>
     </div>
   )
+
+  const materialsSection = extraMaterials.length > 0 ? (
+    <section className="rounded-[22px] border border-[var(--student-line)] bg-white p-4 sm:p-6">
+      <h2 className="flex items-center gap-2 text-base font-extrabold text-gray-900"><FileText size={18} aria-hidden="true" /> Материалы урока</h2>
+      <p className="mt-1 text-xs leading-5 text-gray-500">Файлы открываются только внутри авторизованного кабинета.</p>
+      <div className="mt-4 space-y-2.5">
+        {extraMaterials.map(item => item.materialType === 'rich_text' ? (
+          <article key={item.id} className="rounded-2xl bg-[var(--student-surface-2)] p-4">
+            <h3 className="font-bold text-gray-800">{item.title}</h3>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{item.bodyMarkdown}</p>
+          </article>
+        ) : item.viewerPath ? (
+          <a key={item.id} href={item.viewerPath} target="_blank" rel="noreferrer" className="flex min-h-14 items-center gap-3 rounded-2xl border border-[var(--student-line)] bg-white px-3.5 text-sm font-semibold text-gray-700 hover:bg-blue-50">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--student-brand-50)] text-[var(--student-brand)]"><FileText size={18} aria-hidden="true" /></span>
+            <span className="min-w-0 flex-1 break-words">{item.title}</span>
+            <ExternalLink size={16} className="shrink-0 text-[var(--student-brand)]" aria-hidden="true" />
+          </a>
+        ) : null)}
+      </div>
+    </section>
+  ) : null
 
   const practiceCard = (
     <div className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
@@ -357,6 +384,7 @@ export default function LessonDetailPage() {
             ? <MobileLessonVideo videoUrl={lesson.contentUrl} title={lesson.title} watched={videoWatched} onWatched={() => setVideoWatched(true)} />
             : material}
 
+          {materialsSection}
           <MobileAIHelp lessonTitle={lesson.title} />
           {practiceCard}
 
@@ -414,23 +442,7 @@ export default function LessonDetailPage() {
 
               {practiceCard}
 
-              {extraMaterials.length > 0 && (
-                <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-                  <h2 className="flex items-center gap-2 text-base font-bold text-gray-900"><FileText size={18} aria-hidden="true" /> Материалы урока</h2>
-                  <div className="mt-4 space-y-3">
-                    {extraMaterials.map(item => item.materialType === 'rich_text' ? (
-                      <article key={item.id} className="rounded-xl bg-gray-50 p-4">
-                        <h3 className="font-bold text-gray-800">{item.title}</h3>
-                        <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{item.bodyMarkdown}</p>
-                      </article>
-                    ) : item.viewerPath ? (
-                      <a key={item.id} href={item.viewerPath} target="_blank" rel="noreferrer" className="flex min-h-12 items-center justify-between rounded-xl bg-gray-50 px-4 text-sm font-semibold text-gray-700 hover:bg-blue-50">
-                        {item.title} <ExternalLink size={16} className="text-[#1B3F92]" aria-hidden="true" />
-                      </a>
-                    ) : null)}
-                  </div>
-                </section>
-              )}
+              {materialsSection}
             </main>
 
             <aside className="w-full shrink-0 space-y-5 lg:w-80">
