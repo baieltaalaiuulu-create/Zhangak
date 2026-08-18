@@ -111,7 +111,10 @@ test('learning routes use locking, immutable snapshots, and server-side scoring 
   assert.match(source, /parseCompleteLessonBody\(await readJson\(req, 1_000\)\)/)
   assert.match(source, /previous_lesson\.subject IS NOT DISTINCT FROM l\.subject/)
   assert.match(source, /AS is_locked/)
-  assert.match(source, /contentUrl: isLocked \? null : row\.content_url/)
+  // A locked lesson still redacts its content URL, and a YouTube lesson now
+  // redacts it unconditionally: the video reaches the browser only through
+  // the scoped session route. See backend/test/lesson-video.test.js.
+  assert.match(source, /contentUrl: isLocked \|\| row\.video_id \? null : row\.content_url/)
   assert.match(source, /requireUnlockedLesson\(await loadAccessibleLesson/)
   assert.match(source, /completion_test\.is_published = true/)
   assert.match(source, /completion_question\.is_active = true/)

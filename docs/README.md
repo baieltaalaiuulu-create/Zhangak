@@ -16,6 +16,7 @@
 | Admin / super-admin | [Операционная документация](operations/README.md) | [Аккаунты и роли](operations/accounts-and-roles.md) |
 | Manager | [Публичные заявки и оплата](operations/public-applications.md) | [Аккаунты и роли](operations/accounts-and-roles.md) |
 | DevOps / технический оператор | [Production и восстановление](operations/production.md) | [Web deploy](../deploy/README.md), [API deploy](../deploy/api/README.md), [backup](../deploy/backup/README.md) |
+| Ответственный за видео | [Видео уроков](operations/lesson-video.md) | [Приватные материалы](operations/private-material-storage.md) |
 | Владелец продукта | [Пре-финальный план](product/pre-final-delivery-plan.md) | [Матрица данных и ответственности](reference/data-and-ownership.md) |
 
 ## Где должна храниться информация

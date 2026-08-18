@@ -107,7 +107,7 @@ export default function LessonDetailScreen() {
         </View>
       )}
 
-      <LessonVideoPlayer videoUrl={state.lesson.videoUrl} />
+      <LessonVideoPlayer handle={state.lesson.video} title={state.lesson.title} />
 
       <View style={styles.card}>
         <View style={[styles.badge, { backgroundColor: `${meta.color}1A` }]}>

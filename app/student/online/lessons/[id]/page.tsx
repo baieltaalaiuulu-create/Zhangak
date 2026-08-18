@@ -25,7 +25,7 @@ import {
 import { useStudentSession } from '@/components/student/StudentSessionContext'
 import UpNextLesson from '@/components/student/UpNextLesson'
 import LessonSidebarList from '@/components/student/LessonSidebarList'
-import MobileLessonVideo from '@/components/student/mobile/MobileLessonVideo'
+import LessonVideo from '@/components/student/LessonVideo'
 import MobileAIHelp from '@/components/student/mobile/MobileAIHelp'
 import {
   PLATFORM_LESSON_SUBJECT_META,
@@ -45,22 +45,6 @@ const SUBJECT_ICON = {
   kyr: Languages,
   other: Shapes,
 } satisfies Record<PlatformLessonSubject, typeof BookOpen>
-
-function youtubeEmbedUrl(value: string | null): string | null {
-  if (!value) return null
-  try {
-    const url = new URL(value)
-    let id: string | null = null
-    if (url.hostname === 'youtu.be') id = url.pathname.split('/').filter(Boolean)[0] ?? null
-    if (url.hostname === 'youtube.com' || url.hostname === 'www.youtube.com' || url.hostname === 'm.youtube.com') {
-      id = url.searchParams.get('v')
-      if (!id && url.pathname.startsWith('/embed/')) id = url.pathname.split('/')[2] ?? null
-    }
-    return id && /^[a-zA-Z0-9_-]{6,32}$/.test(id) ? `https://www.youtube.com/embed/${id}` : null
-  } catch {
-    return null
-  }
-}
 
 function unavailableMessage(error: unknown): string {
   if (error instanceof ZhangakApiError) {
@@ -102,7 +86,6 @@ export default function LessonDetailPage() {
   const [lesson, setLesson] = useState<PlatformLesson | null>(null)
   const [allLessons, setAllLessons] = useState<PlatformLesson[]>([])
   const [materials, setMaterials] = useState<PlatformLessonMaterial[]>([])
-  const [videoWatched, setVideoWatched] = useState(false)
   const [completionPending, setCompletionPending] = useState(false)
   const [completionError, setCompletionError] = useState<string | null>(null)
 
@@ -241,22 +224,23 @@ export default function LessonDetailPage() {
   const meta = PLATFORM_LESSON_SUBJECT_META[lesson.subject]
   const SubjectIcon = SUBJECT_ICON[lesson.subject]
   const subjectLabel = lesson.sourceSubject ?? meta.label
-  const embedUrl = youtubeEmbedUrl(lesson.contentUrl)
+  // The lesson's own video and any video material both resolve to one
+  // server-issued handle; the page never holds a watch URL.
+  const videoMaterial = materials.find(item => item.materialType === 'video' && item.video !== null) ?? null
+  const videoHandle = lesson.video ?? videoMaterial?.video ?? null
+  const videoTitle = lesson.video ? lesson.title : videoMaterial?.title ?? lesson.title
   const practiceHref = `/student/online/practice?lesson=${lesson.id}`
   const requiresPractice = lesson.completionMode === 'practice'
 
   const extraMaterials = materials.filter(item => item.materialType !== 'video')
 
-  const material = embedUrl ? (
-    <div className="flex aspect-video items-center justify-center overflow-hidden rounded-2xl bg-gray-900">
-      <iframe
-        src={embedUrl}
-        className="h-full w-full"
-        allowFullScreen
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        title={lesson.title}
-      />
-    </div>
+  const material = videoHandle ? (
+    <LessonVideo
+      handle={videoHandle}
+      lessonId={lesson.apiId}
+      materialId={lesson.video ? null : videoMaterial?.id ?? null}
+      title={videoTitle}
+    />
   ) : lesson.contentUrl ? (
     <div className="flex aspect-video flex-col items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 p-6 text-center">
       <FileText size={38} className="text-[#1B3F92]" aria-hidden="true" />
@@ -380,9 +364,7 @@ export default function LessonDetailPage() {
             </div>
           </div>
 
-          {embedUrl && lesson.contentUrl
-            ? <MobileLessonVideo videoUrl={lesson.contentUrl} title={lesson.title} watched={videoWatched} onWatched={() => setVideoWatched(true)} />
-            : material}
+          {material}
 
           {materialsSection}
           <MobileAIHelp lessonTitle={lesson.title} />

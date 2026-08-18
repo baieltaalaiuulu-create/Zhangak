@@ -4,6 +4,7 @@ import { DELETE, GET, HttpError, PATCH, POST, readJson } from '../http.js'
 import { requireRole } from '../authorization.js'
 import { receiveMaterialUpload } from '../multipart.js'
 import { removePrivateObject } from '../storage.js'
+import { canonicalYoutubeWatchUrl, normalizeYoutubeVideoId } from '../youtube.js'
 
 // Curriculum publishing is intentionally narrower than user management.  A
 // junior administrator can administer assigned student accounts, but cannot
@@ -44,6 +45,10 @@ const MATERIAL_FIELDS = Object.freeze({
   externalUrl: 'external_url',
   isPublished: 'is_published',
 })
+
+// `hasOnly` validates the keys a client may send; these column maps add the
+// server-derived `video_id`, which a client must never be able to set.
+const LESSON_COLUMNS = Object.freeze({ ...LESSON_FIELDS, videoId: 'video_id' })
 
 const ROADMAP_UNIT_FIELDS = Object.freeze({
   unitNumber: 'unit_number',
@@ -197,12 +202,15 @@ export function parseRoadmapPlacementBody(body) {
   }
 }
 
-function youtubeUrl(value) {
-  const url = nullableHttpsUrl(value, 'invalid_material_video_url')
-  if (url === null || !/^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//.test(url)) {
-    throw new HttpError(400, 'Разрешены только ссылки YouTube', 'invalid_material_video_url')
-  }
-  return url
+/**
+ * Every administrator-supplied video reference collapses to one verified id
+ * here. The stored URL is regenerated from that id, so a playlist, a live
+ * stream, a tracking parameter or a lookalike host never reaches the
+ * database and the student route never re-parses operator input.
+ */
+function youtubeVideoSource(value) {
+  const videoId = normalizeYoutubeVideoId(value)
+  return { videoId, externalUrl: canonicalYoutubeWatchUrl(videoId) }
 }
 
 function publicMaterial(row) {
@@ -229,10 +237,11 @@ export function parseMaterialTextBody(body) {
   }
   if (materialType === 'rich_text') {
     if (keys.some(key => !['materialType', 'title', 'position', 'bodyMarkdown', 'isPublished'].includes(key))) throw new HttpError(400, 'Некорректный текстовый материал', 'invalid_lesson_material')
-    return { materialType, title: requiredText(body.title, 300, 'invalid_material_title'), position: positivePosition(body.position), bodyMarkdown: requiredText(body.bodyMarkdown, 500_000, 'invalid_material_body'), externalUrl: null, isPublished: body.isPublished ?? false }
+    return { materialType, title: requiredText(body.title, 300, 'invalid_material_title'), position: positivePosition(body.position), bodyMarkdown: requiredText(body.bodyMarkdown, 500_000, 'invalid_material_body'), externalUrl: null, videoId: null, isPublished: body.isPublished ?? false }
   }
   if (keys.some(key => !['materialType', 'title', 'position', 'externalUrl', 'isPublished'].includes(key))) throw new HttpError(400, 'Некорректный видео-материал', 'invalid_lesson_material')
-  return { materialType, title: requiredText(body.title, 300, 'invalid_material_title'), position: positivePosition(body.position), bodyMarkdown: null, externalUrl: youtubeUrl(body.externalUrl), isPublished: body.isPublished ?? false }
+  const video = youtubeVideoSource(body.externalUrl)
+  return { materialType, title: requiredText(body.title, 300, 'invalid_material_title'), position: positivePosition(body.position), bodyMarkdown: null, externalUrl: video.externalUrl, videoId: video.videoId, isPublished: body.isPublished ?? false }
 }
 
 function pagination(searchParams) {
@@ -367,7 +376,16 @@ function lessonInput(body, { requireTitleAndNumber }) {
     }
     input.durationMinutes = body.durationMinutes
   }
-  if (Object.hasOwn(body, 'contentUrl')) input.contentUrl = nullableHttpsUrl(body.contentUrl, 'invalid_lesson_content_url')
+  if (Object.hasOwn(body, 'contentUrl')) {
+    // A lesson may still point at a non-YouTube resource (an external
+    // reading). Only a YouTube value becomes a playable video, and it is
+    // normalized here so `video_id` and `content_url` can never disagree.
+    const raw = nullableHttpsUrl(body.contentUrl, 'invalid_lesson_content_url')
+    const looksLikeYoutube = raw !== null && /^https:\/\/(?:[a-z0-9-]+\.)*(?:youtube\.com|youtu\.be|youtube-nocookie\.com)(?:[/:?]|$)/i.test(raw)
+    const video = looksLikeYoutube ? youtubeVideoSource(raw) : null
+    input.contentUrl = video ? video.externalUrl : raw
+    input.videoId = video ? video.videoId : null
+  }
   if (Object.hasOwn(body, 'isTest')) {
     if (typeof body.isTest !== 'boolean') throw new HttpError(400, 'Некорректный тип урока', 'invalid_lesson_test')
     input.isTest = body.isTest
@@ -392,6 +410,7 @@ export function parseLessonCreateBody(body) {
     lessonDate: input.lessonDate ?? null,
     durationMinutes: input.durationMinutes ?? null,
     contentUrl: input.contentUrl ?? null,
+    videoId: input.videoId ?? null,
     isTest: input.isTest ?? false,
     isPublished: input.isPublished ?? false,
   }
@@ -434,12 +453,12 @@ async function insertTextMaterial(client, actor, lessonId, input) {
   await lessonExists((text, values) => client.query(text, values), lessonId)
   const inserted = await client.query(
     `INSERT INTO lesson_materials (
-       lesson_id, material_type, title, position, body_markdown, external_url,
+       lesson_id, material_type, title, position, body_markdown, external_url, video_id,
        is_published, scan_status, scanned_at, scanned_by, created_by
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'clean', now(), $8, $8)
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'clean', now(), $9, $9)
      RETURNING id, lesson_id, material_type, title, position, body_markdown, external_url,
                mime_type, byte_size, is_published, scan_status, original_filename, created_at`,
-    [lessonId, input.materialType, input.title, input.position, input.bodyMarkdown, input.externalUrl, input.isPublished, actor.id],
+    [lessonId, input.materialType, input.title, input.position, input.bodyMarkdown, input.externalUrl, input.videoId, input.isPublished, actor.id],
   )
   const row = inserted.rows[0]
   await audit(client, actor, 'create_lesson_material', 'lesson_material', row.id, [input.materialType, 'text'])
@@ -659,13 +678,13 @@ POST('/v1/admin/courses/:courseId/lessons', async ({ req, params, config }) => {
       const inserted = await client.query(
         `INSERT INTO lessons (
            course_id, lesson_number, title, description, subject, section, topic, lesson_date,
-           duration_minutes, content_url, is_test, is_published, created_by
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+           duration_minutes, content_url, video_id, is_test, is_published, created_by
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
          RETURNING id, course_id, lesson_number, title, description, subject, section, topic,
                    lesson_date, duration_minutes, content_url, is_test, is_published, created_at, updated_at`,
         [
           courseId, input.lessonNumber, input.title, input.description, input.subject, input.section,
-          input.topic, input.lessonDate, input.durationMinutes, input.contentUrl, input.isTest,
+          input.topic, input.lessonDate, input.durationMinutes, input.contentUrl, input.videoId, input.isTest,
           input.isPublished, actor.id,
         ],
       )
@@ -686,7 +705,7 @@ PATCH('/v1/admin/lessons/:lessonId', async ({ req, params, config }) => {
   const input = parseLessonPatchBody(await readJson(req, 256_000))
   try {
     const lesson = await transaction(async client => {
-      const statement = updateSql('lessons', 'id', lessonId, input, LESSON_FIELDS)
+      const statement = updateSql('lessons', 'id', lessonId, input, LESSON_COLUMNS)
       const updated = await client.query(
         `${statement.text}
          RETURNING id, course_id, lesson_number, title, description, subject, section, topic,

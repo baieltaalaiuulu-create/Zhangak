@@ -2,6 +2,7 @@ import { requireAuth } from '../auth.js'
 import { query, transaction } from '../db.js'
 import { GET, HttpError, POST, readJson } from '../http.js'
 import { privateFile, safeFilename } from '../storage.js'
+import { YOUTUBE_VIDEO_ID_PATTERN } from '../youtube.js'
 
 const STUDENT_ROLES = ['student', 'math_student']
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -96,7 +97,7 @@ function publicCourse(row) {
   }
 }
 
-function publicLesson(row) {
+export function publicLesson(row) {
   const isLocked = row.is_locked === true || row.is_locked === 't'
   return {
     id: nullableNumber(row.id),
@@ -112,7 +113,14 @@ function publicLesson(row) {
     topic: row.topic,
     lessonDate: row.lesson_date ?? null,
     durationMinutes: nullableNumber(row.duration_minutes),
-    contentUrl: isLocked ? null : row.content_url,
+    // A YouTube lesson never ships its watch URL in the catalog or detail
+    // payload. The browser asks for a scoped video session instead, which
+    // re-checks enrollment and the lesson lock at that moment. `contentUrl`
+    // survives only for non-video external readings.
+    contentUrl: isLocked || row.video_id ? null : row.content_url,
+    video: !isLocked && row.video_id
+      ? { available: true, sessionPath: `/v1/platform/lessons/${row.id}/video` }
+      : null,
     isTest: row.is_test,
     // A normal lesson can be acknowledged by the learner unless it has a
     // currently active, publishable assessment. A draft/empty/scheduled test
@@ -146,7 +154,7 @@ function publicPracticeTest(row) {
   }
 }
 
-function publicLessonMaterial(row) {
+export function publicLessonMaterial(row) {
   return {
     id: nullableNumber(row.id),
     lessonId: nullableNumber(row.lesson_id),
@@ -154,7 +162,11 @@ function publicLessonMaterial(row) {
     title: row.title,
     position: Number(row.position),
     bodyMarkdown: row.material_type === 'rich_text' ? row.body_markdown : null,
-    externalUrl: row.material_type === 'video' ? row.external_url : null,
+    // Deliberately absent: `external_url`. A video material is played through
+    // the scoped session below, never from a URL embedded in a list payload.
+    video: row.material_type === 'video' && row.video_id
+      ? { available: true, sessionPath: `/v1/platform/materials/${row.id}/video` }
+      : null,
     mimeType: row.mime_type ?? null,
     byteSize: nullableNumber(row.byte_size),
     // The object key stays server-only.  This URL is authenticated through
@@ -265,6 +277,46 @@ export function parseSubmitAttemptBody(body) {
  * score, lesson ownership, or timestamp. The authenticated route derives
  * all of those values from its URL and the HttpOnly-cookie session.
  */
+const VIDEO_EVENTS = new Set(['started', 'progress', 'ended'])
+
+/**
+ * A video event carries no trusted identity and no reward. The student comes
+ * from the session, and `event` is closed to three analytics values so a
+ * client cannot invent a "completed" signal the server would honour.
+ */
+export function parseVideoEventBody(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    throw new HttpError(400, 'Некорректные данные', 'invalid_video_event')
+  }
+  if (!exactKeys(body, ['lessonId', 'materialId', 'event', 'positionSeconds'])) {
+    throw new HttpError(400, 'Некорректные данные', 'invalid_video_event')
+  }
+  if (!positiveInteger(body.lessonId)) throw new HttpError(400, 'Некорректный урок', 'invalid_lesson_id')
+  if (body.materialId !== null && !positiveInteger(body.materialId)) {
+    throw new HttpError(400, 'Некорректный материал', 'invalid_material_id')
+  }
+  if (typeof body.event !== 'string' || !VIDEO_EVENTS.has(body.event)) {
+    throw new HttpError(400, 'Некорректное событие', 'invalid_video_event')
+  }
+  if (!Number.isSafeInteger(body.positionSeconds) || body.positionSeconds < 0 || body.positionSeconds > 86_400) {
+    throw new HttpError(400, 'Некорректная позиция', 'invalid_video_position')
+  }
+  return {
+    lessonId: body.lessonId,
+    materialId: body.materialId,
+    event: body.event,
+    positionSeconds: body.positionSeconds,
+  }
+}
+
+/** Projection guard used by tests: no student payload may carry a watch URL. */
+export function assertNoRawVideoUrl(payload) {
+  const serialized = JSON.stringify(payload ?? null)
+  return !/youtube\.com|youtu\.be|youtube-nocookie\.com/.test(serialized)
+}
+
+export { YOUTUBE_VIDEO_ID_PATTERN }
+
 export function parseCompleteLessonBody(body) {
   if (!exactKeys(body, [])) {
     throw new HttpError(400, 'Некорректное завершение урока', 'invalid_lesson_completion')
@@ -353,7 +405,7 @@ async function loadAccessibleLesson(client, studentId, lessonId, { forUpdate = f
   const lock = forUpdate ? ' FOR UPDATE OF l' : ''
   const result = await client.query(
     `SELECT l.id, l.course_id, l.lesson_number, l.title, l.description, l.subject,
-            l.section, l.topic, l.lesson_date, l.duration_minutes, l.content_url, l.is_test,
+            l.section, l.topic, l.lesson_date, l.duration_minutes, l.content_url, l.video_id, l.is_test,
             ${LESSON_PROGRESS_PROJECTION}
        FROM lessons l
        LEFT JOIN lesson_progress lp ON lp.lesson_id = l.id AND lp.student_id = $1
@@ -863,7 +915,7 @@ GET('/v1/platform/lessons', async ({ req, config, query: searchParams }) => {
   const courseId = rawCourseId == null ? null : positiveId(rawCourseId, 'course_id')
   const result = await query(
     `SELECT l.id, l.course_id, l.lesson_number, l.title, l.description, l.subject,
-            l.section, l.topic, l.lesson_date, l.duration_minutes, l.content_url, l.is_test,
+            l.section, l.topic, l.lesson_date, l.duration_minutes, l.content_url, l.video_id, l.is_test,
             ${LESSON_PROGRESS_PROJECTION}
        FROM lessons l
        LEFT JOIN lesson_progress lp ON lp.lesson_id = l.id AND lp.student_id = $1
@@ -898,7 +950,7 @@ GET('/v1/platform/lessons/:id/materials', async ({ req, params, config }) => {
   const lessonId = positiveId(params.id, 'lesson_id')
   requireUnlockedLesson(await loadAccessibleLesson({ query }, student.id, lessonId))
   const materials = await query(
-    `SELECT id, lesson_id, material_type, title, position, body_markdown, external_url, mime_type, byte_size
+    `SELECT id, lesson_id, material_type, title, position, body_markdown, video_id, mime_type, byte_size
        FROM lesson_materials
       WHERE lesson_id = $1 AND is_published = true AND scan_status = 'clean'
       ORDER BY position, id`,
@@ -938,6 +990,96 @@ GET('/v1/platform/materials/:id/content', async ({ req, params, config }) => {
       'Cross-Origin-Resource-Policy': 'same-site',
     },
   }
+})
+
+/**
+ * Player configuration for one authorized video.
+ *
+ * Honest boundary, stated once here and repeated in the docs: this payload
+ * necessarily contains the YouTube video id, because the browser cannot play
+ * an embed without it. The protection this route provides is that the id is
+ * released only to a signed-in student with an active online enrollment on
+ * an unlocked, published lesson, and that the release is auditable. It is not
+ * DRM and it does not prevent a determined viewer from reading the id out of
+ * DevTools.
+ */
+function playerConfig(videoId, title) {
+  return {
+    videoId,
+    title,
+    // Privacy-enhanced host. The exact `origin` is supplied by the browser
+    // from its own location, so a build cannot be pinned to the wrong host.
+    embedHost: 'https://www.youtube-nocookie.com',
+  }
+}
+
+async function authorizedLessonVideo(student, lessonId) {
+  const lesson = requireUnlockedLesson(await loadAccessibleLesson({ query }, student.id, lessonId))
+  if (!lesson.video_id) throw new HttpError(404, 'Видео не найдено', 'video_not_found')
+  return lesson
+}
+
+POST('/v1/platform/lessons/:id/video', async ({ req, params, config }) => {
+  const student = await currentStudent(config, req)
+  const lessonId = positiveId(params.id, 'lesson_id')
+  const lesson = await authorizedLessonVideo(student, lessonId)
+  return { status: 200, body: { video: playerConfig(lesson.video_id, lesson.title) } }
+})
+
+POST('/v1/platform/materials/:id/video', async ({ req, params, config }) => {
+  const student = await currentStudent(config, req)
+  const materialId = positiveId(params.id, 'material_id')
+  // The enrollment predicate is repeated here rather than inherited from the
+  // listing route: a student may hold a material id from an earlier
+  // enrollment, and this is the request that actually hands over the id.
+  const materialResult = await query(
+    `SELECT m.id, m.lesson_id, m.title, m.video_id
+       FROM lesson_materials m
+       JOIN lessons l ON l.id = m.lesson_id AND l.is_published = true
+      WHERE m.id = $1 AND m.is_published = true AND m.scan_status = 'clean'
+        AND m.material_type = 'video' AND m.video_id IS NOT NULL
+        AND EXISTS (
+          SELECT 1 FROM course_enrollments ce
+          JOIN courses c ON c.id = ce.course_id AND c.is_active = true AND c.delivery_mode = 'online'
+          WHERE ce.student_id = $2 AND ce.course_id = l.course_id AND ce.status = 'active'
+        )`,
+    [materialId, student.id],
+  )
+  const material = materialResult.rows[0]
+  if (!material) throw new HttpError(404, 'Видео не найдено', 'video_not_found')
+  requireUnlockedLesson(await loadAccessibleLesson({ query }, student.id, Number(material.lesson_id)))
+  return { status: 200, body: { video: playerConfig(material.video_id, material.title) } }
+})
+
+POST('/v1/platform/video-events', async ({ req, config }) => {
+  const student = await currentStudent(config, req)
+  const input = parseVideoEventBody(await readJson(req, 2_000))
+  // The lesson is re-authorized on every event, so a revoked enrollment or a
+  // re-locked lesson stops accepting them immediately.
+  const lesson = await authorizedLessonVideo(student, input.lessonId)
+  let videoId = lesson.video_id
+  if (input.materialId !== null) {
+    const owned = await query(
+      `SELECT video_id FROM lesson_materials
+        WHERE id = $1 AND lesson_id = $2 AND material_type = 'video'
+          AND is_published = true AND scan_status = 'clean' AND video_id IS NOT NULL`,
+      [input.materialId, input.lessonId],
+    )
+    if (!owned.rows[0]) throw new HttpError(404, 'Видео не найдено', 'video_not_found')
+    videoId = owned.rows[0].video_id
+  }
+  // Analytics only. `ended` is recorded, never rewarded: XP, stars and lesson
+  // completion are owned by completeSelfPacedLesson and the scored practice
+  // attempt, neither of which reads this table.
+  await query(
+    `INSERT INTO lesson_video_events (student_id, lesson_id, material_id, video_id, event, position_seconds)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (student_id, lesson_id, video_id, event, occurred_on)
+     DO UPDATE SET position_seconds = GREATEST(lesson_video_events.position_seconds, EXCLUDED.position_seconds),
+                   updated_at = now()`,
+    [student.id, input.lessonId, input.materialId, videoId, input.event, input.positionSeconds],
+  )
+  return { status: 202, body: { recorded: true, awardedXp: 0 } }
 })
 
 POST('/v1/platform/lessons/:id/complete', async ({ req, params, config }) => {

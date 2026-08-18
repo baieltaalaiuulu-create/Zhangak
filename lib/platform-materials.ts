@@ -1,3 +1,4 @@
+import { parseLessonVideoHandle, type LessonVideoHandle } from './lesson-video.ts'
 import { zhangakApiRequest } from './zhangak-api-client.ts'
 
 export type PlatformLessonMaterialType = 'rich_text' | 'video' | 'document' | 'image'
@@ -9,7 +10,8 @@ export interface PlatformLessonMaterial {
   title: string
   position: number
   bodyMarkdown: string | null
-  externalUrl: string | null
+  /** Present for a video material. The watch URL stays server-side. */
+  video: LessonVideoHandle | null
   mimeType: string | null
   byteSize: number | null
   viewerPath: string | null
@@ -42,7 +44,7 @@ function parseMaterial(value: unknown): PlatformLessonMaterial {
   return {
     id: positive(source.id), lessonId: positive(source.lessonId), materialType: materialType as PlatformLessonMaterialType,
     title, position: positive(source.position), bodyMarkdown: nullableString(source.bodyMarkdown),
-    externalUrl: nullableString(source.externalUrl), mimeType: nullableString(source.mimeType),
+    video: parseLessonVideoHandle(source.video, 'material'), mimeType: nullableString(source.mimeType),
     byteSize: source.byteSize === null ? null : positive(source.byteSize), viewerPath,
   }
 }

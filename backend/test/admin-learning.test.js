@@ -78,14 +78,26 @@ test('lesson administration accepts only curriculum fields and can explicitly cl
     lessonDate: '2026-09-01',
     durationMinutes: 45,
     contentUrl: 'https://video.zhangak.com/lessons/4',
+    videoId: null,
     isTest: true,
     isPublished: false,
   })
   assert.deepEqual(parseLessonPatchBody({ contentUrl: null, lessonDate: null, isPublished: true }), {
     contentUrl: null,
+    videoId: null,
     lessonDate: null,
     isPublished: true,
   })
+  // A YouTube lesson URL is normalized to a verified id, and the stored URL
+  // is regenerated from it so tracking parameters cannot survive.
+  assert.deepEqual(parseLessonPatchBody({ contentUrl: 'https://youtu.be/abc12345678?si=track' }), {
+    contentUrl: 'https://www.youtube.com/watch?v=abc12345678',
+    videoId: 'abc12345678',
+  })
+  // A malformed YouTube reference is rejected outright rather than stored as
+  // an opaque external link that would silently never play.
+  invalid(parseLessonPatchBody, { contentUrl: 'https://www.youtube.com/playlist?list=PLabcdefghij' }, 'unsupported_video_surface')
+  invalid(parseLessonPatchBody, { contentUrl: 'https://www.youtube.com/watch?v=abc12345678&list=PLabcdefghij' }, 'invalid_video_playlist')
 })
 
 test('lesson administration rejects cross-course mutation, invalid dates, and unbounded fields', () => {
@@ -103,10 +115,14 @@ test('lesson materials accept only rich text or YouTube metadata before file upl
     externalUrl: 'https://www.youtube.com/watch?v=abc12345678', isPublished: true,
   }), {
     materialType: 'video', title: 'Разбор', position: 2, bodyMarkdown: null,
-    externalUrl: 'https://www.youtube.com/watch?v=abc12345678', isPublished: true,
+    externalUrl: 'https://www.youtube.com/watch?v=abc12345678', videoId: 'abc12345678', isPublished: true,
   })
   invalid(parseMaterialTextBody, { materialType: 'document', title: 'PDF', position: 1 }, 'invalid_material_type')
-  invalid(parseMaterialTextBody, { materialType: 'video', title: 'Видео', position: 1, externalUrl: 'https://example.com/x' }, 'invalid_material_video_url')
+  invalid(parseMaterialTextBody, { materialType: 'video', title: 'Видео', position: 1, externalUrl: 'https://example.com/x' }, 'unsupported_video_surface')
+  // Surfaces that are not a single reviewed video never reach the database.
+  invalid(parseMaterialTextBody, { materialType: 'video', title: 'Видео', position: 1, externalUrl: 'https://www.youtube.com/shorts/abc12345678' }, 'unsupported_video_surface')
+  invalid(parseMaterialTextBody, { materialType: 'video', title: 'Видео', position: 1, externalUrl: 'https://youtube.com.attacker.example/watch?v=abc12345678' }, 'unsupported_video_surface')
+  invalid(parseMaterialTextBody, { materialType: 'video', title: 'Видео', position: 1, externalUrl: 'http://www.youtube.com/watch?v=abc12345678' }, 'invalid_video_scheme')
   invalid(parseMaterialTextBody, { materialType: 'rich_text', title: 'Текст', position: 0, bodyMarkdown: 'x' }, 'invalid_material_position')
 })
 

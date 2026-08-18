@@ -98,6 +98,9 @@ jobs:
       - name: Check student mobile UX invariants
         run: npm run check:student-mobile-ux
 
+      - name: Check lesson video player invariants
+        run: npm run check:lesson-video
+
       - name: Check university journey invariants
         run: npm run check:university-journey
 
