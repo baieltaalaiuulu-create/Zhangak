@@ -25,14 +25,20 @@ ALTER TABLE lesson_materials
 
 ALTER TABLE lessons
   ADD COLUMN video_id text,
+  -- Set when `content_url` names YouTube but could not be decoded into a
+  -- single video. Such a lesson keeps its URL for an administrator to repair,
+  -- but the student projection must never hand that URL out.
+  ADD COLUMN video_quarantined boolean NOT NULL DEFAULT false,
   ADD CONSTRAINT lessons_video_id_shape
-    CHECK (video_id IS NULL OR video_id ~ '^[A-Za-z0-9_-]{11}$');
+    CHECK (video_id IS NULL OR video_id ~ '^[A-Za-z0-9_-]{11}$'),
+  ADD CONSTRAINT lessons_video_state
+    CHECK (NOT (video_id IS NOT NULL AND video_quarantined));
 
--- Backfill only unambiguous single-video references. A row holding a
--- playlist, a live URL or anything else this cannot decode keeps a NULL
--- video id: it stops being playable and has to be re-entered by an
--- administrator through the validated admin route. Silently guessing an id
--- for such a row is what would publish unreviewed content.
+-- Backfill only unambiguous single-video references. Anything else keeps a
+-- NULL video id and enters quarantine: the row is preserved exactly as the
+-- operator left it, and an administrator re-enters the reference through the
+-- validated admin route. Guessing an id for such a row is what would publish
+-- unreviewed content.
 UPDATE lesson_materials
    SET video_id = COALESCE(
          substring(external_url from '^https://(?:www\.|m\.)?youtube\.com/watch\?(?:[^#]*&)?v=([A-Za-z0-9_-]{11})(?:&|$)'),
@@ -43,6 +49,12 @@ UPDATE lesson_materials
    AND external_url IS NOT NULL
    AND position('list=' in external_url) = 0;
 
+-- Rewrite every decoded row to the canonical form so the stored URL and the
+-- verified id can never disagree.
+UPDATE lesson_materials
+   SET external_url = 'https://www.youtube.com/watch?v=' || video_id
+ WHERE material_type = 'video' AND video_id IS NOT NULL;
+
 UPDATE lessons
    SET video_id = COALESCE(
          substring(content_url from '^https://(?:www\.|m\.)?youtube\.com/watch\?(?:[^#]*&)?v=([A-Za-z0-9_-]{11})(?:&|$)'),
@@ -52,9 +64,20 @@ UPDATE lessons
  WHERE content_url IS NOT NULL
    AND position('list=' in content_url) = 0;
 
--- A video row whose reference could not be decoded must not stay published
--- with a broken player. Unpublishing is reversible; the material and its
--- URL are preserved for the administrator to correct.
+UPDATE lessons
+   SET content_url = 'https://www.youtube.com/watch?v=' || video_id
+ WHERE video_id IS NOT NULL;
+
+-- A lesson whose content_url names YouTube but did not decode is quarantined:
+-- the URL stays for repair, and `publicLesson` stops projecting it.
+UPDATE lessons
+   SET video_quarantined = true
+ WHERE video_id IS NULL
+   AND content_url IS NOT NULL
+   AND content_url ~ '^https://(?:[a-z0-9-]+\.)*(?:youtube\.com|youtu\.be|youtube-nocookie\.com)(?:[/:?]|$)';
+
+-- An undecodable video material must not stay published behind a player that
+-- cannot load. Unpublishing is reversible and loses nothing.
 UPDATE lesson_materials
    SET is_published = false
  WHERE material_type = 'video' AND video_id IS NULL AND is_published;
@@ -68,28 +91,22 @@ UPDATE lesson_materials
 -- which is why lesson video has only ever worked through `lessons.content_url`.
 -- Verified empirically against a clean PostgreSQL 16 before this was written.
 --
--- The replacement anchors on the verified id instead of re-deriving trust
--- from the URL: the application writes `video_id` through the normalizer and
--- regenerates `external_url` from it, so the two can never disagree.
-DO $$
-DECLARE
-  undecodable bigint;
-BEGIN
-  SELECT count(*) INTO undecodable
-    FROM lesson_materials
-   WHERE material_type = 'video' AND video_id IS NULL;
-  IF undecodable > 0 THEN
-    RAISE EXCEPTION
-      'Cannot tighten lesson_materials_payload_shape: % video material(s) hold a reference this migration could not decode. Re-enter them through the admin API first.',
-      undecodable;
-  END IF;
-END $$;
-
+-- The replacement admits exactly two video states, and no third:
+--
+--   playable   video_id present, external_url canonical for that id;
+--   quarantine video_id absent, row unpublished, original URL preserved.
+--
+-- Because publishing is only legal in the playable state, a quarantined row
+-- cannot be served to a student, and repairing it through the admin
+-- normalizer moves it back into the playable state without a data rescue.
 ALTER TABLE lesson_materials
   DROP CONSTRAINT lesson_materials_payload_shape,
   ADD CONSTRAINT lesson_materials_payload_shape CHECK (
     (material_type = 'rich_text' AND body_markdown IS NOT NULL AND external_url IS NULL AND storage_key IS NULL AND mime_type IS NULL AND byte_size IS NULL AND video_id IS NULL)
-    OR (material_type = 'video' AND body_markdown IS NULL AND video_id IS NOT NULL AND external_url = 'https://www.youtube.com/watch?v=' || video_id AND storage_key IS NULL AND mime_type IS NULL AND byte_size IS NULL)
+    OR (material_type = 'video' AND body_markdown IS NULL AND storage_key IS NULL AND mime_type IS NULL AND byte_size IS NULL AND (
+         (video_id IS NOT NULL AND external_url = 'https://www.youtube.com/watch?v=' || video_id)
+         OR (video_id IS NULL AND external_url IS NOT NULL AND is_published = false)
+       ))
     OR (material_type = 'document' AND body_markdown IS NULL AND external_url IS NULL AND video_id IS NULL AND storage_key IS NOT NULL AND mime_type = 'application/pdf' AND byte_size BETWEEN 1 AND 209715200)
     OR (material_type = 'image' AND body_markdown IS NULL AND external_url IS NULL AND video_id IS NULL AND storage_key IS NOT NULL AND mime_type ~ '^image/' AND byte_size BETWEEN 1 AND 31457280)
   );
@@ -97,6 +114,11 @@ ALTER TABLE lesson_materials
 CREATE INDEX lesson_materials_video_published
   ON lesson_materials (lesson_id, position)
   WHERE material_type = 'video' AND is_published AND video_id IS NOT NULL;
+
+-- Operator view of everything waiting for a corrected reference.
+CREATE INDEX lesson_materials_video_quarantined
+  ON lesson_materials (lesson_id)
+  WHERE material_type = 'video' AND video_id IS NULL;
 
 -- Server-side record of meaningful playback events.
 --
@@ -123,9 +145,12 @@ CREATE TABLE lesson_video_events (
 
 -- Idempotency key: replaying the same event for the same video on the same
 -- Bishkek day updates the row instead of inserting a duplicate, so a flaky
--- network or a re-mounted player cannot inflate the record.
+-- network or a re-mounted player cannot inflate the record. `material_id` is
+-- part of the key so two materials that happen to carry the same video on one
+-- lesson stay distinguishable; COALESCE keeps the lesson's own video (NULL
+-- material) as a single distinct series rather than a NULL-skipped duplicate.
 CREATE UNIQUE INDEX lesson_video_events_daily_unique
-  ON lesson_video_events (student_id, lesson_id, video_id, event, occurred_on);
+  ON lesson_video_events (student_id, lesson_id, COALESCE(material_id, 0), video_id, event, occurred_on);
 
 CREATE INDEX lesson_video_events_lesson_recent
   ON lesson_video_events (lesson_id, created_at DESC);

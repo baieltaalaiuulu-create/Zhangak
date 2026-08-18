@@ -83,6 +83,10 @@ export interface AdminLessonMaterial {
   position: number
   bodyMarkdown: string | null
   externalUrl: string | null
+  /** Verified 11-character YouTube id; null while a video is quarantined. */
+  videoId: string | null
+  /** True for a video row whose reference must be re-entered before it can publish. */
+  needsVideoRepair: boolean
   mimeType: string | null
   byteSize: number | null
   isPublished: boolean
@@ -278,7 +282,10 @@ export function parseAdminLessonMaterial(value: unknown): AdminLessonMaterial {
     id: positiveInteger(source.id, 'id материала'), lessonId: positiveInteger(source.lessonId, 'id урока материала'),
     materialType: materialType as AdminLessonMaterial['materialType'], title: text(source.title, 'название материала'),
     position: positiveInteger(source.position, 'позиция материала'), bodyMarkdown: nullableText(source.bodyMarkdown, 'текст материала'),
-    externalUrl: nullableHttpsUrl(source.externalUrl, 'ссылка материала'), mimeType: nullableText(source.mimeType, 'тип материала'),
+    externalUrl: nullableHttpsUrl(source.externalUrl, 'ссылка материала'),
+    videoId: nullableText(source.videoId, 'идентификатор видео'),
+    needsVideoRepair: boolean(source.needsVideoRepair, 'состояние видео'),
+    mimeType: nullableText(source.mimeType, 'тип материала'),
     byteSize, isPublished: boolean(source.isPublished, 'публикация материала'),
     scanStatus: scanStatus as AdminLessonMaterial['scanStatus'], originalFilename: nullableText(source.originalFilename, 'имя файла'),
     createdAt: timestamp(source.createdAt, 'дата материала'),
@@ -415,6 +422,15 @@ export async function uploadAdminLessonMaterial(lessonId: number, fields: { mate
  */
 export async function setAdminMaterialPublished(materialId: number, isPublished: boolean): Promise<AdminLessonMaterial> {
   const result = record(await zhangakApiJson<unknown>(`/v1/admin/materials/${lessonPath(materialId)}`, 'PATCH', { isPublished }), 'материал урока')
+  return parseAdminLessonMaterial(result.material)
+}
+
+/**
+ * Replaces a quarantined video reference. The server re-normalizes the URL,
+ * so an invalid replacement is rejected rather than stored.
+ */
+export async function repairAdminMaterialVideo(materialId: number, externalUrl: string): Promise<AdminLessonMaterial> {
+  const result = record(await zhangakApiJson<unknown>(`/v1/admin/materials/${lessonPath(materialId)}`, 'PATCH', { externalUrl }), 'материал урока')
   return parseAdminLessonMaterial(result.material)
 }
 

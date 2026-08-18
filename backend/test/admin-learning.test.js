@@ -79,12 +79,14 @@ test('lesson administration accepts only curriculum fields and can explicitly cl
     durationMinutes: 45,
     contentUrl: 'https://video.zhangak.com/lessons/4',
     videoId: null,
+    videoQuarantined: false,
     isTest: true,
     isPublished: false,
   })
   assert.deepEqual(parseLessonPatchBody({ contentUrl: null, lessonDate: null, isPublished: true }), {
     contentUrl: null,
     videoId: null,
+    videoQuarantined: false,
     lessonDate: null,
     isPublished: true,
   })
@@ -93,6 +95,7 @@ test('lesson administration accepts only curriculum fields and can explicitly cl
   assert.deepEqual(parseLessonPatchBody({ contentUrl: 'https://youtu.be/abc12345678?si=track' }), {
     contentUrl: 'https://www.youtube.com/watch?v=abc12345678',
     videoId: 'abc12345678',
+    videoQuarantined: false,
   })
   // A malformed YouTube reference is rejected outright rather than stored as
   // an opaque external link that would silently never play.
