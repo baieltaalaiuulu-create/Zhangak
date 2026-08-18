@@ -1,5 +1,10 @@
 # 🤖 Руководство по передаче проекта ИИ-Агенту (AI Agent Handoff Guide)
 
+> **Актуальная передача на 2026-08-19:** для продолжения проекта Claude или
+> другим агентом сначала используйте `docs/development/CLAUDE_HANDOFF.md`.
+> Этот документ сохранён как общий исторический guide и может содержать
+> устаревшие количества миграций или проверок.
+
 **Статус проекта:** Preprod Release
 **Версия документации:** 2.0
 **Стек:** Node.js API (:3210) + Next.js App Router BFF (:3200) + PostgreSQL 16 (:5433) + Expo React Native (Mobile) + Custom Private Storage
