@@ -78,13 +78,18 @@ async function resetSchema() {
   await query('CREATE SCHEMA public')
 }
 
-async function applyMigrations() {
+async function migrationFiles() {
   const directory = path.join(backendRoot, 'migrations')
-  const files = (await readdir(directory)).filter(name => name.endsWith('.sql')).sort()
-  for (const file of files) {
+  return (await readdir(directory)).filter(name => name.endsWith('.sql')).sort()
+}
+
+async function applyMigrations(files = null) {
+  const directory = path.join(backendRoot, 'migrations')
+  const selected = files ?? await migrationFiles()
+  for (const file of selected) {
     await query(await readFile(path.join(directory, file), 'utf8'))
   }
-  return files
+  return selected
 }
 
 /**
@@ -144,9 +149,65 @@ test('lesson video authorization and quarantine repair', { skip }, async t => {
   assertDisposable(databaseUrl)
   connectDatabase({ databaseUrl, databaseSsl: false })
   const { authorizedVideoSource } = await import('../src/routes/platform-learning.js')
-  // Reset first so the suite is rerunnable against the same disposable database.
+  const files = await migrationFiles()
+
+  // Prove the actual forward transition, not just the final constraint. Apply
+  // 001-014, create representative legacy rows, then apply 015 by itself.
   await resetSchema()
-  const applied = await applyMigrations()
+  const beforeVideo = files.filter(file => file !== '015_lesson_video_sources.sql')
+  await applyMigrations(beforeVideo)
+  await query(`INSERT INTO courses (id, name) OVERRIDING SYSTEM VALUE VALUES (90, 'Legacy video course')`)
+  await query(
+    `INSERT INTO lessons (id, course_id, lesson_number, title, content_url, is_published)
+     OVERRIDING SYSTEM VALUE VALUES
+       (90, 90, 1, 'Legacy canonical lesson', $1, true),
+       (91, 90, 2, 'Legacy quarantined lesson', $2, true)`,
+    [`https://youtu.be/${VIDEO_A}`, 'https://www.youtube.com/playlist?list=PLlegacy'],
+  )
+  // Migration 006's historical regex accepted a literal backslash in the
+  // hostname and rejected genuine YouTube material URLs. This row reproduces
+  // the only invalid legacy shape that old constraint could persist.
+  await query(
+    `INSERT INTO lesson_materials
+       (id, lesson_id, material_type, title, position, external_url, is_published, scan_status)
+     OVERRIDING SYSTEM VALUE VALUES
+       (90, 91, 'video', 'Legacy invalid material', 1, $1, true, 'clean')`,
+    ['https://youtube\\.com/playlist?list=PLlegacy'],
+  )
+  await applyMigrations(['015_lesson_video_sources.sql'])
+
+  await t.test('migration 015 backfills valid legacy lessons and quarantines invalid sources', async () => {
+    const lessons = await query(
+      `SELECT id, content_url, video_id, video_quarantined FROM lessons WHERE id IN (90, 91) ORDER BY id`,
+    )
+    assert.deepEqual(lessons.rows, [
+      {
+        id: 90,
+        content_url: `https://www.youtube.com/watch?v=${VIDEO_A}`,
+        video_id: VIDEO_A,
+        video_quarantined: false,
+      },
+      {
+        id: 91,
+        content_url: 'https://www.youtube.com/playlist?list=PLlegacy',
+        video_id: null,
+        video_quarantined: true,
+      },
+    ])
+    const material = await query(
+      'SELECT external_url, video_id, is_published FROM lesson_materials WHERE id = 90',
+    )
+    assert.deepEqual(material.rows[0], {
+      external_url: 'https://youtube\\.com/playlist?list=PLlegacy',
+      video_id: null,
+      is_published: false,
+    })
+  })
+
+  // Reset again so the authorization lifecycle below runs on a clean final
+  // schema and remains independently rerunnable.
+  await resetSchema()
+  const applied = await applyMigrations(files)
   await seed()
   t.after(async () => { await closeDatabase() })
 
