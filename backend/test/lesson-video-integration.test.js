@@ -39,12 +39,39 @@ const STUDENT_B = '00000000-0000-4000-8000-00000000000b'
  * trusted.
  */
 function assertDisposable(url) {
-  const name = new URL(url).pathname.replace(/^\//, '')
+  const parsed = new URL(url)
+  const name = parsed.pathname.replace(/^\//, '')
+  // A database called `something_test` can still be a remote shared service.
+  // This suite drops the whole public schema, so a disposable-looking name is
+  // not enough: execution is allowed only through a loopback connection. An
+  // SSH tunnel to an isolated test database still satisfies this boundary.
+  if (!['127.0.0.1', 'localhost', '::1'].includes(parsed.hostname)) {
+    throw new Error(`Refusing remote database host "${parsed.hostname}": ZHANGAK_TEST_DATABASE_URL must use loopback`)
+  }
   if (!/(test|ci|disposable|verify)/i.test(name)) {
     throw new Error(`Refusing to reset database "${name}": ZHANGAK_TEST_DATABASE_URL must name a disposable database`)
   }
   return name
 }
+
+test('destructive video integration guard accepts only loopback disposable databases', () => {
+  assert.equal(
+    assertDisposable('postgresql://tester:secret@127.0.0.1:5432/zhangak_video_test'),
+    'zhangak_video_test',
+  )
+  assert.equal(
+    assertDisposable('postgresql://tester:secret@localhost:5432/zhangak_ci'),
+    'zhangak_ci',
+  )
+  assert.throws(
+    () => assertDisposable('postgresql://tester:secret@db.example.com:5432/zhangak_test'),
+    /Refusing remote database host/,
+  )
+  assert.throws(
+    () => assertDisposable('postgresql://tester:secret@127.0.0.1:5432/zhangak'),
+    /must name a disposable database/,
+  )
+})
 
 async function resetSchema() {
   await query('DROP SCHEMA public CASCADE')

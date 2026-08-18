@@ -169,6 +169,12 @@ jobs:
       - name: Build production application
         run: npm run build
 
+      - name: Install Chromium for rendered acceptance tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Test rendered lesson video experience
+        run: npm run test:e2e
+
       - name: Scan browser bundles for private secrets
         run: npm run check:client-secrets
 
