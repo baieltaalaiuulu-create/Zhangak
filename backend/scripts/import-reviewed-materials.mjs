@@ -35,7 +35,7 @@ async function requireSchema(client) {
 async function actor(client) {
   const found = await client.query(
     `SELECT u.id FROM users u JOIN profiles p ON p.user_id = u.id
-      WHERE u.is_blocked = false AND p.role IN ('super_admin', 'admin')
+      WHERE u.blocked = false AND p.role IN ('super_admin', 'admin')
       ORDER BY CASE p.role WHEN 'super_admin' THEN 0 ELSE 1 END, u.created_at LIMIT 1`,
   )
   if (!found.rows[0]) fail('an active admin is required to attest the reviewed import')
