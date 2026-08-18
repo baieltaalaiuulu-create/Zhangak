@@ -148,6 +148,7 @@ async function rejectsWith(promise, code) {
 test('lesson video authorization and quarantine repair', { skip }, async t => {
   assertDisposable(databaseUrl)
   connectDatabase({ databaseUrl, databaseSsl: false })
+  t.after(async () => { await closeDatabase() })
   const { authorizedVideoSource } = await import('../src/routes/platform-learning.js')
   const files = await migrationFiles()
 
@@ -171,7 +172,7 @@ test('lesson video authorization and quarantine repair', { skip }, async t => {
     `INSERT INTO lesson_materials
        (id, lesson_id, material_type, title, position, external_url, is_published, scan_status)
      OVERRIDING SYSTEM VALUE VALUES
-       (90, 91, 'video', 'Legacy invalid material', 1, $1, true, 'clean')`,
+       (90, 91, 'video', 'Legacy invalid material', 1, $1, true, 'pending')`,
     ['https://youtube\\.com/playlist?list=PLlegacy'],
   )
   await applyMigrations(['015_lesson_video_sources.sql'])
@@ -209,7 +210,6 @@ test('lesson video authorization and quarantine repair', { skip }, async t => {
   await resetSchema()
   const applied = await applyMigrations(files)
   await seed()
-  t.after(async () => { await closeDatabase() })
 
   const studentA = { id: STUDENT_A }
   const studentB = { id: STUDENT_B }
