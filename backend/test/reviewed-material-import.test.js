@@ -30,3 +30,9 @@ test('apply script uses the owned user schema and explicit review gate', async (
   assert.doesNotMatch(source, /u\.is_blocked/u)
   assert.match(source, /--apply.*--confirm-reviewed/u)
 })
+
+test('private storage key migration avoids unsupported regex repetition counts', async () => {
+  const migration = await readFile(resolve(import.meta.dirname, '../migrations/013_fix_private_storage_key_constraint.sql'), 'utf8')
+  assert.match(migration, /char_length\(storage_key\) BETWEEN 1 AND 512/u)
+  assert.doesNotMatch(migration, /\{0,511\}/u)
+})

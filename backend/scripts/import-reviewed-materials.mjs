@@ -6,7 +6,7 @@ import { loadConfig } from '../src/config.js'
 import { closeDatabase, connectDatabase, transaction } from '../src/db.js'
 import { buildReviewedMaterialPlan, materialStorageKey, reviewedMaterialSummary } from '../src/reviewed-material-import.js'
 
-const REQUIRED_MIGRATIONS = ['005_legacy_demo_import_ledger.sql', '008_private_material_storage.sql', '012_course_roadmaps.sql']
+const REQUIRED_MIGRATIONS = ['005_legacy_demo_import_ledger.sql', '008_private_material_storage.sql', '012_course_roadmaps.sql', '013_fix_private_storage_key_constraint.sql']
 
 function fail(message) {
   throw new Error(`Reviewed material importer blocked: ${message}`)
