@@ -232,6 +232,47 @@ export function parseLessonVideoConfig(value: unknown): LessonVideoConfig {
   return { videoId, title, embedHost: YOUTUBE_EMBED_HOST }
 }
 
+/**
+ * Origin the companion presents to YouTube.
+ *
+ * A React Native WebView loaded straight from a remote `uri` has no document
+ * of its own, so the embedded player receives no usable Referer and YouTube
+ * can refuse playback with error 153. Rendering a local document under an
+ * explicit `baseUrl` gives the WebView a real origin, which is the supported
+ * way to satisfy the embedded-player identity requirement on both Android and
+ * iOS.
+ */
+export const MOBILE_EMBED_BASE_URL = 'https://platform.zhangak.com'
+
+/**
+ * Builds the bounded local document that hosts the embed.
+ *
+ * Only a video id that already passed the 11-character validator is
+ * interpolated, and nothing else from the server reaches the markup — no
+ * title, no operator string, no server-supplied HTML. That keeps this a
+ * fixed template with one constrained substitution rather than an injection
+ * surface.
+ *
+ * Parameters are the supported ones only: `enablejsapi`, `playsinline`,
+ * `rel`, `origin`. Deprecated `modestbranding`/`showinfo`/`autohide` are not
+ * sent, and the Referer is not suppressed.
+ */
+export function youtubeEmbedDocument(videoId: string): string {
+  if (!VIDEO_ID_PATTERN.test(videoId)) throw new NativeDtoError('идентификатор видео')
+  const src = `${YOUTUBE_EMBED_HOST}/embed/${videoId}`
+    + `?enablejsapi=1&playsinline=1&rel=0&origin=${encodeURIComponent(MOBILE_EMBED_BASE_URL)}`
+  return [
+    '<!DOCTYPE html>',
+    '<html lang="ru"><head><meta charset="utf-8">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
+    '<style>html,body{margin:0;padding:0;background:#111827;height:100%;overflow:hidden}',
+    'iframe{border:0;width:100%;height:100%;display:block}</style></head>',
+    '<body>',
+    `<iframe src="${src}" title="Видео урока" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>`,
+    '</body></html>',
+  ].join('')
+}
+
 export async function requestLessonVideo(handle: LessonVideoHandle): Promise<LessonVideoConfig> {
   // The server states the path from the API root; the native client already
   // carries the `/v1` prefix in its configured base URL.

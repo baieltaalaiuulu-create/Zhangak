@@ -3,7 +3,13 @@ import { View, StyleSheet, Text, Pressable, ActivityIndicator } from 'react-nati
 import { Ionicons } from '@expo/vector-icons'
 import { WebView } from 'react-native-webview'
 
-import { requestLessonVideo, type LessonVideoConfig, type LessonVideoHandle } from '@/lib/lessons'
+import {
+  MOBILE_EMBED_BASE_URL,
+  requestLessonVideo,
+  youtubeEmbedDocument,
+  type LessonVideoConfig,
+  type LessonVideoHandle,
+} from '@/lib/lessons'
 
 interface Props {
   handle: LessonVideoHandle | null
@@ -49,11 +55,20 @@ export default function LessonVideoPlayer({ handle, title }: Props) {
     return (
       <View style={styles.media}>
         <WebView
-          source={{ uri: `${config.embedHost}/embed/${config.videoId}?playsinline=1&rel=0` }}
+          // A local document under an explicit baseUrl, not a remote uri: this
+          // is what gives the WebView a real origin so the embedded player
+          // receives a usable Referer. Loading the embed URL directly is what
+          // produces YouTube error 153 on device.
+          source={{ html: youtubeEmbedDocument(config.videoId), baseUrl: MOBILE_EMBED_BASE_URL }}
+          originWhitelist={['https://*']}
           style={styles.media}
           allowsFullscreenVideo
+          allowsInlineMediaPlayback
           javaScriptEnabled
           domStorageEnabled
+          setSupportMultipleWindows={false}
+          onError={() => setStatus('error')}
+          onHttpError={() => setStatus('error')}
         />
       </View>
     )
