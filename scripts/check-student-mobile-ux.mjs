@@ -33,16 +33,16 @@ async function main() {
   expect(
     JSON.stringify(navHrefs) === JSON.stringify([
       '/student/online',
-      '/student/online/practice',
+      '/student/online/trainer',
       '/student/online/roadmap',
       '/student/online/ai',
       '/student/online/profile',
     ]),
-    'mobile navigation must keep Home, Practice, Roadmap, AI and Profile in that order',
+    'mobile navigation must keep Home, Trainer, Roadmap, AI and Profile in that order',
   )
   expect(bottomNav.includes('aria-label="Основная навигация"'), 'mobile navigation needs an accessible label')
   expect(bottomNav.includes("aria-current={isActive ? 'page' : undefined}"), 'active mobile destination needs aria-current="page"')
-  expect(bottomNav.includes('min-h-16'), 'mobile navigation targets must remain at least 64px high')
+  expect(bottomNav.includes('h-14') && bottomNav.includes("height: 'calc(64px + env(safe-area-inset-bottom))'"), 'mobile navigation targets and safe-area bar must retain their approved heights')
   expect(bottomNav.includes('env(safe-area-inset-bottom)'), 'mobile navigation must respect the device safe area')
 
   const layout = await source('components/student/StudentLayout.tsx')
@@ -61,7 +61,7 @@ async function main() {
   }
   expect(mobileDashboard.includes('Открыть Roadmap'), 'mobile home needs one dominant Roadmap action')
   expect(mobileDashboard.includes('href="/student/online/roadmap"'), 'mobile home must link directly to the course map')
-  expect(mobileDashboard.includes('Тренажёр без повторов'), 'mobile home needs an honest trainer explanation')
+  expect(mobileDashboard.includes('href="/student/online/trainer"') && mobileDashboard.includes('Выбери раздел и сложность'), 'mobile home needs an honest trainer explanation')
   expect(mobileDashboard.includes('min-h-14'), 'primary Roadmap action must keep a large touch target')
 
   const mobileAiHelp = await source('components/student/mobile/MobileAIHelp.tsx')
@@ -101,11 +101,11 @@ async function main() {
   expect(aiPage.includes('100dvh-64px-env(safe-area-inset-bottom)'), 'AI viewport must leave room for mobile navigation')
 
   const leaderboardPage = await source('app/student/online/leaderboard/page.tsx')
-  expect(leaderboardPage.includes('честный рейтинг готовится'), 'leaderboard must give students an explicit safe migration state')
   expect(leaderboardPage.includes('useStudentSession'), 'leaderboard must stay inside the first-party student session')
   expect(!leaderboardPage.includes("from '@/lib/supabase'"), 'leaderboard must not query retired Supabase data')
   expect(!leaderboardPage.includes('fetchLeaderboardEntries'), 'leaderboard must not call the retired browser ranking client')
-  expect(leaderboardPage.includes('href="/student/online/practice"'), 'leaderboard migration state needs a safe practice destination')
+  expect(leaderboardPage.includes("'/v1/platform/leaderboard'"), 'leaderboard must load the first-party ranking projection')
+  expect(leaderboardPage.includes('подтверждённым XP') && leaderboardPage.includes('Сброс тренажёра не уменьшает'), 'leaderboard must explain authoritative XP semantics')
 
   const scanRoots = [
     'app/student/online/lessons',
@@ -136,7 +136,7 @@ async function main() {
     return
   }
 
-  console.log(`Student mobile UX check passed (${scannedFiles.length} source files, five destinations, three daily tasks, consented AI and safe ranking state).`)
+  console.log(`Student mobile UX check passed (${scannedFiles.length} source files, five destinations, three daily tasks, consented AI and first-party ranking).`)
 }
 
 main().catch((error) => {
