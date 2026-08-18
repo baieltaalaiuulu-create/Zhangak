@@ -12,17 +12,20 @@ model_version:            не публикуется интерфейсом; д
                           следует считать product-specific preview/alias
 thinking_level:           maximum effort
 base_sha:                 8ee374f6ba914e70f10696ec26c626ae6242cd4d
-head_sha:                 <заполняется после финального commit>
+head_sha:                 см. tip ветки; CI подтверждён на 394b2063fb1d8170a960c906bc66b76c0e5a1559
+                          и повторно на финальном commit этого файла
 branch:                   fix/video-release-review
 ```
 
 ## Commits
 
-1. `fix(video): authorize material analytics independently`
-2. `fix(video): identify mobile webview embeds`
-3. `fix(video): quarantine and repair legacy sources`
-4. `test(video): add rendered and migration acceptance coverage`
-5. `docs(video): record audit and release candidate`
+1. `a27c896` fix(video): authorize material analytics independently
+2. `9fd2537` fix(video): identify mobile webview embeds
+3. `39b260a` fix(video): quarantine and repair legacy sources
+4. `9625450` test(video): add rendered and migration acceptance coverage
+5. `65c098d` docs(video): record audit and release candidate
+6. `394b206` docs(video): state the exact packaging blocker
+7. финальный commit этого файла — результаты CI
 
 ## Scope
 
@@ -104,7 +107,7 @@ checks, mobile tsc, Playwright 13/13, build, `nginx -t` — все PASS.
 
 | Тест | Причина |
 | --- | --- |
-| `package:standalone`, `smoke:standalone` | пакетчик считает грязью и untracked файлы; в дереве лежат `test_for_students/` и prompt-файл владельца, которые трогать нельзя. Дополнительно локальный `.env` блокируется secret-guard. На чистом CI-checkout ни того, ни другого нет — статус **pending до CI**. `ALLOW_DIRTY_RELEASE=1` не использовался. |
+| `package:standalone`, `smoke:standalone` | локально невозможно: пакетчик считает грязью и untracked файлы, а в дереве лежат `test_for_students/` и prompt-файл владельца, которые трогать нельзя (плюс локальный `.env` блокируется secret-guard). `ALLOW_DIRTY_RELEASE=1` не использовался. **Выполнено в GitHub CI на чистом checkout — оба шага зелёные.** |
 | Android/iOS device playback | нет устройства и Expo-сборки в окружении. **Release blocker.** |
 | Playwright в GitHub CI | требует шага установки браузера; локально воспроизводимо `npm run test:e2e`. Follow-up. |
 | Доставка CSP-заголовка через реальный nginx | локально nginx перед приложением не поднимался; проверяется оператором `curl -I` после деплоя. |
@@ -138,6 +141,21 @@ P0/P1 дефектов в коде не осталось; A3 требует по
 - Откат самой 015 не выполнять после публикации видео-материалов.
 - Порядок деплоя: backup → миграция → API → web, одним SHA, с сохранением
   `previous`.
+
+## CI
+
+Run: https://github.com/baieltaalaiuulu-create/Zhangak/actions/runs/32181910077
+Триггер: `workflow_dispatch` на ветке (CI настроен на `push: [main]` и
+`pull_request`, поэтому push обычной ветки его не запускает; PR не создавался).
+
+Результат: **success**. Оба job зелёные — `verify` и
+`Verify PostgreSQL migrations`, включая `Package standalone release`,
+`Smoke-test standalone release` и новый шаг
+`Run PostgreSQL-backed lesson video integration tests`.
+
+Единственная аннотация — предупреждение GitHub о deprecation Node.js 20 в
+`actions/checkout@v4` / `actions/setup-node@v4`. Оно существовало до этого
+среза и к нему не относится.
 
 ## production_actions_requested
 
