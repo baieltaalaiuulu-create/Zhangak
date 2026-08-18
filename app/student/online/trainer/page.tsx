@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 
 import StudentVisualIcon from '@/components/student/StudentVisualIcon'
 import { useStudentSession } from '@/components/student/StudentSessionContext'
@@ -110,6 +111,18 @@ export default function TrainerPage() {
       </section>
 
       <div className="mt-3 flex gap-2"><button type="button" onClick={() => void showHistory()} disabled={loading} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl border border-[var(--student-line)] bg-white text-sm font-bold text-[var(--student-brand)]"><StudentVisualIcon name="history" size={19} />История</button><button type="button" onClick={() => void reset()} disabled={loading} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl border border-[var(--student-line)] bg-white text-sm font-bold text-[var(--student-ink-2)]"><StudentVisualIcon name="restart_alt" size={19} />Сбросить</button></div>
+
+      <Link href="/student/online/practice/daily" className="mt-4 flex items-center gap-3 rounded-[22px] border border-amber-300 bg-[var(--student-warning-50)] p-4">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--student-warning)] text-white"><StudentVisualIcon name="bolt" size={27} color="#fff" /></span>
+        <span className="min-w-0 flex-1"><span className="block text-[17px] font-extrabold">Задание дня</span><span className="mt-0.5 block text-xs leading-5 text-[var(--student-ink-2)]">15 вопросов, одна попытка до следующего дня</span></span>
+        <StudentVisualIcon name="chevron_right" size={23} color="var(--student-warning)" />
+      </Link>
+
+      <Link href="/student/online/practice?type=mock" className="mt-3 flex items-center gap-3 rounded-[22px] border border-[var(--student-line)] bg-white p-4">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--student-accent-50)]"><StudentVisualIcon name="timer" size={27} color="var(--student-accent)" /></span>
+        <span className="min-w-0 flex-1"><span className="block text-[17px] font-extrabold">Пробный ОРТ</span><span className="mt-0.5 block text-xs leading-5 text-[var(--student-ink-2)]">Полный тест с серверной проверкой результата</span></span>
+        <StudentVisualIcon name="chevron_right" size={23} color="var(--student-accent)" />
+      </Link>
 
       {history && <section className="mt-4 rounded-[22px] border border-[var(--student-line)] bg-white p-4"><h2 className="text-base font-black">Последние ответы</h2>{history.length === 0 ? <p className="mt-2 text-sm text-[var(--student-ink-2)]">Пока нет решённых вопросов.</p> : <div className="mt-3 space-y-2">{history.map(item => <article key={`${item.questionId}-${item.answeredAt}`} className={`rounded-2xl border p-3 ${item.isCorrect ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}`}><p className="text-sm font-bold">{item.questionText}</p><p className="mt-1 text-xs text-[var(--student-ink-2)]">Твой: {item.selectedAnswer.toUpperCase()} · Правильный: {item.correctAnswer.toUpperCase()}</p>{item.explanation && <p className="mt-1 text-xs text-[var(--student-ink-2)]">{item.explanation}</p>}</article>)}</div>}</section>}
     </main>
