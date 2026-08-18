@@ -188,7 +188,7 @@ test('both video session routes re-check enrollment, publication and the lock', 
   // student type; loadAccessibleLesson enforces the active online enrollment
   // and publication; requireUnlockedLesson enforces sequencing.
   assert.ok(lessonRoute.includes('currentStudent(config, req)'), 'lesson video must require a verified session')
-  assert.ok(lessonRoute.includes('authorizedLessonVideo'), 'lesson video must go through the shared authorization')
+  assert.ok(lessonRoute.includes('authorizedVideoSource(student, lessonId, null)'), 'lesson video must go through the shared resolver')
 
   const materialRoute = source.slice(
     source.indexOf("POST('/v1/platform/materials/:id/video'"),
@@ -197,14 +197,22 @@ test('both video session routes re-check enrollment, publication and the lock', 
   assert.ok(materialRoute.includes('currentStudent(config, req)'), 'material video must require a verified session')
   assert.ok(materialRoute.includes("ce.status = 'active'"), 'material video must require an active enrollment')
   assert.ok(materialRoute.includes("c.delivery_mode = 'online'"), 'material video must require an online course')
-  assert.ok(materialRoute.includes('m.is_published = true'), 'material video must require a published material')
-  assert.ok(materialRoute.includes("m.scan_status = 'clean'"), 'material video must require a reviewed material')
   assert.ok(materialRoute.includes('l.is_published = true'), 'material video must require a published lesson')
-  assert.ok(materialRoute.includes('requireUnlockedLesson'), 'material video must require an unlocked lesson')
+  assert.ok(materialRoute.includes('authorizedVideoSource(student, Number(owner.lesson_id), materialId)'), 'material video must go through the shared resolver')
 
-  const authorization = source.slice(source.indexOf('async function authorizedLessonVideo'), source.indexOf("POST('/v1/platform/lessons/:id/video'"))
-  assert.ok(authorization.includes('requireUnlockedLesson'), 'the shared helper must enforce the lock')
-  assert.ok(authorization.includes('loadAccessibleLesson'), 'the shared helper must enforce enrollment')
+  // The resolver is where publication, review state and the lock are applied
+  // for both entry points. Its runtime behaviour is proven in
+  // backend/test/lesson-video-integration.test.js against real PostgreSQL.
+  const resolver = source.slice(source.indexOf('export async function authorizedVideoSource'), source.indexOf("POST('/v1/platform/lessons/:id/video'"))
+  assert.ok(resolver.includes('authorizedLesson(student, lessonId)'), 'the resolver must authorize the lesson first')
+  assert.ok(resolver.includes('is_published = true'), 'the resolver must require a published material')
+  assert.ok(resolver.includes("scan_status = 'clean'"), 'the resolver must require a reviewed material')
+  assert.ok(resolver.includes('video_id IS NOT NULL'), 'the resolver must refuse a quarantined material')
+  assert.ok(resolver.includes('lesson_id = $2'), 'the resolver must scope the material to the lesson')
+
+  const lessonAuth = source.slice(source.indexOf('async function authorizedLesson('), source.indexOf('export async function authorizedVideoSource'))
+  assert.ok(lessonAuth.includes('requireUnlockedLesson'), 'lesson authorization must enforce the lock')
+  assert.ok(lessonAuth.includes('loadAccessibleLesson'), 'lesson authorization must enforce enrollment')
 })
 
 // --- Schema guarantees ----------------------------------------------------
@@ -257,7 +265,9 @@ test('a video material can actually be published, and a file still cannot', asyn
   assert.ok(route.includes('adminContentManager(config, req)'), 'publishing must stay role-gated')
   assert.ok(route.includes("['rich_text', 'video'].includes(row.material_type)"), 'only non-file materials may publish here')
   assert.ok(route.includes('material_review_required'), 'a document or image must still go through review')
-  assert.ok(route.includes("!row.video_id && body.isPublished"), 'a video without a verified id must not be publishable')
+  assert.ok(route.includes("!videoId && isPublished"), 'a video without a verified id must not be publishable')
+  assert.ok(route.includes('youtubeVideoSource(body.externalUrl)'), 'a repair must go through the normalizer')
+  assert.ok(route.includes('material_video_repair_required'), 'publishing a quarantined video must name the required repair')
   assert.ok(route.includes('publish_lesson_material'), 'publishing must be audited')
 })
 
