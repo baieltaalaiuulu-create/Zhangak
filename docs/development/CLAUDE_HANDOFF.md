@@ -280,3 +280,10 @@ Supabase запрещён. Не меняй применённые миграци
 и не деплой до зелёного CI. Для production deploy сохрани rollback и проверь
 одинаковый SHA web/API на всех четырёх доменах.
 ```
+
+## 12. Профильные prompts для делегирования
+
+- `docs/development/CLAUDE_YOUTUBE_PLAYER_PROMPT.md` — честная модель защиты,
+  реализация и тесты YouTube player без ложного обещания DRM.
+- `docs/development/GEMINI_ANTIGRAVITY_CONTENT_PROMPT.md` — многофазный аудит,
+  OCR, классификация и проверка учебных материалов с PII/human-review gates.
