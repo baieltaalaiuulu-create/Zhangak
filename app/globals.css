@@ -52,3 +52,61 @@
   .summer-card { flex-direction: column !important; }
   .hide-mobile { display: none !important; }
 }
+
+/* Approved student prototype tokens. They are scoped so the marketing,
+   offline and admin surfaces keep their own visual systems. */
+.student-visual {
+  --student-bg: #F1F4FB;
+  --student-surface: #FFFFFF;
+  --student-surface-2: #F5F7FC;
+  --student-line: #E2E8F0;
+  --student-line-strong: #CBD5E6;
+  --student-ink: #0F172A;
+  --student-ink-2: #475569;
+  --student-ink-3: #8A96AC;
+  --student-brand: #1B3F92;
+  --student-brand-dark: #153477;
+  --student-brand-50: #E8EDFA;
+  --student-accent: #6C3DE0;
+  --student-accent-dark: #5628C4;
+  --student-accent-50: #F2ECFF;
+  --student-success: #16A34A;
+  --student-success-dark: #128040;
+  --student-success-50: #E8FAEF;
+  --student-warning: #D97706;
+  --student-warning-dark: #B45309;
+  --student-warning-50: #FFF6E5;
+  min-height: 100dvh;
+  background: var(--student-bg);
+  color: var(--student-ink);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.student-ms {
+  display: inline-block;
+  font-family: "Material Symbols Rounded";
+  font-weight: 400;
+  line-height: 1;
+  user-select: none;
+}
+
+@keyframes student-ring {
+  0% { opacity: .55; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+.student-ring {
+  animation: student-ring 1.8s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-visual *,
+  .student-visual *::before,
+  .student-visual *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}

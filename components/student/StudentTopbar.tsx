@@ -4,12 +4,14 @@ import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { Bell, Flame, Search, Star, Target } from 'lucide-react'
 import { PROFILE_COLOR_OPTIONS, type ProfileColor } from '@/lib/profile-preferences'
+import StudentVisualIcon from './StudentVisualIcon'
 
 interface Props {
   fullName: string
   avatarUrl: string | null
   profileColor: ProfileColor
   streak: number
+  xp: number
   targetScore: number
   level: number
   unreadCount?: number
@@ -30,7 +32,7 @@ function Pill({ children, tone = 'gray', className = '' }: { children: ReactNode
   )
 }
 
-export default function StudentTopbar({ fullName, avatarUrl, profileColor, streak, targetScore, level, unreadCount = 0, onLogout }: Props) {
+export default function StudentTopbar({ fullName, avatarUrl, profileColor, streak, xp, targetScore, level, unreadCount = 0, onLogout }: Props) {
   const [notifOpen, setNotifOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const initial = fullName?.[0]?.toUpperCase() ?? '?'
@@ -40,12 +42,15 @@ export default function StudentTopbar({ fullName, avatarUrl, profileColor, strea
     <header className="sticky top-0 z-20 flex h-[56px] items-center gap-3 border-b border-[#E2E8F0] bg-white px-4 sm:px-6">
       {/* Compact HUD for the mobile-first student experience. It only shows
           values the first-party backend currently owns, never mock XP. */}
-      <div className="flex min-w-0 flex-1 items-center gap-3 md:hidden">
-        <span className="inline-flex items-center gap-1 text-sm font-extrabold text-[#0F172A]">
-          <Flame size={19} className="text-[#D97706]" aria-hidden="true" /> {streak}
+      <div className="grid min-w-0 flex-1 grid-cols-3 items-center gap-2 md:hidden">
+        <span className="inline-flex items-center gap-1 text-[15px] font-extrabold text-[#0F172A]">
+          <StudentVisualIcon name="local_fire_department" size={20} color="#D97706" /> {streak}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-[#E8EDFA] px-2.5 py-1.5 text-[12px] font-extrabold text-[#1B3F92]">
-          <Target size={15} aria-hidden="true" /> {targetScore}
+        <span className="inline-flex min-w-0 items-center justify-center gap-1 text-[15px] font-extrabold text-[#0F172A]">
+          <StudentVisualIcon name="bolt" size={20} color="#1B3F92" /> <span className="truncate">{xp.toLocaleString('ru-RU')}</span>
+        </span>
+        <span className="inline-flex items-center justify-center gap-1 rounded-full bg-[#E8FAEF] px-2.5 py-1.5 text-[12px] font-extrabold text-[#16A34A]">
+          <StudentVisualIcon name="flag" size={18} color="#16A34A" /> {targetScore}
         </span>
       </div>
 

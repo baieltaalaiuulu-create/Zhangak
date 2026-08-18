@@ -1,77 +1,45 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
-import Link from 'next/link'
-import { ArrowLeft, BookOpenCheck, ShieldCheck, Trophy, UsersRound } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 import { useStudentSession } from '@/components/student/StudentSessionContext'
+import StudentVisualIcon from '@/components/student/StudentVisualIcon'
+import { zhangakApiRequest } from '@/lib/zhangak-api-client'
 
-/**
- * The former ranking was assembled in the browser from retired Supabase data.
- * A ranking needs trusted, server-scored attempts and privacy rules before it
- * can show other students. Do not show stale or fabricated positions during
- * the migration.
- */
+interface RankingItem { rank: number; displayName: string; xp: number; isMe: boolean }
+interface RankingResponse { items: RankingItem[]; myRank: number | null }
+
 export default function LeaderboardPage() {
-  const user = useStudentSession()
-  const firstName = user.fullName.trim().split(/\s+/)[0] || 'Студент'
+  useStudentSession()
+  const [ranking, setRanking] = useState<RankingResponse | null>(null)
+  const [error, setError] = useState(false)
 
-  return (
-    <main className="min-h-screen bg-[#FAF8FF] px-4 py-6 sm:px-6">
-      <section className="mx-auto w-full max-w-3xl">
-        <Link
-          href="/student/online"
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-white hover:text-slate-900"
-        >
-          <ArrowLeft size={17} aria-hidden="true" />
-          На главную
-        </Link>
+  useEffect(() => {
+    let active = true
+    void zhangakApiRequest<RankingResponse>('/v1/platform/leaderboard')
+      .then(value => { if (active) setRanking(value) })
+      .catch(() => { if (active) setError(true) })
+    return () => { active = false }
+  }, [])
 
-        <div className="mt-4 rounded-3xl border border-gray-100 bg-white p-6 text-center shadow-sm sm:p-10">
-          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-            <Trophy size={28} aria-hidden="true" />
-          </span>
-          <p className="mt-5 text-sm font-bold uppercase tracking-[0.14em] text-amber-700">Рейтинг Zhangak</p>
-          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">{firstName}, честный рейтинг готовится</h1>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">
-            Мы переносим подсчёт результатов на защищённый сервер. Пока нельзя надёжно сравнить попытки, мы не покажем неточные места, баллы или чужие данные.
-          </p>
+  const podium = ranking?.items.slice(0, 3) ?? []
+  const rest = ranking?.items.slice(3) ?? []
+  return <main className="px-4 pb-28 pt-5 sm:mx-auto sm:max-w-2xl sm:pb-10">
+    <header><p className="text-[11px] font-extrabold uppercase tracking-[.12em] text-[var(--student-warning)]">Недельный рейтинг</p><h1 className="mt-1 text-2xl font-black tracking-tight">Лига Zhangak</h1><p className="mt-1 text-[13px] text-[var(--student-ink-2)]">Место определяется только подтверждённым XP.</p></header>
 
-          <div className="mx-auto mt-7 grid max-w-xl gap-3 text-left sm:grid-cols-2">
-            <div className="rounded-2xl bg-blue-50 p-4">
-              <BookOpenCheck size={20} className="text-[#1B3F92]" aria-hidden="true" />
-              <h2 className="mt-3 text-sm font-bold text-slate-900">Только проверенные попытки</h2>
-              <p className="mt-1 text-xs leading-5 text-slate-600">Баллы будут считаться на сервере после завершения теста.</p>
-            </div>
-            <div className="rounded-2xl bg-violet-50 p-4">
-              <UsersRound size={20} className="text-violet-700" aria-hidden="true" />
-              <h2 className="mt-3 text-sm font-bold text-slate-900">Понятные правила</h2>
-              <p className="mt-1 text-xs leading-5 text-slate-600">Перед запуском появятся правила периода и отображения участников.</p>
-            </div>
-          </div>
-
-          <p className="mx-auto mt-5 flex max-w-xl items-start gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-left text-xs font-semibold leading-5 text-emerald-800">
-            <ShieldCheck size={17} className="mt-0.5 shrink-0" aria-hidden="true" />
-            Старые клиентские расчёты и данные другого пользователя отключены.
-          </p>
-
-          <div className="mt-7 flex flex-col justify-center gap-2 sm:flex-row">
-            <Link
-              href="/student/online/practice"
-              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white transition-colors hover:bg-blue-700"
-            >
-              Открыть тренажёр
-            </Link>
-            <Link
-              href="/student/online/lessons"
-              className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
-            >
-              Открыть уроки
-            </Link>
-          </div>
+    {!ranking && !error && <div className="mt-6 space-y-3">{[1, 2, 3, 4].map(item => <div key={item} className="h-16 animate-pulse rounded-2xl bg-white" />)}</div>}
+    {error && <p role="alert" className="mt-5 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700">Не удалось загрузить рейтинг. Попробуй обновить страницу.</p>}
+    {ranking && <>
+      <section className="mt-5 rounded-[24px] bg-gradient-to-br from-[#1B3F92] to-[#6C3DE0] px-3 pb-4 pt-6 text-white">
+        <div className="flex items-end justify-center gap-2">
+          {[podium[1], podium[0], podium[2]].map((item, index) => item ? <div key={item.rank} className={`flex min-w-0 flex-1 flex-col items-center ${index === 1 ? 'pb-4' : ''}`}><span className={`flex items-center justify-center rounded-full border-2 border-white/70 bg-white/20 font-black ${index === 1 ? 'h-16 w-16 text-xl' : 'h-13 w-13 text-base'}`}>{item.displayName.trim().slice(0, 1).toUpperCase()}</span><p className="mt-2 max-w-full truncate text-center text-xs font-extrabold">{item.displayName}</p><p className="text-[11px] text-white/75">{item.xp} XP</p><span className="mt-2 flex h-7 w-7 items-center justify-center rounded-full bg-white font-black text-[var(--student-brand)]">{item.rank}</span></div> : <div key={`empty-${index}`} className="min-w-0 flex-1" />)}
         </div>
       </section>
-    </main>
-  )
+      <section className="mt-3 overflow-hidden rounded-[22px] border border-[var(--student-line)] bg-white">
+        {ranking.items.length === 0 && <div className="p-6 text-center"><StudentVisualIcon name="emoji_events" size={35} color="var(--student-warning)" /><h2 className="mt-2 font-extrabold">Рейтинг пока пуст</h2><p className="mt-1 text-sm text-[var(--student-ink-2)]">Получи XP за задания и появись первым.</p></div>}
+        {rest.map((item, index) => <article key={`${item.rank}-${item.displayName}`} className={`flex min-h-16 items-center gap-3 px-4 ${index ? 'border-t border-[var(--student-line)]' : ''} ${item.isMe ? 'bg-[var(--student-brand-50)]' : ''}`}><span className="w-7 text-center text-sm font-black text-[var(--student-ink-3)]">{item.rank}</span><span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--student-surface-2)] text-sm font-black text-[var(--student-brand)]">{item.displayName.trim().slice(0, 1).toUpperCase()}</span><span className="min-w-0 flex-1 truncate text-sm font-bold">{item.displayName}{item.isMe ? ' · ты' : ''}</span><span className="shrink-0 text-sm font-black text-[var(--student-brand)]">{item.xp} XP</span></article>)}
+      </section>
+      <div className="mt-3 flex items-center gap-3 rounded-2xl bg-[var(--student-warning-50)] p-4"><StudentVisualIcon name="shield" size={22} color="var(--student-warning)" /><p className="text-xs font-semibold leading-5 text-[var(--student-ink-2)]">XP начисляется сервером за новые достижения. Сброс тренажёра не уменьшает уже полученные очки.</p></div>
+    </>}
+  </main>
 }

@@ -161,7 +161,7 @@ export default function LessonsPage() {
   )
 
   return (
-    <div className="min-h-screen bg-[#F4F6FA]">
+    <div className="min-h-screen bg-[var(--student-bg)] pb-24 md:pb-0">
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6">
         <Link href="/student/online" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-700">
           <ArrowLeft size={16} aria-hidden="true" />
@@ -169,7 +169,7 @@ export default function LessonsPage() {
         </Link>
 
         <div className="block space-y-4 md:hidden">
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="rounded-[22px] border border-[var(--student-line)] bg-white p-5">
             <div className="flex items-center gap-2">
               <BookOpen size={22} className="text-[#1B3F92]" aria-hidden="true" />
               <h1 className="text-lg font-bold text-[#191B23]">Мои уроки</h1>

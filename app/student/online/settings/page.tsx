@@ -15,9 +15,9 @@ export default function SettingsPage() {
   useStudentSession()
 
   return (
-    <div className="min-h-screen bg-[#FAF8FF]">
-      <div className="mx-auto max-w-2xl space-y-5 px-4 py-6 sm:px-6">
-        <h1 className="text-xl font-bold text-[#191B23]">Настройки</h1>
+    <div className="min-h-screen bg-[var(--student-bg)] pb-24 md:pb-0">
+      <div className="mx-auto max-w-2xl space-y-4 px-4 py-5 sm:px-6">
+        <div><p className="text-[11px] font-extrabold uppercase tracking-[.12em] text-[var(--student-brand)]">Твой опыт</p><h1 className="mt-1 text-2xl font-black tracking-tight text-[var(--student-ink)]">Настройки</h1></div>
 
         <PersonalizationSettings />
         <SettingsNotifications />

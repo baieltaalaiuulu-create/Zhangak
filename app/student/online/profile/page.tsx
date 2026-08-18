@@ -115,7 +115,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAF8FF', fontFamily: 'Inter, sans-serif' }}>
+      <div className="flex min-h-screen items-center justify-center bg-[var(--student-bg)]">
         <div style={{ color: '#9CA3AF', fontSize: 14 }}>Загрузка...</div>
       </div>
     )
@@ -123,7 +123,7 @@ export default function ProfilePage() {
 
   if (loadError || !profile) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#FAF8FF] px-6 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[var(--student-bg)] px-6 text-center">
         <p className="text-sm font-semibold text-gray-600">Не удалось загрузить профиль. Проверь соединение и попробуй ещё раз.</p>
         <button
           type="button"
@@ -138,9 +138,9 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF8FF]">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-        <h1 className="mb-5 text-xl font-bold text-[#191B23]">Профиль</h1>
+    <div className="min-h-screen bg-[var(--student-bg)] pb-24 md:pb-0">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
+        <div className="mb-4"><p className="text-[11px] font-extrabold uppercase tracking-[.12em] text-[var(--student-brand)]">Личный кабинет</p><h1 className="mt-1 text-2xl font-black tracking-tight text-[var(--student-ink)]">Профиль</h1></div>
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[320px_1fr]">
           <div className="min-w-0 space-y-5">

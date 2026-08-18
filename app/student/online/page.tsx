@@ -3,8 +3,9 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpenCheck, Dumbbell, Map, RefreshCw, Sparkles } from 'lucide-react'
+import { ArrowRight, Map, RefreshCw } from 'lucide-react'
 import { useStudentSession } from '@/components/student/StudentSessionContext'
+import StudentVisualIcon from '@/components/student/StudentVisualIcon'
 import { DEFAULT_TARGET_SCORE, type StudentDashboardData } from '@/lib/student-dashboard-contract'
 import { zhangakApiRequest } from '@/lib/zhangak-api-client'
 
@@ -30,6 +31,13 @@ interface FirstPartyDashboardResponse {
     } | null
   }
 }
+
+interface LeaderboardResponse {
+  items: Array<{ rank: number; displayName: string; xp: number; isMe: boolean }>
+  myRank: number | null
+}
+
+const DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
 function dashboardFrom(response: FirstPartyDashboardResponse): StudentDashboardData {
   const { profile, summary } = response
@@ -75,6 +83,7 @@ export default function StudentOnlinePage() {
   const [profileName, setProfileName] = useState<string | null>(null)
   const [data, setData] = useState<StudentDashboardData | null>(null)
   const [summary, setSummary] = useState<FirstPartyDashboardResponse['summary'] | null>(null)
+  const [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null)
   const [targetScoreOverride, setTargetScoreOverride] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
@@ -83,9 +92,13 @@ export default function StudentOnlinePage() {
     const loadDashboard = async () => {
       setProfileName(user.fullName)
       try {
-        const response = await zhangakApiRequest<FirstPartyDashboardResponse>('/v1/platform/dashboard')
+        const [response, ranking] = await Promise.all([
+          zhangakApiRequest<FirstPartyDashboardResponse>('/v1/platform/dashboard'),
+          zhangakApiRequest<LeaderboardResponse>('/v1/platform/leaderboard').catch(() => null),
+        ])
         setData(dashboardFrom(response))
         setSummary(response.summary)
+        setLeaderboard(ranking)
       } catch {
         setLoadError(true)
       } finally {
@@ -139,6 +152,10 @@ export default function StudentOnlinePage() {
 
   const firstName = (data.profile?.full_name ?? profileName ?? 'Студент').split(' ')[0]
   const targetScore = targetScoreOverride ?? data.profile?.target_score ?? DEFAULT_TARGET_SCORE
+  const myRanking = leaderboard?.items.find(item => item.isMe) ?? null
+  const xp = myRanking?.xp ?? 0
+  const level = Math.max(1, Math.floor(xp / 500) + 1)
+  const levelProgress = xp % 500
   const continueHref = summary.courseCount > 0 ? '/student/online/roadmap' : '/student/online/practice'
   const subjects = [
     { key: 'math' as const, label: 'Дорожная карта', topicLabel: summary.courseCount > 0 ? 'Продолжай программу курса по шагам' : 'Курс появится после назначения группы', color: '#1B3F92', completed: summary.lessons.completed, total: summary.lessons.total, hoursRemaining: 0, href: '/student/online/roadmap' },
@@ -160,11 +177,11 @@ export default function StudentOnlinePage() {
               </Link>
             </div>
             <div className="mt-4 flex items-center justify-between gap-3 text-[12px] font-bold text-blue-100">
-              <span>Цель: {targetScore} баллов</span>
-              <span>{summary.lessons.completed}/{summary.lessons.total} уроков</span>
+              <span>Уровень {level} · Подготовка</span>
+              <span>{levelProgress} / 500 XP</span>
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/20">
-              <div className="h-full rounded-full bg-[#70C942] transition-all duration-700" style={{ width: `${summary.lessons.completionPercent}%` }} />
+              <div className="h-full rounded-full bg-white transition-all duration-700" style={{ width: `${Math.round(levelProgress / 5)}%` }} />
             </div>
           </header>
 
@@ -183,26 +200,38 @@ export default function StudentOnlinePage() {
               </Link>
             </section>
 
-            <section className="grid grid-cols-2 gap-3" aria-label="Текущий прогресс">
-              <Link href="/student/online/roadmap" className="rounded-2xl border border-[#DCE8FF] bg-[#F7FAFF] p-3.5">
-                <BookOpenCheck size={22} className="text-[#1B3F92]" aria-hidden="true" />
-                <p className="mt-3 text-[22px] font-black text-[#0F172A]">{summary.lessons.completionPercent}%</p>
-                <p className="text-[11px] font-bold text-[#64748B]">уроков пройдено</p>
-              </Link>
-              <Link href="/student/online/trainer" className="rounded-2xl border border-[#D8F3EC] bg-[#F4FFFC] p-3.5">
-                <Dumbbell size={22} className="text-[#0D9488]" aria-hidden="true" />
-                <p className="mt-3 text-[22px] font-black text-[#0F172A]">{summary.practice.attempts}</p>
-                <p className="text-[11px] font-bold text-[#64748B]">попыток в практике</p>
-              </Link>
+            <section className="flex items-center gap-4 rounded-[20px] border border-[#E2E8F0] bg-white p-4">
+              <div className="flex h-[94px] w-[94px] shrink-0 items-center justify-center rounded-full bg-[#F5F7FC]">
+                <div className="flex h-[74px] w-[74px] flex-col items-center justify-center rounded-full bg-white">
+                  <span className="text-2xl font-black leading-none text-[#0F172A]">—</span>
+                  <span className="text-[10px] font-bold text-[#8A96AC]">из 245</span>
+                </div>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#8A96AC]">Прогноз балла ОРТ</p>
+                <p className="mt-1.5 text-[13px] leading-5 text-[#475569]">Появится после первого полного пробного ОРТ. Короткие тесты не подменяют реальный балл.</p>
+                <span className="mt-1.5 flex items-center gap-1.5 text-xs font-bold text-[#16A34A]"><StudentVisualIcon name="flag" size={16} color="#16A34A" />Цель: {targetScore}</span>
+              </div>
             </section>
 
-            <Link href="/student/online/trainer" className="flex items-center gap-3 rounded-2xl border border-[#F2E4BB] bg-[#FFF9EA] px-4 py-3.5">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFE7A5] text-[#A66500]"><Sparkles size={22} aria-hidden="true" /></span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[14px] font-extrabold text-[#0F172A]">Тренажёр без повторов</span>
-                <span className="mt-0.5 block text-[11px] leading-4 text-[#64748B]">Выбери предмет и тему — решённые правильно вопросы больше не покажутся.</span>
-              </span>
-              <ArrowRight size={20} className="shrink-0 text-[#A66500]" aria-hidden="true" />
+            <section className="rounded-[20px] border border-[#E2E8F0] bg-white p-4">
+              <div className="flex items-center gap-2"><StudentVisualIcon name="local_fire_department" size={20} color="#D97706" /><span className="min-w-0 flex-1 text-sm font-extrabold">Серия начнётся сегодня</span><span className="text-xs font-semibold text-[#8A96AC]">цель — заниматься регулярно</span></div>
+              <div className="mt-3 flex gap-1.5">
+                {DAYS.map((day, index) => <div key={day} className="flex min-w-0 flex-1 flex-col items-center gap-1.5"><span className={`flex h-[34px] w-[34px] items-center justify-center rounded-full ${index === 0 ? 'bg-[#D97706]' : 'bg-[#F5F7FC]'}`}><StudentVisualIcon name={index === 0 ? 'local_fire_department' : 'lock'} size={index === 0 ? 19 : 15} color={index === 0 ? '#FFFFFF' : '#8A96AC'} /></span><span className={`text-[10px] font-semibold ${index === 0 ? 'text-[#D97706]' : 'text-[#8A96AC]'}`}>{day}</span></div>)}
+              </div>
+            </section>
+
+            <div>
+              <p className="px-0.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#8A96AC]">Тренируй по одному направлению</p>
+              <div className="mt-2.5 space-y-2.5">
+                {[{ label: 'Математика', icon: 'calculate', color: '#1B3F92', bg: '#E8EDFA', section: 'math' }, { label: 'Кыргыз тили', icon: 'translate', color: '#16A34A', bg: '#E8FAEF', section: 'kyr' }].map(item => <Link key={item.section} href="/student/online/trainer" className="flex items-center gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-3"><span className="flex h-[42px] w-[42px] items-center justify-center rounded-2xl" style={{ background: item.bg }}><StudentVisualIcon name={item.icon} size={22} color={item.color} /></span><span className="min-w-0 flex-1"><span className="block text-sm font-bold text-[#0F172A]">{item.label}</span><span className="block text-[11px] text-[#8A96AC]">Выбери раздел и сложность</span></span><StudentVisualIcon name="play_circle" size={22} color="#1B3F92" /></Link>)}
+              </div>
+            </div>
+
+            <Link href="/student/online/leaderboard" className="flex items-center gap-3 rounded-[20px] border border-[#D97706] bg-[#FFF6E5] px-4 py-3.5">
+              <StudentVisualIcon name="emoji_events" size={30} color="#D97706" />
+              <span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-extrabold text-[#0F172A]">{myRanking ? `${myRanking.rank}-е место в рейтинге` : 'Начни набирать XP'}</span><span className="block truncate text-xs text-[#475569]">{xp.toLocaleString('ru-RU')} XP за выполненные задания</span></span>
+              <StudentVisualIcon name="chevron_right" size={22} color="#8A96AC" filled={false} />
             </Link>
           </div>
         </div>

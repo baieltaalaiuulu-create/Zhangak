@@ -14,6 +14,7 @@
     "migration:preflight": "node scripts/supabase-migration-preflight.js",
     "content:manifest": "node scripts/build-sorted-data-manifest.js",
     "content:import": "node scripts/import_content.mjs --dry-run",
+    "materials:import": "node scripts/import-reviewed-materials.mjs --dry-run",
     "universities:import": "node scripts/import-university-catalog.mjs --dry-run",
     "import:legacy-demo": "node scripts/import-supabase-demo-content.js --dry-run",
     "package:release": "node scripts/package-release.js",

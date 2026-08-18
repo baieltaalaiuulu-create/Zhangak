@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { FormEvent, useEffect, useState } from 'react'
-import { ArrowLeft, BrainCircuit, LoaderCircle, Send, ShieldCheck } from 'lucide-react'
+import { BrainCircuit, LoaderCircle, Send, ShieldCheck } from 'lucide-react'
 
 import { useStudentSession } from '@/components/student/StudentSessionContext'
 import { ZhangakApiError, zhangakApiJson, zhangakApiRequest } from '@/lib/zhangak-api-client'
@@ -84,13 +84,9 @@ export default function AiMentorChatPage() {
   }
 
   return (
-    <main className="min-h-[calc(100dvh-64px-env(safe-area-inset-bottom))] bg-[#F4F6FA] px-4 py-7 sm:px-6 sm:py-10">
+    <main className="min-h-[calc(100dvh-64px-env(safe-area-inset-bottom))] bg-[var(--student-bg)] px-4 pb-28 pt-5 sm:px-6 sm:py-10">
       <section className="mx-auto w-full max-w-3xl">
-        <Link href="/student/online" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-white hover:text-slate-900">
-          <ArrowLeft size={17} aria-hidden="true" /> На главную
-        </Link>
-
-        <div className="mt-4 overflow-hidden rounded-3xl border border-indigo-100 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-[24px] border border-[var(--student-line)] bg-white">
           <header className="bg-gradient-to-br from-[#0D1E4A] via-[#1B3F92] to-[#6C3DE0] px-6 py-7 text-white sm:px-9">
             <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20"><BrainCircuit size={25} aria-hidden="true" /></span>
             <p className="mt-4 text-sm font-bold uppercase tracking-[0.16em] text-blue-100">AI-коуч Zhangak</p>

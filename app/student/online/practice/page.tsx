@@ -30,7 +30,7 @@ type View = 'catalog' | 'start' | 'question' | 'results' | 'review'
 
 function LoadingScreen() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F4F6FA] font-sans">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--student-bg)] font-sans">
       <div className="text-sm text-gray-500">Загрузка тренажёра…</div>
     </div>
   )
@@ -89,7 +89,8 @@ function Catalog({
     <div className="mx-auto max-w-5xl">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-[#191B23]">{title}</h1>
+          <p className="text-[11px] font-extrabold uppercase tracking-[.12em] text-[var(--student-brand)]">Контроль знаний</p>
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-[var(--student-ink)]">{title}</h1>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-500">
             {description}
           </p>
@@ -115,7 +116,7 @@ function Catalog({
               key={test.id}
               type="button"
               onClick={() => onSelect(test)}
-              className="group flex min-h-52 flex-col rounded-2xl border border-gray-100 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3F92]"
+            className="group flex min-h-52 flex-col rounded-[22px] border border-[var(--student-line)] bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-blue-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3F92]"
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-[#1B3F92]">{subjectLabel(test.subject)}</span>
@@ -170,7 +171,7 @@ export default function PracticePage() {
   const [flowError, setFlowError] = useState<string | null>(null)
   const requestedType = searchParams.get('type') === 'mock' ? 'mock' : null
   const visibleTests = useMemo(
-    () => requestedType ? tests.filter(test => test.testType === requestedType) : tests,
+    () => requestedType ? tests.filter(test => test.testType === requestedType) : tests.filter(test => test.testType !== 'bank'),
     [requestedType, tests],
   )
 
@@ -360,7 +361,7 @@ export default function PracticePage() {
   if (loading) return <LoadingScreen />
 
   return (
-    <div className="min-h-screen bg-[#F4F6FA] px-4 py-6 sm:px-6">
+    <div className="min-h-screen bg-[var(--student-bg)] px-4 pb-28 pt-5 sm:px-6 sm:py-6">
       {catalogError ? <ErrorState message={catalogError} onRetry={() => void loadCatalog()} /> : (
         <>
           {view === 'catalog' && <Catalog tests={visibleTests} onSelect={selectTest} requestedType={requestedType} />}

@@ -7,6 +7,7 @@ import { DEFAULT_TARGET_SCORE } from '@/lib/student-dashboard-contract'
 import { redirectForRole } from '@/lib/auth-redirect'
 import { PLATFORM_ORIGIN } from '@/lib/site-hosts'
 import { getCurrentZhangakUser, logoutZhangak, type ZhangakSessionUser } from '@/lib/zhangak-auth-client'
+import { zhangakApiRequest } from '@/lib/zhangak-api-client'
 import StudentSidebar from './StudentSidebar'
 import StudentTopbar from './StudentTopbar'
 import BottomNav from './BottomNav'
@@ -40,6 +41,7 @@ export default function StudentLayout({ children }: Props) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [targetScore, setTargetScore] = useState(DEFAULT_TARGET_SCORE)
   const [streak, setStreak] = useState(0)
+  const [xp, setXp] = useState(0)
   const [level, setLevel] = useState(1)
   const [sessionUser, setSessionUser] = useState<ZhangakSessionUser | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
@@ -90,7 +92,14 @@ export default function StudentLayout({ children }: Props) {
         // Until that learning slice is populated, a valid account must still
         // reach its workspace without a legacy Supabase request or redirect.
         setStreak(0)
-        setLevel(1)
+        void zhangakApiRequest<{ items: Array<{ xp: number; isMe: boolean }> }>('/v1/platform/leaderboard')
+          .then(result => {
+            const ownXp = result.items.find(item => item.isMe)?.xp ?? 0
+            if (!active) return
+            setXp(ownXp)
+            setLevel(Math.max(1, Math.floor(ownXp / 500) + 1))
+          })
+          .catch(() => {})
       } catch {
         if (active) setAuthError(true)
       }
@@ -167,15 +176,16 @@ export default function StudentLayout({ children }: Props) {
 
   return (
     <StudentSessionProvider user={sessionUser} onProfileUpdated={applyProfileUpdate}>
-      <div className="min-h-screen bg-[#FAF8FF]">
+      <div className="student-visual min-h-screen bg-[#F1F4FB] md:bg-[#FAF8FF]">
         <StudentSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} fullName={fullName} avatarUrl={avatarUrl} profileColor={sessionUser.profileColor} />
 
-        <div className="md:ml-64">
+        <div className="mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden bg-[#F1F4FB] md:ml-64 md:max-w-none md:overflow-visible md:bg-[#FAF8FF]">
           <StudentTopbar
             fullName={fullName}
             avatarUrl={avatarUrl}
             profileColor={sessionUser.profileColor}
             streak={streak}
+            xp={xp}
             targetScore={targetScore}
             level={level}
             unreadCount={0}

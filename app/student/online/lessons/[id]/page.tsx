@@ -316,7 +316,7 @@ export default function LessonDetailPage() {
   )
 
   return (
-    <div className="min-h-screen bg-[#F4F6FA]">
+    <div className="min-h-screen bg-[var(--student-bg)] pb-24 md:pb-0">
       <div className="block md:hidden">
         <div className="flex items-center gap-3 border-b border-gray-100 bg-white px-4 py-3">
           <Link href="/student/online/lessons" className="flex min-h-11 shrink-0 items-center gap-1 text-sm font-bold text-gray-600">
