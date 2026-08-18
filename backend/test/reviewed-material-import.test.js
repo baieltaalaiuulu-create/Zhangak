@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
@@ -7,7 +8,7 @@ import { buildReviewedMaterialPlan, materialStorageKey, reviewedMaterialSummary,
 
 const sourceRoot = resolve(import.meta.dirname, '../../sorted_data')
 
-test('reviewed PDF plan is an exact, chat-free allowlist', async () => {
+test('reviewed PDF plan is an exact, chat-free allowlist', { skip: !existsSync(sourceRoot) }, async () => {
   const plan = await buildReviewedMaterialPlan(sourceRoot)
   const summary = reviewedMaterialSummary(plan)
   assert.equal(summary.materialCount, 34)
