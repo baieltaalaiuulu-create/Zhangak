@@ -249,6 +249,18 @@ test('migration 015 stores a verified id and grants playback no authority', asyn
   assert.ok(!applied.includes('video_id'), 'migration 006 must not be edited')
 })
 
+test('a video material can actually be published, and a file still cannot', async () => {
+  const source = await readFile(path.join(backendRoot, 'src/routes/admin-learning.js'), 'utf8')
+  const start = source.indexOf("PATCH('/v1/admin/materials/:materialId'")
+  assert.ok(start > 0, 'there must be a way to publish a non-file material')
+  const route = source.slice(start, source.indexOf("GET('/v1/admin/courses'"))
+  assert.ok(route.includes('adminContentManager(config, req)'), 'publishing must stay role-gated')
+  assert.ok(route.includes("['rich_text', 'video'].includes(row.material_type)"), 'only non-file materials may publish here')
+  assert.ok(route.includes('material_review_required'), 'a document or image must still go through review')
+  assert.ok(route.includes("!row.video_id && body.isPublished"), 'a video without a verified id must not be publishable')
+  assert.ok(route.includes('publish_lesson_material'), 'publishing must be audited')
+})
+
 test('the admin write path normalizes video references before storing them', async () => {
   const source = await readFile(path.join(backendRoot, 'src/routes/admin-learning.js'), 'utf8')
   assert.ok(source.includes("from '../youtube.js'"), 'admin writes must use the shared normalizer')

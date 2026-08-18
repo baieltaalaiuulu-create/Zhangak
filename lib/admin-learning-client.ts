@@ -409,6 +409,15 @@ export async function uploadAdminLessonMaterial(lessonId: number, fields: { mate
   return parseAdminLessonMaterial(result.material)
 }
 
+/**
+ * Publishes or hides a rich-text or video material. Files keep going through
+ * `reviewAdminLessonMaterial`, which records the human file inspection.
+ */
+export async function setAdminMaterialPublished(materialId: number, isPublished: boolean): Promise<AdminLessonMaterial> {
+  const result = record(await zhangakApiJson<unknown>(`/v1/admin/materials/${lessonPath(materialId)}`, 'PATCH', { isPublished }), 'материал урока')
+  return parseAdminLessonMaterial(result.material)
+}
+
 export async function reviewAdminLessonMaterial(materialId: number, status: 'clean' | 'rejected', publish = false): Promise<AdminLessonMaterial> {
   const result = record(await zhangakApiJson<unknown>(`/v1/admin/materials/${lessonPath(materialId)}/review`, 'POST', { status, publish }), 'проверенный материал')
   return parseAdminLessonMaterial(result.material)

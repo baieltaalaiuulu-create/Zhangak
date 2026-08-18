@@ -566,6 +566,51 @@ POST('/v1/admin/materials/:materialId/review', async ({ req, params, config }) =
   return { status: 200, body: { material: publicMaterial(result.material) } }
 })
 
+/**
+ * Publish or hide a non-file material.
+ *
+ * Rich text and video carry no uploaded object, so there is nothing for an
+ * antivirus/review queue to clear: they are created `clean` but unpublished,
+ * and this is how an administrator makes one visible after checking it.
+ *
+ * Documents and images are deliberately excluded. They must continue to go
+ * through `/review`, which is the step that records who inspected the file.
+ */
+PATCH('/v1/admin/materials/:materialId', async ({ req, params, config }) => {
+  const actor = await adminContentManager(config, req)
+  const materialId = positiveId(params.materialId, 'material_id')
+  const body = objectBody(await readJson(req, 2_000), 'invalid_material_patch')
+  hasOnly(body, { isPublished: 'is_published' }, 'invalid_material_patch', { required: ['isPublished'] })
+  if (typeof body.isPublished !== 'boolean') {
+    throw new HttpError(400, 'Некорректный статус публикации', 'invalid_material_publish')
+  }
+  const material = await transaction(async client => {
+    const current = await client.query(
+      'SELECT id, material_type, video_id FROM lesson_materials WHERE id = $1 FOR UPDATE',
+      [materialId],
+    )
+    const row = current.rows[0]
+    if (!row) throw new HttpError(404, 'Материал не найден', 'material_not_found')
+    if (!['rich_text', 'video'].includes(row.material_type)) {
+      throw new HttpError(409, 'Файл публикуется только после проверки', 'material_review_required')
+    }
+    // A video row without a verified id would render an empty player.
+    if (row.material_type === 'video' && !row.video_id && body.isPublished) {
+      throw new HttpError(409, 'Видео нужно добавить заново: ссылка не распознана', 'invalid_material_video_url')
+    }
+    const updated = await client.query(
+      `UPDATE lesson_materials SET is_published = $2, updated_at = now()
+        WHERE id = $1
+        RETURNING id, lesson_id, material_type, title, position, body_markdown, external_url,
+                  mime_type, byte_size, is_published, scan_status, original_filename, created_at`,
+      [materialId, body.isPublished],
+    )
+    await audit(client, actor, body.isPublished ? 'publish_lesson_material' : 'hide_lesson_material', 'lesson_material', materialId, [row.material_type])
+    return updated.rows[0]
+  })
+  return { status: 200, body: { material: publicMaterial(material) } }
+})
+
 GET('/v1/admin/courses', async ({ req, config, query: searchParams }) => {
   await adminContentManager(config, req)
   const { limit, offset } = pagination(searchParams)

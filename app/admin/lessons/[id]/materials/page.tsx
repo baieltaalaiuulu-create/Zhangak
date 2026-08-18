@@ -2,13 +2,14 @@
 
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, CheckCircle2, FileText, LoaderCircle, Upload, Video, XCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Eye, EyeOff, FileText, LoaderCircle, Upload, Video, XCircle } from 'lucide-react'
 
 import AdminTopbar from '@/components/admin/AdminTopbar'
 import {
   createAdminTextMaterial,
   listAdminLessonMaterials,
   reviewAdminLessonMaterial,
+  setAdminMaterialPublished,
   type AdminLessonMaterial,
   uploadAdminLessonMaterial,
 } from '@/lib/admin-learning-client'
@@ -69,6 +70,14 @@ export default function AdminLessonMaterialsPage({ params }: { params: Promise<{
     } catch (cause) { setError(message(cause)) } finally { setSaving(false) }
   }
 
+  // Rich text and video carry no uploaded file, so they are published here
+  // rather than through the file-review queue.
+  const setPublished = async (material: AdminLessonMaterial, isPublished: boolean) => {
+    if (saving || !lessonId) return
+    setSaving(true); setError(null)
+    try { await setAdminMaterialPublished(material.id, isPublished); await load(lessonId) } catch (cause) { setError(message(cause)) } finally { setSaving(false) }
+  }
+
   const review = async (material: AdminLessonMaterial, status: 'clean' | 'rejected') => {
     if (saving || !lessonId) return
     setSaving(true); setError(null)
@@ -94,7 +103,7 @@ export default function AdminLessonMaterialsPage({ params }: { params: Promise<{
           </form>
           {error && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>}
         </section>
-        <section className="mt-5 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6"><h2 className="text-base font-black text-[#191B23]">Материалы</h2>{loading ? <p className="mt-4 flex items-center gap-2 text-sm text-gray-500"><LoaderCircle className="animate-spin" size={17} />Загружаем…</p> : items.length === 0 ? <p className="mt-4 text-sm text-gray-500">Материалов пока нет.</p> : <div className="mt-4 space-y-3">{items.map(item => <article key={item.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-gray-50 p-4"><span className="rounded-lg bg-white p-2 text-[#1B3F92]">{item.materialType === 'video' ? <Video size={18} /> : <FileText size={18} />}</span><div className="min-w-0 flex-1"><p className="font-bold text-gray-800">{item.position}. {item.title}</p><p className="mt-1 text-xs text-gray-500">{statusLabel(item.scanStatus)} · {item.isPublished ? 'опубликован' : 'скрыт'}</p></div>{item.scanStatus === 'pending' && <div className="flex gap-2"><button onClick={() => void review(item, 'clean')} disabled={saving} className="inline-flex min-h-10 items-center gap-1 rounded-lg bg-emerald-600 px-3 text-xs font-bold text-white"><CheckCircle2 size={15} />Подтвердить и опубликовать</button><button onClick={() => void review(item, 'rejected')} disabled={saving} className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-red-200 px-3 text-xs font-bold text-red-700"><XCircle size={15} />Отклонить</button></div>}</article>)}</div>}</section>
+        <section className="mt-5 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6"><h2 className="text-base font-black text-[#191B23]">Материалы</h2>{loading ? <p className="mt-4 flex items-center gap-2 text-sm text-gray-500"><LoaderCircle className="animate-spin" size={17} />Загружаем…</p> : items.length === 0 ? <p className="mt-4 text-sm text-gray-500">Материалов пока нет.</p> : <div className="mt-4 space-y-3">{items.map(item => <article key={item.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-gray-50 p-4"><span className="rounded-lg bg-white p-2 text-[#1B3F92]">{item.materialType === 'video' ? <Video size={18} /> : <FileText size={18} />}</span><div className="min-w-0 flex-1"><p className="font-bold text-gray-800">{item.position}. {item.title}</p><p className="mt-1 text-xs text-gray-500">{statusLabel(item.scanStatus)} · {item.isPublished ? 'опубликован' : 'скрыт'}</p></div>{['rich_text', 'video'].includes(item.materialType) && <button onClick={() => void setPublished(item, !item.isPublished)} disabled={saving} className={`inline-flex min-h-10 items-center gap-1 rounded-lg px-3 text-xs font-bold ${item.isPublished ? 'border border-gray-200 text-gray-700' : 'bg-emerald-600 text-white'}`}>{item.isPublished ? <><EyeOff size={15} />Скрыть</> : <><Eye size={15} />Опубликовать</>}</button>}{item.scanStatus === 'pending' && <div className="flex gap-2"><button onClick={() => void review(item, 'clean')} disabled={saving} className="inline-flex min-h-10 items-center gap-1 rounded-lg bg-emerald-600 px-3 text-xs font-bold text-white"><CheckCircle2 size={15} />Подтвердить и опубликовать</button><button onClick={() => void review(item, 'rejected')} disabled={saving} className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-red-200 px-3 text-xs font-bold text-red-700"><XCircle size={15} />Отклонить</button></div>}</article>)}</div>}</section>
       </main>
     </div>
   )
