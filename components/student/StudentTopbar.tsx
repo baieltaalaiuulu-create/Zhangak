@@ -2,12 +2,16 @@
 
 import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
-import { Search, Bell } from 'lucide-react'
+import { Bell, Flame, Search, Star, Target } from 'lucide-react'
+import { PROFILE_COLOR_OPTIONS, type ProfileColor } from '@/lib/profile-preferences'
+import StudentVisualIcon from './StudentVisualIcon'
 
 interface Props {
   fullName: string
   avatarUrl: string | null
+  profileColor: ProfileColor
   streak: number
+  xp: number
   targetScore: number
   level: number
   unreadCount?: number
@@ -18,28 +22,36 @@ function Pill({ children, tone = 'gray', className = '' }: { children: ReactNode
   const toneClass = tone === 'orange'
     ? 'bg-orange-50 text-orange-600'
     : tone === 'blue'
-      ? 'bg-[#EEF2FF] text-[#1B4FD8]'
+      ? 'bg-[#EEF2FF] text-[#1B3F92]'
       : 'bg-gray-50 text-gray-600'
 
   return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[11px] font-semibold sm:px-3 sm:text-xs ${toneClass} ${className}`}>
+    <span className={`items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[11px] font-semibold sm:px-3 sm:text-xs ${toneClass} ${className}`}>
       {children}
     </span>
   )
 }
 
-export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore, level, unreadCount = 0, onLogout }: Props) {
+export default function StudentTopbar({ fullName, avatarUrl, profileColor, streak, xp, targetScore, level, unreadCount = 0, onLogout }: Props) {
   const [notifOpen, setNotifOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const initial = fullName?.[0]?.toUpperCase() ?? '?'
+  const accent = PROFILE_COLOR_OPTIONS[profileColor].color
 
   return (
-    <header className="sticky top-0 z-20 flex h-[60px] items-center gap-3 border-b border-[#C3C6D7]/50 bg-white px-4 sm:px-6">
-      {/* Logo — only needed on mobile, where the sidebar (which normally
-          carries it) is hidden in favor of the bottom nav. */}
-      <div className="flex items-center gap-2 md:hidden">
-        <span className="text-base font-extrabold tracking-tight text-[#1B4FD8]">ZHANGAK</span>
-        <span className="h-1.5 w-1.5 rounded-full" style={{ background: '#8B5CF6' }} />
+    <header className="student-safe-top sticky top-0 z-20 flex min-h-[56px] items-center gap-3 border-b border-[#E2E8F0] bg-white px-4 sm:px-6">
+      {/* Compact HUD for the mobile-first student experience. It only shows
+          values the first-party backend currently owns, never mock XP. */}
+      <div className="grid min-w-0 flex-1 grid-cols-3 items-center gap-2 md:hidden">
+        <span className="inline-flex items-center gap-1 text-[15px] font-extrabold text-[#0F172A]">
+          <StudentVisualIcon name="local_fire_department" size={20} color="#D97706" /> {streak}
+        </span>
+        <span className="inline-flex min-w-0 items-center justify-center gap-1 text-[15px] font-extrabold text-[#0F172A]">
+          <StudentVisualIcon name="bolt" size={20} color="#1B3F92" /> <span className="truncate">{xp.toLocaleString('ru-RU')}</span>
+        </span>
+        <span className="inline-flex items-center justify-center gap-1 rounded-full bg-[#E8FAEF] px-2.5 py-1.5 text-[12px] font-extrabold text-[#16A34A]">
+          <StudentVisualIcon name="flag" size={18} color="#16A34A" /> {targetScore}
+        </span>
       </div>
 
       <div className="relative hidden max-w-xs flex-1 md:block">
@@ -47,21 +59,32 @@ export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore
         <input
           type="text"
           placeholder="Поиск уроков, тем..."
-          className="w-full rounded-full bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B4FD8]/20"
+          className="w-full rounded-full bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3F92]/20"
         />
       </div>
 
       <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-        {streak > 0 && <Pill tone="orange">🔥 {streak} {streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'}</Pill>}
-        <Pill tone="blue">🎯 {targetScore} балл</Pill>
-        <Pill className="hidden md:inline-flex">⭐ Ур. {level}</Pill>
+        {streak > 0 && (
+          <Pill tone="orange" className="hidden md:inline-flex">
+            <Flame size={14} aria-hidden="true" />
+            {streak} {streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'}
+          </Pill>
+        )}
+        <Pill tone="blue" className="hidden md:inline-flex">
+          <Target size={14} aria-hidden="true" />
+          {targetScore} балл
+        </Pill>
+        <Pill className="hidden md:inline-flex">
+          <Star size={14} aria-hidden="true" />
+          Ур. {level}
+        </Pill>
 
-        <div className="relative">
+        <div className="relative hidden md:block">
           <button
             type="button"
             onClick={() => setNotifOpen(v => !v)}
             aria-label="Уведомления"
-            className="relative rounded-full p-2 text-gray-500 hover:bg-gray-50"
+            className="relative flex min-h-11 min-w-11 items-center justify-center rounded-full text-gray-500 hover:bg-gray-50"
           >
             <Bell size={18} />
             {unreadCount > 0 && (
@@ -82,10 +105,11 @@ export default function StudentTopbar({ fullName, avatarUrl, streak, targetScore
             type="button"
             onClick={() => setMenuOpen(v => !v)}
             aria-label="Меню профиля"
-            className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#1B4FD8] text-xs font-bold text-white"
+            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full text-xs font-bold text-white"
+            style={{ backgroundColor: accent }}
           >
             {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL, no next/image domain config in this project
+              // eslint-disable-next-line @next/next/no-img-element -- externally hosted HTTPS avatar URL, no next/image domain config in this project
               <img src={avatarUrl} alt={fullName} className="h-full w-full object-cover" />
             ) : (
               initial

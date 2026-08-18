@@ -11,7 +11,7 @@ export default function AchievementsCard({ streak, questionsSolved, mocksComplet
   const items = [
     { icon: Flame, label: 'Дней подряд', value: streak, color: '#EF4444', bg: '#FEF2F2' },
     { icon: CheckCircle2, label: 'Вопросов решено', value: questionsSolved, color: '#10B981', bg: '#F0FDF4' },
-    { icon: ClipboardList, label: 'Пробных ОРТ', value: mocksCompleted, color: '#1B4FD8', bg: '#EEF2FF' },
+    { icon: ClipboardList, label: 'Пробных ОРТ', value: mocksCompleted, color: '#1B3F92', bg: '#EEF2FF' },
     { icon: BookOpen, label: 'Уроков пройдено', value: lessonsCompleted, color: '#7C3AED', bg: '#F5F3FF' },
   ]
 

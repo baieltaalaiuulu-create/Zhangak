@@ -1,5 +1,6 @@
 import { Heart, ExternalLink } from 'lucide-react'
 import type { University } from '@/lib/universities-data'
+import { UniversityTypeIcon } from './UniversityVisuals'
 
 interface Props {
   university: University
@@ -8,7 +9,8 @@ interface Props {
 }
 
 function formatCost(cost: number | null): string {
-  return cost == null ? 'Бесплатно' : `от ${cost.toLocaleString('ru')} сом/год`
+  if (cost == null) return 'Не указано'
+  return cost === 0 ? 'Бесплатно' : `от ${cost.toLocaleString('ru')} сом/год`
 }
 
 export default function UniversityDetailHeader({ university: u, isFavorite, onToggleFavorite }: Props) {
@@ -20,7 +22,7 @@ export default function UniversityDetailHeader({ university: u, isFavorite, onTo
             // eslint-disable-next-line @next/next/no-img-element -- admin-entered external logo URL, no next/image domain config
             <img src={u.logoUrl} alt={u.shortName} className="h-16 w-16 shrink-0 rounded-2xl object-cover" />
           ) : (
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gray-50 text-4xl">{u.emoji}</span>
+            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-[#6C3DE0]"><UniversityTypeIcon type={u.type} size={30} /></span>
           )}
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">{u.name}</h1>
@@ -37,18 +39,19 @@ export default function UniversityDetailHeader({ university: u, isFavorite, onTo
           <button
             type="button"
             onClick={onToggleFavorite}
-            className={`flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-bold transition-colors ${
+            aria-pressed={isFavorite}
+            className={`flex min-h-11 items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-bold transition-colors ${
               isFavorite ? 'border-red-200 bg-red-50 text-red-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
-            <Heart size={15} fill={isFavorite ? '#EF4444' : 'none'} /> В избранное
+            <Heart size={15} fill={isFavorite ? '#EF4444' : 'none'} aria-hidden="true" /> {isFavorite ? 'В избранном' : 'В избранное'}
           </button>
           {u.website && (
             <a
               href={u.website}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90"
+              className="flex min-h-11 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90"
               style={{ background: 'linear-gradient(135deg, #6C3DE0 0%, #4338CA 100%)' }}
             >
               Перейти на сайт <ExternalLink size={14} />
@@ -65,7 +68,7 @@ export default function UniversityDetailHeader({ university: u, isFavorite, onTo
           <div className="text-[11px] text-gray-400">Специальностей</div>
         </div>
         <div className="rounded-xl bg-gray-50/70 p-3 text-center">
-          <div className="text-lg font-extrabold text-gray-900">{u.minScore}</div>
+          <div className="text-lg font-extrabold text-gray-900">{u.minScore ?? '—'}</div>
           <div className="text-[11px] text-gray-400">Минимальный балл</div>
         </div>
         <div className="rounded-xl bg-gray-50/70 p-3 text-center">

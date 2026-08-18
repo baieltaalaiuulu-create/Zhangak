@@ -1,149 +1,201 @@
 'use client'
+
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useCallback, useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
 import {
-  fetchLessons,
-  fetchLessonById,
-  fetchCompletedLessonIds,
-  computeLessonStatuses,
-  markLessonStarted,
-  LESSON_SUBJECT_META,
-  type Lesson,
-} from '@/lib/lessons-data'
-import {
-  fetchPracticeTest,
-  fetchQuestions,
-  fetchPreviousScore,
-  savePracticeResult,
-  type PracticeTest,
-  type PracticeQuestion,
-  type AnswerLetter,
-} from '@/lib/practice-data'
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  Calculator,
+  CheckCircle2,
+  Clock3,
+  ExternalLink,
+  FileText,
+  Languages,
+  MessageCircle,
+  RefreshCw,
+  Shapes,
+  ShieldCheck,
+  Video,
+} from 'lucide-react'
+
+import { useStudentSession } from '@/components/student/StudentSessionContext'
 import UpNextLesson from '@/components/student/UpNextLesson'
 import LessonSidebarList from '@/components/student/LessonSidebarList'
 import MobileLessonVideo from '@/components/student/mobile/MobileLessonVideo'
 import MobileAIHelp from '@/components/student/mobile/MobileAIHelp'
-import MobileNextStepCard from '@/components/student/mobile/MobileNextStepCard'
-import MobileLessonPractice, { type LessonAnswerEntry } from '@/components/student/mobile/MobileLessonPractice'
-import MobileLessonComplete from '@/components/student/mobile/MobileLessonComplete'
-import { ChevronDown } from 'lucide-react'
+import {
+  PLATFORM_LESSON_SUBJECT_META,
+  completePlatformLesson,
+  completedPlatformLessonIds,
+  computePlatformLessonStatuses,
+  fetchPlatformLesson,
+  fetchPlatformLessons,
+  type PlatformLesson,
+  type PlatformLessonSubject,
+} from '@/lib/platform-lessons'
+import { ZhangakApiError } from '@/lib/zhangak-api-client'
+import { fetchPlatformLessonMaterials, type PlatformLessonMaterial } from '@/lib/platform-materials'
 
-function getYoutubeEmbed(url: string): string {
-  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)
-  return match ? `https://www.youtube.com/embed/${match[1]}` : url
+const SUBJECT_ICON = {
+  math: Calculator,
+  kyr: Languages,
+  other: Shapes,
+} satisfies Record<PlatformLessonSubject, typeof BookOpen>
+
+function youtubeEmbedUrl(value: string | null): string | null {
+  if (!value) return null
+  try {
+    const url = new URL(value)
+    let id: string | null = null
+    if (url.hostname === 'youtu.be') id = url.pathname.split('/').filter(Boolean)[0] ?? null
+    if (url.hostname === 'youtube.com' || url.hostname === 'www.youtube.com' || url.hostname === 'm.youtube.com') {
+      id = url.searchParams.get('v')
+      if (!id && url.pathname.startsWith('/embed/')) id = url.pathname.split('/')[2] ?? null
+    }
+    return id && /^[a-zA-Z0-9_-]{6,32}$/.test(id) ? `https://www.youtube.com/embed/${id}` : null
+  } catch {
+    return null
+  }
 }
 
-const STEPS = ['Теория', 'Пример', 'Тренажёр', 'Мини-тест']
-const XP_PER_CORRECT = 10
-const XP_NO_QUESTIONS = 50
+function unavailableMessage(error: unknown): string {
+  if (error instanceof ZhangakApiError) {
+    if (error.code === 'backend_unavailable' || error.status === 503) {
+      return 'Учебный сервис временно недоступен.'
+    }
+    return error.message
+  }
+  return 'Не удалось получить урок из учебного сервиса.'
+}
 
-const MATERIALS = [
-  { icon: '📄', label: 'Конспект' },
-  { icon: '🧮', label: 'Формулы' },
-  { icon: '✏️', label: 'ДЗ' },
-]
+async function requestLessonPage(lessonId: string): Promise<{ detail: PlatformLesson; catalog: PlatformLesson[] }> {
+  const detail = await fetchPlatformLesson(lessonId)
+  try {
+    const catalog = await fetchPlatformLessons()
+    return {
+      detail,
+      catalog: catalog.some(item => item.id === detail.id) ? catalog : [...catalog, detail],
+    }
+  } catch {
+    return { detail, catalog: [detail] }
+  }
+}
 
-type LessonStep = 'video' | 'practice' | 'complete'
+function isUnavailableLesson(error: unknown): boolean {
+  return (error instanceof ZhangakApiError && (error.status === 404 || error.code === 'lesson_not_found'))
+    || error instanceof Error && error.message === 'Некорректный id урока'
+}
 
 export default function LessonDetailPage() {
-  const router = useRouter()
+  // StudentLayout already established the first-party HttpOnly-cookie session.
+  useStudentSession()
   const params = useParams<{ id: string }>()
   const lessonId = params.id
 
   const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState(false)
-  const [lesson, setLesson] = useState<Lesson | null>(null)
-  const [allLessons, setAllLessons] = useState<Lesson[]>([])
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
-  const [studentId, setStudentId] = useState<string | null>(null)
-  const [practiceTest, setPracticeTest] = useState<PracticeTest | null>(null)
-  const [lessonQuestions, setLessonQuestions] = useState<PracticeQuestion[]>([])
-  const [practiceScore, setPracticeScore] = useState<number | null>(null)
-  const [askText, setAskText] = useState('')
-  const [askSent, setAskSent] = useState(false)
-  const [askTeacherOpen, setAskTeacherOpen] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [notFound, setNotFound] = useState(false)
+  const [lesson, setLesson] = useState<PlatformLesson | null>(null)
+  const [allLessons, setAllLessons] = useState<PlatformLesson[]>([])
+  const [materials, setMaterials] = useState<PlatformLessonMaterial[]>([])
   const [videoWatched, setVideoWatched] = useState(false)
-  const startedRef = useRef(false)
+  const [completionPending, setCompletionPending] = useState(false)
+  const [completionError, setCompletionError] = useState<string | null>(null)
 
-  // ── Mobile inline lesson flow state ─────────────────────────────────────
-  const [lessonStep, setLessonStep] = useState<LessonStep>('video')
-  const [finishedAnswers, setFinishedAnswers] = useState<LessonAnswerEntry[] | null>(null)
+  const loadLesson = useCallback(async () => {
+    try {
+      const result = await requestLessonPage(lessonId)
+      setLesson(result.detail)
+      setAllLessons(result.catalog)
+    } catch (error) {
+      if (isUnavailableLesson(error)) {
+        setNotFound(true)
+      } else {
+        setLoadError(unavailableMessage(error))
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [lessonId])
 
   useEffect(() => {
-    const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
+    let active = true
+    void requestLessonPage(lessonId)
+      .then(result => {
+        if (!active) return
+        setLesson(result.detail)
+        setAllLessons(result.catalog)
+        // A temporary material-service error must not hide the otherwise
+        // valid lesson. The lesson route remains the source of truth.
+        void fetchPlatformLessonMaterials(lessonId)
+          .then(items => { if (active) setMaterials(items) })
+          .catch(() => { if (active) setMaterials([]) })
+      })
+      .catch(error => {
+        if (!active) return
+        if (isUnavailableLesson(error)) setNotFound(true)
+        else setLoadError(unavailableMessage(error))
+      })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [lessonId])
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type')
-        .eq('id', user.id)
-        .single()
+  const retryLoad = () => {
+    setLoading(true)
+    setLoadError(null)
+    setNotFound(false)
+    void loadLesson()
+  }
 
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
-
-      setStudentId(user.id)
-
+  const completeLesson = useCallback(async () => {
+    if (!lesson || lesson.completionMode !== 'self' || completionPending) return
+    setCompletionPending(true)
+    setCompletionError(null)
+    try {
+      const completed = await completePlatformLesson(lesson.id)
+      setLesson(completed)
+      // The server recalculates locks for the entire catalog. Refreshing it
+      // after completion makes the newly unlocked next lesson visible without
+      // ever guessing its status in the browser.
       try {
-        const [thisLesson, lessons, completed] = await Promise.all([
-          fetchLessonById(lessonId),
-          fetchLessons(),
-          fetchCompletedLessonIds(user.id),
-        ])
-
-        setLesson(thisLesson)
-        setAllLessons(lessons)
-        setCompletedIds(completed)
-
-        if (thisLesson) {
-          const test = await fetchPracticeTest(thisLesson.id)
-          setPracticeTest(test)
-
-          if (test) {
-            const qs = await fetchQuestions(test.id)
-            setLessonQuestions(qs)
-          }
-
-          if (test) setPracticeScore(await fetchPreviousScore(user.id, test.id))
-
-          // Always start at the video step (or practice, for a lesson with
-          // no video) — never auto-skip to the complete screen just
-          // because the lesson was already finished in a past session.
-          // Re-watching/re-practicing an already-completed lesson is
-          // surfaced instead via the "Урок пройден" banner + repeat-mode
-          // CTAs below (isCompleted), not by hiding the video/practice
-          // steps entirely.
-          setLessonStep(thisLesson.video_url ? 'video' : 'practice')
-
-          if (!startedRef.current) {
-            startedRef.current = true
-            markLessonStarted(user.id, thisLesson.id)
-          }
-        }
+        setAllLessons(await fetchPlatformLessons())
       } catch {
-        setLoadError(true)
-      } finally {
-        setLoading(false)
+        setAllLessons(previous => previous.map(item => item.id === completed.id ? completed : item))
       }
+    } catch (error) {
+      if (error instanceof ZhangakApiError && error.code === 'lesson_locked') {
+        setCompletionError('Этот урок пока заблокирован. Обнови список уроков и заверши предыдущий.')
+        return
+      }
+      if (error instanceof ZhangakApiError && error.code === 'lesson_requires_practice') {
+        setCompletionError('Для этого урока требуется практика с серверной проверкой.')
+        return
+      }
+      setCompletionError(unavailableMessage(error))
+    } finally {
+      setCompletionPending(false)
     }
-    load()
-  }, [router, lessonId])
+  }, [completionPending, lesson])
 
   if (loadError) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#F4F6FA] px-6 text-center">
-        <p className="text-sm font-semibold text-gray-600">Не удалось загрузить. Попробуй ещё раз.</p>
+        <BookOpen size={30} className="text-gray-400" aria-hidden="true" />
+        <p className="text-sm font-semibold text-gray-700">{loadError}</p>
+        <p className="max-w-sm text-xs leading-relaxed text-gray-500">
+          Мы не показываем старую копию урока, потому что она может содержать неверный прогресс.
+        </p>
         <button
           type="button"
-          onClick={() => window.location.reload()}
-          className="flex min-h-11 items-center gap-1.5 rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white"
+          onClick={retryLoad}
+          className="flex min-h-11 items-center gap-1.5 rounded-xl bg-[#1B3F92] px-5 py-2.5 text-sm font-bold text-white"
         >
-          ↻ Попробовать ещё раз
+          <RefreshCw size={16} aria-hidden="true" />
+          Попробовать ещё раз
         </button>
       </div>
     )
@@ -153,304 +205,281 @@ export default function LessonDetailPage() {
     return (
       <div className="min-h-screen bg-[#F4F6FA]">
         <div className="mx-auto max-w-7xl space-y-4 px-4 py-6 sm:px-6">
-          <div className="aspect-video animate-pulse rounded-2xl bg-white md:hidden" />
-          <div className="hidden aspect-video animate-pulse rounded-2xl bg-white md:block" />
+          <div className="aspect-video animate-pulse rounded-2xl bg-white" />
           <div className="h-24 animate-pulse rounded-2xl bg-white" />
         </div>
       </div>
     )
   }
 
-  if (!lesson) {
+  if (notFound || !lesson) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#F4F6FA] p-6">
-        <p className="text-sm font-semibold text-gray-600">Урок не найден</p>
-        <Link href="/student/online/lessons" className="text-sm font-bold text-[#1B4FD8]">
-          ← Ко всем урокам
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#F4F6FA] p-6 text-center">
+        <BookOpen size={30} className="text-gray-300" aria-hidden="true" />
+        <p className="text-sm font-semibold text-gray-700">Урок не найден или не назначен твоей группе</p>
+        <Link href="/student/online/lessons" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-[#1B3F92]">
+          <ArrowLeft size={16} aria-hidden="true" /> Ко всем урокам
         </Link>
       </div>
     )
   }
 
-  const statuses = computeLessonStatuses(allLessons, completedIds)
-
-  // Scoped to the same subject — otherwise "next lesson" could jump from a
-  // math lesson straight into Кыргыз тили just because that's the next row
-  // in the combined, subject-sorted list.
-  const sameSubjectLessons = allLessons.filter(l => l.subject === lesson.subject)
-  const currentIndex = sameSubjectLessons.findIndex(l => l.id === lesson.id)
+  const catalog = [...allLessons].sort((a, b) => a.courseId - b.courseId || a.order_number - b.order_number || a.apiId - b.apiId)
+  const completedIds = completedPlatformLessonIds(catalog)
+  const statuses = computePlatformLessonStatuses(catalog, completedIds)
+  const sameSubjectLessons = catalog.filter(item => item.courseId === lesson.courseId
+    && item.subject === lesson.subject
+    && (lesson.subject !== 'other' || item.sourceSubject === lesson.sourceSubject))
+  const currentIndex = sameSubjectLessons.findIndex(item => item.id === lesson.id)
   const upcoming = currentIndex >= 0 ? sameSubjectLessons[currentIndex + 1] ?? null : null
-  const subjectCompletedCount = sameSubjectLessons.filter(l => completedIds.has(l.id)).length
-  const subjectProgress = sameSubjectLessons.length > 0 ? Math.round((subjectCompletedCount / sameSubjectLessons.length) * 100) : 0
+  const unlockedUpcoming = upcoming && !upcoming.isLocked ? upcoming : null
+  const subjectCompletedCount = sameSubjectLessons.filter(item => completedIds.has(item.id)).length
+  const subjectProgress = sameSubjectLessons.length > 0
+    ? Math.round((subjectCompletedCount / sameSubjectLessons.length) * 100)
+    : 0
+  const isCompleted = lesson.completedAt !== null || lesson.completionPercent >= 100
+  const meta = PLATFORM_LESSON_SUBJECT_META[lesson.subject]
+  const SubjectIcon = SUBJECT_ICON[lesson.subject]
+  const subjectLabel = lesson.sourceSubject ?? meta.label
+  const embedUrl = youtubeEmbedUrl(lesson.contentUrl)
+  const practiceHref = `/student/online/practice?lesson=${lesson.id}`
+  const requiresPractice = lesson.completionMode === 'practice'
 
-  const meta = LESSON_SUBJECT_META[lesson.subject]
-  const embedUrl = lesson.video_url ? getYoutubeEmbed(lesson.video_url) : null
-  const hasVideo = !!lesson.video_url
+  const extraMaterials = materials.filter(item => item.materialType !== 'video')
 
-  // Drives the "already completed" banner + repeat-mode CTAs on the video
-  // and complete steps — it only ever reflects the pre-session state from
-  // fetchCompletedLessonIds (not touched again this render), so a first
-  // completion this session still lands on the "first time" complete
-  // screen (see completeStep below), and only becomes true again on the
-  // next real visit.
-  const isCompleted = completedIds.has(lesson.id)
+  const material = embedUrl ? (
+    <div className="flex aspect-video items-center justify-center overflow-hidden rounded-2xl bg-gray-900">
+      <iframe
+        src={embedUrl}
+        className="h-full w-full"
+        allowFullScreen
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        title={lesson.title}
+      />
+    </div>
+  ) : lesson.contentUrl ? (
+    <div className="flex aspect-video flex-col items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 p-6 text-center">
+      <FileText size={38} className="text-[#1B3F92]" aria-hidden="true" />
+      <p className="mt-3 text-sm font-bold text-gray-800">Материал урока откроется в новой вкладке</p>
+      <a
+        href={lesson.contentUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1B3F92] px-4 py-2.5 text-sm font-bold text-white"
+      >
+        Открыть материал <ExternalLink size={16} aria-hidden="true" />
+      </a>
+    </div>
+  ) : extraMaterials.length > 0 ? (
+    <div className="flex aspect-video flex-col items-center justify-center rounded-[22px] bg-[var(--student-brand)] px-6 text-center text-white">
+      <BookOpen size={38} aria-hidden="true" />
+      <p className="mt-3 text-base font-extrabold">Материалы урока готовы</p>
+      <p className="mt-1 text-xs leading-5 text-white/75">Открой авторские книги и конспекты ниже.</p>
+    </div>
+  ) : (
+    <div className="flex aspect-video flex-col items-center justify-center rounded-2xl bg-gray-900 px-6 text-center text-gray-300">
+      <Video size={36} aria-hidden="true" />
+      <p className="mt-3 text-sm font-semibold">Материал урока пока не опубликован</p>
+      <p className="mt-1 text-xs text-gray-400">Когда преподаватель добавит материал, он появится здесь.</p>
+    </div>
+  )
 
-  const handleAskSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!askText.trim()) return
-    setAskSent(true)
-    setAskText('')
-    window.setTimeout(() => setAskSent(false), 4000)
-  }
+  const materialsSection = extraMaterials.length > 0 ? (
+    <section className="rounded-[22px] border border-[var(--student-line)] bg-white p-4 sm:p-6">
+      <h2 className="flex items-center gap-2 text-base font-extrabold text-gray-900"><FileText size={18} aria-hidden="true" /> Материалы урока</h2>
+      <p className="mt-1 text-xs leading-5 text-gray-500">Файлы открываются только внутри авторизованного кабинета.</p>
+      <div className="mt-4 space-y-2.5">
+        {extraMaterials.map(item => item.materialType === 'rich_text' ? (
+          <article key={item.id} className="rounded-2xl bg-[var(--student-surface-2)] p-4">
+            <h3 className="font-bold text-gray-800">{item.title}</h3>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{item.bodyMarkdown}</p>
+          </article>
+        ) : item.viewerPath ? (
+          <a key={item.id} href={item.viewerPath} target="_blank" rel="noreferrer" className="flex min-h-14 items-center gap-3 rounded-2xl border border-[var(--student-line)] bg-white px-3.5 text-sm font-semibold text-gray-700 hover:bg-blue-50">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--student-brand-50)] text-[var(--student-brand)]"><FileText size={18} aria-hidden="true" /></span>
+            <span className="min-w-0 flex-1 break-words">{item.title}</span>
+            <ExternalLink size={16} className="shrink-0 text-[var(--student-brand)]" aria-hidden="true" />
+          </a>
+        ) : null)}
+      </div>
+    </section>
+  ) : null
 
-  // ── Mobile inline lesson flow handlers ──────────────────────────────────
-  // "Повторить ещё раз" on the complete screen — sends an already-completed
-  // lesson back to the video step for another pass, resetting videoWatched
-  // so the repeat-mode CTAs on that step stay gated the same way a first
-  // watch is.
-  const handleRepeat = () => {
-    setLessonStep('video')
-    setVideoWatched(false)
-  }
-
-  const handleFinishNoQuestions = async () => {
-    if (studentId && lesson) {
-      await savePracticeResult({ studentId, testId: null, lessonId: lesson.id, score: 0, answers: {} })
-    }
-    setLessonStep('complete')
-  }
-
-  const handleFinishPractice = async (finalAnswers: LessonAnswerEntry[]) => {
-    if (studentId && lesson && practiceTest) {
-      const correctCount = finalAnswers.filter(a => a.correct).length
-      const answersRecord: Record<number, AnswerLetter> = {}
-      finalAnswers.forEach(a => { answersRecord[a.questionId] = a.answer })
-      await savePracticeResult({ studentId, testId: practiceTest.id, lessonId: lesson.id, score: correctCount, answers: answersRecord })
-    }
-    setFinishedAnswers(finalAnswers)
-    setLessonStep('complete')
-  }
-
-  // Complete-screen stats: from the quiz just taken this session if there
-  // is one, otherwise (a returning visit to an already-completed lesson)
-  // fall back to the stored score — no per-question detail survives a
-  // reload, so wrongQuestions is empty in that case.
-  const completeStats = finishedAnswers
-    ? {
-        correct: finishedAnswers.filter(a => a.correct).length,
-        total: lessonQuestions.length,
-        wrongQuestions: finishedAnswers
-          .filter(a => !a.correct)
-          .map(a => ({ question: lessonQuestions.find(q => q.id === a.questionId)?.question_text ?? '' })),
-      }
-    : {
-        correct: practiceScore ?? 0,
-        total: lessonQuestions.length,
-        wrongQuestions: [] as { question: string }[],
-      }
-  const completeXp = completeStats.total > 0 ? completeStats.correct * XP_PER_CORRECT : XP_NO_QUESTIONS
-
-  const askTeacherBlock = (
-    <div>
-      {askSent ? (
-        <p className="text-xs font-semibold text-green-600">✓ Вопрос отправлен учителю</p>
+  const practiceCard = (
+    <div className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#1B3F92]">
+          <ShieldCheck size={21} aria-hidden="true" />
+        </span>
+        <div>
+          <h2 className="text-base font-bold text-gray-900">{requiresPractice ? 'Практика по уроку' : 'Завершение урока'}</h2>
+          <p className="mt-1 text-xs leading-relaxed text-gray-500">
+            {requiresPractice
+              ? 'Доступные задания и результат проверяет учебный сервер. Ответы и баллы не вычисляются на этой странице.'
+              : 'Разбери материал, затем явно отметь урок пройденным. Сервер сохранит прогресс только для твоего аккаунта.'}
+          </p>
+        </div>
+      </div>
+      {requiresPractice ? (
+        <Link
+          href={practiceHref}
+          className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white"
+        >
+          Открыть практику <ArrowRight size={17} aria-hidden="true" />
+        </Link>
       ) : (
-        <form onSubmit={handleAskSubmit} className="space-y-2">
-          <textarea
-            value={askText}
-            onChange={(e) => setAskText(e.target.value)}
-            placeholder="Напиши свой вопрос..."
-            rows={3}
-            className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1B4FD8]/30"
-          />
-          <button
-            type="submit"
-            disabled={!askText.trim()}
-            className="flex min-h-11 w-full items-center justify-center rounded-xl bg-gray-100 py-2 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Отправить
-          </button>
-        </form>
+        <button
+          type="button"
+          onClick={() => void completeLesson()}
+          disabled={isCompleted || completionPending}
+          className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-green-600"
+        >
+          {isCompleted ? <CheckCircle2 size={17} aria-hidden="true" /> : <ArrowRight size={17} aria-hidden="true" />}
+          {isCompleted ? 'Урок пройден' : completionPending ? 'Сохраняем прогресс…' : 'Завершить урок'}
+        </button>
       )}
+      {completionError && <p role="alert" className="mt-3 text-xs font-medium text-red-600">{completionError}</p>}
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-[#F4F6FA]">
-      {/* ============ MOBILE (< 768px) ============ */}
+    <div className="min-h-screen bg-[var(--student-bg)] pb-24 md:pb-0">
       <div className="block md:hidden">
-        {lessonStep === 'video' && (
-          <>
-            <div className="flex items-center gap-3 border-b border-gray-100 bg-white px-4 py-3">
-              <Link href="/student/online/lessons" className="flex min-h-11 min-w-11 shrink-0 items-center text-sm font-bold text-gray-600">
-                ← Уроки
-              </Link>
-              <div className="min-w-0 flex-1 text-center">
-                <p className="truncate text-xs font-semibold text-gray-400">
-                  {meta.label}{currentIndex >= 0 ? ` • Урок ${currentIndex + 1} из ${sameSubjectLessons.length}` : ''}
-                </p>
-              </div>
-              <div className="w-11 shrink-0" aria-hidden="true" />
+        <div className="flex items-center gap-3 border-b border-gray-100 bg-white px-4 py-3">
+          <Link href="/student/online/lessons" className="flex min-h-11 shrink-0 items-center gap-1 text-sm font-bold text-gray-600">
+            <ArrowLeft size={16} aria-hidden="true" /> Уроки
+          </Link>
+          <p className="min-w-0 flex-1 truncate text-center text-xs font-semibold text-gray-400">
+            {subjectLabel}{currentIndex >= 0 ? ` · Урок ${currentIndex + 1} из ${sameSubjectLessons.length}` : ''}
+          </p>
+          <div className="w-14 shrink-0" aria-hidden="true" />
+        </div>
+
+        {isCompleted && (
+          <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 p-3">
+            <CheckCircle2 size={20} className="text-green-600" aria-hidden="true" />
+            <div>
+              <p className="text-sm font-semibold text-green-700">Урок пройден</p>
+              <p className="text-xs text-green-600">Прогресс подтверждён учебным сервером</p>
             </div>
+          </div>
+        )}
 
-            {isCompleted && (
-              <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 p-3">
-                <span className="text-lg text-green-500">✓</span>
-                <div>
-                  <div className="text-sm font-semibold text-green-700">Урок пройден</div>
-                  <div className="text-xs text-green-600">Можешь посмотреть ещё раз</div>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-4 px-4 py-4">
-              <h1 className="text-xl font-bold leading-snug text-[#191B23]">{lesson.title}</h1>
-
-              {hasVideo && embedUrl && (
-                <MobileLessonVideo videoUrl={lesson.video_url!} title={lesson.title} watched={videoWatched} onWatched={() => setVideoWatched(true)} />
-              )}
-
-              <MobileAIHelp lessonTitle={lesson.title} />
-
-              <MobileNextStepCard
-                questionCount={lessonQuestions.length}
-                locked={hasVideo && !videoWatched}
-                onStartPractice={() => setLessonStep('practice')}
-                onFinishNoQuestions={handleFinishNoQuestions}
-                isRepeat={isCompleted}
-                nextLessonHref={upcoming ? `/student/online/lessons/${upcoming.id}` : null}
-              />
-
-              {/* Ask teacher — collapsed, moved to the bottom */}
-              <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => setAskTeacherOpen(v => !v)}
-                  className="flex min-h-11 w-full items-center justify-between text-left text-sm font-bold text-gray-900"
-                >
-                  Вопрос учителю
-                  <ChevronDown size={18} className={`text-gray-400 transition-transform ${askTeacherOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {askTeacherOpen && <div className="mt-3">{askTeacherBlock}</div>}
-              </div>
+        <div className="space-y-4 px-4 py-4">
+          <div>
+            <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${meta.bg} ${meta.color}`}>
+              <SubjectIcon size={14} aria-hidden="true" /> {subjectLabel}
             </div>
-          </>
-        )}
+            <h1 className="mt-3 text-xl font-bold leading-snug text-[#191B23]">{lesson.title}</h1>
+            {lesson.description && <p className="mt-2 text-sm leading-relaxed text-gray-600">{lesson.description}</p>}
+            <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-gray-500">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1.5">
+                <Clock3 size={13} aria-hidden="true" /> {lesson.durationMinutes ? `${lesson.durationMinutes} минут` : 'Время не указано'}
+              </span>
+              {lesson.topic && <span className="rounded-full bg-white px-2.5 py-1.5">{lesson.topic}</span>}
+            </div>
+          </div>
 
-        {lessonStep === 'practice' && (
-          <MobileLessonPractice
-            questions={lessonQuestions}
-            onBack={() => setLessonStep('video')}
-            onFinish={handleFinishPractice}
-          />
-        )}
+          {embedUrl && lesson.contentUrl
+            ? <MobileLessonVideo videoUrl={lesson.contentUrl} title={lesson.title} watched={videoWatched} onWatched={() => setVideoWatched(true)} />
+            : material}
 
-        {lessonStep === 'complete' && (
-          <MobileLessonComplete
-            correct={completeStats.correct}
-            total={completeStats.total}
-            xp={completeXp}
-            wrongQuestions={completeStats.wrongQuestions}
-            nextLessonHref={upcoming ? `/student/online/lessons/${upcoming.id}` : null}
-            onBackToLessons={() => router.push('/student/online/lessons')}
-            isRepeat={isCompleted}
-            onRepeat={handleRepeat}
-          />
-        )}
+          {materialsSection}
+          <MobileAIHelp lessonTitle={lesson.title} />
+          {practiceCard}
+
+          {unlockedUpcoming && (
+            <Link
+              href={`/student/online/lessons/${unlockedUpcoming.id}`}
+              className="flex min-h-12 items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 text-sm font-bold text-gray-700 shadow-sm"
+            >
+              Следующий урок: {unlockedUpcoming.title}
+              <ArrowRight size={17} className="shrink-0 text-[#1B3F92]" aria-hidden="true" />
+            </Link>
+          )}
+
+          <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+            <p className="flex items-center gap-2 text-sm font-bold text-gray-800">
+              <MessageCircle size={17} aria-hidden="true" /> Вопрос учителю
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-gray-500">Отправка вопросов появится после подключения чата с преподавателем.</p>
+          </div>
+        </div>
       </div>
 
-      {/* ============ DESKTOP (>= 768px) — unchanged ============ */}
       <div className="hidden md:block">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-          <Link href="/student/online/lessons" className="text-sm font-semibold text-gray-500 hover:text-gray-700">
-            ← Ко всем урокам
+          <Link href="/student/online/lessons" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-700">
+            <ArrowLeft size={16} aria-hidden="true" /> Ко всем урокам
           </Link>
 
           <div className="mt-4 flex flex-col items-start gap-5 lg:flex-row">
-            {/* Main column */}
-            <div className="w-full min-w-0 flex-1 space-y-5">
-              {/* Video */}
-              <div className="flex aspect-video items-center justify-center overflow-hidden rounded-2xl bg-gray-900">
-                {embedUrl ? (
-                  <iframe
-                    src={embedUrl}
-                    className="h-full w-full"
-                    allowFullScreen
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    title={lesson.title}
-                  />
-                ) : (
-                  <div className="text-center text-gray-400">
-                    <div className="mb-2 text-4xl">🎬</div>
-                    <p className="text-sm">Видео скоро появится</p>
-                  </div>
-                )}
-              </div>
+            <main className="w-full min-w-0 flex-1 space-y-5">
+              {material}
 
-              {/* Title block */}
-              <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
-                <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${meta.bg} ${meta.color}`}>
-                  {meta.icon} {meta.label}
-                </span>
-                <h1 className="mt-3 text-xl font-bold leading-snug text-gray-900">{lesson.title}</h1>
-                {lesson.description && (
-                  <p className="mt-2 text-sm leading-relaxed text-gray-500">{lesson.description}</p>
-                )}
-
-                {/* Structure steps */}
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {STEPS.map((step, i) => (
-                    <span
-                      key={step}
-                      className="flex items-center gap-1.5 rounded-full border border-gray-100 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-600"
-                    >
-                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#1B4FD8] text-[9px] text-white">
-                        {i + 1}
-                      </span>
-                      {step}
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${meta.bg} ${meta.color}`}>
+                    <SubjectIcon size={14} aria-hidden="true" /> {subjectLabel}
+                  </span>
+                  {isCompleted && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
+                      <CheckCircle2 size={14} aria-hidden="true" /> Пройдено
                     </span>
-                  ))}
+                  )}
                 </div>
-              </div>
-            </div>
-
-            {/* Sidebar */}
-            <div className="w-full shrink-0 space-y-5 lg:w-80">
-              <UpNextLesson lesson={upcoming} progress={subjectProgress} />
-
-              {/* Materials */}
-              <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                <h3 className="mb-3 text-sm font-bold text-gray-900">Материалы</h3>
-                <div className="flex flex-col gap-2">
-                  {MATERIALS.map(m => (
-                    <button
-                      key={m.label}
-                      type="button"
-                      className="flex items-center gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5 text-left text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100"
-                    >
-                      <span>{m.icon}</span> {m.label}
-                    </button>
-                  ))}
+                <h1 className="mt-3 text-2xl font-bold leading-snug text-gray-900">{lesson.title}</h1>
+                {lesson.description && <p className="mt-3 text-sm leading-relaxed text-gray-600">{lesson.description}</p>}
+                <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-gray-500">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-50 px-3 py-1.5">
+                    <Clock3 size={14} aria-hidden="true" /> {lesson.durationMinutes ? `${lesson.durationMinutes} минут` : 'Время не указано'}
+                  </span>
+                  <span className="rounded-full bg-gray-50 px-3 py-1.5">Урок {lesson.order_number}</span>
+                  {lesson.section && <span className="rounded-full bg-gray-50 px-3 py-1.5">{lesson.section}</span>}
+                  {lesson.topic && <span className="rounded-full bg-gray-50 px-3 py-1.5">{lesson.topic}</span>}
                 </div>
               </div>
 
-              {/* Ask teacher */}
+              {practiceCard}
+
+              {materialsSection}
+            </main>
+
+            <aside className="w-full shrink-0 space-y-5 lg:w-80">
+              <UpNextLesson lesson={unlockedUpcoming} progress={subjectProgress} />
+
               <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                <h3 className="mb-3 text-sm font-bold text-gray-900">Вопрос учителю</h3>
-                {askTeacherBlock}
+                <h2 className="flex items-center gap-2 text-sm font-bold text-gray-900"><FileText size={17} aria-hidden="true" /> Материалы</h2>
+                {lesson.contentUrl ? (
+                  <a
+                    href={lesson.contentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 flex min-h-11 items-center justify-between rounded-xl bg-gray-50 px-3 text-sm font-semibold text-gray-700"
+                  >
+                    Открыть материал <ExternalLink size={15} aria-hidden="true" />
+                  </a>
+                ) : (
+                  <p className="mt-2 text-xs leading-relaxed text-gray-500">Дополнительные материалы пока не опубликованы.</p>
+                )}
               </div>
 
-              {/* Start test CTA */}
-              <Link
-                href={`/student/online/practice?lesson=${lesson.id}`}
-                className="block w-full rounded-xl bg-[#1B4FD8] py-3 text-center text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700"
-              >
-                Начать тест →
-              </Link>
+              <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 className="flex items-center gap-2 text-sm font-bold text-gray-900"><MessageCircle size={17} aria-hidden="true" /> Вопрос учителю</h2>
+                <p className="mt-2 text-xs leading-relaxed text-gray-500">Отправка вопросов появится после подключения чата с преподавателем.</p>
+              </div>
 
-              {/* Compact lesson list */}
-              <LessonSidebarList lessons={allLessons} statuses={statuses} activeId={lesson.id} />
-            </div>
+              {requiresPractice && (
+                <Link
+                  href={practiceHref}
+                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white shadow-md shadow-blue-200"
+                >
+                  Открыть практику <ArrowRight size={17} aria-hidden="true" />
+                </Link>
+              )}
+
+              <LessonSidebarList lessons={catalog} statuses={statuses} activeId={lesson.id} />
+            </aside>
           </div>
         </div>
       </div>

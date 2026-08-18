@@ -17,7 +17,7 @@ function formatDuration(totalSeconds: number): string {
 export default function MockStatsRow({ xp, elapsedSeconds, accuracy, streak }: Props) {
   const stats = [
     { icon: Zap, label: 'Опыт', value: `+${xp} XP`, color: '#F59E0B', bg: '#FFFBEB' },
-    { icon: Clock, label: 'Время', value: formatDuration(elapsedSeconds), color: '#1B4FD8', bg: '#EEF2FF' },
+    { icon: Clock, label: 'Время', value: formatDuration(elapsedSeconds), color: '#1B3F92', bg: '#EEF2FF' },
     { icon: Target, label: 'Точность', value: `${accuracy}%`, color: '#10B981', bg: '#F0FDF4' },
     { icon: Flame, label: 'Серия', value: `${streak} дней`, color: '#EF4444', bg: '#FEF2F2' },
   ]

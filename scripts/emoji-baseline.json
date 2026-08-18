@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "total": 0,
+  "roots": ["app", "components", "lib", "public"],
+  "files": {}
+}

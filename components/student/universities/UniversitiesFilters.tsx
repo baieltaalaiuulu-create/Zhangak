@@ -1,3 +1,7 @@
+'use client'
+
+import { useState } from 'react'
+import { ChevronDown, SlidersHorizontal } from 'lucide-react'
 import { DIRECTION_LABELS, LANGUAGE_LABELS, type City, type Direction, type StudyLanguage, type UniversityType } from '@/lib/universities-data'
 
 export interface FilterState {
@@ -12,7 +16,7 @@ export interface FilterState {
 }
 
 export const SCORE_RANGE: [number, number] = [110, 245]
-export const COST_RANGE: [number, number] = [25000, 180000]
+export const COST_RANGE: [number, number] = [0, 1_000_000]
 
 export const DEFAULT_FILTERS: FilterState = {
   city: 'all',
@@ -28,9 +32,9 @@ export const DEFAULT_FILTERS: FilterState = {
 interface Props {
   filters: FilterState
   onChange: (next: FilterState) => void
+  cities: City[]
 }
 
-const CITIES: (City | 'all')[] = ['all', 'Бишкек', 'Ош', 'Каракол']
 const DIRECTIONS: (Direction | 'all')[] = ['all', 'it', 'medicine', 'economics', 'law', 'pedagogy']
 const LANGUAGES: (StudyLanguage | 'all')[] = ['all', 'ru', 'kg', 'tr', 'en']
 
@@ -57,28 +61,43 @@ function SelectField({ label, value, options, labels, onChange }: {
   )
 }
 
-export default function UniversitiesFilters({ filters, onChange }: Props) {
+export default function UniversitiesFilters({ filters, onChange, cities }: Props) {
+  const [filterOpen, setFilterOpen] = useState(false)
   const set = <K extends keyof FilterState>(key: K, value: FilterState[K]) => onChange({ ...filters, [key]: value })
+  const cityOptions: (City | 'all')[] = ['all', ...cities]
+  const cityLabels = Object.fromEntries(cityOptions.map(city => [city, city === 'all' ? 'Все города' : city]))
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-gray-900">Фильтры</h3>
-        <button
-          type="button"
-          onClick={() => onChange(DEFAULT_FILTERS)}
-          className="text-xs font-semibold text-gray-400 hover:text-[#6C3DE0]"
-        >
-          Сбросить фильтры
-        </button>
+        <h3 className="flex items-center gap-2 text-sm font-bold text-gray-900"><SlidersHorizontal size={17} className="text-[#6C3DE0]" aria-hidden="true" /> Фильтры</h3>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => onChange(DEFAULT_FILTERS)}
+            className="min-h-11 text-xs font-semibold text-gray-400 hover:text-[#6C3DE0]"
+          >
+            Сбросить
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterOpen(open => !open)}
+            aria-expanded={filterOpen}
+            aria-label={filterOpen ? 'Скрыть фильтры' : 'Показать фильтры'}
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-gray-50 text-gray-500 md:hidden"
+          >
+            <ChevronDown size={18} className={`transition-transform ${filterOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
+      <div className={`${filterOpen ? 'block' : 'hidden'} md:block`}>
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <SelectField
           label="Город"
           value={filters.city}
-          options={CITIES}
-          labels={{ all: 'Все города', 'Бишкек': 'Бишкек', 'Ош': 'Ош', 'Каракол': 'Каракол' }}
+          options={cityOptions}
+          labels={cityLabels}
           onChange={v => set('city', v as FilterState['city'])}
         />
         <SelectField
@@ -144,7 +163,7 @@ export default function UniversitiesFilters({ filters, onChange }: Props) {
             type="range"
             min={COST_RANGE[0]}
             max={COST_RANGE[1]}
-            step={5000}
+            step={25000}
             value={filters.maxCost}
             onChange={e => set('maxCost', Number(e.target.value))}
             className="h-1.5 w-full accent-[#6C3DE0]"
@@ -175,6 +194,7 @@ export default function UniversitiesFilters({ filters, onChange }: Props) {
           />
           Бюджетные места
         </label>
+      </div>
       </div>
     </div>
   )

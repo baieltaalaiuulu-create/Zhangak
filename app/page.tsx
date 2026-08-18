@@ -3,10 +3,11 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import { redirectForRole } from '@/lib/auth-redirect'
+import { isDedicatedPlatformHost } from '@/lib/site-hosts'
+import { getCurrentZhangakUser } from '@/lib/zhangak-auth-client'
+import { PLATFORM_ONBOARDING_DISMISSED_KEY, wasDismissed } from '@/lib/first-visit'
 
-const ONBOARDING_KEY = 'zhangak-onboarding-done'
 const DOT_DELAYS_MS = [0, 150, 300]
 
 // Root route — this app's PWA start_url (app/manifest.ts) and every
@@ -36,26 +37,24 @@ export default function RootPage() {
     const check = async () => {
       try {
         const isPWA = window.matchMedia('(display-mode: standalone)').matches
-        const { data: { session } } = await supabase.auth.getSession()
+        const isPlatformHost = isDedicatedPlatformHost(window.location.hostname)
+        const user = await getCurrentZhangakUser()
 
-        if (session) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role, student_type')
-            .eq('id', session.user.id)
-            .single()
-          redirectForRole(profile?.role, profile?.student_type, router, '/student')
+        if (user) {
+          redirectForRole(user.role, user.studentType ?? undefined, router, '/student')
           return
         }
 
-        if (isPWA) {
-          const done = localStorage.getItem(ONBOARDING_KEY)
+        if (isPWA || isPlatformHost) {
+          const done = wasDismissed(window.localStorage, PLATFORM_ONBOARDING_DISMISSED_KEY)
           router.replace(done ? '/login' : '/onboarding')
         } else {
           router.replace('/landing')
         }
       } catch {
-        router.replace('/landing')
+        // A temporary auth API failure must not send a platform visitor to a
+        // marketing-only route. Keep the protected surface's login reachable.
+        router.replace(isDedicatedPlatformHost(window.location.hostname) ? '/login' : '/landing')
       }
     }
     check()
@@ -71,7 +70,7 @@ export default function RootPage() {
         {DOT_DELAYS_MS.map(delay => (
           <div
             key={delay}
-            className="h-2 w-2 animate-bounce rounded-full bg-[#1B4FD8]"
+            className="h-2 w-2 animate-bounce rounded-full bg-[#1B3F92]"
             style={{ animationDelay: `${delay}ms` }}
           />
         ))}

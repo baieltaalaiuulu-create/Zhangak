@@ -1,0 +1,31 @@
+{
+  "name": "zhangak-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.22.2"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "migrate": "node scripts/migrate.js",
+    "verify:migrations": "node scripts/verify-migrations.js",
+    "create:super-admin": "node scripts/create-super-admin.js",
+    "migration:preflight": "node scripts/supabase-migration-preflight.js",
+    "content:manifest": "node scripts/build-sorted-data-manifest.js",
+    "content:import": "node scripts/import_content.mjs --dry-run",
+    "materials:import": "node scripts/import-reviewed-materials.mjs --dry-run",
+    "universities:import": "node scripts/import-university-catalog.mjs --dry-run",
+    "push:reminders": "node scripts/send-study-reminders.js",
+    "import:legacy-demo": "node scripts/import-supabase-demo-content.js --dry-run",
+    "package:release": "node scripts/package-release.js",
+    "check": "node scripts/check-syntax.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "busboy": "1.6.0",
+    "mammoth": "1.12.0",
+    "pg": "8.16.3",
+    "web-push": "3.6.7"
+  }
+}

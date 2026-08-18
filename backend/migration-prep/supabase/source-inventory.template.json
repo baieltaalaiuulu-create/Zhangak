@@ -1,0 +1,431 @@
+{
+  "format": "zhangak.supabase-source-inventory/v1",
+  "status": "template",
+  "project": {
+    "kind": "supabase-postgres",
+    "projectRef": "<confirmed-project-ref>"
+  },
+  "capture": {
+    "mode": "read-only",
+    "capturedAt": null,
+    "schemaSha256": "<sha256-of-read-only-public-and-auth-schema-dump>",
+    "schemaDumpReference": "outside-git/encrypted/supabase-schema.sql"
+  },
+  "tables": [
+    {
+      "schema": "auth",
+      "name": "users",
+      "captureStatus": "unconfirmed",
+      "dataClass": "credentialed-identity",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Inventory only. Do not export password hashes, sessions, MFA secrets, or recovery tokens. Zhangak password hashes are scrypt and require a reset-flow migration."
+    },
+    {
+      "schema": "public",
+      "name": "profiles",
+      "captureStatus": "unconfirmed",
+      "dataClass": "student-pii",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Potential identity profile source; exact columns and ownership are not yet confirmed."
+    },
+    {
+      "schema": "public",
+      "name": "courses",
+      "captureStatus": "unconfirmed",
+      "dataClass": "learning-content",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Potential source for Zhangak courses."
+    },
+    {
+      "schema": "public",
+      "name": "groups",
+      "captureStatus": "unconfirmed",
+      "dataClass": "learning-roster",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Potential source for groups; teacher references require a reviewed identity map."
+    },
+    {
+      "schema": "public",
+      "name": "group_students",
+      "captureStatus": "unconfirmed",
+      "dataClass": "learning-roster",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Potential membership source; preserve leave history only after foreign-key checks."
+    },
+    {
+      "schema": "public",
+      "name": "lessons",
+      "captureStatus": "unconfirmed",
+      "dataClass": "learning-content",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Potential source for Zhangak lessons."
+    },
+    {
+      "schema": "public",
+      "name": "practice_lessons",
+      "captureStatus": "unconfirmed",
+      "dataClass": "learning-content",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Legacy-only candidate; no direct target mapping is approved yet."
+    },
+    {
+      "schema": "public",
+      "name": "practice_tests",
+      "captureStatus": "unconfirmed",
+      "dataClass": "assessment-content",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Potential test metadata source; answer-key exposure must be reviewed."
+    },
+    {
+      "schema": "public",
+      "name": "questions",
+      "captureStatus": "unconfirmed",
+      "dataClass": "assessment-content-sensitive",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "May contain answer keys. Export and transform only in an isolated, access-controlled review environment."
+    },
+    {
+      "schema": "public",
+      "name": "lesson_progress",
+      "captureStatus": "unconfirmed",
+      "dataClass": "student-progress",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Potential progress source; reconcile against migrated students and lessons."
+    },
+    {
+      "schema": "public",
+      "name": "practice_results",
+      "captureStatus": "unconfirmed",
+      "dataClass": "student-assessment-history",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Archive/review first. It cannot be copied into server-authoritative attempts without an item-level provenance check."
+    },
+    {
+      "schema": "public",
+      "name": "test_results",
+      "captureStatus": "unconfirmed",
+      "dataClass": "student-assessment-history",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Archive/review first; no approved target import."
+    },
+    {
+      "schema": "public",
+      "name": "mock_registrations",
+      "captureStatus": "unconfirmed",
+      "dataClass": "student-assessment-history",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target module; retain only as an encrypted archive until a reviewed schema exists."
+    },
+    {
+      "schema": "public",
+      "name": "attendance",
+      "captureStatus": "unconfirmed",
+      "dataClass": "student-attendance",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target attendance table; archive/review only."
+    },
+    {
+      "schema": "public",
+      "name": "homeworks",
+      "captureStatus": "unconfirmed",
+      "dataClass": "student-work",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target homework table; archive/review only."
+    },
+    {
+      "schema": "public",
+      "name": "homework_submissions",
+      "captureStatus": "unconfirmed",
+      "dataClass": "student-work",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Nested legacy relation candidate; no current target homework/submission schema, so archive/review only."
+    },
+    {
+      "schema": "public",
+      "name": "daily_challenges",
+      "captureStatus": "unconfirmed",
+      "dataClass": "gamification-content",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target daily-challenge module; archive/review only."
+    },
+    {
+      "schema": "public",
+      "name": "daily_challenge_questions",
+      "captureStatus": "unconfirmed",
+      "dataClass": "gamification-content-sensitive",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Potential answer keys; no current target module."
+    },
+    {
+      "schema": "public",
+      "name": "daily_challenge_results",
+      "captureStatus": "unconfirmed",
+      "dataClass": "gamification-history",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target module; archive/review only."
+    },
+    {
+      "schema": "public",
+      "name": "weekly_leaderboard",
+      "captureStatus": "unconfirmed",
+      "dataClass": "gamification-history",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Do not import ranks or XP as authoritative Zhangak data."
+    },
+    {
+      "schema": "public",
+      "name": "weekly_prizes",
+      "captureStatus": "unconfirmed",
+      "dataClass": "gamification-content",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target module; archive/review only."
+    },
+    {
+      "schema": "public",
+      "name": "announcements",
+      "captureStatus": "unconfirmed",
+      "dataClass": "content",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target announcements module; archive/review only."
+    },
+    {
+      "schema": "public",
+      "name": "universities",
+      "captureStatus": "unconfirmed",
+      "dataClass": "public-catalog",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Potential university catalog source. Verify every fact against current official sources before publication."
+    },
+    {
+      "schema": "public",
+      "name": "university_specialties",
+      "captureStatus": "unconfirmed",
+      "dataClass": "public-catalog",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Potential university specialty source; depends on a reviewed university map."
+    },
+    {
+      "schema": "public",
+      "name": "university_advantages",
+      "captureStatus": "unconfirmed",
+      "dataClass": "public-catalog",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Potential university advantage source; depends on a reviewed university map."
+    },
+    {
+      "schema": "public",
+      "name": "ai_chat_sessions",
+      "captureStatus": "unconfirmed",
+      "dataClass": "sensitive-ai-history",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target AI conversation schema; exclude from initial import unless privacy review approves it."
+    },
+    {
+      "schema": "public",
+      "name": "ai_chat_messages",
+      "captureStatus": "unconfirmed",
+      "dataClass": "sensitive-ai-history",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target AI conversation schema; exclude from initial import unless privacy review approves it."
+    },
+    {
+      "schema": "public",
+      "name": "ai_knowledge_files",
+      "captureStatus": "unconfirmed",
+      "dataClass": "private-knowledge",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current private-file implementation; do not copy public Supabase URLs."
+    },
+    {
+      "schema": "public",
+      "name": "admin_settings",
+      "captureStatus": "unconfirmed",
+      "dataClass": "configuration",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "Manual review only; configuration may contain secrets."
+    },
+    {
+      "schema": "public",
+      "name": "crm_leads",
+      "captureStatus": "unconfirmed",
+      "dataClass": "customer-pii",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target CRM module; archive/review only."
+    },
+    {
+      "schema": "public",
+      "name": "income",
+      "captureStatus": "unconfirmed",
+      "dataClass": "financial",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target finance module; archive/review only."
+    },
+    {
+      "schema": "public",
+      "name": "expenses",
+      "captureStatus": "unconfirmed",
+      "dataClass": "financial",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target finance module; archive/review only."
+    },
+    {
+      "schema": "public",
+      "name": "payments",
+      "captureStatus": "unconfirmed",
+      "dataClass": "financial",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target finance module; archive/review only."
+    },
+    {
+      "schema": "public",
+      "name": "math_lessons",
+      "captureStatus": "unconfirmed",
+      "dataClass": "math-content",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target Math module; archive/review only."
+    },
+    {
+      "schema": "public",
+      "name": "math_questions",
+      "captureStatus": "unconfirmed",
+      "dataClass": "math-content-sensitive",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target Math module; answer keys require a separate trust-boundary review."
+    },
+    {
+      "schema": "public",
+      "name": "math_results",
+      "captureStatus": "unconfirmed",
+      "dataClass": "math-history",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target Math module; archive/review only."
+    },
+    {
+      "schema": "public",
+      "name": "math_parent_student",
+      "captureStatus": "unconfirmed",
+      "dataClass": "family-pii",
+      "rowCount": null,
+      "primaryKey": [],
+      "columns": [],
+      "artifactKey": null,
+      "notes": "No current target parent/child schema; archive/review only."
+    }
+  ],
+  "storage": [
+    { "bucket": "avatars", "captureStatus": "unconfirmed", "notes": "Inventory object keys/counts only; re-host through a private Zhangak asset flow." },
+    { "bucket": "question-images", "captureStatus": "unconfirmed", "notes": "Inventory object keys/counts only; re-host before any question references are imported." },
+    { "bucket": "questions", "captureStatus": "unconfirmed", "notes": "Inventory object keys/counts only; answer-content review required." },
+    { "bucket": "announcements", "captureStatus": "unconfirmed", "notes": "Inventory object keys/counts only; no current target announcements module." },
+    { "bucket": "prize-images", "captureStatus": "unconfirmed", "notes": "Inventory object keys/counts only; no current target prize module." },
+    { "bucket": "knowledge-files", "captureStatus": "unconfirmed", "notes": "Do not preserve public URLs; requires private-file design and privacy review." }
+  ]
+}

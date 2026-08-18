@@ -1,404 +1,109 @@
 'use client'
+
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Plus, Eye, Pencil, Sparkles, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { CheckCircle2, ClipboardList, LoaderCircle, RefreshCw, Send } from 'lucide-react'
+
 import AdminTopbar from '@/components/admin/AdminTopbar'
-import {
-  fetchAllChallenges, fetchChallengeStatsMap, fetchOnlineStudentCount, todayStr,
-  type DailyChallenge, type ChallengeStats,
-} from '@/lib/daily-challenge-data'
+import { createAdminDailyChallenge, listAdminDailyChallenges, publishAdminDailyChallenge, type AdminDailyChallenge, type DailySubject } from '@/lib/admin-daily-challenges-client'
+import { listAdminCoursePracticeTests, listAdminPracticeQuestions, type AdminPracticeQuestion, type AdminPracticeTest } from '@/lib/admin-assessments-client'
+import { listAdminCourses, type AdminCourse } from '@/lib/admin-learning-client'
 
-const STATUS_META: Record<DailyChallenge['status'], { label: string; className: string }> = {
-  draft: { label: 'Черновик', className: 'bg-gray-100 text-gray-500' },
-  scheduled: { label: 'Запланирован', className: 'bg-amber-50 text-amber-600' },
-  published: { label: 'Опубликован', className: 'bg-green-50 text-green-600' },
-  completed: { label: 'Завершён', className: 'bg-gray-100 text-gray-500' },
+function message(cause: unknown, fallback: string): string {
+  return cause instanceof Error && cause.message ? cause.message : fallback
 }
 
-function dateLabel(dateStr: string): string {
-  const today = todayStr()
-  const tomorrow = new Date(Date.now() + 86400_000).toISOString().slice(0, 10)
-  if (dateStr === today) return 'Сегодня'
-  if (dateStr === tomorrow) return 'Завтра'
-  return new Date(`${dateStr}T00:00:00`).toLocaleDateString('ru', { day: '2-digit', month: 'short', year: 'numeric' })
+function initialDate(): string {
+  const current = new Date()
+  return new Date(current.getTime() - current.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
 }
-
-interface AutopilotSettings {
-  enabled: boolean
-  questionCount: number
-  xpReward: number
-  publishTime: string
-}
-
-const DEFAULT_AUTOPILOT: AutopilotSettings = { enabled: false, questionCount: 17, xpReward: 80, publishTime: '00:00' }
 
 export default function AdminDailyChallengePage() {
-  const router = useRouter()
+  const [courses, setCourses] = useState<AdminCourse[]>([])
+  const [courseId, setCourseId] = useState<number | null>(null)
+  const [tests, setTests] = useState<AdminPracticeTest[]>([])
+  const [testId, setTestId] = useState<number | null>(null)
+  const [questions, setQuestions] = useState<AdminPracticeQuestion[]>([])
+  const [chosen, setChosen] = useState<number[]>([])
+  const [subject, setSubject] = useState<DailySubject>('math')
+  const [challengeDate, setChallengeDate] = useState(initialDate)
+  const [title, setTitle] = useState('Задание дня')
+  const [xpReward, setXpReward] = useState('30')
+  const [isPublished, setIsPublished] = useState(false)
+  const [items, setItems] = useState<AdminDailyChallenge[]>([])
   const [loading, setLoading] = useState(true)
-  const [challenges, setChallenges] = useState<DailyChallenge[]>([])
-  const [statsMap, setStatsMap] = useState<Map<string, ChallengeStats>>(new Map())
-  const [totalStudents, setTotalStudents] = useState(0)
-  const [autopilot, setAutopilot] = useState<AutopilotSettings>(DEFAULT_AUTOPILOT)
-  const [savingAutopilot, setSavingAutopilot] = useState(false)
-  const [generating, setGenerating] = useState(false)
-  const [creating, setCreating] = useState(false)
-  const [newTitle, setNewTitle] = useState('')
-  const [newDate, setNewDate] = useState(todayStr())
-  const [showCreate, setShowCreate] = useState(false)
-  const [editingRules, setEditingRules] = useState(false)
-  const [rulesDraft, setRulesDraft] = useState(DEFAULT_AUTOPILOT)
-  const [savingRules, setSavingRules] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
-  const load = async () => {
-    const [list, students, settingsRes] = await Promise.all([
-      fetchAllChallenges(),
-      fetchOnlineStudentCount(),
-      fetch('/api/admin/settings').then(r => r.json()).catch(() => ({ settings: {} })),
-    ])
-    setChallenges(list)
-    setTotalStudents(students)
-    setStatsMap(await fetchChallengeStatsMap(list.map(c => c.id)))
+  const selectedCourse = useMemo(() => courses.find(course => course.id === courseId) ?? null, [courses, courseId])
 
-    const settings = settingsRes.settings ?? {}
-    if (settings.ai_autopilot !== undefined) {
-      let parsedRules: Partial<AutopilotSettings> = {}
-      try { parsedRules = settings.daily_challenge_autopilot_rules ? JSON.parse(settings.daily_challenge_autopilot_rules) : {} } catch { /* ignore malformed */ }
-      setAutopilot({
-        enabled: settings.ai_autopilot === 'true',
-        questionCount: parsedRules.questionCount ?? DEFAULT_AUTOPILOT.questionCount,
-        xpReward: parsedRules.xpReward ?? DEFAULT_AUTOPILOT.xpReward,
-        publishTime: parsedRules.publishTime ?? DEFAULT_AUTOPILOT.publishTime,
-      })
-    }
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    const init = async () => { await load() }
-    init()
+  const loadCourses = useCallback(async () => {
+    setLoading(true); setError('')
+    try {
+      const result = await listAdminCourses({ limit: 100 })
+      const online = result.items.filter(course => course.isActive && course.deliveryMode === 'online')
+      setCourses(online)
+      setCourseId(current => online.some(course => course.id === current) ? current : online[0]?.id ?? null)
+    } catch (cause) { setError(message(cause, 'Не удалось загрузить курсы')) } finally { setLoading(false) }
   }, [])
 
-  const todayChallenge = challenges.find(c => c.date === todayStr())
-  const todayStats = todayChallenge ? statsMap.get(todayChallenge.id) : undefined
-  const completedToday = todayStats?.completedCount ?? 0
-  const completionPct = totalStudents > 0 ? Math.round((completedToday / totalStudents) * 100) : 0
+  const loadDaily = useCallback(async (id: number | null) => {
+    if (id === null) { setItems([]); return }
+    try { setItems(await listAdminDailyChallenges(id)) } catch (cause) { setError(message(cause, 'Не удалось загрузить задания')) }
+  }, [])
 
-  const openRulesEditor = () => {
-    setRulesDraft(autopilot)
-    setEditingRules(true)
-  }
+  useEffect(() => { const timer = window.setTimeout(() => { void loadCourses() }, 0); return () => window.clearTimeout(timer) }, [loadCourses])
+  useEffect(() => { const timer = window.setTimeout(() => { void loadDaily(courseId) }, 0); return () => window.clearTimeout(timer) }, [courseId, loadDaily])
 
-  const saveRules = async () => {
-    setSavingRules(true)
-    await fetch('/api/admin/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        key: 'daily_challenge_autopilot_rules',
-        value: JSON.stringify({ questionCount: rulesDraft.questionCount, xpReward: rulesDraft.xpReward, publishTime: rulesDraft.publishTime }),
-      }),
-    })
-    setAutopilot(prev => ({ ...prev, questionCount: rulesDraft.questionCount, xpReward: rulesDraft.xpReward, publishTime: rulesDraft.publishTime }))
-    setSavingRules(false)
-    setEditingRules(false)
-  }
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (courseId === null) { setTests([]); setTestId(null); setQuestions([]); return }
+      void (async () => {
+        try {
+          const result = await listAdminCoursePracticeTests(courseId, { limit: 100 })
+          const matching = result.items.filter(item => item.subject === subject && item.activeQuestionCount > 0)
+          setTests(matching); setTestId(matching[0]?.id ?? null); setQuestions([]); setChosen([])
+        } catch (cause) { setError(message(cause, 'Не удалось загрузить тесты')) }
+      })()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [courseId, subject])
 
-  const toggleAutopilot = async () => {
-    const next = !autopilot.enabled
-    setSavingAutopilot(true)
-    await fetch('/api/admin/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: 'ai_autopilot', value: String(next) }),
-    })
-    setAutopilot(prev => ({ ...prev, enabled: next }))
-    setSavingAutopilot(false)
-  }
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (testId === null) { setQuestions([]); return }
+      void (async () => {
+        try { setQuestions((await listAdminPracticeQuestions(testId, { limit: 200 })).items.filter(item => item.isActive)) } catch (cause) { setError(message(cause, 'Не удалось загрузить вопросы')) }
+      })()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [testId])
 
-  const handleGenerateNow = async () => {
-    setGenerating(true)
-    setError(null)
+  const toggle = (id: number) => setChosen(current => current.includes(id) ? current.filter(value => value !== id) : current.length === 15 ? current : [...current, id])
+  const save = async () => {
+    if (courseId === null || chosen.length !== 15) return
+    setSaving(true); setError(''); setSuccess('')
     try {
-      const date = todayChallenge ? new Date(Date.now() + 86400_000).toISOString().slice(0, 10) : todayStr()
-      const createRes = await fetch('/api/admin/daily-challenge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: `Задание дня — ${dateLabel(date)}`, date, questionCount: autopilot.questionCount, xpReward: autopilot.xpReward, status: 'draft', autoGenerated: true }),
-      })
-      const created = await createRes.json()
-      if (!createRes.ok) throw new Error(created.error ?? 'Не удалось создать задание')
-
-      const genRes = await fetch('/api/admin/daily-challenge/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ challengeId: created.id, count: autopilot.questionCount, difficulty: 'mixed' }),
-      })
-      const genData = await genRes.json()
-      if (!genRes.ok) throw new Error(genData.error ?? 'AI не смог сгенерировать вопросы')
-
-      router.push(`/admin/daily-challenge/${created.id}`)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Неизвестная ошибка')
-    } finally {
-      setGenerating(false)
-    }
+      const challenge = await createAdminDailyChallenge({ courseId, challengeDate, title, subject, xpReward: Number(xpReward), questionIds: chosen, isPublished })
+      setItems(current => [challenge, ...current]); setChosen([])
+      setSuccess(isPublished ? 'Задание опубликовано.' : 'Черновик сохранён. Проверьте вопросы и опубликуйте его в списке справа.')
+    } catch (cause) { setError(message(cause, 'Не удалось создать задание')) } finally { setSaving(false) }
   }
-
-  const handleCreate = async () => {
-    if (!newTitle.trim() || !newDate) return
-    setCreating(true)
-    setError(null)
+  const publishDraft = async (id: number) => {
+    setSaving(true); setError(''); setSuccess('')
     try {
-      const res = await fetch('/api/admin/daily-challenge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTitle.trim(), date: newDate, status: 'draft' }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Не удалось создать задание')
-      router.push(`/admin/daily-challenge/${data.id}`)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Неизвестная ошибка')
-      setCreating(false)
-    }
+      const updated = await publishAdminDailyChallenge(id)
+      setItems(current => current.map(item => item.id === updated.id ? updated : item)); setSuccess('Черновик опубликован.')
+    } catch (cause) { setError(message(cause, 'Не удалось опубликовать черновик')) } finally { setSaving(false) }
   }
 
-  return (
-    <div className="min-h-screen bg-[#FAF8FF]">
-      <AdminTopbar title="Daily Challenge" actionLabel="Новое задание" actionIcon={Plus} onAction={() => setShowCreate(true)} />
-
-      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6">
-        {error && <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{error}</div>}
-
-        {/* Stats row */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <div className="rounded-2xl border border-gray-100 bg-white p-5">
-            <p className="text-xs font-semibold text-gray-400">Сегодня прошли</p>
-            <p className="mt-1 text-2xl font-extrabold text-[#191B23]">{completedToday}/{totalStudents}</p>
-            <p className="mt-1 text-xs text-gray-400">{completionPct}%</p>
-          </div>
-          <div className="rounded-2xl border border-gray-100 bg-white p-5">
-            <p className="text-xs font-semibold text-gray-400">Completion</p>
-            <p className="mt-1 text-2xl font-extrabold text-[#191B23]">{completionPct}%</p>
-          </div>
-          <div className="rounded-2xl border border-gray-100 bg-white p-5">
-            <p className="text-xs font-semibold text-gray-400">Средний результат</p>
-            <p className="mt-1 text-2xl font-extrabold text-[#191B23]">{todayStats?.avgPct ?? '—'}{todayStats?.avgPct !== undefined && todayStats?.avgPct !== null ? '%' : ''}</p>
-            <p className="mt-1 text-xs text-gray-400">Целевой: 75%</p>
-          </div>
-          <div className="rounded-2xl border border-gray-100 bg-white p-5">
-            <p className="text-xs font-semibold text-gray-400">Среднее время</p>
-            <p className="mt-1 text-2xl font-extrabold text-[#191B23]">
-              {todayStats?.avgTimeSeconds ? `${Math.floor(todayStats.avgTimeSeconds / 60)}:${String(todayStats.avgTimeSeconds % 60).padStart(2, '0')}` : '—'}
-            </p>
-            <p className="mt-1 text-xs text-gray-400">мин</p>
-          </div>
-        </div>
-
-        {/* AI Autopilot card */}
-        <div className="rounded-2xl border-2 border-amber-200 bg-amber-50/40 p-5 sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="flex items-center gap-2 text-base font-bold text-[#191B23]">
-              <Sparkles size={18} className="text-amber-500" /> AI Autopilot
-            </h2>
-            <button
-              type="button"
-              onClick={toggleAutopilot}
-              disabled={savingAutopilot}
-              className={`relative h-7 w-14 shrink-0 rounded-full transition-colors ${autopilot.enabled ? 'bg-green-500' : 'bg-gray-300'} disabled:opacity-60`}
-            >
-              <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${autopilot.enabled ? 'translate-x-8' : 'translate-x-1'}`} />
-            </button>
-          </div>
-
-          <p className="mt-2 text-sm text-gray-600">
-            {autopilot.enabled
-              ? 'AI автоматически создаёт ежедневные задания на основе базы знаний и слабых тем учеников.'
-              : 'Автопилот выключен — задания нужно создавать вручную.'}
-          </p>
-
-          {editingRules ? (
-            <div className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
-              <div className="rounded-xl bg-white px-3 py-2">
-                <label className="text-xs text-gray-400">Количество вопросов</label>
-                <input
-                  type="number" min={1} max={50}
-                  value={rulesDraft.questionCount}
-                  onChange={e => setRulesDraft(d => ({ ...d, questionCount: Number(e.target.value) }))}
-                  className="mt-0.5 w-full border-none p-0 font-bold text-[#191B23] outline-none"
-                />
-              </div>
-              <div className="rounded-xl bg-white px-3 py-2">
-                <label className="text-xs text-gray-400">XP</label>
-                <input
-                  type="number" min={1} max={500}
-                  value={rulesDraft.xpReward}
-                  onChange={e => setRulesDraft(d => ({ ...d, xpReward: Number(e.target.value) }))}
-                  className="mt-0.5 w-full border-none p-0 font-bold text-[#191B23] outline-none"
-                />
-              </div>
-              <div className="rounded-xl bg-white px-3 py-2">
-                <label className="text-xs text-gray-400">Время публикации</label>
-                <input
-                  type="time"
-                  value={rulesDraft.publishTime}
-                  onChange={e => setRulesDraft(d => ({ ...d, publishTime: e.target.value }))}
-                  className="mt-0.5 w-full border-none p-0 font-bold text-[#191B23] outline-none"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-              <div className="rounded-xl bg-white px-3 py-2">
-                <p className="text-xs text-gray-400">Количество вопросов</p>
-                <p className="font-bold text-[#191B23]">{autopilot.questionCount}</p>
-              </div>
-              <div className="rounded-xl bg-white px-3 py-2">
-                <p className="text-xs text-gray-400">Сложность</p>
-                <p className="font-bold text-[#191B23]">Средняя (динамическая)</p>
-              </div>
-              <div className="rounded-xl bg-white px-3 py-2">
-                <p className="text-xs text-gray-400">XP</p>
-                <p className="font-bold text-[#191B23]">{autopilot.xpReward}</p>
-              </div>
-              <div className="rounded-xl bg-white px-3 py-2">
-                <p className="text-xs text-gray-400">Время публикации</p>
-                <p className="font-bold text-[#191B23]">{autopilot.publishTime} ежедневно</p>
-              </div>
-              <div className="rounded-xl bg-white px-3 py-2">
-                <p className="text-xs text-gray-400">Предметы</p>
-                <p className="font-bold text-[#191B23]">Все разделы ОРТ</p>
-              </div>
-              <div className="rounded-xl bg-white px-3 py-2">
-                <p className="text-xs text-gray-400">Распределение тем</p>
-                <p className="font-bold text-[#191B23]">Авто (AI балансировка)</p>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={handleGenerateNow}
-              disabled={generating}
-              className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-amber-600 disabled:opacity-60"
-            >
-              {generating ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
-              {generating ? 'Генерация...' : 'Сгенерировать сейчас через AI'}
-            </button>
-            {editingRules ? (
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={saveRules} disabled={savingRules} className="rounded-xl bg-[#1B4FD8] px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60">
-                  {savingRules ? 'Сохранение...' : 'Сохранить'}
-                </button>
-                <button type="button" onClick={() => setEditingRules(false)} className="text-sm font-semibold text-gray-500 hover:text-gray-700">
-                  Отмена
-                </button>
-              </div>
-            ) : (
-              <button type="button" onClick={openRulesEditor} className="text-sm font-semibold text-amber-700 hover:underline">
-                Редактировать правила генерации
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Challenges table */}
-        {loading ? (
-          <div className="rounded-2xl border border-gray-100 bg-white p-10 text-center text-sm text-gray-400">Загрузка...</div>
-        ) : (
-          <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white">
-            <table className="w-full min-w-[720px] border-collapse">
-              <thead>
-                <tr className="border-b border-gray-100 text-left text-xs font-semibold text-gray-400">
-                  <th className="px-4 py-3">Дата</th>
-                  <th className="px-4 py-3">Название</th>
-                  <th className="px-4 py-3">Вопросов</th>
-                  <th className="px-4 py-3">Прошли</th>
-                  <th className="px-4 py-3">Ср. результат</th>
-                  <th className="px-4 py-3">Статус</th>
-                  <th className="px-4 py-3">Действия</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {challenges.length === 0 ? (
-                  <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">Заданий пока нет</td></tr>
-                ) : challenges.map(c => {
-                  const stats = statsMap.get(c.id)
-                  const status = STATUS_META[c.status]
-                  return (
-                    <tr key={c.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-semibold text-[#191B23]">{dateLabel(c.date)}</td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{c.title}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{c.question_count}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{stats?.completedCount ?? 0}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{stats?.avgPct != null ? `${stats.avgPct}%` : '—'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${status.className}`}>{status.label}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Link href={`/admin/daily-challenge/${c.id}?preview=1`} aria-label="Предпросмотр" className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-[#1B4FD8]">
-                            <Eye size={16} />
-                          </Link>
-                          <Link href={`/admin/daily-challenge/${c.id}`} aria-label="Редактировать" className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-[#1B4FD8]">
-                            <Pencil size={16} />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowCreate(false)}>
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-[#191B23]">Новое задание дня</h2>
-            <div className="mt-4 space-y-3">
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-500">Название</label>
-                <input
-                  value={newTitle}
-                  onChange={e => setNewTitle(e.target.value)}
-                  placeholder="Задание дня — 10 декабря"
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4FD8]/20"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-500">Дата</label>
-                <input
-                  type="date"
-                  value={newDate}
-                  onChange={e => setNewDate(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4FD8]/20"
-                />
-              </div>
-            </div>
-            <div className="mt-5 flex gap-2">
-              <button
-                type="button"
-                onClick={handleCreate}
-                disabled={creating || !newTitle.trim()}
-                className="rounded-xl bg-[#1B4FD8] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
-              >
-                {creating ? 'Создание...' : 'Создать'}
-              </button>
-              <button type="button" onClick={() => setShowCreate(false)} className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200">
-                Отмена
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
+  return <div className="min-h-screen bg-[#FAF8FF]"><AdminTopbar title="Задание дня" actionLabel="Обновить" actionIcon={RefreshCw} onAction={() => { void loadCourses(); void loadDaily(courseId) }} />
+    <main className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6">
+      <section className="rounded-2xl border border-blue-100 bg-blue-50 p-4"><h1 className="text-base font-black text-[#0D1E4A]">Ежедневное задание: 15 вопросов и одна попытка</h1><p className="mt-1 text-sm text-slate-600">Выберите курс, дату и 15 вопросов одного предмета. После публикации задание появляется в 00:00 по Бишкеку. Звёзды: 50 / 75 / 90%.</p></section>
+      {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p>}
+      {success && <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{success}</p>}
+      {loading ? <div className="flex min-h-40 items-center justify-center text-sm font-semibold text-gray-500"><LoaderCircle className="mr-2 animate-spin" size={18} />Загружаем данные…</div> : courses.length === 0 ? <section className="rounded-2xl border border-dashed bg-white p-8 text-center"><ClipboardList className="mx-auto text-[#1B3F92]" /><h2 className="mt-3 font-black">Сначала создайте онлайн-курс</h2><p className="mt-1 text-sm text-gray-500">Задание дня привязано к активному онлайн-курсу.</p></section> : <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]"><section className="rounded-2xl border bg-white p-5"><div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-bold">Онлайн-курс<select value={courseId ?? ''} onChange={event => setCourseId(Number(event.target.value))} className="mt-1 block min-h-11 w-full rounded-xl border px-3 text-sm">{courses.map(course => <option key={course.id} value={course.id}>{course.name}</option>)}</select></label><label className="text-sm font-bold">Дата<input type="date" value={challengeDate} onChange={event => setChallengeDate(event.target.value)} className="mt-1 block min-h-11 w-full rounded-xl border px-3 text-sm" /></label><label className="text-sm font-bold">Предмет<select value={subject} onChange={event => setSubject(event.target.value as DailySubject)} className="mt-1 block min-h-11 w-full rounded-xl border px-3 text-sm"><option value="math">Математика</option><option value="kyr">Кыргыз тили</option></select></label><label className="text-sm font-bold">XP за 3 звезды<input inputMode="numeric" value={xpReward} onChange={event => setXpReward(event.target.value)} className="mt-1 block min-h-11 w-full rounded-xl border px-3 text-sm" /></label></div><label className="mt-4 block text-sm font-bold">Название<input value={title} onChange={event => setTitle(event.target.value)} maxLength={300} className="mt-1 block min-h-11 w-full rounded-xl border px-3 text-sm" /></label><label className="mt-4 block text-sm font-bold">Источник вопросов<select value={testId ?? ''} onChange={event => { setTestId(Number(event.target.value)); setChosen([]) }} className="mt-1 block min-h-11 w-full rounded-xl border px-3 text-sm"><option value="">Выберите тест</option>{tests.map(test => <option key={test.id} value={test.id}>{test.title} · {test.activeQuestionCount} вопросов</option>)}</select></label><div className="mt-5 flex items-center justify-between gap-3"><div><h2 className="font-black">Выберите 15 вопросов</h2><p className="text-sm text-gray-500">{chosen.length}/15 выбрано. Порядок одинаков для всех учеников курса.</p></div><span className={chosen.length === 15 ? 'rounded-full bg-emerald-100 px-3 py-1 text-sm font-black text-emerald-700' : 'rounded-full bg-amber-100 px-3 py-1 text-sm font-black text-amber-800'}>{chosen.length}/15</span></div><div className="mt-3 max-h-[32rem] space-y-2 overflow-y-auto pr-1">{questions.map(question => <label key={question.id} className={`flex cursor-pointer gap-3 rounded-xl border p-3 text-sm ${chosen.includes(question.id) ? 'border-[#1B3F92] bg-blue-50' : 'border-gray-200'}`}><input type="checkbox" checked={chosen.includes(question.id)} onChange={() => toggle(question.id)} disabled={!chosen.includes(question.id) && chosen.length >= 15} className="mt-0.5 h-4 w-4" /><span><b>#{question.id}</b> · {question.questionText}<small className="ml-2 text-gray-500">{question.section} · {question.difficulty}</small></span></label>)}{testId && questions.length === 0 && <p className="py-6 text-center text-sm text-gray-500">В этом тесте нет активных вопросов.</p>}</div><label className="mt-5 flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={isPublished} onChange={event => setIsPublished(event.target.checked)} />Опубликовать сразу</label><button type="button" onClick={() => void save()} disabled={saving || chosen.length !== 15 || !selectedCourse} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1B3F92] px-5 text-sm font-bold text-white disabled:opacity-50"><Send size={16} />{saving ? 'Сохраняем…' : isPublished ? 'Опубликовать задание' : 'Сохранить черновик'}</button></section><aside className="rounded-2xl border bg-white p-5"><h2 className="font-black">Задания курса</h2><div className="mt-4 space-y-3">{items.length === 0 ? <p className="text-sm text-gray-500">Для выбранного курса заданий ещё нет.</p> : items.map(item => <article key={item.id} className="rounded-xl border p-3"><div className="flex items-center justify-between gap-2"><b className="text-sm">{item.challengeDate}</b>{item.isPublished ? <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700"><CheckCircle2 size={13} />Опубликовано</span> : <span className="text-xs font-bold text-amber-700">Черновик</span>}</div><p className="mt-1 text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs text-gray-500">{item.questionCount}/15 · {item.subject === 'math' ? 'Математика' : 'Кыргыз тили'} · до {item.xpReward} XP</p>{!item.isPublished && <button type="button" disabled={saving} onClick={() => void publishDraft(item.id)} className="mt-3 min-h-9 rounded-lg border border-[#1B3F92] px-3 text-xs font-bold text-[#1B3F92] disabled:opacity-50">Опубликовать</button>}</article>)}</div></aside></div>}
+    </main></div>
 }

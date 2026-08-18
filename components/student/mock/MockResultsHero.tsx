@@ -12,7 +12,7 @@ export default function MockResultsHero({ totalScore, previousScore, completedAt
   return (
     <div
       className="rounded-2xl p-6 sm:p-8 text-white shadow-sm"
-      style={{ background: 'linear-gradient(135deg, #1B4FD8 0%, #3B82F6 100%)' }}
+      style={{ background: 'linear-gradient(135deg, #1B3F92 0%, #3B82F6 100%)' }}
     >
       <span className="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-wide">
         Результат пробного ОРТ

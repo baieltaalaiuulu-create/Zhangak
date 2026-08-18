@@ -1,5 +1,7 @@
 'use client'
 
+import { ArrowRight, Sparkles } from 'lucide-react'
+
 interface Props {
   firstName: string
   todayGoalLabel: string
@@ -31,7 +33,10 @@ export default function ChatHeroCard({
           AI Mentor · Персональный наставник
         </span>
 
-        <h1 className="mt-3 text-2xl font-bold">Привет, {firstName}! 👋</h1>
+        <h1 className="mt-3 flex items-center gap-2 text-2xl font-bold">
+          <Sparkles size={22} aria-hidden="true" />
+          Привет, {firstName}!
+        </h1>
         {todayGoalLabel && (
           <p className="mt-1 text-base font-bold text-white/95">Сегодняшняя цель: {todayGoalLabel}</p>
         )}
@@ -60,7 +65,7 @@ export default function ChatHeroCard({
             href={continueHref}
             className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-[#4338CA] shadow-md transition-colors hover:bg-white/90"
           >
-            Начать обучение →
+            <span className="inline-flex items-center gap-2">Начать обучение <ArrowRight size={17} aria-hidden="true" /></span>
           </a>
           <button
             type="button"

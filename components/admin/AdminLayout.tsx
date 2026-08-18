@@ -1,70 +1,116 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { AlertCircle, LoaderCircle, RefreshCw } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+
+import { getCurrentZhangakUser } from '@/lib/zhangak-auth-client'
 import AdminSidebar from './AdminSidebar'
 
 interface Props {
   children: ReactNode
 }
 
-// Every staff role that belongs in /admin — students are bounced to their
-// own dashboard, anything else falls through to the login page rather than
-// silently getting admin access.
-const ADMIN_ROLES = new Set(['admin', 'super_admin', 'admin_jr', 'director', 'finance', 'manager', 'math_admin'])
+const FULL_ADMIN_ROLES = new Set(['admin', 'super_admin'])
 
 export default function AdminLayout({ children }: Props) {
   const router = useRouter()
+  const pathname = usePathname()
   const [checked, setChecked] = useState(false)
+  const [isJuniorAdmin, setIsJuniorAdmin] = useState(false)
+  const [adminRole, setAdminRole] = useState<'admin' | 'super_admin' | null>(null)
+  const [serviceError, setServiceError] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+
+  const retry = useCallback(() => {
+    setChecked(false)
+    setServiceError(false)
+    setAttempt(value => value + 1)
+  }, [])
 
   useEffect(() => {
-    let cancelled = false
+    let active = true
 
     const checkAuth = async () => {
-      // getSession() resolves from the session already persisted in
-      // localStorage, so it settles immediately on a hard refresh.
-      // getUser() instead re-validates against the Auth server over the
-      // network — its variable latency was racing this check on refresh,
-      // occasionally reading as "no session yet" before the real session
-      // had a chance to load and firing the wrong redirect.
-      const { data: { session } } = await supabase.auth.getSession()
-      if (cancelled) return
-      const user = session?.user
-      if (!user) { router.push('/'); return }
+      try {
+        const user = await getCurrentZhangakUser()
+        if (!active) return
+        if (!user) { router.replace('/login'); return }
 
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
+        if (user.role === 'admin_jr') {
+          const isJuniorArea = pathname === '/admin/jr' || pathname.startsWith('/admin/jr/')
+          if (!isJuniorArea) { router.replace('/admin/jr'); return }
+          setIsJuniorAdmin(true)
+          setAdminRole(null)
+          setChecked(true)
+          return
+        }
 
-      if (cancelled) return
+        if (user.role === 'student' || user.role === 'teacher' || user.role === 'math_student' || user.role === 'math_parent') {
+          const target = user.role === 'teacher' || (user.role === 'student' && user.studentType === 'offline')
+            ? 'https://offline.zhangak.com/login'
+            : 'https://platform.zhangak.com/login'
+          window.location.assign(process.env.NODE_ENV === 'production'
+            ? target
+            : '/login?surface=platform')
+          return
+        }
 
-      // Couldn't confirm a role (query error or no row) — don't guess either
-      // way, send back to login instead of granting or wrongly denying access.
-      if (error || !profile) { router.push('/'); return }
+        if (!FULL_ADMIN_ROLES.has(user.role)) {
+          router.replace('/login')
+          return
+        }
 
-      if (profile.role === 'student') { router.push('/student/online'); return }
+        const isAccessArea = pathname === '/admin/access' || pathname.startsWith('/admin/access/')
+        if (isAccessArea && user.role !== 'super_admin') {
+          router.replace('/admin')
+          return
+        }
 
-      if (!ADMIN_ROLES.has(profile.role)) { router.push('/'); return }
-
-      setChecked(true)
+        setIsJuniorAdmin(false)
+        setAdminRole(user.role as 'admin' | 'super_admin')
+        setChecked(true)
+      } catch {
+        if (active) setServiceError(true)
+      }
     }
-    checkAuth()
 
-    return () => { cancelled = true }
-  }, [router])
+    void checkAuth()
+    return () => { active = false }
+  }, [attempt, pathname, router])
+
+  if (serviceError) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center bg-[#F4F6FA] px-5">
+        <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-7 text-center shadow-sm">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+            <AlertCircle size={23} aria-hidden="true" />
+          </span>
+          <h1 className="mt-4 text-xl font-black text-[#0D1E4A]">Не удалось проверить доступ</h1>
+          <p className="mt-2 text-sm font-medium leading-6 text-slate-500">Панель остаётся закрытой. Проверьте соединение и повторите попытку.</p>
+          <button type="button" onClick={retry} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0D1E4A] px-4 text-sm font-extrabold text-white">
+            <RefreshCw size={17} aria-hidden="true" />
+            Повторить
+          </button>
+        </div>
+      </main>
+    )
+  }
 
   if (!checked) return (
-    <div className="flex min-h-screen items-center justify-center bg-[#FAF8FF]">
-      <div className="text-sm text-gray-400">Загрузка...</div>
-    </div>
+    <main className="flex min-h-dvh items-center justify-center bg-[#F4F6FA] px-5">
+      <div role="status" className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-600 shadow-sm">
+        <LoaderCircle size={19} className="animate-spin text-[#1B3F92]" aria-hidden="true" />
+        Проверяем права доступа…
+      </div>
+    </main>
   )
 
+  if (isJuniorAdmin) return <>{children}</>
+
   return (
-    <div className="min-h-screen bg-[#FAF8FF]">
-      <AdminSidebar />
+    <div className="min-h-screen bg-[#F4F6FA]">
+      <AdminSidebar role={adminRole} />
       <div className="lg:ml-64 print:ml-0">{children}</div>
     </div>
   )

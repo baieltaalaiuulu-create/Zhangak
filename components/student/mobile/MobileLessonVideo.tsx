@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { CheckCircle2, Play } from 'lucide-react'
+import { CheckCircle2, Play, Video } from 'lucide-react'
 
 interface Props {
   videoUrl: string
@@ -11,8 +11,16 @@ interface Props {
 }
 
 function extractYoutubeId(url: string): string | null {
-  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)
-  return match ? match[1] : null
+  try {
+    const parsed = new URL(url)
+    if (parsed.hostname === 'youtu.be') return parsed.pathname.split('/').filter(Boolean)[0] ?? null
+    if (['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(parsed.hostname)) {
+      return parsed.searchParams.get('v') ?? (parsed.pathname.startsWith('/embed/') ? parsed.pathname.split('/')[2] ?? null : null)
+    }
+    return null
+  } catch {
+    return null
+  }
 }
 
 // Not in lib.dom — loaded lazily from https://www.youtube.com/iframe_api
@@ -43,7 +51,7 @@ function loadYoutubeApi(): Promise<void> {
 
 // Mobile-only lesson video: lazy-loaded (a thumbnail + play button stand in
 // for the iframe until tapped, per the "don't load until clicked" spec),
-// and wired to the real YouTube IFrame API so "✓ Видео просмотрено" reflects
+// and wired to the real YouTube IFrame API so "Видео просмотрено" reflects
 // an actual ENDED playback event rather than a guess.
 export default function MobileLessonVideo({ videoUrl, title, watched, onWatched }: Props) {
   const [playing, setPlaying] = useState(false)
@@ -72,7 +80,7 @@ export default function MobileLessonVideo({ videoUrl, title, watched, onWatched 
     return (
       <div className="flex aspect-video items-center justify-center rounded-2xl bg-gray-900 text-center text-gray-400">
         <div>
-          <div className="mb-2 text-4xl">🎬</div>
+          <Video size={36} className="mx-auto mb-2" aria-hidden="true" />
           <p className="text-sm">Видео скоро появится</p>
         </div>
       </div>
@@ -94,7 +102,7 @@ export default function MobileLessonVideo({ videoUrl, title, watched, onWatched 
               className="h-full w-full object-cover opacity-80"
             />
             <span className="absolute inset-0 flex items-center justify-center">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-[#1B4FD8] shadow-lg transition-transform group-active:scale-95">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-[#1B3F92] shadow-lg transition-transform group-active:scale-95">
                 <Play size={26} fill="currentColor" />
               </span>
             </span>

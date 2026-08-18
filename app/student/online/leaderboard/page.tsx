@@ -1,124 +1,45 @@
 'use client'
-export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import {
-  fetchLeaderboardEntries,
-  fetchScoreDelta,
-  fetchStreaksForStudents,
-  fetchDeltasForStudents,
-  type LeaderboardFilter,
-  type LeaderboardEntry,
-} from '@/lib/leaderboard-data'
 
-import MyRankCard from '@/components/student/leaderboard/MyRankCard'
-import PodiumTop3 from '@/components/student/leaderboard/PodiumTop3'
-import LeaderboardTable from '@/components/student/leaderboard/LeaderboardTable'
+import { useStudentSession } from '@/components/student/StudentSessionContext'
+import StudentVisualIcon from '@/components/student/StudentVisualIcon'
+import { zhangakApiRequest } from '@/lib/zhangak-api-client'
 
-const FILTERS: { key: LeaderboardFilter; label: string }[] = [
-  { key: 'all', label: 'Все участники' },
-  { key: 'group', label: 'Моя группа' },
-  { key: 'month', label: 'Этот месяц' },
-  { key: 'alltime', label: 'Все время' },
-]
+interface RankingItem { rank: number; displayName: string; xp: number; isMe: boolean }
+interface RankingResponse { items: RankingItem[]; myRank: number | null }
 
 export default function LeaderboardPage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const [studentId, setStudentId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<LeaderboardFilter>('all')
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([])
-  const [streaks, setStreaks] = useState<Map<string, number>>(new Map())
-  const [deltas, setDeltas] = useState<Map<string, number | null>>(new Map())
-  const [myDelta, setMyDelta] = useState<number | null>(null)
-  const [entriesLoading, setEntriesLoading] = useState(true)
+  useStudentSession()
+  const [ranking, setRanking] = useState<RankingResponse | null>(null)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
+    let active = true
+    void zhangakApiRequest<RankingResponse>('/v1/platform/leaderboard')
+      .then(value => { if (active) setRanking(value) })
+      .catch(() => { if (active) setError(true) })
+    return () => { active = false }
+  }, [])
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_type')
-        .eq('id', user.id)
-        .single()
+  const podium = ranking?.items.slice(0, 3) ?? []
+  const rest = ranking?.items.slice(3) ?? []
+  return <main className="px-4 pb-28 pt-5 sm:mx-auto sm:max-w-2xl sm:pb-10">
+    <header><p className="text-[11px] font-extrabold uppercase tracking-[.12em] text-[var(--student-warning)]">Недельный рейтинг</p><h1 className="mt-1 text-2xl font-black tracking-tight">Лига Zhangak</h1><p className="mt-1 text-[13px] text-[var(--student-ink-2)]">Место определяется только подтверждённым XP.</p></header>
 
-      if (!profile || profile.role !== 'student') { router.push('/login'); return }
-      if (profile.student_type === 'offline') { router.push('/student'); return }
-
-      setStudentId(user.id)
-      const delta = await fetchScoreDelta(user.id)
-      setMyDelta(delta.delta)
-      setLoading(false)
-    }
-    checkAuth()
-  }, [router])
-
-  useEffect(() => {
-    if (!studentId) return
-    const load = async () => {
-      setEntriesLoading(true)
-      const list = await fetchLeaderboardEntries(filter, studentId)
-      setEntries(list)
-
-      const ids = list.map(e => e.studentId)
-      const [streakMap, deltaMap] = await Promise.all([
-        fetchStreaksForStudents(ids),
-        fetchDeltasForStudents(ids),
-      ])
-      setStreaks(streakMap)
-      setDeltas(deltaMap)
-      setEntriesLoading(false)
-    }
-    load()
-  }, [filter, studentId])
-
-  if (loading || !studentId) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAF8FF', fontFamily: 'Inter, sans-serif' }}>
-        <div style={{ color: '#9CA3AF', fontSize: 14 }}>Загрузка...</div>
-      </div>
-    )
-  }
-
-  const myEntry = entries.find(e => e.studentId === studentId)
-
-  return (
-    <div className="min-h-screen bg-[#FAF8FF]">
-      <div className="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:px-6">
-        <h1 className="text-xl font-bold text-[#191B23]">Рейтинг</h1>
-
-        <div className="flex gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible md:pb-0">
-          {FILTERS.map(f => (
-            <button
-              key={f.key}
-              type="button"
-              onClick={() => setFilter(f.key)}
-              className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-                filter === f.key
-                  ? 'bg-[#1B4FD8] text-white'
-                  : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+    {!ranking && !error && <div className="mt-6 space-y-3">{[1, 2, 3, 4].map(item => <div key={item} className="h-16 animate-pulse rounded-2xl bg-white" />)}</div>}
+    {error && <p role="alert" className="mt-5 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700">Не удалось загрузить рейтинг. Попробуй обновить страницу.</p>}
+    {ranking && <>
+      <section className="mt-5 rounded-[24px] bg-gradient-to-br from-[#1B3F92] to-[#6C3DE0] px-3 pb-4 pt-6 text-white">
+        <div className="flex items-end justify-center gap-2">
+          {[podium[1], podium[0], podium[2]].map((item, index) => item ? <div key={item.rank} className={`flex min-w-0 flex-1 flex-col items-center ${index === 1 ? 'pb-4' : ''}`}><span className={`flex items-center justify-center rounded-full border-2 border-white/70 bg-white/20 font-black ${index === 1 ? 'h-16 w-16 text-xl' : 'h-13 w-13 text-base'}`}>{item.displayName.trim().slice(0, 1).toUpperCase()}</span><p className="mt-2 max-w-full truncate text-center text-xs font-extrabold">{item.displayName}</p><p className="text-[11px] text-white/75">{item.xp} XP</p><span className="mt-2 flex h-7 w-7 items-center justify-center rounded-full bg-white font-black text-[var(--student-brand)]">{item.rank}</span></div> : <div key={`empty-${index}`} className="min-w-0 flex-1" />)}
         </div>
-
-        <MyRankCard rank={myEntry?.rank ?? null} score={myEntry?.bestScore ?? null} delta={myDelta} />
-
-        {entriesLoading ? (
-          <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center text-sm text-gray-400">Загрузка...</div>
-        ) : (
-          <>
-            <PodiumTop3 entries={entries} currentStudentId={studentId} />
-            <LeaderboardTable entries={entries} currentStudentId={studentId} streaks={streaks} deltas={deltas} />
-          </>
-        )}
-      </div>
-    </div>
-  )
+      </section>
+      <section className="mt-3 overflow-hidden rounded-[22px] border border-[var(--student-line)] bg-white">
+        {ranking.items.length === 0 && <div className="p-6 text-center"><StudentVisualIcon name="emoji_events" size={35} color="var(--student-warning)" /><h2 className="mt-2 font-extrabold">Рейтинг пока пуст</h2><p className="mt-1 text-sm text-[var(--student-ink-2)]">Получи XP за задания и появись первым.</p></div>}
+        {rest.map((item, index) => <article key={`${item.rank}-${item.displayName}`} className={`flex min-h-16 items-center gap-3 px-4 ${index ? 'border-t border-[var(--student-line)]' : ''} ${item.isMe ? 'bg-[var(--student-brand-50)]' : ''}`}><span className="w-7 text-center text-sm font-black text-[var(--student-ink-3)]">{item.rank}</span><span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--student-surface-2)] text-sm font-black text-[var(--student-brand)]">{item.displayName.trim().slice(0, 1).toUpperCase()}</span><span className="min-w-0 flex-1 truncate text-sm font-bold">{item.displayName}{item.isMe ? ' · ты' : ''}</span><span className="shrink-0 text-sm font-black text-[var(--student-brand)]">{item.xp} XP</span></article>)}
+      </section>
+      <div className="mt-3 flex items-center gap-3 rounded-2xl bg-[var(--student-warning-50)] p-4"><StudentVisualIcon name="shield" size={22} color="var(--student-warning)" /><p className="text-xs font-semibold leading-5 text-[var(--student-ink-2)]">XP начисляется сервером за новые достижения. Сброс тренажёра не уменьшает уже полученные очки.</p></div>
+    </>}
+  </main>
 }

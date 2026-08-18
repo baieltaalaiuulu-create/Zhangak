@@ -1,40 +1,18 @@
-import { useEffect, useState } from 'react'
-import { View, ActivityIndicator } from 'react-native'
+import { View, Text, Pressable, ActivityIndicator } from 'react-native'
 import { Tabs, Redirect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import type { Session } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { useNativeAuth } from '@/components/NativeAuthProvider'
+import { isSupportedNativeStudent } from '@/lib/native-auth'
 
-const BRAND_BLUE = '#1B4FD8'
+const BRAND_BLUE = '#1B3F92'
 const INACTIVE_GRAY = '#9CA3AF'
-
-// Central auth gate for every screen under (student) — redirects to
-// /login the moment there's no session, so individual screens don't each
-// need to re-implement this check on mount.
-function useSession() {
-  const [session, setSession] = useState<Session | null>(null)
-  const [checked, setChecked] = useState(false)
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setChecked(true)
-    })
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession)
-    })
-    return () => subscription.subscription.unsubscribe()
-  }, [])
-
-  return { session, checked }
-}
 
 // 5 tabs, same set and order as the web bottom nav
 // (components/student/BottomNav.tsx): Главная / Уроки / Тренажёр / ОРТ / AI.
 export default function StudentTabsLayout() {
-  const { session, checked } = useSession()
+  const { status, session, error, retrySessionCheck, signOut } = useNativeAuth()
 
-  if (!checked) {
+  if (status === 'loading') {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4F6FA' }}>
         <ActivityIndicator color={BRAND_BLUE} size="large" />
@@ -42,7 +20,29 @@ export default function StudentTabsLayout() {
     )
   }
 
-  if (!session) {
+  if (status === 'error') {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4F6FA', gap: 12, padding: 28 }}>
+        <Text style={{ color: '#374151', fontSize: 15, fontWeight: '700', textAlign: 'center' }}>
+          Не удалось проверить вход
+        </Text>
+        <Text style={{ color: '#6B7280', fontSize: 13, textAlign: 'center', lineHeight: 19 }}>
+          {error ?? 'Проверьте подключение к интернету и попробуйте снова.'}
+        </Text>
+        <Pressable
+          onPress={() => { void retrySessionCheck() }}
+          style={{ backgroundColor: BRAND_BLUE, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12 }}
+        >
+          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>Повторить</Text>
+        </Pressable>
+        <Pressable onPress={() => { void signOut() }} style={{ padding: 10 }}>
+          <Text style={{ color: '#64748B', fontSize: 13, fontWeight: '700' }}>Выйти из аккаунта</Text>
+        </Pressable>
+      </View>
+    )
+  }
+
+  if (status !== 'authenticated' || !session || !isSupportedNativeStudent(session.user)) {
     return <Redirect href="/(auth)/login" />
   }
 

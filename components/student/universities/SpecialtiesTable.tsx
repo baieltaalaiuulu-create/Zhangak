@@ -1,14 +1,15 @@
-import { getProbability, type Specialty } from '@/lib/universities-data'
+import { type Specialty } from '@/lib/universities-data'
+import { getAdmissionProbability } from '@/lib/university-matching'
+import { AdmissionProbabilityBadge } from './UniversityVisuals'
 
 interface Props {
   specialties: Specialty[]
-  studentScore: number
+  studentScore: number | null
 }
 
-const PROBABILITY_EMOJI: Record<'high' | 'medium' | 'low', string> = { high: '🟢', medium: '🟡', low: '🔴' }
-
 function formatCost(cost: number | null): string {
-  return cost == null ? 'Бесплатно' : `${cost.toLocaleString('ru')} сом`
+  if (cost == null) return 'Не указано'
+  return cost === 0 ? 'Бесплатно' : `${cost.toLocaleString('ru')} сом`
 }
 
 export default function SpecialtiesTable({ specialties, studentScore }: Props) {
@@ -29,12 +30,12 @@ export default function SpecialtiesTable({ specialties, studentScore }: Props) {
         </thead>
         <tbody className="divide-y divide-gray-50">
           {specialties.map(s => {
-            const p = getProbability(studentScore, s.minScore)
+            const p = getAdmissionProbability(studentScore, s.minScore)
             return (
               <tr key={s.id} className="hover:bg-gray-50/60">
                 <td className="px-4 py-3 font-semibold text-gray-900">{s.name}</td>
                 <td className="px-4 py-3 text-gray-500">{s.faculty}</td>
-                <td className="px-4 py-3 font-bold text-gray-700">{s.minScore}</td>
+                <td className="px-4 py-3 font-bold text-gray-700">{s.minScore ?? '—'}</td>
                 <td className="px-4 py-3 text-gray-500">{formatCost(s.costPerYear)}</td>
                 <td className="px-4 py-3 text-gray-500">{s.language}</td>
                 <td className="px-4 py-3 text-gray-500">{s.form}</td>
@@ -44,9 +45,7 @@ export default function SpecialtiesTable({ specialties, studentScore }: Props) {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="whitespace-nowrap text-xs font-semibold">
-                    {PROBABILITY_EMOJI[p.level]} {p.level === 'low' ? `+${p.pointsNeeded} балла` : p.label}
-                  </span>
+                  <AdmissionProbabilityBadge probability={p} />
                 </td>
               </tr>
             )

@@ -1,0 +1,176 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  database-migrations:
+    name: Verify PostgreSQL migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Deliberately static, non-production values for the disposable CI service.
+      DATABASE_URL: postgresql://zhangak_ci:zhangak_ci_ephemeral_password@127.0.0.1:5432/zhangak_ci
+      DATABASE_SSL: "0"
+      JWT_SECRET: zhangak-ci-jwt-secret-for-ephemeral-postgres-only-57c09e99d2f14b3da8bc
+      ALLOWED_ORIGINS: http://localhost:3000
+      NODE_ENV: test
+      ZHANGAK_API_RELEASE_SHA: ci-migration-verification
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env:
+          POSTGRES_DB: zhangak_ci
+          POSTGRES_USER: zhangak_ci
+          POSTGRES_PASSWORD: zhangak_ci_ephemeral_password
+        options: >-
+          --health-cmd "pg_isready -U zhangak_ci -d zhangak_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22.22.2
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.2
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install locked API dependencies
+        run: npm --prefix backend ci
+
+      - name: Apply and verify first-party database migrations
+        run: npm --prefix backend run verify:migrations
+
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PRIVATE_SECRET_CANARY: zhangak-ci-private-canary-57c09e99d2f14b3da8bc
+      REQUIRE_PRIVATE_SECRET_CANARY: "1"
+      GIT_SHA: ${{ github.sha }}
+      ZHANGAK_RELEASE_SHA: ${{ github.sha }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22.22.2
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.2
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Check types
+        run: npm run typecheck
+
+      - name: Lint source
+        run: npm run lint
+
+      - name: Check API security invariants
+        run: npm run check:security
+
+      - name: Test trusted learning contracts
+        run: npm run test:unit
+
+      - name: Check learning trust boundary
+        run: npm run check:learning-boundary
+
+      - name: Check student mobile UX invariants
+        run: npm run check:student-mobile-ux
+
+      - name: Check university journey invariants
+        run: npm run check:university-journey
+
+      - name: Check offline student journey invariants
+        run: npm run check:offline-student-journey
+
+      - name: Check teacher journey invariants
+        run: npm run check:teacher-journey
+
+      - name: Check admin learning journey invariants
+        run: npm run check:admin-learning-journey
+
+      - name: Check first-party group administration journey
+        run: npm run check:admin-groups-journey
+
+      - name: Check legacy admin cutover invariants
+        run: npm run check:admin-legacy-cutover
+
+      - name: Check admin dashboard journey invariants
+        run: npm run check:admin-dashboard-journey
+
+      - name: Check special-role journey invariants
+        run: npm run check:special-role-journey
+
+      - name: Install and verify the first-party backend
+        run: |
+          npm --prefix backend ci
+          npm --prefix backend run check
+          npm --prefix backend test
+          npm --prefix backend run migration:preflight -- --help
+          npm run check:own-backend
+
+      - name: Verify the first-party web data plane
+        run: npm run check:web-data-plane
+
+      - name: Verify the first-party mobile data plane
+        run: npm run check:mobile-data-plane
+
+      - name: Install and verify the native companion
+        working-directory: mobile
+        run: |
+          npm ci
+          npm run check:auth
+          npx tsc --noEmit --pretty false
+
+      - name: Check first-party browser authentication
+        run: npm run check:first-party-auth
+
+      - name: Reject corrupted SQL migrations
+        run: npm run check:migrations
+
+      - name: Prevent emoji debt regressions
+        run: npm run check:emoji
+
+      - name: Audit production dependencies
+        run: npm run audit:prod
+
+      - name: Build production application
+        run: npm run build
+
+      - name: Scan browser bundles for private secrets
+        run: npm run check:client-secrets
+
+      - name: Package standalone release
+        run: npm run package:standalone
+
+      - name: Smoke-test standalone release
+        run: npm run smoke:standalone
+
+      - name: Upload standalone release
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhangak-standalone-${{ github.sha }}
+          path: .next/standalone
+          if-no-files-found: error
+          retention-days: 7

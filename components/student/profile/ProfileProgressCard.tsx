@@ -14,7 +14,7 @@ function Bar({ label, count, denominator, valueLabel }: { label: string; count: 
         <span className="text-xs text-gray-400">{valueLabel}</span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-gray-100">
-        <div className="h-full rounded-full bg-[#1B4FD8] transition-all duration-500" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-[#1B3F92] transition-all duration-500" style={{ width: `${pct}%` }} />
       </div>
     </div>
   )

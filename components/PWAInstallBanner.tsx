@@ -89,7 +89,7 @@ export default function PWAInstallBanner({ ready }: Props) {
             <button
               type="button"
               onClick={handleInstall}
-              className="flex h-11 flex-1 items-center justify-center rounded-xl bg-[#1B4FD8] text-sm font-bold text-white transition-colors active:bg-blue-700"
+              className="flex h-11 flex-1 items-center justify-center rounded-xl bg-[#1B3F92] text-sm font-bold text-white transition-colors active:bg-blue-700"
             >
               Орнотуу
             </button>

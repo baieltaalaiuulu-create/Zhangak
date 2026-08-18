@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Zhangak
 
-## Getting Started
+Zhangak is an educational platform for students in Kyrgyzstan: ORT preparation,
+practice, mock exams, progress analytics, administration, and separate math and
+offline-school workspaces.
 
-First, run the development server:
+The canonical source is this Git repository. Production releases must be built
+from one clean commit and identified by that commit SHA; do not deploy files by
+copying an uncommitted working directory.
 
-```bash
+## Local development
+
+Requirements:
+
+- Node.js `22.22.2` (see `.node-version`)
+- npm `10.9.7`
+- a local `.env.local` based on `.env.example`
+
+```sh
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The web app is available at `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Documentation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The documentation portal is [`docs/README.md`](docs/README.md). It routes
+developers, teachers, content authors, administrators and technical operators
+to the current source of truth. Start there instead of using historical audit
+notes or archived Supabase documents as operating instructions.
 
-## Learn More
+## Required checks
 
-To learn more about Next.js, take a look at the following resources:
+```sh
+npm run typecheck
+npm run check:security
+npm run test:unit
+npm run check:learning-boundary
+npm run check:student-mobile-ux
+npm run check:university-journey
+npm run check:offline-student-journey
+npm run check:teacher-journey
+npm run check:own-backend
+npm run check:web-data-plane
+npm run check:first-party-auth
+npm run check:emoji
+npm run audit:prod
+npm run build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`npm run lint` currently exposes inherited quality debt and is being reduced in
+stages. CI prevents new security, emoji, and production-dependency regressions.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Production release
 
-## Deploy on Vercel
+The Next.js build uses standalone output. Build and package only a clean commit:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```sh
+GIT_SHA=$(git rev-parse HEAD) npm run build
+ZHANGAK_RELEASE_SHA=$(git rev-parse HEAD) npm run package:standalone
+npm run smoke:standalone
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The packager copies `public` and `.next/static`, stamps the service-worker cache
+with the release SHA, and creates `.next/standalone/release.json`. Runtime secrets
+remain outside the artifact.
+
+Server setup, atomic activation, health checks, and rollback are documented in
+[`deploy/README.md`](deploy/README.md).
+
+## Domains
+
+- `zhangak.com` — public marketing website
+- `platform.zhangak.com` — student learning platform and installable PWA
+- `offline.zhangak.com` — offline students and teacher classroom journal
+- `admin.zhangak.com` — administration and staff workspaces
+
+The host boundary is enforced by `proxy.ts`. Browser page requests are
+redirected to the correct host; wrong-host API writes return 404 instead of
+redirecting bearer tokens or request bodies. Only the marketing origin is
+indexable. Platform and admin return `X-Robots-Tag: noindex` and disallow all
+crawlers in their host-specific `robots.txt`. The service worker and web app
+manifest are exposed only by the platform surface.
+
+## Security model
+
+- Browser calls use HttpOnly Zhangak session cookies and the same-origin `/v1`
+  BFF; tokens are never read from browser storage.
+- API authorization reads the current role from the first-party PostgreSQL
+  `profiles` row.
+- Role permissions are capability-specific and deny by default.
+- PostgreSQL and AI credentials are runtime-only environment variables.
+- Student practice is server-scored from immutable attempt snapshots. Answer
+  keys are returned only by the admin API and never to student screens.
+- The retired `/api/*` namespace is deny-listed and responds with `404`; all
+  product API calls use the first-party `/v1/platform` and `/v1/admin` routes.

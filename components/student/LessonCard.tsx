@@ -1,21 +1,27 @@
 import Link from 'next/link'
-import { CheckCircle, Lock, Calculator, BookMarked, Play, RotateCcw, type LucideIcon } from 'lucide-react'
-import { LESSON_SUBJECT_META, type Lesson, type LessonStatus, type LessonSubject } from '@/lib/lessons-data'
+import { BookOpen, CheckCircle, Clock3, ListChecks, Lock, Calculator, BookMarked, Play, RotateCcw, type LucideIcon } from 'lucide-react'
+import {
+  PLATFORM_LESSON_SUBJECT_META,
+  type LessonView,
+  type PlatformLessonStatus,
+  type PlatformLessonSubject,
+} from '@/lib/platform-lessons'
 
 interface Props {
-  lesson: Lesson
-  status: LessonStatus
+  lesson: LessonView
+  status: PlatformLessonStatus
   questionCount: number
   courseProgress: number
 }
 
-const SUBJECT_ICON: Record<LessonSubject, LucideIcon> = {
+const SUBJECT_ICON: Record<PlatformLessonSubject, LucideIcon> = {
   math: Calculator,
   kyr: BookMarked,
+  other: BookOpen,
 }
 
 export default function LessonCard({ lesson, status, questionCount, courseProgress }: Props) {
-  const meta = LESSON_SUBJECT_META[lesson.subject]
+  const meta = PLATFORM_LESSON_SUBJECT_META[lesson.subject]
   const SubjectIcon = SUBJECT_ICON[lesson.subject]
   const stripColor = status === 'locked' ? 'bg-gray-200' : meta.strip
 
@@ -47,11 +53,13 @@ export default function LessonCard({ lesson, status, questionCount, courseProgre
 
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
           <span className="whitespace-nowrap rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
-            🕐 25 мин
+            <Clock3 size={13} className="mr-1 inline" aria-hidden="true" />
+            {lesson.durationMinutes ? `${lesson.durationMinutes} мин` : 'Время не указано'}
           </span>
           {questionCount > 0 && (
             <span className="whitespace-nowrap rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
-              📝 {questionCount} вопросов
+              <ListChecks size={13} className="mr-1 inline" aria-hidden="true" />
+              {questionCount} вопросов
             </span>
           )}
         </div>
@@ -64,7 +72,7 @@ export default function LessonCard({ lesson, status, questionCount, courseProgre
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
               <div
-                className="h-full rounded-full bg-[#1B4FD8] transition-all duration-700"
+                className="h-full rounded-full bg-[#1B3F92] transition-all duration-700"
                 style={{ width: `${courseProgress}%` }}
               />
             </div>
@@ -73,7 +81,7 @@ export default function LessonCard({ lesson, status, questionCount, courseProgre
 
         <div className="mt-1">
           {status === 'current' && (
-            <span className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#1B4FD8] py-2.5 text-center text-sm font-bold text-white">
+            <span className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#1B3F92] py-2.5 text-center text-sm font-bold text-white">
               <Play size={18} />
               {courseProgress === 0 ? 'Начать урок' : 'Продолжить →'}
             </span>

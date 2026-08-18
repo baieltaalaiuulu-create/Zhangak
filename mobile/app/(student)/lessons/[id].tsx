@@ -2,34 +2,56 @@ import { useCallback, useEffect, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { supabase } from '@/lib/supabase'
-import { fetchLessonById, fetchLessons, fetchCompletedLessonIds, fetchQuestionCount, LESSON_SUBJECT_META } from '@/lib/lessons'
-import type { PracticeLesson } from '@/lib/supabase'
+import {
+  completedLessonIds,
+  fetchLessonByIdWithCache,
+  fetchLessonMaterialsWithCache,
+  fetchLessonsWithCache,
+  LESSON_SUBJECT_META,
+  type PlatformLesson,
+  type PlatformLessonMaterial,
+} from '@/lib/lessons'
 import LessonVideoPlayer from '@/components/LessonVideoPlayer'
 
-const BRAND_BLUE = '#1B4FD8'
+const BRAND_BLUE = '#1B3F92'
 
 interface DetailState {
-  lesson: PracticeLesson
+  lesson: PlatformLesson
   isCompleted: boolean
-  questionCount: number
-  nextLesson: PracticeLesson | null
+  nextLesson: PlatformLesson | null
+  source: 'network' | 'cache'
+  savedAt: number | null
+  materials: PlatformLessonMaterial[]
 }
 
-async function loadLesson(lessonId: string, studentId: string): Promise<DetailState | null> {
-  const [lesson, allLessons, completedIds] = await Promise.all([
-    fetchLessonById(lessonId),
-    fetchLessons(),
-    fetchCompletedLessonIds(studentId),
+async function loadLesson(lessonId: string): Promise<DetailState> {
+  const [lessonResult, listResult, materialsResult] = await Promise.all([
+    fetchLessonByIdWithCache(lessonId),
+    fetchLessonsWithCache(),
+    fetchLessonMaterialsWithCache(lessonId),
   ])
-  if (!lesson) return null
+  const lesson = lessonResult.value
+  const allLessons = listResult.value
+  const completedIds = completedLessonIds(allLessons)
+  const sameTrack = allLessons
+    .filter(item => item.courseId === lesson.courseId && item.subject === lesson.subject)
+    .sort((left, right) => left.lessonNumber - right.lessonNumber || left.apiId - right.apiId)
+  const index = sameTrack.findIndex(item => item.id === lesson.id)
+  const nextLesson = index >= 0 ? sameTrack[index + 1] ?? null : null
 
-  const questionCount = await fetchQuestionCount(lesson.id)
-  const sameSubject = allLessons.filter(l => l.subject === lesson.subject)
-  const idx = sameSubject.findIndex(l => l.id === lesson.id)
-  const nextLesson = idx >= 0 ? sameSubject[idx + 1] ?? null : null
+  return {
+    lesson,
+    isCompleted: completedIds.has(lesson.id),
+    nextLesson,
+    source: lessonResult.source === 'cache' || listResult.source === 'cache' || materialsResult.source === 'cache' ? 'cache' : 'network',
+    savedAt: lessonResult.savedAt ?? listResult.savedAt ?? materialsResult.savedAt,
+    materials: materialsResult.value,
+  }
+}
 
-  return { lesson, isCompleted: completedIds.has(lesson.id), questionCount, nextLesson }
+function cachedAtLabel(savedAt: number | null) {
+  if (savedAt === null) return ''
+  return new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(savedAt))
 }
 
 export default function LessonDetailScreen() {
@@ -39,22 +61,11 @@ export default function LessonDetailScreen() {
   const [error, setError] = useState(false)
 
   const load = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.replace('/(auth)/login'); return }
-
+    if (!id) return
     setLoading(true)
     setError(false)
     try {
-      const result = await loadLesson(id, user.id)
-      if (!result) { setError(true); return }
-      setState(result)
-
-      // Mirrors the web app's markLessonStarted — logs that this lesson
-      // was opened (a practice_results row with no score, so it never
-      // counts as "completed" via completed_at, which stays null here).
-      await supabase.from('practice_results').insert({
-        student_id: user.id, lesson_id: result.lesson.id, test_type: 'practice',
-      })
+      setState(await loadLesson(id))
     } catch {
       setError(true)
     } finally {
@@ -62,7 +73,7 @@ export default function LessonDetailScreen() {
     }
   }, [id])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { void load() }, [load])
 
   if (loading) {
     return <View style={styles.center}><ActivityIndicator color={BRAND_BLUE} size="large" /></View>
@@ -71,15 +82,16 @@ export default function LessonDetailScreen() {
   if (error || !state) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>Не удалось загрузить. Попробуй ещё раз.</Text>
-        <Pressable style={styles.retryButton} onPress={load}>
-          <Text style={styles.retryButtonText}>↻ Попробовать ещё раз</Text>
+        <Text style={styles.errorText}>Не удалось загрузить урок. Попробуй ещё раз.</Text>
+        <Pressable style={styles.retryButton} onPress={() => { void load() }}>
+          <Text style={styles.retryButtonText}>Попробовать ещё раз</Text>
         </Pressable>
       </View>
     )
   }
 
   const meta = LESSON_SUBJECT_META[state.lesson.subject]
+  const duration = state.lesson.durationMinutes === null ? 'Длительность не указана' : `${state.lesson.durationMinutes} мин`
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -88,44 +100,69 @@ export default function LessonDetailScreen() {
         <Text style={styles.backText}>Ко всем урокам</Text>
       </Pressable>
 
-      <LessonVideoPlayer videoUrl={state.lesson.video_url} />
+      {state.source === 'cache' && (
+        <View style={styles.offlineNotice}>
+          <Ionicons name="cloud-offline-outline" size={16} color="#9A6700" />
+          <Text style={styles.offlineNoticeText}>Офлайн-режим: данные от {cachedAtLabel(state.savedAt)}. Видео и закрытые материалы недоступны без интернета.</Text>
+        </View>
+      )}
+
+      <LessonVideoPlayer videoUrl={state.lesson.videoUrl} />
 
       <View style={styles.card}>
         <View style={[styles.badge, { backgroundColor: `${meta.color}1A` }]}>
-          <Text style={[styles.badgeText, { color: meta.color }]}>{meta.icon} {meta.label}</Text>
+          <Ionicons name={meta.icon} size={15} color={meta.color} />
+          <Text style={[styles.badgeText, { color: meta.color }]}>{meta.label}</Text>
         </View>
         <Text style={styles.title}>{state.lesson.title}</Text>
+        <Text style={styles.duration}>{duration}</Text>
         {state.lesson.description && <Text style={styles.description}>{state.lesson.description}</Text>}
       </View>
 
+      {state.materials.length > 0 && (
+        <View style={styles.card}>
+          <Text style={styles.eyebrow}>МАТЕРИАЛЫ УРОКА</Text>
+          {state.materials.map(material => (
+            <View key={material.id} style={styles.materialRow}>
+              <Ionicons
+                name={material.materialType === 'rich_text' ? 'document-text-outline' : material.materialType === 'video' ? 'play-circle-outline' : 'lock-closed-outline'}
+                size={18}
+                color={BRAND_BLUE}
+              />
+              <View style={styles.materialCopy}>
+                <Text style={styles.materialTitle}>{material.title}</Text>
+                {material.materialType === 'rich_text' && material.bodyMarkdown && <Text style={styles.materialBody}>{material.bodyMarkdown}</Text>}
+                {material.materialType !== 'rich_text' && <Text style={styles.materialHint}>{state.source === 'cache' ? 'Нужен интернет для защищённого просмотра' : 'Открой материал в веб-кабинете'}</Text>}
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
       {state.isCompleted ? (
         <View style={styles.card}>
-          <Text style={styles.doneText}>✓ Урок пройден</Text>
+          <Text style={styles.doneText}>Урок пройден</Text>
           {state.nextLesson ? (
             <Pressable
               style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
               onPress={() => router.push(`/(student)/lessons/${state.nextLesson!.id}`)}
             >
-              <Text style={styles.primaryButtonText}>Следующий урок →</Text>
+              <Text style={styles.primaryButtonText}>Следующий урок</Text>
             </Pressable>
           ) : (
-            <Text style={styles.description}>Это был последний урок в разделе 🎓</Text>
+            <Text style={styles.description}>Это последний доступный урок в этом разделе.</Text>
           )}
         </View>
       ) : (
         <View style={styles.card}>
-          <Text style={styles.eyebrow}>ПРАКТИКА</Text>
+          <Text style={styles.eyebrow}>ПРОГРЕСС</Text>
           <Text style={styles.description}>
-            {state.questionCount > 0 ? `${state.questionCount} вопросов` : 'Практика к этому уроку скоро появится'}
+            Прогресс этого урока: {state.lesson.completionPercent}%.
           </Text>
-          {state.questionCount > 0 && (
-            <Pressable
-              style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
-              onPress={() => router.push('/(student)/practice')}
-            >
-              <Text style={styles.primaryButtonText}>Начать практику</Text>
-            </Pressable>
-          )}
+          <Text style={styles.migrationNote}>
+            Мобильный тренажёр для завершения урока ещё подключается. Результат появится после серверной проверки попытки, а не по открытию страницы.
+          </Text>
+          {state.lesson.isTest && <Text style={styles.migrationNote}>Этот урок содержит тестовый материал.</Text>}
         </View>
       )}
     </ScrollView>
@@ -141,13 +178,22 @@ const styles = StyleSheet.create({
   retryButtonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 44 },
   backText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
+  offlineNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, padding: 10, borderRadius: 10, backgroundColor: '#FFF7D6' },
+  offlineNoticeText: { flex: 1, color: '#7A4A00', fontSize: 12, fontWeight: '600', lineHeight: 17 },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#F1F1F4' },
-  badge: { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  badge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   badgeText: { fontSize: 12, fontWeight: '700' },
   title: { fontSize: 18, fontWeight: '800', color: '#191B23', marginTop: 10 },
+  duration: { fontSize: 13, fontWeight: '600', color: '#64748B', marginTop: 6 },
   description: { fontSize: 14, color: '#6B7280', marginTop: 6, lineHeight: 20 },
   eyebrow: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5, textTransform: 'uppercase' },
   doneText: { fontSize: 15, fontWeight: '700', color: '#16A34A' },
+  migrationNote: { fontSize: 13, color: '#64748B', marginTop: 10, lineHeight: 19 },
+  materialRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingTop: 14 },
+  materialCopy: { flex: 1 },
+  materialTitle: { fontSize: 14, fontWeight: '700', color: '#263041' },
+  materialBody: { fontSize: 13, color: '#4B5563', lineHeight: 19, marginTop: 5 },
+  materialHint: { fontSize: 12, color: '#64748B', lineHeight: 17, marginTop: 4 },
   primaryButton: { marginTop: 16, height: 52, borderRadius: 16, backgroundColor: BRAND_BLUE, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.85 },
   primaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },

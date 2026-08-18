@@ -3,30 +3,34 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard, BookOpen, PenLine, ClipboardList, Brain, Trophy, GraduationCap, Settings, X,
+  LayoutDashboard, BookOpen, Map, PenLine, ClipboardList, Brain, Trophy, GraduationCap, Settings, X,
   type LucideIcon,
 } from 'lucide-react'
+import { PROFILE_COLOR_OPTIONS, type ProfileColor } from '@/lib/profile-preferences'
 
 interface Props {
   isOpen: boolean
   onClose: () => void
   fullName?: string
   avatarUrl?: string | null
+  profileColor?: ProfileColor
 }
 
 const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: '/student/online', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/student/online/lessons', label: 'Уроки', icon: BookOpen },
+  { href: '/student/online/roadmap', label: 'Дорожная карта', icon: Map },
+  { href: '/student/online', label: 'Главная', icon: LayoutDashboard },
+  { href: '/student/online/lessons', label: 'Все уроки', icon: BookOpen },
   { href: '/student/online/practice', label: 'Тренажёр', icon: PenLine },
   { href: '/student/online/mock', label: 'Пробный ОРТ', icon: ClipboardList },
   { href: '/student/online/ai', label: 'AI Коуч', icon: Brain },
-  { href: '/student/online/universities', label: '🎓 Университеты', icon: GraduationCap },
+  { href: '/student/online/universities', label: 'Университеты', icon: GraduationCap },
   { href: '/student/online/leaderboard', label: 'Рейтинг', icon: Trophy },
 ]
 
-export default function StudentSidebar({ isOpen, onClose, fullName = 'Студент', avatarUrl = null }: Props) {
+export default function StudentSidebar({ isOpen, onClose, fullName = 'Студент', avatarUrl = null, profileColor = 'blue' }: Props) {
   const pathname = usePathname()
   const initial = fullName?.[0]?.toUpperCase() ?? '?'
+  const accent = PROFILE_COLOR_OPTIONS[profileColor].color
 
   return (
     <>
@@ -93,7 +97,7 @@ export default function StudentSidebar({ isOpen, onClose, fullName = 'Студе
 
         <div className="space-y-2 border-t border-white/5 px-3 py-4">
           <Link
-            href="/student/online/practice"
+            href="/student/online/trainer"
             onClick={onClose}
             className="block w-full rounded-xl py-2.5 text-center text-sm font-bold text-white shadow-md transition-opacity hover:opacity-90"
             style={{ background: 'linear-gradient(135deg, #6C3DE0 0%, #4338CA 100%)' }}
@@ -113,10 +117,10 @@ export default function StudentSidebar({ isOpen, onClose, fullName = 'Студе
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
           >
             {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL, no next/image domain config in this project
+              // eslint-disable-next-line @next/next/no-img-element -- externally hosted HTTPS avatar URL, no next/image domain config in this project
               <img src={avatarUrl} alt={fullName} className="h-[18px] w-[18px] shrink-0 rounded-full object-cover" />
             ) : (
-              <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ background: '#6C3DE0' }}>
+              <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ background: accent }}>
                 {initial}
               </span>
             )}

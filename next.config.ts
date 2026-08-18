@@ -1,6 +1,21 @@
 import type { NextConfig } from 'next'
 
+const gitSha = process.env.GIT_SHA?.trim()
+
 const nextConfig: NextConfig = {
+  // Produce a self-contained Node server so releases do not need the full
+  // development dependency tree on the VPS.
+  output: 'standalone',
+
+  // Production artifacts are traceable to one immutable Git revision. Local
+  // development keeps Next's generated identifier when GIT_SHA is absent.
+  // Next 16 intentionally uses a constant internal BUILD_ID whenever a
+  // deploymentId is present, so the release SHA is carried by deploymentId
+  // and release.json instead of an ignored generateBuildId callback.
+  ...(gitSha ? {
+    deploymentId: gitSha,
+  } : {}),
+
   // Gzip/brotli response compression — on by default in most hosts, but
   // explicit here since this is a bare config (no other overrides existed
   // before this).

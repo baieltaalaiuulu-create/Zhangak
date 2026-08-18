@@ -1,0 +1,216 @@
+'use client'
+
+import {
+  getCurrentZhangakUser,
+  ZhangakAuthError,
+} from './zhangak-auth-client.ts'
+import {
+  ZhangakApiError,
+  zhangakApiRequest,
+} from './zhangak-api-client.ts'
+import type {
+  AttendanceState,
+  OfflineLesson,
+  OfflineStudentDashboard,
+  OfflineStudentGroup,
+  OfflineStudentProfile,
+} from './offline-student-contract.ts'
+
+export class OfflineStudentRequestError extends Error {
+  readonly status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = 'OfflineStudentRequestError'
+    this.status = status
+  }
+}
+
+function invalidResponse(): never {
+  throw new OfflineStudentRequestError(502, 'Сервис вернул некорректные данные кабинета')
+}
+
+function record(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) invalidResponse()
+  return value as Record<string, unknown>
+}
+
+function requiredText(value: unknown): string {
+  if (typeof value !== 'string' || value.trim() === '') invalidResponse()
+  return value
+}
+
+function nullableText(value: unknown): string | null {
+  if (value === null) return null
+  return requiredText(value)
+}
+
+function positiveInteger(value: unknown): number {
+  if (!Number.isSafeInteger(value) || (value as number) <= 0) invalidResponse()
+  return value as number
+}
+
+function nullablePositiveInteger(value: unknown): number | null {
+  if (value === null) return null
+  return positiveInteger(value)
+}
+
+function nullableTargetScore(value: unknown): number | null {
+  if (value === null) return null
+  if (!Number.isSafeInteger(value) || (value as number) < 0 || (value as number) > 245) invalidResponse()
+  return value as number
+}
+
+function studentType(value: unknown): OfflineStudentProfile['studentType'] {
+  if (value !== 'offline') invalidResponse()
+  return value
+}
+
+function dateOrTime(value: unknown): string | null {
+  if (value === null) return null
+  if (typeof value !== 'string' || (!/^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isFinite(new Date(value).getTime()))) invalidResponse()
+  return value
+}
+
+function attendance(value: unknown): AttendanceState {
+  if (value !== 'pending' && value !== 'present' && value !== 'late' && value !== 'absent') invalidResponse()
+  return value
+}
+
+function topics(value: unknown): string[] {
+  if (!Array.isArray(value) || value.some(item => typeof item !== 'string' || item.trim() === '')) invalidResponse()
+  if (new Set(value).size !== value.length) invalidResponse()
+  return value
+}
+
+function profile(value: unknown): OfflineStudentProfile {
+  const source = record(value)
+  return {
+    id: requiredText(source.id),
+    fullName: requiredText(source.fullName),
+    studentType: studentType(source.studentType),
+    targetScore: nullableTargetScore(source.targetScore),
+  }
+}
+
+function group(value: unknown): OfflineStudentGroup | null {
+  if (value === null) return null
+  const source = record(value)
+  return {
+    id: positiveInteger(source.id),
+    name: requiredText(source.name),
+    courseName: nullableText(source.courseName),
+    teacherName: nullableText(source.teacherName),
+  }
+}
+
+function lesson(value: unknown): OfflineLesson {
+  const source = record(value)
+  if (typeof source.isTest !== 'boolean') invalidResponse()
+  return {
+    id: positiveInteger(source.id),
+    lessonNumber: positiveInteger(source.lessonNumber),
+    title: requiredText(source.title),
+    startsAt: dateOrTime(source.startsAt),
+    durationMinutes: nullablePositiveInteger(source.durationMinutes),
+    isTest: source.isTest,
+    attendance: attendance(source.attendance),
+    topics: topics(source.topics),
+  }
+}
+
+function homework(value: unknown): OfflineStudentDashboard['homework'][number] {
+  const source = record(value)
+  return {
+    id: positiveInteger(source.id),
+    lessonId: source.lessonId === null ? null : positiveInteger(source.lessonId),
+    lessonTitle: requiredText(source.lessonTitle),
+    title: requiredText(source.title),
+    description: source.description === null ? null : requiredText(source.description),
+    dueAt: dateOrTime(source.dueAt),
+    completed: source.completed === true,
+  }
+}
+
+function grade(value: unknown): OfflineStudentDashboard['grades'][number] {
+  const source = record(value)
+  const score = (candidate: unknown): number | null => {
+    if (candidate === null) return null
+    if (!Number.isSafeInteger(candidate) || (candidate as number) < 0 || (candidate as number) > 100) invalidResponse()
+    return candidate as number
+  }
+  return {
+    lessonId: positiveInteger(source.lessonId), lessonTitle: requiredText(source.lessonTitle),
+    math: score(source.math), analogy: score(source.analogy), reading: score(source.reading), grammar: score(source.grammar), total: score(source.total),
+  }
+}
+
+function comment(value: unknown): OfflineStudentDashboard['comments'][number] {
+  const source = record(value)
+  return { id: positiveInteger(source.id), body: requiredText(source.body), createdAt: dateOrTime(source.createdAt) as string }
+}
+
+function announcement(value: unknown): OfflineStudentDashboard['announcements'][number] {
+  const source = record(value)
+  return {
+    id: positiveInteger(source.id),
+    title: requiredText(source.title),
+    body: requiredText(source.body),
+    publishedAt: dateOrTime(source.publishedAt) as string,
+  }
+}
+
+/** Strictly parse the first-party offline classroom projection. */
+export function parseOfflineStudentDashboard(value: unknown): OfflineStudentDashboard {
+  const source = record(value)
+  if (!Array.isArray(source.lessons) || !Array.isArray(source.homework) || !Array.isArray(source.grades) || !Array.isArray(source.comments) || !Array.isArray(source.announcements)) invalidResponse()
+  const parsedProfile = profile(source.profile)
+  const progress = record(source.progress)
+  const availability = record(source.availability)
+  if (progress.latestOrtScore !== null || nullableTargetScore(progress.targetScore) !== parsedProfile.targetScore) invalidResponse()
+  if (typeof availability.exactSchedule !== 'boolean' || availability.materials !== false) invalidResponse()
+
+  const lessons = source.lessons.map(lesson)
+  if (new Set(lessons.map(item => item.id)).size !== lessons.length) invalidResponse()
+
+  return {
+    profile: parsedProfile,
+    group: group(source.group),
+    lessons,
+    homework: source.homework.map(homework),
+    grades: source.grades.map(grade),
+    comments: source.comments.map(comment),
+    announcements: source.announcements.map(announcement),
+    progress: { latestOrtScore: null, targetScore: parsedProfile.targetScore },
+    availability: { exactSchedule: availability.exactSchedule, materials: false },
+  }
+}
+
+async function requestDashboard(): Promise<OfflineStudentDashboard> {
+  return parseOfflineStudentDashboard(await zhangakApiRequest<unknown>('/v1/platform/offline-dashboard'))
+}
+
+function requestError(error: unknown): OfflineStudentRequestError {
+  if (error instanceof OfflineStudentRequestError) return error
+  if (error instanceof ZhangakApiError || error instanceof ZhangakAuthError) {
+    return new OfflineStudentRequestError(error.status, error.message)
+  }
+  return new OfflineStudentRequestError(503, 'Не удалось загрузить офлайн-кабинет')
+}
+
+export async function fetchOfflineStudentDashboard(): Promise<OfflineStudentDashboard> {
+  try {
+    return await requestDashboard()
+  } catch (error) {
+    // /student has no shared StudentLayout, so it refreshes an expired own
+    // session once before deciding that the visitor must log in again.
+    if (error instanceof ZhangakApiError && error.status === 401) {
+      try {
+        if (await getCurrentZhangakUser()) return await requestDashboard()
+      } catch (refreshError) {
+        throw requestError(refreshError)
+      }
+    }
+    throw requestError(error)
+  }
+}

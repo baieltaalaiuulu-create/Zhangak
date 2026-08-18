@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
-import { MIN_TARGET_SCORE, MAX_TARGET_SCORE } from '@/lib/student-data'
+import { MAX_TARGET_SCORE, MIN_TARGET_SCORE, updatePlatformProfile } from '@/lib/platform-profile'
 
 interface Props {
   currentGoal: number
@@ -40,25 +39,15 @@ export default function GoalModal({ currentGoal, onClose, onSaved }: Props) {
     setSaving(true)
     setSaveError(null)
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setSaveError('Не удалось определить пользователя')
+    try {
+      await updatePlatformProfile({ targetScore: goal })
+    } catch {
+      setSaveError('Не удалось сохранить. Попробуйте снова.')
       setSaving(false)
       return
     }
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ target_score: goal })
-      .eq('id', user.id)
-
     setSaving(false)
-
-    if (error) {
-      setSaveError('Не удалось сохранить. Попробуйте снова.')
-      return
-    }
-
     onSaved(goal)
     onClose()
   }
@@ -91,7 +80,7 @@ export default function GoalModal({ currentGoal, onClose, onSaved }: Props) {
             max={MAX_TARGET_SCORE}
             value={sliderValue}
             onChange={(e) => setInputText(e.target.value)}
-            className="h-2 flex-1 accent-[#1B4FD8]"
+            className="h-2 flex-1 accent-[#1B3F92]"
             aria-label="Личная цель по ОРТ"
           />
           <input
@@ -100,7 +89,7 @@ export default function GoalModal({ currentGoal, onClose, onSaved }: Props) {
             max={MAX_TARGET_SCORE}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            className={`w-20 rounded-lg border px-2 py-1.5 text-center text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1B4FD8]/30 ${
+            className={`w-20 rounded-lg border px-2 py-1.5 text-center text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1B3F92]/30 ${
               rangeError ? 'border-red-400' : 'border-gray-200'
             }`}
           />
@@ -122,7 +111,7 @@ export default function GoalModal({ currentGoal, onClose, onSaved }: Props) {
             type="button"
             onClick={handleSave}
             disabled={saving || !!rangeError}
-            className="rounded-xl bg-[#1B4FD8] px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl bg-[#1B3F92] px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? 'Сохранение…' : 'Сохранить'}
           </button>

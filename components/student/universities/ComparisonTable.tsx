@@ -1,20 +1,21 @@
 import type { ReactNode } from 'react'
-import { getProbability, type University } from '@/lib/universities-data'
+import { type University } from '@/lib/universities-data'
+import { getAdmissionProbability } from '@/lib/university-matching'
+import { AdmissionProbabilityBadge } from './UniversityVisuals'
 
 interface Props {
   universities: University[] // exactly the ones to compare, current first
-  studentScore: number
+  studentScore: number | null
 }
 
 function formatCost(cost: number | null): string {
-  return cost == null ? 'Бесплатно' : `${cost.toLocaleString('ru')} сом`
+  if (cost == null) return 'Не указано'
+  return cost === 0 ? 'Бесплатно' : `${cost.toLocaleString('ru')} сом`
 }
-
-const PROBABILITY_EMOJI: Record<'high' | 'medium' | 'low', string> = { high: '🟢', medium: '🟡', low: '🔴' }
 
 export default function ComparisonTable({ universities, studentScore }: Props) {
   const rows: { label: string; render: (u: University) => ReactNode }[] = [
-    { label: 'Проходной балл', render: u => u.minScore },
+    { label: 'Проходной балл', render: u => u.minScore ?? 'Не указан' },
     { label: 'Стоимость', render: u => formatCost(u.costFrom) },
     { label: 'Общежитие', render: u => (u.hasDormitory ? 'Есть' : 'Нет') },
     { label: 'Язык', render: u => u.languages.map(l => l.toUpperCase()).join(', ') },
@@ -22,8 +23,8 @@ export default function ComparisonTable({ universities, studentScore }: Props) {
     {
       label: 'Твой шанс',
       render: u => {
-        const p = getProbability(studentScore, u.minScore)
-        return <span className="whitespace-nowrap">{PROBABILITY_EMOJI[p.level]} {p.label}</span>
+        const p = getAdmissionProbability(studentScore, u.minScore)
+        return <AdmissionProbabilityBadge probability={p} />
       },
     },
   ]

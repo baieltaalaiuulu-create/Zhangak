@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { type BeforeInstallPromptEvent, INSTALLED_KEY, isIOS, isMobileUA, isStandalone, supportsInstallPrompt } from '@/lib/pwa-install'
+import { isDedicatedPlatformHost } from '@/lib/site-hosts'
 
 interface PWAInstallContextValue {
   /** True once the browser has fired beforeinstallprompt and it hasn't been consumed yet. */
@@ -39,6 +40,11 @@ export default function PWAInstallProvider({ children }: { children: ReactNode }
   const [unsupported, setUnsupported] = useState(false)
 
   useEffect(() => {
+    if (process.env.NODE_ENV === 'production' && !isDedicatedPlatformHost(window.location.hostname)) {
+      const disabledTimer = window.setTimeout(() => setUnsupported(true), 0)
+      return () => window.clearTimeout(disabledTimer)
+    }
+
     const onBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)

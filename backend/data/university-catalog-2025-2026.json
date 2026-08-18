@@ -1,0 +1,61 @@
+{
+  "catalogPeriod": "2025-2026",
+  "verifiedAt": "2026-08-16",
+  "policy": "Only names, locations, languages, websites and programmes directly supported by the linked official sources are seeded. Passing scores, dormitory availability, budget places and tuition remain null or false until a source with the exact campaign/year is reviewed by a content administrator.",
+  "universities": [
+    {
+      "sourceId": "krsu",
+      "name": "Кыргызско-Российский Славянский университет имени Б. Н. Ельцина",
+      "city": "Бишкек",
+      "type": "government",
+      "description": "Каталог направлений составлен по официальной странице абитуриента факультета электроники и вычислительной техники КРСУ.",
+      "websiteUrl": "https://www.krsu.edu.kg/",
+      "languages": ["Русский"],
+      "sources": ["https://etf.krsu.edu.kg/", "https://www.krsu.edu.kg/images/_main-site/obshaya_informacia/polozheniya/O_stoimosti_platnykh_obrazovatelnykh_uslug_na_2025-2026_uchebnyy_god.pdf"],
+      "specialties": [
+        { "name": "Программное обеспечение и вычислительная техника", "faculty": "Факультет электроники и вычислительной техники", "language": "Русский", "form": "Очная", "type": "Бакалавриат" },
+        { "name": "Прикладная математика и информатика", "faculty": "Факультет электроники и вычислительной техники", "language": "Русский", "form": "Очная", "type": "Бакалавриат" }
+      ]
+    },
+    {
+      "sourceId": "auca",
+      "name": "American University of Central Asia",
+      "city": "Бишкек",
+      "type": "private",
+      "description": "Каталог программ и финансовой помощи нужно подтверждать по официальной странице AUCA перед каждой приёмной кампанией.",
+      "websiteUrl": "https://auca.kg/en/admissions/",
+      "languages": ["Английский"],
+      "sources": ["https://auca.kg/en/admissions/", "https://auca.kg/en/soc_undergrad_admissions/"],
+      "specialties": [
+        { "name": "Sociology", "faculty": "School of Social Sciences", "language": "Английский", "form": "Очная", "type": "Бакалавриат" }
+      ]
+    },
+    {
+      "sourceId": "knu",
+      "name": "Кыргызский национальный университет имени Жусупа Баласагына",
+      "city": "Бишкек",
+      "type": "government",
+      "description": "В каталоге показаны направления, опубликованные Кыргызско-Европейским факультетом КНУ для абитуриентов 2025 года.",
+      "websiteUrl": "https://www.knu.kg/",
+      "languages": ["Кыргызский", "Русский"],
+      "sources": ["https://www.knu.kg/ky/ru/wp-content/uploads/sites/2/2025/05/%D0%9A%D0%95%D0%A4-%D0%AD%D0%A3-%D0%B4%D0%BB%D1%8F-%D0%B0%D0%B1%D0%B8%D1%82%D1%83%D1%80%D0%B8%D0%B5%D0%BD%D1%82%D0%BE%D0%B2-%D0%90.%D0%A1%D0%B0%D1%82%D1%8B%D0%B1%D0%B0%D0%BB%D0%B4%D0%B8%D0%B5%D0%B2%D0%B0-15.05.2025.pdf"],
+      "specialties": [
+        { "name": "Экономика и управление", "faculty": "Кыргызско-Европейский факультет", "language": "Русский", "form": "Очная", "type": "Бакалавриат" },
+        { "name": "Управление бизнесом", "faculty": "Кыргызско-Европейский факультет", "language": "Русский", "form": "Очная", "type": "Бакалавриат" }
+      ]
+    },
+    {
+      "sourceId": "manas",
+      "name": "Кыргызско-Турецкий университет «Манас»",
+      "city": "Бишкек",
+      "type": "government",
+      "description": "Медицинская международная совместная программа объявляла набор на 2025–2026 учебный год; условия и стоимость необходимо обновлять по каждой кампании.",
+      "websiteUrl": "https://www.manas.edu.kg/",
+      "languages": ["Кыргызский", "Турецкий"],
+      "sources": ["https://www.manas.edu.kg/ru/news/6696"],
+      "specialties": [
+        { "name": "Медицина", "faculty": "Медицинский факультет", "language": "Кыргызский", "form": "Очная", "type": "Международная совместная программа" }
+      ]
+    }
+  ]
+}

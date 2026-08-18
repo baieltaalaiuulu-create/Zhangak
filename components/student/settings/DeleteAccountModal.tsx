@@ -23,8 +23,8 @@ export default function DeleteAccountModal({ onClose, onConfirm }: Props) {
     setError(null)
     try {
       await onConfirm()
-    } catch {
-      setError('Не удалось удалить аккаунт. Попробуйте снова.')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Не удалось удалить аккаунт. Попробуйте снова.')
       setDeleting(false)
     }
   }

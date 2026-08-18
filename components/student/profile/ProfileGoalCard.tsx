@@ -20,13 +20,13 @@ export default function ProfileGoalCard({ targetScore, onGoalUpdate }: Props) {
           type="button"
           onClick={() => setModalOpen(true)}
           aria-label="Изменить цель"
-          className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-50 hover:text-[#1B4FD8]"
+          className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-50 hover:text-[#1B3F92]"
         >
           <Pencil size={15} />
         </button>
       </div>
       <div className="mt-3 flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EEF2FF] text-[#1B4FD8]">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EEF2FF] text-[#1B3F92]">
           <Target size={18} />
         </span>
         <span className="text-2xl font-extrabold text-[#191B23]">{targetScore} <span className="text-sm font-semibold text-gray-400">баллов</span></span>

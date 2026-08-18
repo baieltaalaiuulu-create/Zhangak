@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import { LogOut, type LucideIcon } from 'lucide-react'
+import { getCurrentZhangakUser, logoutZhangak } from '@/lib/zhangak-auth-client'
 
 interface Props {
   title: string
@@ -14,12 +14,39 @@ interface Props {
 
 export default function AdminTopbar({ title, actionLabel, actionIcon: ActionIcon, onAction }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [fullName, setFullName] = useState('Администратор')
+  const [role, setRole] = useState('admin')
+  const [logoutError, setLogoutError] = useState(false)
   const router = useRouter()
 
+  useEffect(() => {
+    let active = true
+    getCurrentZhangakUser()
+      .then(user => {
+        if (!active || !user) return
+        setFullName(user.fullName || 'Администратор')
+        setRole(user.role)
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [])
+
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
+    setLogoutError(false)
+    try {
+      await logoutZhangak()
+      router.replace('/login')
+    } catch {
+      setLogoutError(true)
+    }
   }
+
+  const initials = fullName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0]?.toUpperCase())
+    .join('') || 'A'
 
   return (
     <header className="sticky top-0 z-20 flex h-[60px] items-center gap-3 border-b border-[#C3C6D7]/50 bg-white pl-16 pr-4 sm:px-6 lg:pl-6 print:hidden">
@@ -29,7 +56,7 @@ export default function AdminTopbar({ title, actionLabel, actionIcon: ActionIcon
           <button
             type="button"
             onClick={onAction}
-            className="flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-[#1B4FD8] px-4 py-2 text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-[#1B3F92] px-4 py-2 text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700"
           >
             {ActionIcon && <ActionIcon size={16} />}
             {actionLabel}
@@ -39,12 +66,19 @@ export default function AdminTopbar({ title, actionLabel, actionIcon: ActionIcon
           <button
             type="button"
             onClick={() => setMenuOpen(v => !v)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1B4FD8] text-xs font-bold text-white"
+            aria-label={`Меню аккаунта: ${fullName}`}
+            aria-expanded={menuOpen}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0D1E4A] text-xs font-bold text-white"
           >
-            A
+            {initials}
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-11 w-40 rounded-xl border border-[#C3C6D7]/50 bg-white p-2 shadow-lg">
+            <div className="absolute right-0 top-12 w-60 rounded-2xl border border-[#C3C6D7]/50 bg-white p-2 shadow-lg">
+              <div className="border-b border-slate-100 px-2 py-2.5">
+                <p className="truncate text-sm font-bold text-[#0D1E4A]">{fullName}</p>
+                <p className="mt-0.5 text-xs font-medium text-slate-400">{role === 'super_admin' ? 'Супер-администратор' : 'Администратор'}</p>
+              </div>
+              {logoutError && <p role="alert" className="px-2 py-2 text-xs font-semibold text-red-600">Не удалось завершить сессию. Повторите ещё раз.</p>}
               <button
                 type="button"
                 onClick={handleLogout}
