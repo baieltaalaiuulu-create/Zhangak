@@ -149,12 +149,22 @@ production-сборки Playwright-ом (login-страница поднимае
 ### Не выполнено
 
 - `npm run package:standalone` / `npm run smoke:standalone` — **не выполнены**.
-  Пакетчик отказывается: Next копирует нетрекаемый локальный `.env` в
-  `.next/standalone/`, и secret-guard пакетчика справедливо это блокирует
-  (`possible secret files found in standalone root: .env`). Файл содержит ключ
-  выведенного из эксплуатации Supabase; перемещать чужой файл с секретом я не
-  стал. На чистом CI-checkout его нет, поэтому шаг должен пройти в CI. До
-  результата CI считать pending.
+  Две независимые причины, обе связаны с файлами владельца, а не с этим срезом:
+
+  1. `scripts/package-standalone.mjs:45` проверяет чистоту через
+     `git status --porcelain=v1 --untracked-files=normal`, то есть **untracked
+     файлы тоже считаются грязью**. В рабочем дереве лежат `test_for_students/`
+     и `docs/development/CLAUDE_VIDEO_FIX_AUDIT_PROMPT.md` — оба принадлежат
+     владельцу, добавлять или удалять их запрещено.
+  2. До коммитов пакетчик дополнительно отклонял артефакт из-за локального
+     `.env`, который Next копирует в `.next/standalone/`
+     (`possible secret files found in standalone root: .env`). Файл содержит
+     ключ выведенного из эксплуатации Supabase; перемещать чужой файл с
+     секретом я не стал.
+
+  На чистом CI-checkout ни того, ни другого нет, поэтому шаг должен пройти в
+  CI. До результата CI считать **pending**. `ALLOW_DIRTY_RELEASE=1` для обхода
+  не использовался: он существует только для локальной диагностики.
 - Реальный Android/iOS device-тест (F1) — pending, release blocker.
 - Playwright не подключён к GitHub CI (требует шага установки браузера);
   запускается локально `npm run test:e2e`. Отдельный follow-up.

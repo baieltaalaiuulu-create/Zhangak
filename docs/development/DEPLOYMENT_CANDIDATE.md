@@ -104,7 +104,7 @@ checks, mobile tsc, Playwright 13/13, build, `nginx -t` — все PASS.
 
 | Тест | Причина |
 | --- | --- |
-| `package:standalone`, `smoke:standalone` | локальный нетрекаемый `.env` копируется Next в standalone root и блокируется secret-guard пакетчика. Файл владельца с секретом не перемещался. На чистом CI-checkout его нет — статус **pending до CI**. |
+| `package:standalone`, `smoke:standalone` | пакетчик считает грязью и untracked файлы; в дереве лежат `test_for_students/` и prompt-файл владельца, которые трогать нельзя. Дополнительно локальный `.env` блокируется secret-guard. На чистом CI-checkout ни того, ни другого нет — статус **pending до CI**. `ALLOW_DIRTY_RELEASE=1` не использовался. |
 | Android/iOS device playback | нет устройства и Expo-сборки в окружении. **Release blocker.** |
 | Playwright в GitHub CI | требует шага установки браузера; локально воспроизводимо `npm run test:e2e`. Follow-up. |
 | Доставка CSP-заголовка через реальный nginx | локально nginx перед приложением не поднимался; проверяется оператором `curl -I` после деплоя. |
