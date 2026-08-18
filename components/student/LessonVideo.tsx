@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { LoaderCircle, Play, RotateCcw, Video } from 'lucide-react'
 
+import { loadYoutubeApi } from '@/lib/youtube-iframe-api'
 import {
   YOUTUBE_EMBED_HOST,
-  YOUTUBE_IFRAME_API_URL,
   requestLessonVideo,
   reportLessonVideoEvent,
   youtubePlayerVars,
@@ -32,23 +32,6 @@ declare global {
   }
 }
 
-let apiLoadPromise: Promise<void> | null = null
-
-function loadYoutubeApi(): Promise<void> {
-  if (window.YT?.Player) return Promise.resolve()
-  if (apiLoadPromise) return apiLoadPromise
-  apiLoadPromise = new Promise((resolve, reject) => {
-    const previousReady = window.onYouTubeIframeAPIReady
-    window.onYouTubeIframeAPIReady = () => { previousReady?.(); resolve() }
-    const script = document.createElement('script')
-    script.src = YOUTUBE_IFRAME_API_URL
-    script.async = true
-    script.onerror = () => { apiLoadPromise = null; reject(new Error('iframe_api_unavailable')) }
-    document.head.appendChild(script)
-  })
-  return apiLoadPromise
-}
-
 /**
  * The one lesson video player, shared by the mobile and desktop branches of
  * the lesson page so their behaviour cannot drift apart.
@@ -71,6 +54,10 @@ export default function LessonVideo({ handle, lessonId, materialId, title }: Pro
   const [config, setConfig] = useState<LessonVideoConfig | null>(null)
   const mountRef = useRef<HTMLDivElement>(null)
   const playerRef = useRef<{ destroy?: () => void, getCurrentTime?: () => number } | null>(null)
+  // The session request and the API load both outlive a fast unmount, so
+  // their completion must not write state into a gone component.
+  const aliveRef = useRef(true)
+  useEffect(() => () => { aliveRef.current = false }, [])
 
   const report = useCallback((event: 'started' | 'ended', positionSeconds: number) => {
     // Analytics only, and never allowed to surface as a student-facing error:
@@ -82,10 +69,14 @@ export default function LessonVideo({ handle, lessonId, materialId, title }: Pro
     setStatus('loading')
     try {
       const [loaded] = await Promise.all([requestLessonVideo(handle), loadYoutubeApi()])
+      if (!aliveRef.current) return
       setConfig(loaded)
       setStatus('ready')
     } catch {
-      setStatus('error')
+      // Covers a rejected session (401/403/404), a failed script load and the
+      // loader's own timeout. The student gets one honest retry affordance
+      // rather than an indefinite spinner.
+      if (aliveRef.current) setStatus('error')
     }
   }, [handle])
 

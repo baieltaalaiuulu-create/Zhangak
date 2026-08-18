@@ -58,6 +58,13 @@ jobs:
       - name: Apply and verify first-party database migrations
         run: npm --prefix backend run verify:migrations
 
+      - name: Run PostgreSQL-backed lesson video integration tests
+        env:
+          # The same ephemeral CI service; the suite refuses any database whose
+          # name does not read as disposable.
+          ZHANGAK_TEST_DATABASE_URL: postgresql://zhangak_ci:zhangak_ci_ephemeral_password@127.0.0.1:5432/zhangak_ci
+        run: npm --prefix backend test
+
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -144,6 +151,7 @@ jobs:
         run: |
           npm ci
           npm run check:auth
+          npm run check:video
           npx tsc --noEmit --pretty false
 
       - name: Check first-party browser authentication
