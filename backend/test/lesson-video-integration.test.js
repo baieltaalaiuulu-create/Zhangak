@@ -183,13 +183,13 @@ test('lesson video authorization and quarantine repair', { skip }, async t => {
     )
     assert.deepEqual(lessons.rows, [
       {
-        id: 90,
+        id: '90',
         content_url: `https://www.youtube.com/watch?v=${VIDEO_A}`,
         video_id: VIDEO_A,
         video_quarantined: false,
       },
       {
-        id: 91,
+        id: '91',
         content_url: 'https://www.youtube.com/playlist?list=PLlegacy',
         video_id: null,
         video_quarantined: true,
