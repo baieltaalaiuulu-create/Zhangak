@@ -283,6 +283,8 @@ Supabase запрещён. Не меняй применённые миграци
 
 ## 12. Профильные prompts для делегирования
 
+- `docs/development/AI_AGENT_EXECUTION_PLAN.md` — разделение задач Claude и
+  Antigravity, stop-gates, cross-review и deployment candidate contract.
 - `docs/development/CLAUDE_YOUTUBE_PLAYER_PROMPT.md` — честная модель защиты,
   реализация и тесты YouTube player без ложного обещания DRM.
 - `docs/development/GEMINI_ANTIGRAVITY_CONTENT_PROMPT.md` — многофазный аудит,
