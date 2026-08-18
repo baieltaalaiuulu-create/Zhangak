@@ -190,7 +190,9 @@ test.describe('lesson video player', () => {
     await page.goto(LESSON_PATH)
 
     await page.getByRole('button', { name: /Смотреть видео/ }).click()
-    await expect(page.getByRole('alert')).toBeVisible({ timeout: 20_000 })
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Видео сейчас не открывается' }),
+    ).toBeVisible({ timeout: 20_000 })
     await expect(page.getByRole('button', { name: /Попробовать снова/ })).toBeVisible()
     await expect(page.locator('iframe')).toHaveCount(0)
     expect(await page.content()).not.toContain(VIDEO_ID)
