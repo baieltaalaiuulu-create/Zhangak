@@ -37,11 +37,26 @@ function optionalAbsolutePath(name) {
   return value
 }
 
+function optional(name) {
+  return process.env[name]?.trim() || null
+}
+
 export function loadConfig() {
   const jwtSecret = required('JWT_SECRET')
   if (jwtSecret.length < MIN_SECRET_LENGTH) throw new Error(`JWT_SECRET must be at least ${MIN_SECRET_LENGTH} characters`)
   if (jwtSecret === 'dev-secret-change-me' || jwtSecret.toLowerCase().includes('replace-me')) {
     throw new Error('JWT_SECRET must not be a placeholder')
+  }
+
+  const vapidSubject = optional('VAPID_SUBJECT')
+  const vapidPublicKey = optional('VAPID_PUBLIC_KEY')
+  const vapidPrivateKey = optional('VAPID_PRIVATE_KEY')
+  const vapidValues = [vapidSubject, vapidPublicKey, vapidPrivateKey]
+  if (vapidValues.some(Boolean) && !vapidValues.every(Boolean)) {
+    throw new Error('VAPID_SUBJECT, VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY must be configured together')
+  }
+  if (vapidSubject && !/^mailto:[^\s@]+@[^\s@]+$|^https:\/\//i.test(vapidSubject)) {
+    throw new Error('VAPID_SUBJECT must be a mailto: or https: contact')
   }
 
   return Object.freeze({
@@ -61,6 +76,9 @@ export function loadConfig() {
     deepseekApiKey: process.env.DEEPSEEK_API_KEY?.trim() || null,
     deepseekBaseUrl: (process.env.DEEPSEEK_BASE_URL ?? 'https://api.deepseek.com').replace(/\/$/, ''),
     deepseekFastModel: process.env.DEEPSEEK_FAST_MODEL?.trim() || 'deepseek-v4-flash',
+    vapidSubject,
+    vapidPublicKey,
+    vapidPrivateKey,
     releaseSha: process.env.ZHANGAK_API_RELEASE_SHA?.trim() || 'dev',
   })
 }

@@ -31,8 +31,8 @@ export default function BottomNav() {
   return (
     <nav
       aria-label="Основная навигация"
-      className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-16 w-full max-w-[430px] items-stretch border-t border-[#E2E8F0] bg-white pb-2 md:hidden"
-      style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}
+      className="fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-[430px] items-stretch border-t border-[#E2E8F0] bg-white md:hidden"
+      style={{ height: 'calc(64px + env(safe-area-inset-bottom))', paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}
     >
       {NAV_ITEMS.map(item => {
         const isActive = item.href === '/student/online'

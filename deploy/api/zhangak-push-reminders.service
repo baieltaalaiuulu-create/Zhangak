@@ -1,0 +1,19 @@
+[Unit]
+Description=Zhangak daily study push reminders
+After=network-online.target zhangak-api.service
+Wants=network-online.target
+RequiresMountsFor=/var/www/zhangak-api/current
+
+[Service]
+Type=oneshot
+User=zhangak-api
+Group=zhangak-api
+WorkingDirectory=/var/www/zhangak-api/current
+EnvironmentFile=/etc/zhangak-api/zhangak-api.env
+ExecStart=/usr/bin/node scripts/send-study-reminders.js
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/tmp
+

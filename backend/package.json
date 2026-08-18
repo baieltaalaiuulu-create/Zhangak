@@ -16,6 +16,7 @@
     "content:import": "node scripts/import_content.mjs --dry-run",
     "materials:import": "node scripts/import-reviewed-materials.mjs --dry-run",
     "universities:import": "node scripts/import-university-catalog.mjs --dry-run",
+    "push:reminders": "node scripts/send-study-reminders.js",
     "import:legacy-demo": "node scripts/import-supabase-demo-content.js --dry-run",
     "package:release": "node scripts/package-release.js",
     "check": "node scripts/check-syntax.js",
@@ -24,6 +25,7 @@
   "dependencies": {
     "busboy": "1.6.0",
     "mammoth": "1.12.0",
-    "pg": "8.16.3"
+    "pg": "8.16.3",
+    "web-push": "3.6.7"
   }
 }

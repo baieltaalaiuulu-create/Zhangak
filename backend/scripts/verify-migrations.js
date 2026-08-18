@@ -52,6 +52,7 @@ const requiredTables = [
   'ai_consents',
   'ai_conversations',
   'ai_messages',
+  'push_subscriptions',
 ]
 
 function fail(message) {

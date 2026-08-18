@@ -43,6 +43,43 @@ self.addEventListener('message', (e) => {
   if (e.data === 'skipWaiting') self.skipWaiting()
 })
 
+self.addEventListener('push', (e) => {
+  let payload = {}
+  try { payload = e.data ? e.data.json() : {} } catch { payload = {} }
+  const title = typeof payload.title === 'string' ? payload.title.slice(0, 80) : 'Жангак'
+  const body = typeof payload.body === 'string' ? payload.body.slice(0, 240) : 'Пора вернуться к подготовке.'
+  const requestedUrl = typeof payload.url === 'string' ? payload.url : '/student/online/roadmap'
+  const url = requestedUrl.startsWith('/student/online/') ? requestedUrl : '/student/online/roadmap'
+  const tag = typeof payload.tag === 'string' ? payload.tag.slice(0, 80) : 'zhangak-reminder'
+  e.waitUntil(self.registration.showNotification(title, {
+    body,
+    icon: '/icons/icon-192.png?v=20260813',
+    badge: '/icons/icon-192.png?v=20260813',
+    tag,
+    renotify: false,
+    data: { url },
+  }))
+})
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close()
+  const requestedUrl = e.notification.data && typeof e.notification.data.url === 'string'
+    ? e.notification.data.url
+    : '/student/online/roadmap'
+  const url = requestedUrl.startsWith('/student/online/') ? requestedUrl : '/student/online/roadmap'
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ('focus' in client) {
+          client.navigate(url)
+          return client.focus()
+        }
+      }
+      return self.clients.openWindow(url)
+    })
+  )
+})
+
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url)
 
@@ -61,7 +98,7 @@ self.addEventListener('fetch', (e) => {
       caches.match(e.request).then((cached) => {
         if (cached) return cached
         return fetch(e.request).then((res) => {
-          caches.open(CACHE_NAME).then((c) => c.put(e.request, res.clone()))
+          if (e.request.method === 'GET' && res.ok) caches.open(CACHE_NAME).then((c) => c.put(e.request, res.clone()))
           return res
         })
       })

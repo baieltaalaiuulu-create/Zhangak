@@ -1,0 +1,13 @@
+[Unit]
+Description=Run Zhangak study reminders every evening
+
+[Timer]
+# 13:00 UTC = 19:00 Asia/Bishkek throughout the year.
+OnCalendar=*-*-* 13:00:00 UTC
+Persistent=true
+RandomizedDelaySec=5m
+Unit=zhangak-push-reminders.service
+
+[Install]
+WantedBy=timers.target
+

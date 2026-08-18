@@ -39,7 +39,7 @@ export default function StudentTopbar({ fullName, avatarUrl, profileColor, strea
   const accent = PROFILE_COLOR_OPTIONS[profileColor].color
 
   return (
-    <header className="sticky top-0 z-20 flex h-[56px] items-center gap-3 border-b border-[#E2E8F0] bg-white px-4 sm:px-6">
+    <header className="student-safe-top sticky top-0 z-20 flex min-h-[56px] items-center gap-3 border-b border-[#E2E8F0] bg-white px-4 sm:px-6">
       {/* Compact HUD for the mobile-first student experience. It only shows
           values the first-party backend currently owns, never mock XP. */}
       <div className="grid min-w-0 flex-1 grid-cols-3 items-center gap-2 md:hidden">

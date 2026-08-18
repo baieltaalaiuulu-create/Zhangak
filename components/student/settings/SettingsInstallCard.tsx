@@ -5,7 +5,7 @@ import { useInstallPrompt } from '@/components/PWAInstallProvider'
 import IOSInstallSteps from '@/components/IOSInstallSteps'
 
 export default function SettingsInstallCard() {
-  const { isInstalled, isIOS, isUnsupported, promptInstall } = useInstallPrompt()
+  const { canPrompt, isInstalled, isIOS, isUnsupported, promptInstall } = useInstallPrompt()
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5">
@@ -31,14 +31,18 @@ export default function SettingsInstallCard() {
           <button
             type="button"
             onClick={promptInstall}
-            className="shrink-0 rounded-xl bg-[#1B3F92] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-700"
+            disabled={!canPrompt}
+            className="min-h-11 shrink-0 rounded-xl bg-[#1B3F92] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-700 disabled:cursor-wait disabled:bg-slate-300"
           >
-            Установить
+            {canPrompt ? 'Установить' : 'Подготовка…'}
           </button>
         ) : null}
       </div>
 
       {isIOS && !isInstalled && <IOSInstallSteps className="mt-4" />}
+      {!isInstalled && !isIOS && !isUnsupported && !canPrompt && (
+        <p className="mt-3 text-xs leading-5 text-gray-400">Если кнопка не активируется, откройте меню браузера и выберите «Установить приложение» или «Добавить на главный экран».</p>
+      )}
     </div>
   )
 }
