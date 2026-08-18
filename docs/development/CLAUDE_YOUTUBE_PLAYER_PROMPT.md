@@ -3,9 +3,13 @@
 Скопируйте весь блок ниже в Claude после передачи
 `docs/development/CLAUDE_HANDOFF.md`.
 
-**Рекомендуемая модель:** Claude Sonnet 5 с высоким effort для основной
-реализации. Для финального security/threat-model review при доступном бюджете —
-отдельный проход Claude Opus 4.8 без автоматического применения его правок.
+**Рекомендуемая модель при доступности в вашем Claude Code:** Claude Opus 5 с
+максимальным effort для основной реализации. До запуска зафиксируйте точный
+model ID из интерфейса: публичная документация Anthropic на дату handoff ещё
+перечисляет Opus 4.8, поэтому название `Opus 5` может быть product-specific
+preview/alias. Для независимого review используйте не тот же session: Gemini
+3.7 Flash или стабильный Gemini 3.5 Flash читает diff/tests/threat model без
+автоматического применения правок. Fallback для реализации — Claude Sonnet 5.
 
 ```text
 Ты работаешь в каноническом репозитории C:\Users\user\Documents\Zhangak.
