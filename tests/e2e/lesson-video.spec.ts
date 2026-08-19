@@ -96,13 +96,13 @@ function trackYoutube(page: Page): string[] {
   return seen
 }
 
-async function stubPlatform(page: Page, options: { videoStatus?: number } = {}) {
+async function stubPlatform(page: Page, options: { videoStatus?: number; materials?: unknown[] } = {}) {
   // Playwright matches the most recently registered route first, so these are
   // ordered broadest to most specific on purpose.
   await page.route('**/v1/platform/**', route => json(route, { items: [] }))
   await page.route('**/v1/platform/lessons**', route => json(route, { items: [lessonPayload()] }))
   await page.route(`**/v1/platform/lessons/${LESSON_ID}`, route => json(route, { lesson: lessonPayload() }))
-  await page.route(`**/v1/platform/lessons/${LESSON_ID}/materials`, route => json(route, { items: [] }))
+  await page.route(`**/v1/platform/lessons/${LESSON_ID}/materials`, route => json(route, { items: options.materials ?? [] }))
   await page.route(`**/v1/platform/lessons/${LESSON_ID}/video`, route => (
     options.videoStatus && options.videoStatus !== 200
       ? json(route, { error: 'unauthorized' }, options.videoStatus)
@@ -242,6 +242,32 @@ test.describe('lesson video player', () => {
     const html = await page.locator('body').innerHTML()
     expect(html).not.toContain('youtube.com/watch')
     expect(html).not.toContain('youtu.be/')
+  })
+
+  test('published documents are discoverable from the desktop materials card', async ({ page }) => {
+    await stubPlatform(page, {
+      materials: [{
+        id: 87,
+        lessonId: LESSON_ID,
+        materialType: 'document',
+        title: 'Авторский PDF-конспект',
+        position: 1,
+        bodyMarkdown: null,
+        video: null,
+        mimeType: 'application/pdf',
+        byteSize: 42_000,
+        viewerPath: '/v1/platform/materials/87/content',
+      }],
+    })
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto(LESSON_PATH)
+
+    const materialJump = page.getByRole('link', { name: 'Материалов: 1' })
+    await expect(materialJump).toBeVisible()
+    await expect(materialJump).toHaveAttribute('href', '#lesson-materials')
+    await expect(
+      page.getByRole('link', { name: 'Авторский PDF-конспект' }).filter({ visible: true }),
+    ).toBeVisible()
   })
 
   test('the page never offers its own link out to YouTube', async ({ page }) => {

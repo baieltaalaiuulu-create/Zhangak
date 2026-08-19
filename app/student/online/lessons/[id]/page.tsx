@@ -268,8 +268,8 @@ export default function LessonDetailPage() {
     </div>
   )
 
-  const materialsSection = extraMaterials.length > 0 ? (
-    <section className="rounded-[22px] border border-[var(--student-line)] bg-white p-4 sm:p-6">
+  const materialsSection = (sectionId?: string) => extraMaterials.length > 0 ? (
+    <section id={sectionId} className="scroll-mt-24 rounded-[22px] border border-[var(--student-line)] bg-white p-4 sm:p-6">
       <h2 className="flex items-center gap-2 text-base font-extrabold text-gray-900"><FileText size={18} aria-hidden="true" /> Материалы урока</h2>
       <p className="mt-1 text-xs leading-5 text-gray-500">Файлы открываются только внутри авторизованного кабинета.</p>
       <div className="mt-4 space-y-2.5">
@@ -366,7 +366,7 @@ export default function LessonDetailPage() {
 
           {material}
 
-          {materialsSection}
+          {materialsSection()}
           <MobileAIHelp lessonTitle={lesson.title} />
           {practiceCard}
 
@@ -424,7 +424,7 @@ export default function LessonDetailPage() {
 
               {practiceCard}
 
-              {materialsSection}
+              {materialsSection('lesson-materials')}
             </main>
 
             <aside className="w-full shrink-0 space-y-5 lg:w-80">
@@ -432,16 +432,26 @@ export default function LessonDetailPage() {
 
               <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                 <h2 className="flex items-center gap-2 text-sm font-bold text-gray-900"><FileText size={17} aria-hidden="true" /> Материалы</h2>
-                {lesson.contentUrl ? (
+                {extraMaterials.length > 0 && (
+                  <a
+                    href="#lesson-materials"
+                    className="mt-3 flex min-h-11 items-center justify-between gap-3 rounded-xl bg-[var(--student-brand-50)] px-3 text-sm font-semibold text-[var(--student-brand)] hover:bg-blue-100"
+                  >
+                    <span className="min-w-0 break-words">Материалов: {extraMaterials.length}</span>
+                    <ArrowRight size={15} className="shrink-0" aria-hidden="true" />
+                  </a>
+                )}
+                {lesson.contentUrl && (
                   <a
                     href={lesson.contentUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-3 flex min-h-11 items-center justify-between rounded-xl bg-gray-50 px-3 text-sm font-semibold text-gray-700"
+                    className="mt-3 flex min-h-11 items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 text-sm font-semibold text-gray-700"
                   >
-                    Открыть материал <ExternalLink size={15} aria-hidden="true" />
+                    <span className="min-w-0 break-words">Открыть основной материал</span> <ExternalLink size={15} className="shrink-0" aria-hidden="true" />
                   </a>
-                ) : (
+                )}
+                {extraMaterials.length === 0 && !lesson.contentUrl && (
                   <p className="mt-2 text-xs leading-relaxed text-gray-500">Дополнительные материалы пока не опубликованы.</p>
                 )}
               </div>
