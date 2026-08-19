@@ -179,7 +179,13 @@ export default function StudentLayout({ children }: Props) {
       <div className="student-visual min-h-screen bg-[#F1F4FB] md:bg-[#FAF8FF]">
         <StudentSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} fullName={fullName} avatarUrl={avatarUrl} profileColor={sessionUser.profileColor} />
 
-        <div className="mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden bg-[#F1F4FB] md:ml-64 md:max-w-none md:overflow-visible md:bg-[#FAF8FF]">
+        {/* The sidebar is `fixed w-64`, so from `md` up this column is offset
+            by 16rem. It must therefore be 16rem NARROWER than the viewport:
+            `w-full` here would make the column viewport-wide and push its last
+            16rem off-screen, which the global `overflow-x: clip` then hides
+            instead of revealing. `min-w-0` keeps long unbreakable strings from
+            widening the column back out. */}
+        <div className="mx-auto min-h-screen w-full min-w-0 max-w-[430px] overflow-x-hidden bg-[#F1F4FB] md:ml-64 md:w-[calc(100%-16rem)] md:max-w-none md:overflow-visible md:bg-[#FAF8FF]">
           <StudentTopbar
             fullName={fullName}
             avatarUrl={avatarUrl}
