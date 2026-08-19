@@ -94,7 +94,7 @@ export default function TrainerPage() {
             </label>
             <fieldset>
               <legend className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-[var(--student-ink-3)]">Сложность</legend>
-              <div className="flex gap-2">{DIFFICULTIES.map(item => { const active = difficulty === item.key; return <button key={item.key} type="button" onClick={() => setDifficulty(item.key)} className={`min-h-10 min-w-0 flex-1 rounded-[14px] border px-2 text-xs font-bold ${active ? 'border-[var(--student-brand)] bg-[var(--student-brand)] text-white' : 'border-[var(--student-line)] text-[var(--student-ink-2)]'}`}>{item.label}</button> })}</div>
+              <div className="flex gap-2">{DIFFICULTIES.map(item => { const active = difficulty === item.key; return <button key={item.key} type="button" onClick={() => setDifficulty(item.key)} className={`min-h-11 min-w-0 flex-1 rounded-[14px] border px-2 text-xs font-bold ${active ? 'border-[var(--student-brand)] bg-[var(--student-brand)] text-white' : 'border-[var(--student-line)] text-[var(--student-ink-2)]'}`}>{item.label}</button> })}</div>
             </fieldset>
             <button type="button" onClick={() => void next()} disabled={loading} className="flex min-h-14 w-full items-center justify-center rounded-2xl border-b-4 border-[var(--student-brand-dark)] bg-[var(--student-brand)] px-4 text-base font-extrabold text-white active:translate-y-0.5 disabled:opacity-60">{loading ? 'Ищем вопрос…' : 'Начать тренировку'}</button>
           </>}

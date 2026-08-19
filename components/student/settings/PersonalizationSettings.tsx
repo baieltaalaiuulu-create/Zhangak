@@ -127,7 +127,7 @@ export default function PersonalizationSettings() {
         <button
           type="button"
           onClick={() => { setLoading(true); setLoadingError(false); setReloadNonce(value => value + 1) }}
-          className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-xs font-bold text-white"
+          className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-xs font-bold text-white"
         >
           <RefreshCw size={15} aria-hidden="true" />
           Повторить

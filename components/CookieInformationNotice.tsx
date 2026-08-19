@@ -56,12 +56,12 @@ export default function CookieInformationNotice() {
             <button
               type="button"
               onClick={dismiss}
-              className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#1B3F92] px-3 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3F92] focus-visible:ring-offset-2"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1B3F92] px-3 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3F92] focus-visible:ring-offset-2"
             >
               <ShieldCheck size={15} aria-hidden="true" />
               Понятно
             </button>
-            <Link href="/privacy" className="inline-flex min-h-10 max-w-full items-center px-2 text-left text-xs font-bold text-[#1B3F92] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3F92]">
+            <Link href="/privacy" className="inline-flex min-h-11 max-w-full items-center px-2 text-left text-xs font-bold text-[#1B3F92] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3F92]">
               Политика конфиденциальности
             </Link>
           </div>
@@ -70,7 +70,7 @@ export default function CookieInformationNotice() {
           type="button"
           onClick={dismiss}
           aria-label="Закрыть информацию о cookie"
-          className="flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3F92]"
+          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3F92]"
         >
           <X size={18} aria-hidden="true" />
         </button>

@@ -59,7 +59,7 @@ export default function StudentTopbar({ fullName, avatarUrl, profileColor, strea
         <input
           type="text"
           placeholder="Поиск уроков, тем..."
-          className="w-full rounded-full bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3F92]/20"
+          className="min-h-11 w-full rounded-full bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3F92]/20"
         />
       </div>
 
@@ -105,7 +105,7 @@ export default function StudentTopbar({ fullName, avatarUrl, profileColor, strea
             type="button"
             onClick={() => setMenuOpen(v => !v)}
             aria-label="Меню профиля"
-            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full text-xs font-bold text-white"
+            className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full text-xs font-bold text-white"
             style={{ backgroundColor: accent }}
           >
             {avatarUrl ? (

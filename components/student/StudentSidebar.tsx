@@ -81,7 +81,7 @@ export default function StudentSidebar({ isOpen, onClose, fullName = 'Студе
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+                className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
                   isActive
                     ? 'text-white shadow-md'
                     : 'text-gray-400 hover:bg-white/5 hover:text-white'
@@ -99,7 +99,7 @@ export default function StudentSidebar({ isOpen, onClose, fullName = 'Студе
           <Link
             href="/student/online/trainer"
             onClick={onClose}
-            className="block w-full rounded-xl py-2.5 text-center text-sm font-bold text-white shadow-md transition-opacity hover:opacity-90"
+            className="flex min-h-11 w-full items-center justify-center rounded-xl py-2.5 text-center text-sm font-bold text-white shadow-md transition-opacity hover:opacity-90"
             style={{ background: 'linear-gradient(135deg, #6C3DE0 0%, #4338CA 100%)' }}
           >
             + Начать тренажёр
@@ -107,14 +107,14 @@ export default function StudentSidebar({ isOpen, onClose, fullName = 'Студе
           <Link
             href="/student/online/settings"
             onClick={onClose}
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
+            className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
           >
             <Settings size={18} /> Настройки
           </Link>
           <Link
             href="/student/online/profile"
             onClick={onClose}
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
+            className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
           >
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- externally hosted HTTPS avatar URL, no next/image domain config in this project

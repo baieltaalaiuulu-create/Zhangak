@@ -33,7 +33,7 @@ export default function DangerZoneCard({ deletionAvailable = false, onDeleteAcco
         onClick={() => canDelete && setModalOpen(true)}
         disabled={!canDelete}
         aria-describedby={canDelete ? undefined : 'account-deletion-unavailable'}
-        className="mt-4 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 disabled:hover:bg-transparent"
+        className="mt-4 min-h-11 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 disabled:hover:bg-transparent"
       >
         {canDelete ? 'Удалить аккаунт' : 'Удаление скоро'}
       </button>
