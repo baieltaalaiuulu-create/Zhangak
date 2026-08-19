@@ -193,5 +193,9 @@ jobs:
         with:
           name: zhangak-standalone-${{ github.sha }}
           path: .next/standalone
+          # The standalone runtime requires its nested `.next/static` tree.
+          # upload-artifact excludes dot-prefixed paths unless explicitly told
+          # to preserve them, producing an artifact the activator rejects.
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
