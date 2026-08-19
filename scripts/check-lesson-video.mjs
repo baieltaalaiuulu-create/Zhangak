@@ -121,8 +121,12 @@ async function main() {
   expect(player.includes('w-full'), 'the player frame must be fluid, never a fixed pixel width')
   expect(player.includes('aspect-video'), 'the player must keep a 16:9 frame where there is room')
   expect(
-    player.includes('min-h-[200px]'),
-    'the player must respect the documented 200x200 minimum on a 320 px viewport',
+    !/min-h-\[\d+px\]/.test(player),
+    'the player must not carry a pixel minimum height: below 356px it overrides 16:9 and stretches the video',
+  )
+  expect(
+    player.includes('[&>iframe]:h-full') && player.includes('[&>iframe]:w-full'),
+    'the injected iframe must be pinned to the container; the IFrame API gives it fixed width/height attributes',
   )
   expect(player.includes('overflow-hidden'), 'the player frame must not let the embed push the page sideways')
   expect(

@@ -91,6 +91,10 @@ export default function LessonVideo({ handle, lessonId, materialId, title }: Pro
     const player = new window.YT.Player(target, {
       videoId: config.videoId,
       host: YOUTUBE_EMBED_HOST,
+      // Percentage sizing so the injected iframe never carries a fixed pixel
+      // width; the CSS above enforces it regardless of what the API writes.
+      width: '100%',
+      height: '100%',
       playerVars: { ...youtubePlayerVars(window.location.origin), autoplay: 1 },
       events: {
         onReady: (event: { target: { getIframe?: () => HTMLIFrameElement } }) => {
@@ -120,7 +124,20 @@ export default function LessonVideo({ handle, lessonId, materialId, title }: Pro
     }
   }, [status, config, title, report])
 
-  const frame = 'relative w-full overflow-hidden rounded-2xl bg-gray-900 aspect-video min-h-[200px]'
+  // 16:9 at every width, with no minimum height.
+  //
+  // A `min-h-[200px]` was previously combined with `aspect-video` to chase
+  // YouTube's recommended 200x200 player area. Those two cannot both hold on a
+  // narrow phone: a 16:9 box only reaches 200px tall once it is 356px wide, so
+  // at 320px and 360px the minimum won and the video rendered at 1.44:1 —
+  // visibly stretched. The ratio is the contract that matters for video, so
+  // the minimum is gone; see docs/operations/lesson-video.md.
+  //
+  // The arbitrary child selector pins whatever iframe the IFrame API injects:
+  // it creates one carrying width/height ATTRIBUTES (640x360 by default), and
+  // without this the embed would keep a fixed pixel size inside a fluid box.
+  const frame = 'relative w-full min-w-0 overflow-hidden rounded-2xl bg-gray-900 aspect-video'
+  const framedPlayer = `${frame} [&>iframe]:absolute [&>iframe]:inset-0 [&>iframe]:block [&>iframe]:h-full [&>iframe]:w-full [&>iframe]:border-0`
 
   if (status === 'error') {
     return (
@@ -139,7 +156,7 @@ export default function LessonVideo({ handle, lessonId, materialId, title }: Pro
   }
 
   if (status === 'ready') {
-    return <div ref={mountRef} className={frame} />
+    return <div ref={mountRef} className={framedPlayer} />
   }
 
   return (
