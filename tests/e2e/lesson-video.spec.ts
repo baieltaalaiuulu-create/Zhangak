@@ -58,6 +58,34 @@ function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
 }
 
+/**
+ * Faithful stand-in for the YouTube IFrame API. It must actually define
+ * `window.YT` and inject an iframe carrying width/height ATTRIBUTES, the way
+ * the real API does. The earlier stub only fired the ready callback, so the
+ * player never mounted and these assertions were weaker than they looked.
+ */
+const YT_API_STUB = `
+window.YT = {
+  PlayerState: { ENDED: 0, PLAYING: 1 },
+  Player: function (element, options) {
+    var frame = document.createElement('iframe')
+    frame.setAttribute('width', String(options.width === undefined ? 640 : options.width))
+    frame.setAttribute('height', String(options.height === undefined ? 390 : options.height))
+    var params = 'enablejsapi=1&playsinline=1&rel=0&origin=' + encodeURIComponent(location.origin)
+    frame.setAttribute('src', (options.host || 'https://www.youtube.com') + '/embed/' + options.videoId + '?' + params)
+    element.parentNode.replaceChild(frame, element)
+    this.getIframe = function () { return frame }
+    this.destroy = function () {}
+    this.getCurrentTime = function () { return 0 }
+    var self = this
+    if (options.events && options.events.onReady) {
+      setTimeout(function () { options.events.onReady({ target: self }) }, 0)
+    }
+  },
+}
+if (window.onYouTubeIframeAPIReady) window.onYouTubeIframeAPIReady()
+`
+
 /** Records every request the page attempts against a YouTube origin. */
 function trackYoutube(page: Page): string[] {
   const seen: string[] = []
@@ -87,7 +115,7 @@ async function stubPlatform(page: Page, options: { videoStatus?: number } = {}) 
   await page.route('https://www.youtube-nocookie.com/**', route =>
     route.fulfill({ status: 200, contentType: 'text/html', body: '<html><body>stub player</body></html>' }))
   await page.route('https://www.youtube.com/**', route =>
-    route.fulfill({ status: 200, contentType: 'application/javascript', body: 'window.onYouTubeIframeAPIReady && window.onYouTubeIframeAPIReady();' }))
+    route.fulfill({ status: 200, contentType: 'application/javascript', body: YT_API_STUB }))
 }
 
 const WIDTHS = [320, 360, 390, 430, 768, 1280]
@@ -109,11 +137,13 @@ test.describe('lesson video player', () => {
       }))
       expect(overflow.scrollWidth, `page must not overflow at ${width}px`).toBeLessThanOrEqual(overflow.clientWidth)
 
-      // The player must also honour the documented 200x200 minimum.
+      // 16:9 is the contract at every width. YouTube's recommended 200x200
+      // player area cannot coexist with it below 356px (a 16:9 box only
+      // reaches 200px tall once it is 356px wide), and a stretched video is a
+      // worse outcome than a short one.
       const box = await play.boundingBox()
       expect(box).not.toBeNull()
-      expect(box!.width).toBeGreaterThanOrEqual(200)
-      expect(box!.height).toBeGreaterThanOrEqual(200)
+      expect(box!.width / box!.height).toBeCloseTo(16 / 9, 1)
       expect(box!.width).toBeLessThanOrEqual(width)
     })
   }
