@@ -265,7 +265,11 @@ export function youtubeEmbedDocument(videoId: string): string {
     '<!DOCTYPE html>',
     '<html lang="ru"><head><meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
-    '<style>html,body{margin:0;padding:0;background:#111827;height:100%;overflow:hidden}',
+    // Full-bleed and non-scrolling: the WebView is already sized to a 16:9
+    // box by the native side, so the document must fill it exactly. The dark
+    // background matches the container so a rotation never flashes white bars
+    // while the embed re-lays out.
+    '<style>html,body{margin:0;padding:0;width:100%;height:100%;background:#111827;overflow:hidden}',
     'iframe{border:0;width:100%;height:100%;display:block}</style></head>',
     '<body>',
     `<iframe src="${src}" title="Видео урока" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>`,
