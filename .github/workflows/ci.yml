@@ -170,7 +170,11 @@ jobs:
         run: npm run build
 
       - name: Install Chromium for rendered acceptance tests
-        run: npx playwright install --with-deps chromium
+        # GitHub's Ubuntu image already contains the shared browser libraries.
+        # `--with-deps` runs apt update against external mirrors and previously
+        # consumed the entire 30-minute job timeout before any E2E test ran.
+        timeout-minutes: 5
+        run: npx playwright install chromium
 
       - name: Test rendered lesson video experience
         run: npm run test:e2e

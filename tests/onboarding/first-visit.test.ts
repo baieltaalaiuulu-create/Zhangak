@@ -2,9 +2,12 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  COOKIE_INFORMATION_DISMISSED_KEY,
+  FIRST_VISIT_DISMISSED_EVENT,
   MARKETING_TOUR_DISMISSED_KEY,
   markDismissed,
   PLATFORM_ONBOARDING_DISMISSED_KEY,
+  shouldShowCookieInformation,
   wasDismissed,
 } from '../../lib/first-visit.ts'
 
@@ -32,4 +35,16 @@ test('optional first-visit flags fail open when browser storage is blocked', () 
   } as unknown as Storage
   assert.equal(wasDismissed(unavailable, MARKETING_TOUR_DISMISSED_KEY), false)
   assert.doesNotThrow(() => markDismissed(unavailable, MARKETING_TOUR_DISMISSED_KEY))
+})
+
+test('cookie information waits for the marketing tour and remains dismissible', () => {
+  const storage = memoryStorage()
+  assert.equal(shouldShowCookieInformation(storage), false)
+
+  markDismissed(storage, MARKETING_TOUR_DISMISSED_KEY)
+  assert.equal(shouldShowCookieInformation(storage), true)
+
+  markDismissed(storage, COOKIE_INFORMATION_DISMISSED_KEY)
+  assert.equal(shouldShowCookieInformation(storage), false)
+  assert.equal(FIRST_VISIT_DISMISSED_EVENT, 'zhangak:first-visit-dismissed')
 })

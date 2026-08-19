@@ -6,8 +6,9 @@ import { Cookie, ShieldCheck, X } from 'lucide-react'
 
 import {
   COOKIE_INFORMATION_DISMISSED_KEY,
+  FIRST_VISIT_DISMISSED_EVENT,
   markDismissed,
-  wasDismissed,
+  shouldShowCookieInformation,
 } from '@/lib/first-visit'
 import { siteSurfaceForHost } from '@/lib/site-hosts'
 
@@ -24,11 +25,18 @@ export default function CookieInformationNotice() {
     // notice. The public site is where a first-time visitor sees it; private
     // surfaces keep their required session cookies functional without a gate.
     const surface = siteSurfaceForHost(window.location.hostname)
-    if (surface === 'platform' || surface === 'admin') return
-    const timer = window.setTimeout(() => {
-      setVisible(!wasDismissed(window.localStorage, COOKIE_INFORMATION_DISMISSED_KEY))
-    }, 0)
-    return () => window.clearTimeout(timer)
+    if (surface !== 'marketing') return
+
+    const showAfterTour = () => {
+      setVisible(shouldShowCookieInformation(window.localStorage))
+    }
+
+    const timer = window.setTimeout(showAfterTour, 0)
+    window.addEventListener(FIRST_VISIT_DISMISSED_EVENT, showAfterTour)
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener(FIRST_VISIT_DISMISSED_EVENT, showAfterTour)
+    }
   }, [])
 
   const dismiss = () => {

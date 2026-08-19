@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -56,6 +56,13 @@ function unavailableMessage(error: unknown): string {
   return 'Не удалось получить урок из учебного сервиса.'
 }
 
+function materialsUnavailableMessage(error: unknown): string {
+  if (error instanceof ZhangakApiError && (error.code === 'backend_unavailable' || error.status === 503)) {
+    return 'Сервис материалов временно недоступен.'
+  }
+  return 'Не удалось загрузить материалы урока.'
+}
+
 async function requestLessonPage(lessonId: string): Promise<{ detail: PlatformLesson; catalog: PlatformLesson[] }> {
   const detail = await fetchPlatformLesson(lessonId)
   try {
@@ -86,52 +93,78 @@ export default function LessonDetailPage() {
   const [lesson, setLesson] = useState<PlatformLesson | null>(null)
   const [allLessons, setAllLessons] = useState<PlatformLesson[]>([])
   const [materials, setMaterials] = useState<PlatformLessonMaterial[]>([])
+  const [materialsLoading, setMaterialsLoading] = useState(true)
+  const [materialsError, setMaterialsError] = useState<string | null>(null)
   const [completionPending, setCompletionPending] = useState(false)
   const [completionError, setCompletionError] = useState<string | null>(null)
+  const lessonRequestId = useRef(0)
+  const materialsRequestId = useRef(0)
+
+  const loadMaterials = useCallback(async () => {
+    const requestId = ++materialsRequestId.current
+    setMaterialsLoading(true)
+    setMaterialsError(null)
+    try {
+      const items = await fetchPlatformLessonMaterials(lessonId)
+      if (materialsRequestId.current !== requestId) return
+      setMaterials(items)
+    } catch (error) {
+      if (materialsRequestId.current !== requestId) return
+      setMaterials([])
+      setMaterialsError(materialsUnavailableMessage(error))
+    } finally {
+      if (materialsRequestId.current === requestId) setMaterialsLoading(false)
+    }
+  }, [lessonId])
 
   const loadLesson = useCallback(async () => {
+    const requestId = ++lessonRequestId.current
+    materialsRequestId.current += 1
+    setLoading(true)
+    setLoadError(null)
+    setNotFound(false)
+    setLesson(null)
+    setAllLessons([])
+    setMaterials([])
+    setMaterialsError(null)
+    setMaterialsLoading(true)
     try {
       const result = await requestLessonPage(lessonId)
+      if (lessonRequestId.current !== requestId) return
       setLesson(result.detail)
       setAllLessons(result.catalog)
+      void loadMaterials()
     } catch (error) {
+      if (lessonRequestId.current !== requestId) return
+      setMaterialsLoading(false)
       if (isUnavailableLesson(error)) {
         setNotFound(true)
       } else {
         setLoadError(unavailableMessage(error))
       }
     } finally {
-      setLoading(false)
+      if (lessonRequestId.current === requestId) setLoading(false)
     }
-  }, [lessonId])
+  }, [lessonId, loadMaterials])
 
   useEffect(() => {
     let active = true
-    void requestLessonPage(lessonId)
-      .then(result => {
-        if (!active) return
-        setLesson(result.detail)
-        setAllLessons(result.catalog)
-        // A temporary material-service error must not hide the otherwise
-        // valid lesson. The lesson route remains the source of truth.
-        void fetchPlatformLessonMaterials(lessonId)
-          .then(items => { if (active) setMaterials(items) })
-          .catch(() => { if (active) setMaterials([]) })
-      })
-      .catch(error => {
-        if (!active) return
-        if (isUnavailableLesson(error)) setNotFound(true)
-        else setLoadError(unavailableMessage(error))
-      })
-      .finally(() => { if (active) setLoading(false) })
-    return () => { active = false }
-  }, [lessonId])
+    void Promise.resolve().then(() => {
+      if (active) void loadLesson()
+    })
+    return () => {
+      active = false
+      lessonRequestId.current += 1
+      materialsRequestId.current += 1
+    }
+  }, [loadLesson])
 
   const retryLoad = () => {
-    setLoading(true)
-    setLoadError(null)
-    setNotFound(false)
     void loadLesson()
+  }
+
+  const retryMaterials = () => {
+    void loadMaterials()
   }
 
   const completeLesson = useCallback(async () => {
@@ -254,6 +287,20 @@ export default function LessonDetailPage() {
         Открыть материал <ExternalLink size={16} aria-hidden="true" />
       </a>
     </div>
+  ) : materialsLoading ? (
+    <div
+      aria-busy="true"
+      className="flex aspect-video flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 text-center text-gray-600"
+    >
+      <RefreshCw size={32} className="animate-spin text-[#1B3F92]" aria-hidden="true" />
+      <p className="mt-3 text-sm font-semibold">Загружаем материалы урока…</p>
+    </div>
+  ) : materialsError ? (
+    <div className="flex aspect-video flex-col items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 px-6 text-center text-amber-950">
+      <FileText size={34} aria-hidden="true" />
+      <p className="mt-3 text-sm font-bold">Материалы не загрузились</p>
+      <p className="mt-1 text-xs leading-5 text-amber-800">Сам урок доступен. Повтори загрузку в разделе ниже.</p>
+    </div>
   ) : extraMaterials.length > 0 ? (
     <div className="flex aspect-video flex-col items-center justify-center rounded-[22px] bg-[var(--student-brand)] px-6 text-center text-white">
       <BookOpen size={38} aria-hidden="true" />
@@ -268,26 +315,69 @@ export default function LessonDetailPage() {
     </div>
   )
 
-  const materialsSection = (sectionId?: string) => extraMaterials.length > 0 ? (
-    <section id={sectionId} className="scroll-mt-24 rounded-[22px] border border-[var(--student-line)] bg-white p-4 sm:p-6">
-      <h2 className="flex items-center gap-2 text-base font-extrabold text-gray-900"><FileText size={18} aria-hidden="true" /> Материалы урока</h2>
-      <p className="mt-1 text-xs leading-5 text-gray-500">Файлы открываются только внутри авторизованного кабинета.</p>
-      <div className="mt-4 space-y-2.5">
-        {extraMaterials.map(item => item.materialType === 'rich_text' ? (
-          <article key={item.id} className="rounded-2xl bg-[var(--student-surface-2)] p-4">
-            <h3 className="font-bold text-gray-800">{item.title}</h3>
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{item.bodyMarkdown}</p>
-          </article>
-        ) : item.viewerPath ? (
-          <a key={item.id} href={item.viewerPath} target="_blank" rel="noreferrer" className="flex min-h-14 items-center gap-3 rounded-2xl border border-[var(--student-line)] bg-white px-3.5 text-sm font-semibold text-gray-700 hover:bg-blue-50">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--student-brand-50)] text-[var(--student-brand)]"><FileText size={18} aria-hidden="true" /></span>
-            <span className="min-w-0 flex-1 break-words">{item.title}</span>
-            <ExternalLink size={16} className="shrink-0 text-[var(--student-brand)]" aria-hidden="true" />
-          </a>
-        ) : null)}
-      </div>
-    </section>
-  ) : null
+  const materialsSection = (sectionId?: string) => {
+    if (materialsLoading) {
+      return (
+        <section
+          id={sectionId}
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="scroll-mt-24 rounded-[22px] border border-[var(--student-line)] bg-white p-4 sm:p-6"
+        >
+          <p className="flex items-center gap-2 text-sm font-semibold text-gray-600">
+            <RefreshCw size={17} className="animate-spin text-[var(--student-brand)]" aria-hidden="true" />
+            Загружаем дополнительные материалы…
+          </p>
+        </section>
+      )
+    }
+
+    if (materialsError) {
+      return (
+        <section
+          id={sectionId}
+          role="alert"
+          aria-live="assertive"
+          className="scroll-mt-24 rounded-[22px] border border-red-200 bg-red-50 p-4 sm:p-6"
+        >
+          <h2 className="flex items-center gap-2 text-base font-extrabold text-red-950">
+            <FileText size={18} aria-hidden="true" /> Материалы временно недоступны
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-red-800">{materialsError} Урок и уже открытый прогресс остаются доступными.</p>
+          <button
+            type="button"
+            onClick={retryMaterials}
+            className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 py-2.5 text-sm font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1B3F92]"
+          >
+            <RefreshCw size={16} aria-hidden="true" />
+            Повторить загрузку
+          </button>
+        </section>
+      )
+    }
+
+    return extraMaterials.length > 0 ? (
+      <section id={sectionId} className="scroll-mt-24 rounded-[22px] border border-[var(--student-line)] bg-white p-4 sm:p-6">
+        <h2 className="flex items-center gap-2 text-base font-extrabold text-gray-900"><FileText size={18} aria-hidden="true" /> Материалы урока</h2>
+        <p className="mt-1 text-xs leading-5 text-gray-500">Файлы открываются только внутри авторизованного кабинета.</p>
+        <div className="mt-4 space-y-2.5">
+          {extraMaterials.map(item => item.materialType === 'rich_text' ? (
+            <article key={item.id} className="rounded-2xl bg-[var(--student-surface-2)] p-4">
+              <h3 className="font-bold text-gray-800">{item.title}</h3>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{item.bodyMarkdown}</p>
+            </article>
+          ) : item.viewerPath ? (
+            <a key={item.id} href={item.viewerPath} target="_blank" rel="noreferrer" className="flex min-h-14 items-center gap-3 rounded-2xl border border-[var(--student-line)] bg-white px-3.5 text-sm font-semibold text-gray-700 hover:bg-blue-50">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--student-brand-50)] text-[var(--student-brand)]"><FileText size={18} aria-hidden="true" /></span>
+              <span className="min-w-0 flex-1 break-words">{item.title}</span>
+              <ExternalLink size={16} className="shrink-0 text-[var(--student-brand)]" aria-hidden="true" />
+            </a>
+          ) : null)}
+        </div>
+      </section>
+    ) : null
+  }
 
   const practiceCard = (
     <div className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
@@ -432,7 +522,7 @@ export default function LessonDetailPage() {
 
               <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                 <h2 className="flex items-center gap-2 text-sm font-bold text-gray-900"><FileText size={17} aria-hidden="true" /> Материалы</h2>
-                {extraMaterials.length > 0 && (
+                {!materialsLoading && !materialsError && extraMaterials.length > 0 && (
                   <a
                     href="#lesson-materials"
                     className="mt-3 flex min-h-11 items-center justify-between gap-3 rounded-xl bg-[var(--student-brand-50)] px-3 text-sm font-semibold text-[var(--student-brand)] hover:bg-blue-100"
@@ -451,7 +541,15 @@ export default function LessonDetailPage() {
                     <span className="min-w-0 break-words">Открыть основной материал</span> <ExternalLink size={15} className="shrink-0" aria-hidden="true" />
                   </a>
                 )}
-                {extraMaterials.length === 0 && !lesson.contentUrl && (
+                {materialsLoading && (
+                  <p className="mt-2 flex items-center gap-2 text-xs leading-relaxed text-gray-500">
+                    <RefreshCw size={14} className="animate-spin" aria-hidden="true" /> Проверяем материалы…
+                  </p>
+                )}
+                {materialsError && (
+                  <p className="mt-2 text-xs font-medium leading-relaxed text-red-700">Дополнительные материалы не загрузились. Повтори загрузку в основном блоке.</p>
+                )}
+                {!materialsLoading && !materialsError && extraMaterials.length === 0 && !lesson.contentUrl && (
                   <p className="mt-2 text-xs leading-relaxed text-gray-500">Дополнительные материалы пока не опубликованы.</p>
                 )}
               </div>

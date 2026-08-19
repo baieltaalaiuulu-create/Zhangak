@@ -62,12 +62,12 @@ export default function BottomNav() {
                 name={item.icon}
                 size={23}
                 filled={isActive || item.primary}
-                color={item.primary ? (isActive ? '#FFFFFF' : '#1B3F92') : isActive ? activeColor : '#8A96AC'}
+                color={item.primary ? (isActive ? '#FFFFFF' : '#1B3F92') : isActive ? activeColor : '#5F6B7A'}
               />
             </span>
             <span
               className="max-w-full truncate text-[10px] leading-none"
-              style={{ color: isActive ? activeColor : '#8A96AC', fontWeight: isActive || item.primary ? 800 : 600 }}
+              style={{ color: isActive ? activeColor : '#5F6B7A', fontWeight: isActive || item.primary ? 800 : 600 }}
             >
               {item.label}
             </span>

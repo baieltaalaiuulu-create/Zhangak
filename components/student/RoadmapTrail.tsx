@@ -5,20 +5,20 @@ import Link from 'next/link'
 import StudentVisualIcon from './StudentVisualIcon'
 import type { PlatformRoadmapLesson, PlatformRoadmapUnit, RoadmapAccentColor } from '@/lib/platform-roadmap'
 
-const ACCENTS: Record<RoadmapAccentColor, { card: string; dark: string }> = {
-  green: { card: '#70C942', dark: '#4AA71E' },
-  blue: { card: '#1B3F92', dark: '#102C69' },
-  violet: { card: '#6C3DE0', dark: '#5125B7' },
-  red: { card: '#E65A68', dark: '#B93645' },
+const ACCENTS: Record<RoadmapAccentColor, { card: string; dark: string; foreground: string; muted: string }> = {
+  green: { card: '#70C942', dark: '#4AA71E', foreground: '#0F172A', muted: '#253217' },
+  blue: { card: '#1B3F92', dark: '#102C69', foreground: '#FFFFFF', muted: 'rgba(255,255,255,.82)' },
+  violet: { card: '#6C3DE0', dark: '#5125B7', foreground: '#FFFFFF', muted: 'rgba(255,255,255,.82)' },
+  red: { card: '#E65A68', dark: '#B93645', foreground: '#0F172A', muted: '#35171B' },
 }
 
 const LANES = ['38%', '62%', '45%', '69%', '31%']
 
-function Stars({ count }: { count: 0 | 1 | 2 | 3 }) {
+function Stars({ count, darkForeground }: { count: 0 | 1 | 2 | 3; darkForeground: boolean }) {
   return (
     <span className="flex items-center gap-0.5" aria-label={`${count} из 3 звёзд за раздел`}>
       {[1, 2, 3].map(index => (
-        <StudentVisualIcon key={index} name="star" size={18} color={index <= count ? '#FFD84D' : 'rgba(255,255,255,.35)'} filled={index <= count} />
+        <StudentVisualIcon key={index} name="star" size={18} color={index <= count ? '#FFD84D' : darkForeground ? 'rgba(15,23,42,.42)' : 'rgba(255,255,255,.42)'} filled={index <= count} />
       ))}
     </span>
   )
@@ -34,13 +34,14 @@ function LessonNode({ lesson, index, accent }: { lesson: PlatformRoadmapLesson; 
   const icon = done ? 'check' : locked ? 'lock' : subjectIcon
   const background = done || available ? '#58CC6C' : current ? colors.card : '#D7DEE8'
   const shadow = done || available ? '#43A859' : current ? colors.dark : '#B5BFCD'
+  const iconColor = locked ? '#5F6B7A' : done || available ? '#0F172A' : colors.foreground
 
   const content = (
     <span data-roadmap-current={current || undefined} className="relative z-[1] flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-full transition-transform active:translate-y-[2px]" style={{ background, boxShadow: `0 5px 0 ${shadow}`, opacity: locked ? 0.78 : 1 }}>
       {current && <span className="student-ring absolute -inset-2 rounded-full border-[3px] border-[#1B3F92]" />}
       {current && <span className="absolute -top-[18px] whitespace-nowrap rounded-full bg-[#1B3F92] px-2 py-1 text-[9px] font-extrabold uppercase tracking-[0.07em] text-white">Ты здесь</span>}
-      <StudentVisualIcon name={icon} size={current ? 30 : 28} color={locked ? '#8994A6' : '#FFFFFF'} filled={done || !locked} />
-      {!current && <span className={`absolute -bottom-[20px] whitespace-nowrap text-[10px] font-bold ${locked ? 'text-[#8A96AC]' : 'rounded-full bg-white px-2 py-0.5 text-[#475569] shadow-sm'}`}>Урок {lesson.lessonNumber}</span>}
+      <StudentVisualIcon name={icon} size={current ? 30 : 28} color={iconColor} filled={done || !locked} />
+      {!current && <span className={`absolute -bottom-[20px] whitespace-nowrap text-[10px] font-bold ${locked ? 'text-[#5F6B7A]' : 'rounded-full bg-white px-2 py-0.5 text-[#475569] shadow-sm'}`}>Урок {lesson.lessonNumber}</span>}
     </span>
   )
 
@@ -54,20 +55,20 @@ function UnitCard({ unit }: { unit: PlatformRoadmapUnit }) {
   const colors = ACCENTS[unit.accentColor]
   const icon = unit.unitNumber === 1 ? 'rocket_launch' : unit.unitNumber === 2 ? 'bolt' : 'workspace_premium'
   return (
-    <section className="mx-4 rounded-2xl px-4 py-3 text-white" style={{ background: colors.card, boxShadow: `0 4px 0 ${colors.dark}` }}>
+    <section className="mx-4 rounded-2xl px-4 py-3" style={{ background: colors.card, boxShadow: `0 4px 0 ${colors.dark}`, color: colors.foreground }}>
       <div className="flex items-center gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20">
-          <StudentVisualIcon name={icon} size={24} color="#FFFFFF" />
+          <StudentVisualIcon name={icon} size={24} color={colors.foreground} />
         </span>
         <div className="min-w-0 flex-1">
-          <span className="block text-[10px] font-extrabold uppercase tracking-[0.1em] text-white/75">Юнит {unit.unitNumber}</span>
+          <span className="block text-[10px] font-extrabold uppercase tracking-[0.1em]" style={{ color: colors.muted }}>Юнит {unit.unitNumber}</span>
           <h2 className="text-[16px] font-black leading-tight">{unit.title}</h2>
-          {unit.description && <p className="mt-0.5 text-[11px] font-semibold leading-4 text-white/80">{unit.description}</p>}
+          {unit.description && <p className="mt-0.5 text-[11px] font-semibold leading-4" style={{ color: colors.muted }}>{unit.description}</p>}
         </div>
       </div>
       <div className="mt-2 flex items-center justify-between border-t border-white/20 pt-2">
-        <span className="text-[11px] font-extrabold text-white/90">{unit.completionPercent}% завершено</span>
-        <Stars count={unit.starCount} />
+        <span className="text-[11px] font-extrabold" style={{ color: colors.muted }}>{unit.completionPercent}% завершено</span>
+        <Stars count={unit.starCount} darkForeground={colors.foreground !== '#FFFFFF'} />
       </div>
     </section>
   )

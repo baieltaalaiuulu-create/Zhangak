@@ -3,7 +3,12 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight, BookOpenCheck, ChevronLeft, CircleHelp, GraduationCap, X } from 'lucide-react'
 
-import { MARKETING_TOUR_DISMISSED_KEY, markDismissed, wasDismissed } from '@/lib/first-visit'
+import {
+  FIRST_VISIT_DISMISSED_EVENT,
+  MARKETING_TOUR_DISMISSED_KEY,
+  markDismissed,
+  wasDismissed,
+} from '@/lib/first-visit'
 
 const steps = [
   {
@@ -39,6 +44,7 @@ export default function MarketingWelcomeTour() {
   const dismiss = () => {
     markDismissed(window.localStorage, MARKETING_TOUR_DISMISSED_KEY)
     setVisible(false)
+    window.dispatchEvent(new Event(FIRST_VISIT_DISMISSED_EVENT))
   }
 
   if (!visible) return null
