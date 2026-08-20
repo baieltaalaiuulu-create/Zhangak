@@ -14,9 +14,11 @@ const SUMMARY = {
   levelEndXp: 500,
   streak: 2,
   activity: { lessonsCompleted: 1, trainerMastered: 3, dailyChallenges: 0 },
+  pendingQuestRewards: 0,
   quests: [{
+    progressId: 41,
     code: 'daily_check_in', period: 'daily', title: 'На связи', description: 'Открой платформу сегодня.',
-    targetCount: 1, currentCount: 1, xpReward: 5, completedAt: '2026-08-20T01:00:00Z', periodEnd: '2026-08-21T00:00:00+06:00',
+    targetCount: 1, currentCount: 1, xpReward: 5, claimable: false, completedAt: '2026-08-20T01:00:00Z', periodEnd: '2026-08-21T00:00:00+06:00',
   }],
   achievements: [{
     code: 'first_step', title: 'Первый шаг', description: 'Выполни первое действие.', iconKey: 'footprints', unlockedAt: '2026-08-20T01:00:00Z',

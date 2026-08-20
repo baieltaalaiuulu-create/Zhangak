@@ -3,6 +3,7 @@
 import { zhangakApiJson, zhangakApiRequest } from './zhangak-api-client.ts'
 
 export interface QuestProgress {
+  progressId: number | null
   code: string
   period: 'daily' | 'weekly'
   title: string
@@ -10,6 +11,7 @@ export interface QuestProgress {
   targetCount: number
   currentCount: number
   xpReward: number
+  claimable: boolean
   completedAt: string | null
   periodEnd: string
 }
@@ -29,6 +31,7 @@ export interface GamificationSummary {
   levelEndXp: number
   streak: number
   activity: { lessonsCompleted: number; trainerMastered: number; dailyChallenges: number }
+  pendingQuestRewards: number
   quests: QuestProgress[]
   achievements: CommunityAchievement[]
 }
@@ -103,6 +106,7 @@ function quest(value: unknown): QuestProgress {
   if (source.period !== 'daily' && source.period !== 'weekly') throw new Error('Некорректный ответ: период квеста')
   if (source.completedAt !== null && typeof source.completedAt !== 'string') throw new Error('Некорректный ответ: завершение квеста')
   return {
+    progressId: source.progressId === null ? null : positive(source.progressId, 'id прогресса квеста'),
     code: text(source.code, 'код квеста'),
     period: source.period,
     title: text(source.title, 'название квеста'),
@@ -110,6 +114,7 @@ function quest(value: unknown): QuestProgress {
     targetCount: nonNegative(source.targetCount, 'цель квеста'),
     currentCount: nonNegative(source.currentCount, 'прогресс квеста'),
     xpReward: nonNegative(source.xpReward, 'награда квеста'),
+    claimable: source.claimable === true,
     completedAt: source.completedAt,
     periodEnd: text(source.periodEnd, 'срок квеста'),
   }
@@ -132,6 +137,7 @@ export function parseGamificationSummary(value: unknown): GamificationSummary {
       trainerMastered: nonNegative(activity.trainerMastered, 'вопросы тренажёра'),
       dailyChallenges: nonNegative(activity.dailyChallenges, 'задания дня'),
     },
+    pendingQuestRewards: nonNegative(source.pendingQuestRewards, 'награды квестов'),
     quests: source.quests.map(quest),
     achievements: source.achievements.map(achievement),
   }
@@ -202,6 +208,13 @@ export async function checkInGamification(): Promise<{ recorded: boolean; summar
     throw new Error('Некорректный ответ: чек-ин')
   }
   return { recorded: source.recorded, summary: parseGamificationSummary(source.summary), achievements: source.achievements as string[] }
+}
+
+export async function claimQuestReward(progressId: number): Promise<{ summary: GamificationSummary; claimed: boolean; achievements: string[] }> {
+  const source = record(await zhangakApiJson<unknown>(`/v1/platform/gamification/quests/${progressId}/claim`, 'POST', {}), 'награда квеста')
+  const claim = record(source.claim, 'результат награды')
+  if (!['claimed', 'already_claimed'].includes(String(claim.state)) || !Array.isArray(claim.achievements ?? [])) throw new Error('Некорректный ответ: награда квеста')
+  return { summary: parseGamificationSummary(source.summary), claimed: claim.state === 'claimed', achievements: (claim.achievements ?? []) as string[] }
 }
 
 export async function getOverallLeaderboard(): Promise<LeaderboardResponse> {

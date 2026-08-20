@@ -196,6 +196,12 @@ async function verifySchema(client) {
   const missingEnrollmentColumns = enrollmentColumns.filter(column => !new Set(enrollmentResult.rows.map(row => row.column_name)).has(column))
   if (missingEnrollmentColumns.length > 0) fail(`online access columns are missing: ${missingEnrollmentColumns.join(', ')}`)
 
+  const questResult = await client.query(
+    `SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'student_quest_progress' AND column_name = 'ready_at'`,
+  )
+  if (questResult.rowCount !== 1) fail('quest reward ready_at column is missing')
+
 }
 
 async function main() {

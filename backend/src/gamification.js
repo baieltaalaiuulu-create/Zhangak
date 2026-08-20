@@ -68,6 +68,31 @@ async function awardQuestXp(client, studentId, progressId, xpReward) {
   return Boolean(completed.rows[0])
 }
 
+export async function claimQuestReward(client, studentId, progressId) {
+  const result = await client.query(
+    `SELECT p.id, p.current_count, p.ready_at, p.completed_at, i.target_count, i.xp_reward, d.period
+       FROM student_quest_progress p
+       JOIN quest_instances i ON i.id = p.quest_instance_id
+       JOIN quest_definitions d ON d.id = i.quest_definition_id
+      WHERE p.id = $1 AND p.student_id = $2
+      FOR UPDATE OF p`,
+    [progressId, studentId],
+  )
+  const row = result.rows[0]
+  if (!row) return { state: 'not_found' }
+  if (row.completed_at) return { state: 'already_claimed' }
+  if (!row.ready_at || Number(row.current_count) < Number(row.target_count)) return { state: 'not_ready' }
+  const claimed = await awardQuestXp(client, studentId, progressId, Number(row.xp_reward))
+  if (!claimed) return { state: 'already_claimed' }
+  const eventType = row.period === 'daily' ? 'daily_quest_completed' : 'weekly_quest_completed'
+  const event = await recordGamificationEvent(client, studentId, {
+    eventKey: `quest-claimed:${progressId}`,
+    eventType,
+    metadata: { questProgressId: progressId },
+  })
+  return { state: 'claimed', achievements: event.achievements }
+}
+
 export async function grantAchievement(client, studentId, code) {
   const result = await client.query(
     `INSERT INTO student_achievements (student_id, achievement_id)
@@ -144,7 +169,7 @@ async function evaluateAchievements(client, studentId, eventType, metadata) {
  * consume this event.  Call it within the business transaction that proves
  * the event; a replay produces no quest counters or XP.
  */
-export async function recordGamificationEvent(client, studentId, input, depth = 0) {
+export async function recordGamificationEvent(client, studentId, input) {
   assertEvent(input)
   const inserted = await client.query(
     `INSERT INTO gamification_events (student_id, event_key, event_type, metadata)
@@ -153,7 +178,7 @@ export async function recordGamificationEvent(client, studentId, input, depth = 
      RETURNING id`,
     [studentId, input.eventKey, input.eventType, JSON.stringify(input.metadata ?? {})],
   )
-  if (!inserted.rows[0]) return { recorded: false, completedQuestIds: [], achievements: [] }
+  if (!inserted.rows[0]) return { recorded: false, readyQuestIds: [], achievements: [] }
 
   await ensureQuestInstances(client)
   const progress = await client.query(
@@ -180,36 +205,26 @@ export async function recordGamificationEvent(client, studentId, input, depth = 
     [studentId, input.eventType],
   )
 
-  const completedQuestIds = []
+  const readyQuestIds = []
   for (const row of progress.rows) {
     const target = await client.query(
-      `SELECT p.current_count, p.completed_at, i.target_count, i.xp_reward, d.period
+      `SELECT p.current_count, p.ready_at, p.completed_at, i.target_count, d.period
          FROM student_quest_progress p
          JOIN quest_instances i ON i.id = p.quest_instance_id
          JOIN quest_definitions d ON d.id = i.quest_definition_id
         WHERE p.id = $1 FOR UPDATE`, [row.id],
     )
     const current = target.rows[0]
-    if (!current || current.completed_at || Number(current.current_count) < Number(current.target_count)) continue
-    if (await awardQuestXp(client, studentId, row.id, Number(current.xp_reward))) {
-      completedQuestIds.push({ id: Number(row.id), period: current.period })
-    }
-  }
-
-  // A completed daily quest is itself trusted evidence for the weekly
-  // consistency quest.  Depth prevents any accidental future cycle.
-  if (depth < 2) {
-    for (const quest of completedQuestIds) {
-      const eventType = quest.period === 'daily' ? 'daily_quest_completed' : 'weekly_quest_completed'
-      await recordGamificationEvent(client, studentId, {
-        eventKey: `quest-complete:${quest.id}`,
-        eventType,
-        metadata: { questProgressId: quest.id },
-      }, depth + 1)
-    }
+    if (!current || current.ready_at || current.completed_at || Number(current.current_count) < Number(current.target_count)) continue
+    const ready = await client.query(
+      `UPDATE student_quest_progress SET ready_at = now(), updated_at = now()
+        WHERE id = $1 AND ready_at IS NULL AND completed_at IS NULL RETURNING id`,
+      [row.id],
+    )
+    if (ready.rows[0]) readyQuestIds.push(Number(row.id))
   }
   const achievements = await evaluateAchievements(client, studentId, input.eventType, input.metadata ?? {})
-  return { recorded: true, completedQuestIds, achievements }
+  return { recorded: true, readyQuestIds, achievements }
 }
 
 function dateOnly(value) {
@@ -238,7 +253,7 @@ export async function loadGamificationSummary(client, studentId) {
        )
        SELECT d.code, d.period, i.title, i.description, i.target_count, i.xp_reward,
               i.period_end, COALESCE(p.current_count, 0)::int AS current_count,
-              p.completed_at
+              p.id AS progress_id, p.ready_at, p.completed_at
          FROM quest_instances i
          JOIN quest_definitions d ON d.id = i.quest_definition_id
          CROSS JOIN bounds b
@@ -284,7 +299,9 @@ export async function loadGamificationSummary(client, studentId) {
       trainerMastered: Number(activityRows.rows[0]?.trainer_mastered ?? 0),
       dailyChallenges: Number(activityRows.rows[0]?.daily_challenges ?? 0),
     },
+    pendingQuestRewards: questRows.rows.filter(row => row.ready_at && !row.completed_at).length,
     quests: questRows.rows.map(row => ({
+      progressId: row.progress_id == null ? null : Number(row.progress_id),
       code: row.code,
       period: row.period,
       title: row.title,
@@ -292,6 +309,7 @@ export async function loadGamificationSummary(client, studentId) {
       targetCount: Number(row.target_count),
       currentCount: Number(row.current_count),
       xpReward: Number(row.xp_reward),
+      claimable: Boolean(row.ready_at && !row.completed_at),
       completedAt: row.completed_at ?? null,
       periodEnd: `${dateOnly(row.period_end)}T00:00:00+06:00`,
     })),

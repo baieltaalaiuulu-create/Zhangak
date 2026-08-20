@@ -1,6 +1,6 @@
 import { requireAuth } from '../auth.js'
 import { query, transaction } from '../db.js'
-import { loadGamificationSummary, recordGamificationEvent } from '../gamification.js'
+import { claimQuestReward, loadGamificationSummary, recordGamificationEvent } from '../gamification.js'
 import { GET, HttpError, POST, readJson } from '../http.js'
 
 const STUDENT_ROLES = ['student', 'math_student']
@@ -378,6 +378,19 @@ GET('/v1/platform/gamification/summary', async ({ req, config }) => {
   const user = await student(config, req)
   const summary = await transaction(client => loadGamificationSummary(client, user.id))
   return { status: 200, body: { summary } }
+})
+
+POST('/v1/platform/gamification/quests/:progressId/claim', async ({ req, params, config }) => {
+  const user = await student(config, req)
+  exact(await readJson(req, 1_000), [], 'invalid_quest_claim')
+  const progressId = positiveId(params.progressId, 'quest_progress_id')
+  const result = await transaction(async client => {
+    const claim = await claimQuestReward(client, user.id, progressId)
+    if (claim.state === 'not_found') throw new HttpError(404, 'Квест не найден', 'quest_not_found')
+    if (claim.state === 'not_ready') throw new HttpError(409, 'Квест ещё не выполнен', 'quest_not_ready')
+    return { claim, summary: await loadGamificationSummary(client, user.id) }
+  })
+  return { status: 200, body: result }
 })
 
 POST('/v1/platform/gamification/check-in', async ({ req, config }) => {

@@ -48,7 +48,7 @@ async function main() {
   const layout = await source('components/student/StudentLayout.tsx')
   const aiBranchStart = layout.indexOf('if (isAiPage)')
   const aiBranch = layout.slice(aiBranchStart, layout.indexOf('\n  return (', aiBranchStart))
-  expect(aiBranch.includes('<BottomNav />'), 'AI must retain the five-item mobile navigation')
+  expect(aiBranch.includes('<BottomNav'), 'AI must retain the five-item mobile navigation')
   expect(layout.includes('isImmersivePage'), 'exam and daily question flows must remain intentionally immersive')
 
   const dashboard = await source('app/student/online/page.tsx')

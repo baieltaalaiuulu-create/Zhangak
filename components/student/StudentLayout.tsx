@@ -43,6 +43,7 @@ export default function StudentLayout({ children }: Props) {
   const [streak, setStreak] = useState(0)
   const [xp, setXp] = useState(0)
   const [level, setLevel] = useState(1)
+  const [pendingQuestRewards, setPendingQuestRewards] = useState(0)
   const [sessionUser, setSessionUser] = useState<ZhangakSessionUser | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
   const [authError, setAuthError] = useState(false)
@@ -98,6 +99,7 @@ export default function StudentLayout({ children }: Props) {
             setXp(result.summary.xp)
             setLevel(result.summary.level)
             setStreak(result.summary.streak)
+            setPendingQuestRewards(result.summary.pendingQuestRewards)
           })
           .catch(() => {})
       } catch {
@@ -107,6 +109,15 @@ export default function StudentLayout({ children }: Props) {
     void load()
     return () => { active = false }
   }, [authAttempt, router])
+
+  useEffect(() => {
+    const update = (event: Event) => {
+      const pending = Number((event as CustomEvent<{ pending?: number }>).detail?.pending)
+      if (Number.isSafeInteger(pending) && pending >= 0) setPendingQuestRewards(pending)
+    }
+    window.addEventListener('zhangak:quest-rewards', update)
+    return () => window.removeEventListener('zhangak:quest-rewards', update)
+  }, [])
 
   const handleLogout = async () => {
     await logoutZhangak().catch(() => {})
@@ -169,7 +180,7 @@ export default function StudentLayout({ children }: Props) {
     return (
       <StudentSessionProvider user={sessionUser} onProfileUpdated={applyProfileUpdate}>
         {children}
-        <BottomNav />
+        <BottomNav pendingQuestRewards={pendingQuestRewards} />
       </StudentSessionProvider>
     )
   }
@@ -177,7 +188,7 @@ export default function StudentLayout({ children }: Props) {
   return (
     <StudentSessionProvider user={sessionUser} onProfileUpdated={applyProfileUpdate}>
       <div className="student-visual min-h-screen bg-[#F1F4FB] md:bg-[#FAF8FF]">
-        <StudentSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} fullName={fullName} avatarUrl={avatarUrl} profileColor={sessionUser.profileColor} />
+        <StudentSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} fullName={fullName} avatarUrl={avatarUrl} profileColor={sessionUser.profileColor} pendingQuestRewards={pendingQuestRewards} />
 
         {/* The sidebar is `fixed w-64`, so from `md` up this column is offset
             by 16rem. It must therefore be 16rem NARROWER than the viewport:
@@ -200,7 +211,7 @@ export default function StudentLayout({ children }: Props) {
           <main className="pb-20 md:pb-0">{children}</main>
         </div>
 
-        <BottomNav />
+        <BottomNav pendingQuestRewards={pendingQuestRewards} />
         {/* Announcements and AI are intentionally absent until their own
             first-party APIs replace the retired Supabase data paths. */}
         <PWAInstallBanner ready={Boolean(sessionUser)} />

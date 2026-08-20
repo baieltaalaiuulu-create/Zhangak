@@ -5,8 +5,9 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const [migration, socialMigration, service, route] = await Promise.all([
+const [migration, claimMigration, socialMigration, service, route] = await Promise.all([
   readFile(path.join(root, 'migrations', '016_gamification_quests_and_achievements.sql'), 'utf8'),
+  readFile(path.join(root, 'migrations', '022_quest_reward_claims.sql'), 'utf8'),
   readFile(path.join(root, 'migrations', '018_social_profile_customization.sql'), 'utf8'),
   readFile(path.join(root, 'src', 'gamification.js'), 'utf8'),
   readFile(path.join(root, 'src', 'routes', 'platform-gamification.js'), 'utf8'),
@@ -34,6 +35,11 @@ test('trusted event service cannot accept browser XP or duplicate an evidence ev
   assert.match(service, /INSERT INTO student_xp_awards \(student_id, course_id, award_key, source_type, source_id, xp_amount\)/)
   assert.match(service, /now\(\) AT TIME ZONE 'Asia\/Bishkek'/)
   assert.doesNotMatch(service, /input\.xp|input\.studentId|input\.createdAt/)
+  assert.match(claimMigration, /ADD COLUMN ready_at timestamptz/)
+  assert.match(claimMigration, /WHERE ready_at IS NOT NULL AND completed_at IS NULL/)
+  assert.match(service, /export async function claimQuestReward/)
+  assert.match(service, /SET ready_at = now\(\)/)
+  assert.match(route, /POST\('\/v1\/platform\/gamification\/quests\/:progressId\/claim'/)
 })
 
 test('community routes remain online-student-scoped, pseudonymous, privacy-controlled and opt-in', () => {

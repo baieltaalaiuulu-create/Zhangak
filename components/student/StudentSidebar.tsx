@@ -14,6 +14,7 @@ interface Props {
   fullName?: string
   avatarUrl?: string | null
   profileColor?: ProfileColor
+  pendingQuestRewards?: number
 }
 
 const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
@@ -28,7 +29,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/student/online/leaderboard', label: 'Рейтинг', icon: Trophy },
 ]
 
-export default function StudentSidebar({ isOpen, onClose, fullName = 'Студент', avatarUrl = null, profileColor = 'blue' }: Props) {
+export default function StudentSidebar({ isOpen, onClose, fullName = 'Студент', avatarUrl = null, profileColor = 'blue', pendingQuestRewards = 0 }: Props) {
   const pathname = usePathname()
   const initial = fullName?.[0]?.toUpperCase() ?? '?'
   const accent = PROFILE_COLOR_OPTIONS[profileColor].color
@@ -90,7 +91,8 @@ export default function StudentSidebar({ isOpen, onClose, fullName = 'Студе
                 style={isActive ? { background: 'linear-gradient(135deg, #6C3DE0 0%, #4338CA 100%)' } : undefined}
               >
                 <Icon size={18} />
-                {item.label}
+                <span className="min-w-0 flex-1">{item.label}</span>
+                {item.href.endsWith('/quests') && pendingQuestRewards > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{pendingQuestRewards}</span>}
               </Link>
             )
           })}
