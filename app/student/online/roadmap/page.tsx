@@ -70,7 +70,7 @@ export default function RoadmapPage() {
   const summary = roadmap?.summary ?? { completedLessons: 0, lessonCount: 0, completionPercent: 0 }
   const hasMap = Boolean(roadmap?.course && roadmap.units.length > 0)
   return (
-    <main className="min-h-screen bg-[#F1F4FB] pb-28">
+    <main className="min-h-screen bg-white pb-28">
       <div className="mx-auto max-w-[430px] px-4 py-5">
         <header>
           <div className="flex items-end justify-between gap-3">
@@ -82,11 +82,13 @@ export default function RoadmapPage() {
               {summary.completedLessons}/{summary.lessonCount} пройдено
             </div>
           </div>
-          <p className="mt-2 max-w-[320px] text-[13px] leading-5 text-[#475569]">Проходи уроки по порядку, открывай награды и собирай звёзды.</p>
+          <p className="mt-2 max-w-[350px] text-[13px] leading-5 text-[#475569]">
+            Единый курс подготовки к ОРТ: математика и кыргызский язык идут разделами одного учебного пути.
+          </p>
         </header>
 
         {hasMap ? (
-          <section className="-mx-4 mt-3 bg-white pt-2" aria-label="Путь обучения снизу вверх">
+          <section className="-mx-4 mt-3 bg-white pt-2" aria-label="Единый путь подготовки к ОРТ снизу вверх">
             <RoadmapTrail units={roadmap!.units} />
           </section>
         ) : (

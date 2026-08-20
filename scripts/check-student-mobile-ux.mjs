@@ -112,6 +112,10 @@ async function main() {
   expect(leaderboardPage.includes('getOverallLeaderboard'), 'leaderboard must load the first-party ranking projection')
   expect(leaderboardPage.includes('подтверждённому XP') && leaderboardPage.includes('Сброс тренажёра не уменьшает'), 'leaderboard must explain authoritative XP semantics')
 
+  const roadmapPage = await source('app/student/online/roadmap/page.tsx')
+  expect(roadmapPage.includes('min-h-screen bg-white pb-28'), 'roadmap must keep a white surface through the fixed mobile navigation safe area')
+  expect(roadmapPage.includes('Единый курс подготовки к ОРТ'), 'roadmap must present mathematics and Kyrgyz as one ORT course')
+
   const scanRoots = [
     'app/student/online/lessons',
     'app/student/online/practice',

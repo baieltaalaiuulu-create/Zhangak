@@ -18,7 +18,6 @@ export default function CourseCreateModal({ onClose, onCreated }: Props) {
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [level, setLevel] = useState('11 класс')
-  const [subject, setSubject] = useState('Математика')
   const [description, setDescription] = useState('')
   const [isActive, setIsActive] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -37,7 +36,7 @@ export default function CourseCreateModal({ onClose, onCreated }: Props) {
         name: name.trim(),
         code: optionalText(code)?.toLowerCase() ?? null,
         level: optionalText(level),
-        subject: optionalText(subject),
+        subject: 'ort',
         description: optionalText(description),
         isActive,
       })
@@ -64,13 +63,13 @@ export default function CourseCreateModal({ onClose, onCreated }: Props) {
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-semibold text-gray-500">Название *</label>
-            <input value={name} onChange={event => setName(event.target.value)} placeholder="Например, Подготовка к ОРТ — математика"
+            <input value={name} onChange={event => setName(event.target.value)} placeholder="Например, Подготовка к ОРТ"
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-semibold text-gray-500">Код курса</label>
-              <input value={code} onChange={event => setCode(event.target.value)} placeholder="ort-math-11"
+              <input value={code} onChange={event => setCode(event.target.value)} placeholder="ort-online-11"
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm lowercase outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
               <p className="mt-1 text-[11px] text-gray-400">Латинские буквы, цифры, дефис или подчёркивание.</p>
             </div>
@@ -80,10 +79,9 @@ export default function CourseCreateModal({ onClose, onCreated }: Props) {
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
             </div>
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-500">Предмет</label>
-            <input value={subject} onChange={event => setSubject(event.target.value)} placeholder="Математика"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
+          <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+            <p className="text-sm font-bold text-[#1B3F92]">Единый курс ОРТ</p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">Математика и кыргызский язык добавляются как предметы уроков и разделов внутри одного онлайн-курса.</p>
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold text-gray-500">Описание</label>

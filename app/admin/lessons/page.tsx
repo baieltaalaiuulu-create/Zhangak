@@ -27,7 +27,8 @@ function dateLabel(value: string): string {
 }
 
 function courseMeta(course: AdminCourse): string {
-  return [course.subject, course.level].filter((value): value is string => Boolean(value)).join(' · ') || 'Параметры не указаны'
+  const subject = course.subject === 'ort' ? 'Математика + кыргызский язык' : course.subject
+  return [subject, course.level].filter((value): value is string => Boolean(value)).join(' · ') || 'Параметры не указаны'
 }
 
 export default function AdminLessonsPage() {

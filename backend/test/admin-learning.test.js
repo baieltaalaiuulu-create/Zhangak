@@ -46,6 +46,7 @@ test('course administration accepts a bounded, normalized content shape', () => 
     isActive: false,
   })
   assert.deepEqual(parseCoursePatchBody({ code: null, deliveryMode: 'online', isActive: true }), { code: null, deliveryMode: 'online', isActive: true })
+  assert.equal(parseCourseCreateBody({ name: 'Онлайн ОРТ', subject: 'Математика' }).subject, 'ort')
 })
 
 test('course administration fails closed for injected ownership and unsafe links', () => {

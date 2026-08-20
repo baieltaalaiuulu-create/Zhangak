@@ -339,14 +339,15 @@ function courseInput(body, { requireName }) {
 /** Strictly validates data accepted when a course is created. */
 export function parseCourseCreateBody(body) {
   const input = courseInput(body, { requireName: true })
+  const deliveryMode = input.deliveryMode ?? 'online'
   return {
     name: input.name,
     code: input.code ?? null,
     level: input.level ?? null,
-    subject: input.subject ?? null,
+    subject: deliveryMode === 'online' ? 'ort' : (input.subject ?? null),
     description: input.description ?? null,
     coverImageUrl: input.coverImageUrl ?? null,
-    deliveryMode: input.deliveryMode ?? 'online',
+    deliveryMode,
     isActive: input.isActive ?? true,
   }
 }
@@ -707,6 +708,10 @@ PATCH('/v1/admin/courses/:courseId', async ({ req, params, config }) => {
   const input = parseCoursePatchBody(await readJson(req, 128_000))
   try {
     const course = await transaction(async client => {
+      const current = await client.query('SELECT delivery_mode FROM courses WHERE id = $1 FOR UPDATE', [courseId])
+      if (!current.rows[0]) throw new HttpError(404, 'Курс не найден', 'course_not_found')
+      const nextDeliveryMode = input.deliveryMode ?? current.rows[0].delivery_mode
+      if (nextDeliveryMode === 'online') input.subject = 'ort'
       const statement = updateSql('courses', 'id', courseId, input, COURSE_FIELDS)
       const updated = await client.query(
         `${statement.text}

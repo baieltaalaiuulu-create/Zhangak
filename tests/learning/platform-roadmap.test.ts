@@ -4,14 +4,14 @@ import test from 'node:test'
 import { fetchPlatformRoadmap, parsePlatformRoadmap } from '../../lib/platform-roadmap.ts'
 
 const ROADMAP = {
-  course: { id: 4, name: 'Онлайн ОРТ', code: 'ort-online', subject: 'math' },
+  course: { id: 4, name: 'Онлайн ОРТ', code: 'ort-online', subject: 'ort' },
   direction: 'bottom_to_top',
   units: [{
     id: 3, unitNumber: 1, title: 'Основы', description: 'Начинаем путь', accentColor: 'green',
     completedLessons: 1, lessonCount: 2, completionPercent: 50, starCount: 1,
     lessons: [
       { id: 11, lessonNumber: 1, title: 'Числа', description: 'База', subject: 'math', section: 'numbers', topic: 'natural', durationMinutes: 15, isTest: false, completionMode: 'self', completionPercent: 100, completedAt: '2026-08-17T08:00:00.000Z', isLocked: false, state: 'done', isCurrent: false },
-      { id: 12, lessonNumber: 2, title: 'Дроби', description: 'Дальше', subject: 'math', section: 'numbers', topic: 'fractions', durationMinutes: 20, isTest: true, completionMode: 'practice', completionPercent: 0, completedAt: null, isLocked: false, state: 'current', isCurrent: true },
+      { id: 12, lessonNumber: 2, title: 'Аналогии', description: 'Дальше', subject: 'kyr', section: 'analogies', topic: 'connections', durationMinutes: 20, isTest: true, completionMode: 'practice', completionPercent: 0, completedAt: null, isLocked: false, state: 'current', isCurrent: true },
     ],
   }],
   summary: { completedLessons: 1, lessonCount: 2, completionPercent: 50 },
@@ -34,6 +34,7 @@ test('Roadmap parser preserves the bottom-to-top contract and progress stars', (
   assert.equal(roadmap.units[0].lessons[1].state, 'current')
   assert.equal(roadmap.units[0].lessons[1].completionMode, 'practice')
   assert.equal(roadmap.units[0].lessons[0].id, '11')
+  assert.deepEqual(roadmap.units[0].lessons.map(lesson => lesson.subject), ['math', 'kyr'])
 })
 
 test('Roadmap parser rejects a client-side unlock or private material field shape', () => {

@@ -43,7 +43,8 @@ function errorMessage(cause: unknown, fallback: string): string {
 }
 
 function courseMeta(course: AdminCourse): string {
-  return [course.subject, course.level].filter((value): value is string => Boolean(value)).join(' · ') || 'Параметры не указаны'
+  const subject = course.subject === 'ort' ? 'Математика + кыргызский язык' : course.subject
+  return [subject, course.level].filter((value): value is string => Boolean(value)).join(' · ') || 'Параметры не указаны'
 }
 
 function studentTypeLabel(value: AdminGroupMember['studentType']): string {
