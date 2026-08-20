@@ -110,7 +110,11 @@ async function seed() {
   )
   await query(`INSERT INTO courses (id, name) OVERRIDING SYSTEM VALUE VALUES (1, 'Course A'), (2, 'Course B')`)
   await query(
-    `INSERT INTO course_enrollments (student_id, course_id, status) VALUES ($1, 1, 'active'), ($2, 2, 'active')`,
+    `INSERT INTO course_enrollments
+       (student_id, course_id, status, access_plan, access_started_at, access_expires_at)
+     VALUES
+       ($1, 1, 'active', 'one_month', now(), now() + interval '1 month'),
+       ($2, 2, 'active', 'one_month', now(), now() + interval '1 month')`,
     [STUDENT_A, STUDENT_B],
   )
   await query(
