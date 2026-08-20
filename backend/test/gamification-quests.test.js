@@ -5,8 +5,9 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const [migration, service, route] = await Promise.all([
+const [migration, socialMigration, service, route] = await Promise.all([
   readFile(path.join(root, 'migrations', '016_gamification_quests_and_achievements.sql'), 'utf8'),
+  readFile(path.join(root, 'migrations', '018_social_profile_customization.sql'), 'utf8'),
   readFile(path.join(root, 'src', 'gamification.js'), 'utf8'),
   readFile(path.join(root, 'src', 'routes', 'platform-gamification.js'), 'utf8'),
 ])
@@ -35,12 +36,18 @@ test('trusted event service cannot accept browser XP or duplicate an evidence ev
   assert.doesNotMatch(service, /input\.xp|input\.studentId|input\.createdAt/)
 })
 
-test('community routes remain online-student-scoped, pseudonymous and opt-in', () => {
+test('community routes remain online-student-scoped, pseudonymous, privacy-controlled and opt-in', () => {
   assert.match(route, /POST\('\/v1\/platform\/gamification\/check-in'/)
   assert.match(route, /exact\(await readJson\(req, 1_000\), \[\], 'invalid_gamification_check_in'\)/)
   assert.match(route, /GET\('\/v1\/platform\/gamification\/summary'/)
   assert.match(route, /GET\('\/v1\/platform\/community\/profiles\/:publicProfileId'/)
   assert.match(route, /'Ученик-' \|\| upper\(substr\(replace\(p\.public_profile_id::text/)
-  assert.match(route, /p\.community_visibility = true/)
+  assert.match(socialMigration, /CREATE TABLE profile_cosmetic_definitions/)
+  assert.match(socialMigration, /CREATE TABLE student_profile_cosmetics/)
+  assert.match(socialMigration, /CREATE TABLE student_featured_achievements/)
+  assert.match(socialMigration, /community_profile_visibility IN \('private', 'community', 'leaderboard'\)/)
+  assert.match(route, /p\.community_profile_visibility = 'leaderboard'/)
+  assert.match(route, /p\.community_profile_visibility <> 'private'/)
+  assert.match(route, /p\.community_discoverable = true/)
   assert.doesNotMatch(route.match(/GET\('\/v1\/platform\/leaderboard'[\s\S]*?\n}\)/)?.[0] ?? '', /full_name|avatar_url|phone|email/)
 })

@@ -19,6 +19,17 @@ const PROFILE = {
   profileColor: 'violet',
   dailyStudyGoalMinutes: 45,
   communityVisibility: true,
+  publicProfileId: '74316e07-7603-443b-95a5-7bb61d9f7fb4',
+  communityDisplayName: null,
+  communityProfileVisibility: 'leaderboard',
+  communityShowXp: true,
+  communityShowAchievements: true,
+  communityShowStreak: true,
+  communityAllowFriendRequests: true,
+  communityDiscoverable: true,
+  profileFrameCode: 'frame_classic',
+  profileBackgroundCode: 'background_clear',
+  profileTitleCode: 'title_student',
 }
 
 function json(body: unknown, status = 200): Response {

@@ -39,6 +39,10 @@ export interface LeaderboardItem {
   displayName: string
   xp: number
   isMe: boolean
+  profileColor: 'blue' | 'violet' | 'emerald' | 'rose'
+  frameCode: string
+  backgroundCode: string
+  titleCode: string
 }
 
 export interface LeaderboardResponse {
@@ -51,8 +55,13 @@ export interface CommunityProfile {
   publicProfileId: string
   displayName: string
   profileColor: 'blue' | 'violet' | 'emerald' | 'rose'
-  xp: number
-  level: number
+  frameCode: string
+  backgroundCode: string
+  titleCode: string
+  xp: number | null
+  level: number | null
+  streak: number | null
+  isMe: boolean
   achievements: CommunityAchievement[]
 }
 
@@ -131,12 +140,21 @@ export function parseGamificationSummary(value: unknown): GamificationSummary {
 function leaderboardItem(value: unknown, allowMe: boolean): LeaderboardItem {
   const source = record(value, 'участник рейтинга')
   if (typeof source.isMe !== 'boolean' && allowMe) throw new Error('Некорректный ответ: участник рейтинга')
+  const profileColor = String(source.profileColor ?? 'blue')
+  const frameCode = String(source.frameCode ?? 'frame_classic')
+  const backgroundCode = String(source.backgroundCode ?? 'background_clear')
+  const titleCode = String(source.titleCode ?? 'title_student')
+  if (!['blue', 'violet', 'emerald', 'rose'].includes(profileColor)
+    || ![frameCode, backgroundCode, titleCode].every(code => /^[a-z][a-z0-9_]{2,63}$/.test(code))) {
+    throw new Error('Некорректный ответ: оформление участника')
+  }
   return {
     rank: positive(source.rank, 'место'),
     publicProfileId: text(source.publicProfileId, 'публичный профиль'),
     displayName: text(source.displayName, 'имя участника'),
     xp: nonNegative(source.xp, 'XP участника'),
     isMe: allowMe ? source.isMe as boolean : false,
+    profileColor: profileColor as LeaderboardItem['profileColor'], frameCode, backgroundCode, titleCode,
   }
 }
 
@@ -151,14 +169,24 @@ function parseCommunityProfile(value: unknown): CommunityProfile {
   const source = record(value, 'публичный профиль')
   const profile = record(source.profile, 'публичный профиль')
   if (!['blue', 'violet', 'emerald', 'rose'].includes(String(profile.profileColor)) || !Array.isArray(profile.achievements)) throw new Error('Некорректный ответ: публичный профиль')
-  const level = nonNegative(profile.level, 'уровень')
-  if (level < 1) throw new Error('Некорректный ответ: уровень')
+  const xp = profile.xp === null ? null : nonNegative(profile.xp, 'XP')
+  const level = profile.level === null ? null : nonNegative(profile.level, 'уровень')
+  const streak = profile.streak === null ? null : nonNegative(profile.streak, 'серия')
+  const frameCode = text(profile.frameCode ?? 'frame_classic', 'рамка')
+  const backgroundCode = text(profile.backgroundCode ?? 'background_clear', 'фон')
+  const titleCode = text(profile.titleCode ?? 'title_student', 'титул')
+  if ((level !== null && level < 1)
+    || ![frameCode, backgroundCode, titleCode].every(code => /^[a-z][a-z0-9_]{2,63}$/.test(code))
+    || typeof profile.isMe !== 'boolean') throw new Error('Некорректный ответ: уровень')
   return {
     publicProfileId: text(profile.publicProfileId, 'публичный профиль'),
     displayName: text(profile.displayName, 'имя участника'),
     profileColor: profile.profileColor as CommunityProfile['profileColor'],
-    xp: nonNegative(profile.xp, 'XP'),
+    frameCode, backgroundCode, titleCode,
+    xp,
     level,
+    streak,
+    isMe: profile.isMe,
     achievements: profile.achievements.map(achievement),
   }
 }

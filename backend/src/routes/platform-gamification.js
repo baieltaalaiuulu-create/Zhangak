@@ -381,12 +381,14 @@ GET('/v1/platform/leaderboard', async ({ req, config }) => {
   const result = await query(
     `WITH participants AS (
        SELECT p.user_id, p.public_profile_id, COALESCE(total.xp_total, 0)::int AS xp,
-              ('Ученик-' || upper(substr(replace(p.public_profile_id::text, '-', ''), 1, 5))) AS display_name
+              COALESCE(NULLIF(p.community_display_name, ''), ('Ученик-' || upper(substr(replace(p.public_profile_id::text, '-', ''), 1, 5)))) AS display_name,
+              p.profile_color, p.profile_frame_code, p.profile_background_code, p.profile_title_code
          FROM profiles p
          JOIN users u ON u.id = p.user_id AND u.blocked = false
          LEFT JOIN student_xp_totals total ON total.student_id = p.user_id
         WHERE ((p.role = 'student' AND p.student_type = 'online') OR p.role = 'math_student')
-          AND p.community_visibility = true
+          AND p.community_profile_visibility = 'leaderboard'
+          AND p.community_discoverable = true
           AND EXISTS (
             SELECT 1 FROM course_enrollments ce
             JOIN courses c ON c.id = ce.course_id AND c.is_active = true AND c.delivery_mode = 'online'
@@ -395,7 +397,8 @@ GET('/v1/platform/leaderboard', async ({ req, config }) => {
      ), ranked AS (
        SELECT *, row_number() OVER (ORDER BY xp DESC, user_id ASC)::int AS rank FROM participants
      )
-     SELECT user_id, public_profile_id, display_name, xp, rank
+     SELECT user_id, public_profile_id, display_name, xp, rank, profile_color,
+            profile_frame_code, profile_background_code, profile_title_code
        FROM ranked
       ORDER BY rank`,
   )
@@ -407,47 +410,64 @@ GET('/v1/platform/leaderboard', async ({ req, config }) => {
       items: result.rows.slice(0, 100).map(row => ({
         rank: Number(row.rank), publicProfileId: row.public_profile_id,
         displayName: row.display_name, xp: Number(row.xp), isMe: row.user_id === user.id,
+        profileColor: row.profile_color, frameCode: row.profile_frame_code,
+        backgroundCode: row.profile_background_code, titleCode: row.profile_title_code,
       })),
       me: mine ? {
         rank: Number(mine.rank), publicProfileId: mine.public_profile_id,
-        displayName: mine.display_name, xp: Number(mine.xp),
+        displayName: mine.display_name, xp: Number(mine.xp), profileColor: mine.profile_color,
+        frameCode: mine.profile_frame_code, backgroundCode: mine.profile_background_code,
+        titleCode: mine.profile_title_code,
       } : null,
     },
   }
 })
 
 GET('/v1/platform/community/profiles/:publicProfileId', async ({ req, params, config }) => {
-  await student(config, req)
+  const viewer = await student(config, req)
   const publicProfileId = uuid(params.publicProfileId, 'invalid_public_profile_id')
   const profile = await query(
-    `SELECT p.public_profile_id, p.profile_color, COALESCE(total.xp_total, 0)::int AS xp,
-            ('Ученик-' || upper(substr(replace(p.public_profile_id::text, '-', ''), 1, 5))) AS display_name
+    `SELECT p.user_id, p.public_profile_id, p.profile_color, p.profile_frame_code, p.profile_background_code, p.profile_title_code,
+            p.community_show_xp, p.community_show_achievements, p.community_show_streak,
+            COALESCE(total.xp_total, 0)::int AS xp,
+            COALESCE(NULLIF(p.community_display_name, ''), ('Ученик-' || upper(substr(replace(p.public_profile_id::text, '-', ''), 1, 5)))) AS display_name
        FROM profiles p
        JOIN users u ON u.id = p.user_id AND u.blocked = false
        LEFT JOIN student_xp_totals total ON total.student_id = p.user_id
       WHERE p.public_profile_id = $1
         AND ((p.role = 'student' AND p.student_type = 'online') OR p.role = 'math_student')
-        AND p.community_visibility = true`,
+        AND p.community_profile_visibility <> 'private'
+        AND p.community_discoverable = true`,
     [publicProfileId],
   )
   const row = profile.rows[0]
   if (!row) throw new HttpError(404, 'Профиль недоступен', 'community_profile_not_found')
-  const achievements = await query(
-    `SELECT d.code, d.title, d.description, d.icon_key, a.unlocked_at
-       FROM student_achievements a
-       JOIN achievement_definitions d ON d.id = a.achievement_id
-       JOIN profiles p ON p.user_id = a.student_id
-      WHERE p.public_profile_id = $1
-      ORDER BY a.unlocked_at DESC, d.sort_order ASC`,
-    [publicProfileId],
-  )
+  const achievements = row.community_show_achievements
+    ? await query(
+      `SELECT d.code, d.title, d.description, d.icon_key, a.unlocked_at
+         FROM student_featured_achievements f
+         JOIN student_achievements a ON a.student_id = f.student_id AND a.achievement_id = f.achievement_id
+         JOIN achievement_definitions d ON d.id = a.achievement_id AND d.is_active = true
+        WHERE f.student_id = $1
+        ORDER BY f.slot`,
+      [row.user_id],
+    )
+    : { rows: [] }
+  const summary = row.community_show_streak
+    ? await transaction(client => loadGamificationSummary(client, row.user_id))
+    : null
   const xp = Number(row.xp)
   return { status: 200, body: { profile: {
     publicProfileId: row.public_profile_id,
     displayName: row.display_name,
     profileColor: row.profile_color,
-    xp,
-    level: Math.floor(xp / 500) + 1,
+    frameCode: row.profile_frame_code,
+    backgroundCode: row.profile_background_code,
+    titleCode: row.profile_title_code,
+    xp: row.community_show_xp ? xp : null,
+    level: row.community_show_xp ? Math.floor(xp / 500) + 1 : null,
+    streak: summary?.streak ?? null,
+    isMe: row.user_id === viewer.id,
     achievements: achievements.rows.map(item => ({
       code: item.code, title: item.title, description: item.description,
       iconKey: item.icon_key, unlockedAt: item.unlocked_at,
