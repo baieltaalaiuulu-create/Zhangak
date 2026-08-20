@@ -10,9 +10,9 @@
 | Кому | Начать здесь | Затем читать |
 | --- | --- | --- |
 | Разработчик | [Руководство разработчика](development/README.md) | [Архитектура и границы](development/architecture.md), [production](operations/production.md) |
-| Контент-импортёр | [Pipeline импорта материалов](development/content-import-pipeline.md) | [Подготовка учебного контента](education/content-authoring.md) |
+| Контент-импортёр | [Pipeline импорта материалов](development/content-import-pipeline.md) | [Как принимать материалы](education/material-submission-guide.md), [подготовка контента](education/content-authoring.md) |
 | Преподаватель | [Рабочее место преподавателя](education/teacher-guide.md) | [Регламент офлайн-группы](operations/offline-classroom.md) |
-| Методист / автор контента | [Подготовка учебного контента](education/content-authoring.md) | [Контент и регулярные обновления](operations/content-and-data.md) |
+| Методист / автор контента | [Как передавать материалы](education/material-submission-guide.md) | [Подготовка учебного контента](education/content-authoring.md), [регулярные обновления](operations/content-and-data.md) |
 | Admin / super-admin | [Операционная документация](operations/README.md) | [Аккаунты и роли](operations/accounts-and-roles.md) |
 | Manager | [Публичные заявки и оплата](operations/public-applications.md) | [Аккаунты и роли](operations/accounts-and-roles.md) |
 | DevOps / технический оператор | [Production и восстановление](operations/production.md) | [Web deploy](../deploy/README.md), [API deploy](../deploy/api/README.md), [backup](../deploy/backup/README.md) |
