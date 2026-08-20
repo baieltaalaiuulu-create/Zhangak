@@ -286,6 +286,39 @@ GET('/v1/platform/trainer/question', async ({ req, config, query: search }) => {
   return { status: 200, body: { question: publicQuestion(issued.question, issued.issueId) } }
 })
 
+GET('/v1/platform/trainer/catalog', async ({ req, config }) => {
+  const user = await student(config, req)
+  const result = await query(
+    `SELECT t.subject, q.section, q.difficulty, count(*)::int AS remaining_count
+       FROM practice_questions q
+       JOIN practice_tests t ON t.id = q.practice_test_id
+      WHERE q.is_active = true
+        AND t.is_published = true
+        AND t.test_type = 'bank'
+        AND t.subject IN ('math', 'kyr')
+        AND (t.available_from IS NULL OR t.available_from <= now())
+        AND (t.available_until IS NULL OR t.available_until > now())
+        AND (t.course_id IS NULL OR EXISTS (
+          SELECT 1 FROM course_enrollments ce
+           WHERE ce.student_id = $1 AND ce.course_id = t.course_id AND ce.status = 'active'
+        ))
+        AND NOT EXISTS (
+          SELECT 1 FROM trainer_question_mastery mastery
+           WHERE mastery.student_id = $1 AND mastery.practice_question_id = q.id
+        )
+      GROUP BY t.subject, q.section, q.difficulty
+      ORDER BY t.subject, q.section, q.difficulty`,
+    [user.id],
+  )
+  const items = result.rows.map(row => ({
+    subject: row.subject,
+    section: row.section,
+    difficulty: row.difficulty,
+    remainingCount: Number(row.remaining_count),
+  }))
+  return { status: 200, body: { items, totalRemaining: items.reduce((total, item) => total + item.remainingCount, 0) } }
+})
+
 POST('/v1/platform/trainer/answers', async ({ req, config }) => {
   const user = await student(config, req)
   const body = await readJson(req, 2_000)

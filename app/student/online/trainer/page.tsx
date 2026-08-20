@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 import StudentVisualIcon from '@/components/student/StudentVisualIcon'
 import { useStudentSession } from '@/components/student/StudentSessionContext'
-import { answerTrainerQuestion, getTrainerHistory, getTrainerQuestion, resetTrainer, type AnswerLetter, type TrainerHistoryItem, type TrainerQuestion } from '@/lib/platform-gamification'
+import { answerTrainerQuestion, getTrainerCatalog, getTrainerHistory, getTrainerQuestion, resetTrainer, type AnswerLetter, type TrainerCatalogItem, type TrainerHistoryItem, type TrainerQuestion } from '@/lib/platform-gamification'
 
 const SUBJECTS = [
   { key: 'kyr', label: 'Кыргыз тили', icon: 'translate' },
@@ -16,6 +16,12 @@ const DIFFICULTIES = [
   { key: 'medium', label: 'Средняя' },
   { key: 'hard', label: 'Сложная' },
 ] as const
+const SECTION_LABELS: Record<string, string> = {
+  analogies: 'Аналогии',
+  grammar: 'Грамматика',
+  comparison: 'Сравнение величин',
+  general: 'Общая практика',
+}
 
 export default function TrainerPage() {
   useStudentSession()
@@ -27,10 +33,31 @@ export default function TrainerPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [history, setHistory] = useState<TrainerHistoryItem[] | null>(null)
+  const [catalog, setCatalog] = useState<TrainerCatalogItem[] | null>(null)
+
+  useEffect(() => {
+    let active = true
+    void getTrainerCatalog()
+      .then(result => {
+        if (!active) return
+        setCatalog(result.items)
+        const preferred = result.items.find(item => item.subject === 'kyr') ?? result.items[0]
+        if (preferred) {
+          setSubject(preferred.subject)
+          setSection(preferred.section)
+          setDifficulty(preferred.difficulty)
+        }
+      })
+      .catch(cause => { if (active) setError(cause instanceof Error ? cause.message : 'Не удалось загрузить банк вопросов') })
+    return () => { active = false }
+  }, [])
 
   const chooseSubject = (nextSubject: 'math' | 'kyr') => {
+    const firstAvailable = catalog?.find(item => item.subject === nextSubject)
+    if (catalog && !firstAvailable) return
     setSubject(nextSubject)
-    setSection(nextSubject === 'kyr' ? 'analogies' : 'general')
+    setSection(firstAvailable?.section ?? (nextSubject === 'kyr' ? 'analogies' : 'comparison'))
+    setDifficulty(firstAvailable?.difficulty ?? 'medium')
     setQuestion(null)
     setResult(null)
   }
@@ -48,14 +75,23 @@ export default function TrainerPage() {
   const answer = async (value: AnswerLetter) => {
     if (!question || result !== null || loading) return
     setLoading(true); setError(null)
-    try { setResult(await answerTrainerQuestion(question.issueId, value)) }
+    try {
+      const correct = await answerTrainerQuestion(question.issueId, value)
+      setResult(correct)
+      if (correct) setCatalog(current => current?.map(item => item.subject === subject && item.section === section && item.difficulty === difficulty ? { ...item, remainingCount: Math.max(0, item.remainingCount - 1) } : item) ?? null)
+    }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Не удалось проверить ответ') }
     finally { setLoading(false) }
   }
   const reset = async () => {
     if (!confirm('Сбросить список правильно решённых вопросов? Полученный XP сохранится.')) return
     setLoading(true); setError(null)
-    try { await resetTrainer(); setQuestion(null); setResult(null); setHistory(null) }
+    try {
+      await resetTrainer()
+      const refreshed = await getTrainerCatalog()
+      setCatalog(refreshed.items)
+      setQuestion(null); setResult(null); setHistory(null)
+    }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Не удалось сбросить прогресс') }
     finally { setLoading(false) }
   }
@@ -66,9 +102,19 @@ export default function TrainerPage() {
     finally { setLoading(false) }
   }
 
-  const sectionOptions = subject === 'kyr'
-    ? [{ value: 'analogies', label: 'Аналогии' }, { value: 'grammar', label: 'Грамматика' }]
-    : [{ value: 'general', label: 'Общая математика' }]
+  const subjectCounts = Object.fromEntries(SUBJECTS.map(item => [item.key, catalog?.filter(entry => entry.subject === item.key).reduce((total, entry) => total + entry.remainingCount, 0) ?? null])) as Record<'math' | 'kyr', number | null>
+  const sectionOptions = catalog === null
+    ? (subject === 'kyr' ? [{ value: 'analogies', label: 'Аналогии', count: null }] : [{ value: 'comparison', label: 'Сравнение величин', count: null }])
+    : [...new Set(catalog.filter(item => item.subject === subject).map(item => item.section))].map(value => ({
+      value,
+      label: SECTION_LABELS[value] ?? value,
+      count: catalog.filter(item => item.subject === subject && item.section === value).reduce((total, item) => total + item.remainingCount, 0),
+    }))
+  const difficultyOptions = catalog === null
+    ? DIFFICULTIES
+    : DIFFICULTIES.filter(option => catalog.some(item => item.subject === subject && item.section === section && item.difficulty === option.key))
+  const currentRemaining = catalog?.find(item => item.subject === subject && item.section === section && item.difficulty === difficulty)?.remainingCount ?? null
+  const totalRemaining = catalog?.reduce((total, item) => total + item.remainingCount, 0) ?? null
 
   return (
     <main className="px-4 pb-28 pt-5 sm:mx-auto sm:max-w-2xl sm:pb-10">
@@ -80,23 +126,24 @@ export default function TrainerPage() {
       <section className="mt-4 overflow-hidden rounded-[22px] border border-[var(--student-line)] bg-white">
         <div className="flex items-center gap-3 bg-[var(--student-brand-50)] px-4 py-4">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[var(--student-brand)]"><StudentVisualIcon name="fitness_center" size={27} /></span>
-          <div className="min-w-0"><h2 className="text-[17px] font-extrabold">Практика без повторов</h2><p className="text-xs text-[var(--student-ink-2)]">Вопросы из проверенного банка</p></div>
+          <div className="min-w-0"><h2 className="text-[17px] font-extrabold">Практика без повторов</h2><p className="text-xs text-[var(--student-ink-2)]">{totalRemaining === null ? 'Загружаем проверенный банк…' : `${totalRemaining} вопросов доступно`}</p></div>
         </div>
 
         <div className="space-y-4 p-4">
           {!question && <>
             <fieldset>
               <legend className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-[var(--student-ink-3)]">Предмет</legend>
-              <div className="flex gap-2">{SUBJECTS.map(item => { const active = subject === item.key; return <button key={item.key} type="button" onClick={() => chooseSubject(item.key)} className={`flex min-h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl border px-3 text-[13px] font-bold ${active ? 'border-[var(--student-brand)] bg-[var(--student-brand)] text-white' : 'border-[var(--student-line)] bg-white text-[var(--student-ink-2)]'}`}><StudentVisualIcon name={item.icon} size={18} color={active ? '#fff' : 'var(--student-brand)'} />{item.label}</button> })}</div>
+              <div className="flex gap-2">{SUBJECTS.map(item => { const active = subject === item.key; const count = subjectCounts[item.key]; const disabled = count === 0; return <button key={item.key} type="button" disabled={disabled} onClick={() => chooseSubject(item.key)} className={`flex min-h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl border px-3 text-[13px] font-bold disabled:cursor-not-allowed disabled:opacity-45 ${active ? 'border-[var(--student-brand)] bg-[var(--student-brand)] text-white' : 'border-[var(--student-line)] bg-white text-[var(--student-ink-2)]'}`}><StudentVisualIcon name={item.icon} size={18} color={active ? '#fff' : 'var(--student-brand)'} /><span>{item.label}<small className="ml-1 font-extrabold opacity-75">{count === null ? '' : count > 0 ? count : 'скоро'}</small></span></button> })}</div>
             </fieldset>
             <label className="block text-[11px] font-extrabold uppercase tracking-[.12em] text-[var(--student-ink-3)]">Раздел
-              <select value={section} onChange={event => setSection(event.target.value)} className="mt-2 min-h-12 w-full rounded-2xl border border-[var(--student-line)] bg-white px-4 text-sm font-semibold normal-case tracking-normal text-[var(--student-ink)] outline-none focus:border-[var(--student-brand)]">{sectionOptions.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select>
+              <select value={section} onChange={event => { const value = event.target.value; setSection(value); const firstDifficulty = catalog?.find(item => item.subject === subject && item.section === value)?.difficulty; if (firstDifficulty) setDifficulty(firstDifficulty) }} className="mt-2 min-h-12 w-full rounded-2xl border border-[var(--student-line)] bg-white px-4 text-sm font-semibold normal-case tracking-normal text-[var(--student-ink)] outline-none focus:border-[var(--student-brand)]">{sectionOptions.map(item => <option key={item.value} value={item.value}>{item.label}{item.count === null ? '' : ` · ${item.count}`}</option>)}</select>
             </label>
             <fieldset>
               <legend className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-[var(--student-ink-3)]">Сложность</legend>
-              <div className="flex gap-2">{DIFFICULTIES.map(item => { const active = difficulty === item.key; return <button key={item.key} type="button" onClick={() => setDifficulty(item.key)} className={`min-h-11 min-w-0 flex-1 rounded-[14px] border px-2 text-xs font-bold ${active ? 'border-[var(--student-brand)] bg-[var(--student-brand)] text-white' : 'border-[var(--student-line)] text-[var(--student-ink-2)]'}`}>{item.label}</button> })}</div>
+              <div className="flex gap-2">{difficultyOptions.map(item => { const active = difficulty === item.key; return <button key={item.key} type="button" onClick={() => setDifficulty(item.key)} className={`min-h-11 min-w-0 flex-1 rounded-[14px] border px-2 text-xs font-bold ${active ? 'border-[var(--student-brand)] bg-[var(--student-brand)] text-white' : 'border-[var(--student-line)] text-[var(--student-ink-2)]'}`}>{item.label}</button> })}</div>
+              {catalog !== null && difficultyOptions.length === 1 && <p className="mt-2 text-xs font-medium text-[var(--student-ink-3)]">Другие уровни появятся после методической разметки новых вопросов.</p>}
             </fieldset>
-            <button type="button" onClick={() => void next()} disabled={loading} className="flex min-h-14 w-full items-center justify-center rounded-2xl border-b-4 border-[var(--student-brand-dark)] bg-[var(--student-brand)] px-4 text-base font-extrabold text-white active:translate-y-0.5 disabled:opacity-60">{loading ? 'Ищем вопрос…' : 'Начать тренировку'}</button>
+            <button type="button" onClick={() => void next()} disabled={loading || currentRemaining === 0 || sectionOptions.length === 0} className="flex min-h-14 w-full items-center justify-center rounded-2xl border-b-4 border-[var(--student-brand-dark)] bg-[var(--student-brand)] px-4 text-base font-extrabold text-white active:translate-y-0.5 disabled:opacity-60">{loading ? 'Ищем вопрос…' : currentRemaining === null ? 'Начать тренировку' : `Начать · ${currentRemaining} доступно`}</button>
           </>}
 
           {question && <div>

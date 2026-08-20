@@ -112,6 +112,31 @@ export async function submitDailyChallenge(idempotencyKey: string, answers: { qu
 
 export interface TrainerQuestion extends DailyQuestion { issueId: string }
 
+export interface TrainerCatalogItem {
+  subject: 'math' | 'kyr'
+  section: string
+  difficulty: 'easy' | 'medium' | 'hard'
+  remainingCount: number
+}
+
+export async function getTrainerCatalog(): Promise<{ items: TrainerCatalogItem[]; totalRemaining: number }> {
+  const source = record(await zhangakApiRequest<unknown>('/v1/platform/trainer/catalog'), 'каталог тренажёра')
+  if (!Array.isArray(source.items) || !Number.isSafeInteger(source.totalRemaining) || (source.totalRemaining as number) < 0) {
+    throw new Error('Некорректный ответ: каталог тренажёра')
+  }
+  const items = source.items.map(value => {
+    const item = record(value, 'раздел тренажёра')
+    if ((item.subject !== 'math' && item.subject !== 'kyr') || typeof item.section !== 'string' || !/^[a-z][a-z0-9_-]{0,63}$/u.test(item.section)) {
+      throw new Error('Некорректный ответ: раздел тренажёра')
+    }
+    if (item.difficulty !== 'easy' && item.difficulty !== 'medium' && item.difficulty !== 'hard') throw new Error('Некорректный ответ: сложность тренажёра')
+    if (!Number.isSafeInteger(item.remainingCount) || (item.remainingCount as number) < 1) throw new Error('Некорректный ответ: количество вопросов')
+    return item as unknown as TrainerCatalogItem
+  })
+  if (items.reduce((total, item) => total + item.remainingCount, 0) !== source.totalRemaining) throw new Error('Некорректный ответ: итог каталога тренажёра')
+  return { items, totalRemaining: source.totalRemaining as number }
+}
+
 export async function getTrainerQuestion(filter: { subject: 'math' | 'kyr'; section: string; difficulty: 'easy' | 'medium' | 'hard' }): Promise<TrainerQuestion | null> {
   const params = new URLSearchParams(filter)
   const source = record(await zhangakApiRequest<unknown>(`/v1/platform/trainer/question?${params}`), 'вопрос тренажёра')
