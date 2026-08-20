@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { fetchPlatformRoadmap, parsePlatformRoadmap } from '../../lib/platform-roadmap.ts'
+import { fetchPlatformRoadmap, parsePlatformRoadmap, roadmapLessonStarCount } from '../../lib/platform-roadmap.ts'
 
 const ROADMAP = {
   course: { id: 4, name: 'Онлайн ОРТ', code: 'ort-online', subject: 'ort' },
@@ -35,6 +35,10 @@ test('Roadmap parser preserves the bottom-to-top contract and progress stars', (
   assert.equal(roadmap.units[0].lessons[1].completionMode, 'practice')
   assert.equal(roadmap.units[0].lessons[0].id, '11')
   assert.deepEqual(roadmap.units[0].lessons.map(lesson => lesson.subject), ['math', 'kyr'])
+})
+
+test('each lesson circle derives stars from the agreed progress thresholds', () => {
+  assert.deepEqual([0, 49, 50, 74, 75, 89, 90, 100].map(roadmapLessonStarCount), [0, 0, 1, 1, 2, 2, 3, 3])
 })
 
 test('Roadmap parser rejects a client-side unlock or private material field shape', () => {

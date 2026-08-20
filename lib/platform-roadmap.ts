@@ -45,6 +45,14 @@ export interface PlatformRoadmap {
   summary: { completedLessons: number; lessonCount: number; completionPercent: number }
 }
 
+/** Visual lesson stars follow the agreed 50/75/90 percent thresholds. */
+export function roadmapLessonStarCount(completionPercent: number): 0 | 1 | 2 | 3 {
+  if (completionPercent >= 90) return 3
+  if (completionPercent >= 75) return 2
+  if (completionPercent >= 50) return 1
+  return 0
+}
+
 function record(value: unknown, label: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`Некорректный ответ: ${label}`)
   return value as Record<string, unknown>

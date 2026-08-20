@@ -73,6 +73,21 @@ const ADMIN_GAMIFICATION = {
   achievements: [{ id: 1, code: 'first_step', title: 'Первый шаг', description: 'Сделай первое действие.', iconKey: 'footprints', sortOrder: 10, isActive: true }],
 }
 
+const ROADMAP = {
+  course: { id: 4, name: 'ОРТ: математика и кыргызский язык', code: 'ort-online', subject: 'ort' },
+  direction: 'bottom_to_top',
+  units: [{
+    id: 7, unitNumber: 1, title: 'Сандар жана алгебра', description: 'Сандар, бөлчөктөр жана формулалар.', accentColor: 'blue',
+    completedLessons: 1, lessonCount: 3, completionPercent: 33, starCount: 0,
+    lessons: [
+      { id: 11, lessonNumber: 1, title: 'Натуралдык сандар', description: 'Сандар менен негизги амалдар.', subject: 'math', section: 'Сандар', topic: 'Натуралдык сандар', durationMinutes: 18, isTest: false, completionMode: 'self', completionPercent: 100, completedAt: '2026-08-20T08:00:00.000Z', isLocked: false, state: 'done', isCurrent: false },
+      { id: 12, lessonNumber: 2, title: 'Бөлчөктөр жана пайыздар', description: 'Бөлчөктөрдү салыштыруу жана пайыздарды эсептөө.', subject: 'math', section: 'Сандар', topic: 'Бөлчөктөр', durationMinutes: 24, isTest: false, completionMode: 'self', completionPercent: 50, completedAt: null, isLocked: false, state: 'current', isCurrent: true },
+      { id: 13, lessonNumber: 3, title: 'Алгебралык туюнтмалар', description: null, subject: 'math', section: 'Алгебра', topic: 'Туюнтмалар', durationMinutes: 20, isTest: true, completionMode: 'practice', completionPercent: 0, completedAt: null, isLocked: true, state: 'locked', isCurrent: false },
+    ],
+  }],
+  summary: { completedLessons: 1, lessonCount: 3, completionPercent: 33 },
+}
+
 function lessonPayload(overrides: Record<string, unknown> = {}) {
   return {
     id: LESSON_ID,
@@ -128,6 +143,7 @@ if (window.onYouTubeIframeAPIReady) window.onYouTubeIframeAPIReady()
 
 async function stubPlatform(page: Page) {
   await page.route('**/v1/platform/**', route => json(route, { items: [] }))
+  await page.route('**/v1/platform/roadmap', route => json(route, ROADMAP))
   await page.route('**/v1/platform/lessons**', route => json(route, { items: [lessonPayload()] }))
   await page.route(`**/v1/platform/lessons/${LESSON_ID}`, route => json(route, { lesson: lessonPayload() }))
   await page.route(`**/v1/platform/lessons/${LESSON_ID}/materials`, route => json(route, { items: [] }))
@@ -222,6 +238,28 @@ test.describe('student surfaces never overflow horizontally', () => {
         ).toBeLessThanOrEqual(clientWidth)
       })
     }
+  }
+})
+
+test.describe('roadmap lesson detail is anchored to its circle', () => {
+  for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 768, height: 1024 }]) {
+    test(`lesson popover at ${viewport.width}px`, async ({ page }) => {
+      await stubPlatform(page)
+      await page.setViewportSize(viewport)
+      await page.goto('/student/online/roadmap', { waitUntil: 'domcontentloaded' })
+      const lesson = page.getByRole('button', { name: /Подробнее: урок 2/ })
+      const lessonBox = await lesson.boundingBox()
+      await lesson.click()
+      const panel = page.locator('#roadmap-lesson-12')
+      await expect(panel).toBeVisible()
+      await expect(panel.getByRole('link', { name: /Продолжить/ })).toBeVisible()
+      const panelBox = await panel.boundingBox()
+      expect(panelBox).not.toBeNull()
+      expect(lessonBox).not.toBeNull()
+      expect(panelBox!.x).toBeGreaterThanOrEqual(0)
+      expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(viewport.width)
+      expect(panelBox!.y).toBeGreaterThan(lessonBox!.y)
+    })
   }
 })
 

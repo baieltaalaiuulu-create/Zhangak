@@ -71,14 +71,15 @@ export default function RoadmapPage() {
   const hasMap = Boolean(roadmap?.course && roadmap.units.length > 0)
   return (
     <main className="min-h-screen bg-white pb-28">
-      <div className="mx-auto max-w-[430px] px-4 py-5">
-        <header>
+      <div className="mx-auto max-w-[470px] px-4 py-5">
+        <header className="relative overflow-hidden border-b border-[#DCE2EC] pb-4">
+          <span aria-hidden="true" className="absolute -right-5 -top-8 h-28 w-28 rounded-full border-[20px] border-[#E7ECF8]" />
           <div className="flex items-end justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 text-[#1B3F92]"><StudentVisualIcon name="alt_route" size={18} color="#1B3F92" /><span className="text-[11px] font-extrabold uppercase tracking-[0.1em]">Твой учебный путь</span></div>
               <h1 className="mt-0.5 text-[26px] font-black tracking-[-0.03em] text-[#0F172A]">Roadmap</h1>
             </div>
-            <div className="rounded-full bg-[#E8FAEF] px-3 py-1.5 text-[12px] font-extrabold text-[#16803F]">
+            <div className="relative rounded-full bg-[#E8FAEF] px-3 py-1.5 text-[12px] font-extrabold text-[#16803F]">
               {summary.completedLessons}/{summary.lessonCount} пройдено
             </div>
           </div>
