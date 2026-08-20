@@ -177,6 +177,7 @@ export default function LandingPage() {
           .s-pad{padding-left:28px!important;padding-right:28px!important}
           .courses-grid{grid-template-columns:1fr!important}
           .results-grid{grid-template-columns:1fr 1fr 1fr!important}
+          .application-cta-grid{grid-template-columns:1fr!important;gap:24px!important}
         }
       `}</style>
 
