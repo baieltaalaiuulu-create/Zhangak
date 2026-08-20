@@ -35,10 +35,10 @@ async function main() {
       '/student/online',
       '/student/online/trainer',
       '/student/online/roadmap',
-      '/student/online/ai',
+      '/student/online/quests',
       '/student/online/profile',
     ]),
-    'mobile navigation must keep Home, Trainer, Roadmap, AI and Profile in that order',
+    'mobile navigation must keep Home, Trainer, Roadmap, Quests and Profile in that order',
   )
   expect(bottomNav.includes('aria-label="Основная навигация"'), 'mobile navigation needs an accessible label')
   expect(bottomNav.includes("aria-current={isActive ? 'page' : undefined}"), 'active mobile destination needs aria-current="page"')
@@ -99,13 +99,18 @@ async function main() {
   expect(aiPage.includes('href="/student/online/lessons"'), 'AI unavailable state needs a safe lessons destination')
   expect(aiPage.includes('href="/student/online/practice"'), 'AI unavailable state needs a safe practice destination')
   expect(aiPage.includes('100dvh-64px-env(safe-area-inset-bottom)'), 'AI viewport must leave room for mobile navigation')
+  expect(aiPage.includes('href="/student/online"'), 'AI coach needs a direct route back to learning')
+  expect(aiPage.includes('onKeyDown={handleComposerKeyDown}'), 'AI composer must handle its documented keyboard shortcut')
+  expect(aiPage.includes('event.ctrlKey && !event.metaKey') || aiPage.includes('!event.ctrlKey && !event.metaKey'), 'AI composer must require Ctrl or Cmd with Enter before sending')
+  expect(aiPage.includes('Ctrl') && aiPage.includes('Enter') && aiPage.includes('ai-send-shortcut'), 'AI composer must visibly explain the send shortcut')
+  expect(aiPage.includes('QUICK_PROMPTS'), 'AI coach needs quick-start prompts for an empty or stalled conversation')
 
   const leaderboardPage = await source('app/student/online/leaderboard/page.tsx')
   expect(leaderboardPage.includes('useStudentSession'), 'leaderboard must stay inside the first-party student session')
   expect(!leaderboardPage.includes("from '@/lib/supabase'"), 'leaderboard must not query retired Supabase data')
   expect(!leaderboardPage.includes('fetchLeaderboardEntries'), 'leaderboard must not call the retired browser ranking client')
-  expect(leaderboardPage.includes("'/v1/platform/leaderboard'"), 'leaderboard must load the first-party ranking projection')
-  expect(leaderboardPage.includes('подтверждённым XP') && leaderboardPage.includes('Сброс тренажёра не уменьшает'), 'leaderboard must explain authoritative XP semantics')
+  expect(leaderboardPage.includes('getOverallLeaderboard'), 'leaderboard must load the first-party ranking projection')
+  expect(leaderboardPage.includes('подтверждённому XP') && leaderboardPage.includes('Сброс тренажёра не уменьшает'), 'leaderboard must explain authoritative XP semantics')
 
   const scanRoots = [
     'app/student/online/lessons',

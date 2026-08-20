@@ -3,13 +3,19 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import { FormEvent, useEffect, useState } from 'react'
-import { BrainCircuit, LoaderCircle, Send, ShieldCheck } from 'lucide-react'
+import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from 'react'
+import { ArrowLeft, BrainCircuit, LoaderCircle, Send, ShieldCheck, Sparkles } from 'lucide-react'
 
 import { useStudentSession } from '@/components/student/StudentSessionContext'
 import { ZhangakApiError, zhangakApiJson, zhangakApiRequest } from '@/lib/zhangak-api-client'
 
 type Message = { id: number; role: 'user' | 'assistant'; content: string; createdAt: string }
+
+const QUICK_PROMPTS = [
+  'Объясни тему простыми словами',
+  'Дай похожее задание для тренировки',
+  'Проверь мой ход решения',
+]
 
 function isMessage(value: unknown): value is Message {
   if (!value || typeof value !== 'object') return false
@@ -28,6 +34,8 @@ export default function AiMentorChatPage() {
   const [input, setInput] = useState('')
   const [status, setStatus] = useState('loading')
   const [notice, setNotice] = useState('')
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const messagesRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let active = true
@@ -47,6 +55,12 @@ export default function AiMentorChatPage() {
     return () => { active = false }
   }, [])
 
+  useEffect(() => {
+    const container = messagesRef.current
+    if (!container) return
+    container.scrollTo({ top: container.scrollHeight, behavior: messages.length > 0 ? 'smooth' : 'auto' })
+  }, [messages, status])
+
   async function saveConsent() {
     setStatus('saving-consent')
     setNotice('')
@@ -60,8 +74,7 @@ export default function AiMentorChatPage() {
     }
   }
 
-  async function send(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  async function sendMessage() {
     const message = input.trim()
     if (!message || status !== 'ready' || !accepted) return
     setStatus('sending')
@@ -83,11 +96,33 @@ export default function AiMentorChatPage() {
     }
   }
 
+  function send(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    void sendMessage()
+  }
+
+  function handleComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== 'Enter' || (!event.ctrlKey && !event.metaKey)) return
+    event.preventDefault()
+    void sendMessage()
+  }
+
+  function choosePrompt(prompt: string) {
+    setInput(prompt)
+    requestAnimationFrame(() => inputRef.current?.focus())
+  }
+
   return (
     <main className="min-h-[calc(100dvh-64px-env(safe-area-inset-bottom))] bg-[var(--student-bg)] px-4 pb-28 pt-5 sm:px-6 sm:py-10">
       <section className="mx-auto w-full max-w-3xl">
         <div className="overflow-hidden rounded-[24px] border border-[var(--student-line)] bg-white">
           <header className="bg-gradient-to-br from-[#0D1E4A] via-[#1B3F92] to-[#6C3DE0] px-6 py-7 text-white sm:px-9">
+            <div className="mb-5">
+              <Link href="/student/online" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white/10 px-3 text-sm font-bold text-white ring-1 ring-white/20 transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white" aria-label="Вернуться к обучению">
+                <ArrowLeft size={18} aria-hidden="true" />
+                <span>Назад к обучению</span>
+              </Link>
+            </div>
             <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20"><BrainCircuit size={25} aria-hidden="true" /></span>
             <p className="mt-4 text-sm font-bold uppercase tracking-[0.16em] text-blue-100">AI-коуч Zhangak</p>
             <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">{firstName}, спроси про математику или кыргызский язык</h1>
@@ -100,6 +135,7 @@ export default function AiMentorChatPage() {
               <div className="rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">
                 <p>{notice}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => window.location.reload()} className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-[#1B3F92]">Повторить</button>
                   <Link href="/student/online/lessons" className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-[#1B3F92]">Открыть уроки</Link>
                   <Link href="/student/online/practice" className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-[#1B3F92]">Открыть тренажёр</Link>
                 </div>
@@ -118,16 +154,35 @@ export default function AiMentorChatPage() {
 
             {status !== 'loading' && accepted === true && (
               <>
-                <div className="max-h-[48vh] min-h-40 space-y-3 overflow-y-auto rounded-2xl bg-slate-50 p-3" aria-live="polite">
-                  {messages.length === 0 && <p className="p-3 text-sm leading-6 text-slate-600">Например: «Объясни, как решать квадратные уравнения» или «Помоги разобрать правило кыргызского языка».</p>}
-                  {messages.map(message => <div key={message.id} className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === 'user' ? 'ml-auto bg-[#1B3F92] text-white' : 'bg-white text-slate-800 shadow-sm'}`}>{message.content}</div>)}
-                  {status === 'sending' && <p className="flex items-center gap-2 px-3 py-2 text-sm text-slate-500"><LoaderCircle className="animate-spin" size={16} /> AI-коуч думает…</p>}
+                <div ref={messagesRef} className="max-h-[52vh] min-h-64 space-y-3 overflow-y-auto rounded-2xl bg-slate-50 p-3 sm:p-4" aria-live="polite">
+                  {messages.length === 0 && <p className="p-3 text-sm leading-6 text-slate-600">Спроси о математике или кыргызском языке. Можно попросить объяснение, пример или проверку своего решения.</p>}
+                  {messages.map(message => (
+                    <article key={message.id} className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === 'user' ? 'ml-auto bg-[#1B3F92] text-white' : 'bg-white text-slate-800 shadow-sm'}`}>
+                      <p className={`mb-1 flex items-center gap-1 text-xs font-bold ${message.role === 'user' ? 'text-blue-100' : 'text-[#1B3F92]'}`}>
+                        {message.role === 'user' ? 'Ты' : <><Sparkles size={13} aria-hidden="true" /> AI-коуч</>}
+                      </p>
+                      <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                    </article>
+                  ))}
+                  {status === 'sending' && <p role="status" className="flex items-center gap-2 rounded-xl bg-white px-3 py-3 text-sm font-medium text-slate-500"><LoaderCircle className="animate-spin" size={16} aria-hidden="true" /> AI-коуч думает…</p>}
                 </div>
                 {notice && <p className="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">{notice}</p>}
-                <form onSubmit={send} className="mt-4 flex gap-2">
+                <div className="mt-4 flex flex-wrap gap-2" aria-label="Быстрые подсказки">
+                  {QUICK_PROMPTS.map(prompt => <button key={prompt} type="button" onClick={() => choosePrompt(prompt)} disabled={status !== 'ready'} className="min-h-10 rounded-full border border-blue-100 bg-blue-50 px-3 text-xs font-bold text-[#1B3F92] transition-colors hover:bg-blue-100 disabled:opacity-50">{prompt}</button>)}
+                </div>
+                <form onSubmit={send} className="mt-3 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm focus-within:border-[#1B3F92] focus-within:ring-2 focus-within:ring-[#1B3F92]/15">
                   <label className="sr-only" htmlFor="ai-message">Сообщение AI-коучу</label>
-                  <textarea id="ai-message" value={input} onChange={event => setInput(event.target.value)} maxLength={2000} rows={2} placeholder="Напиши свой вопрос…" className="min-h-12 flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-[#1B3F92] focus:ring-2" />
-                  <button type="submit" disabled={status !== 'ready' || !input.trim()} className="inline-flex min-h-12 w-12 items-center justify-center rounded-xl bg-[#1B3F92] text-white disabled:opacity-50" aria-label="Отправить сообщение"><Send size={18} aria-hidden="true" /></button>
+                  <textarea ref={inputRef} id="ai-message" value={input} onChange={event => setInput(event.target.value)} onKeyDown={handleComposerKeyDown} maxLength={2000} rows={3} placeholder="Напиши свой вопрос…" className="block min-h-20 w-full resize-none rounded-xl px-3 py-2 text-sm leading-6 outline-none" />
+                  <div className="flex items-center justify-between gap-3 px-1 pb-1">
+                    <p id="ai-send-shortcut" className="text-xs text-slate-500"><kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-sans text-[11px] font-semibold text-slate-600">Ctrl</kbd> + <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-sans text-[11px] font-semibold text-slate-600">Enter</kbd> отправить</p>
+                    <span className="group relative shrink-0">
+                      <button type="submit" disabled={status !== 'ready' || !input.trim()} aria-describedby="ai-send-shortcut" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-extrabold text-white transition-colors hover:bg-[#132f70] disabled:cursor-not-allowed disabled:opacity-50" aria-label="Отправить сообщение">
+                        <Send size={18} aria-hidden="true" />
+                        <span className="hidden sm:inline">Отправить</span>
+                      </button>
+                      <span role="tooltip" className="pointer-events-none absolute bottom-[calc(100%+8px)] right-0 w-max rounded-lg bg-slate-900 px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">Отправить · Ctrl + Enter</span>
+                    </span>
+                  </div>
                 </form>
               </>
             )}
