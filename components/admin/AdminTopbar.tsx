@@ -49,14 +49,14 @@ export default function AdminTopbar({ title, actionLabel, actionIcon: ActionIcon
     .join('') || 'A'
 
   return (
-    <header className="sticky top-0 z-20 flex h-[60px] items-center gap-3 border-b border-[#C3C6D7]/50 bg-white pl-16 pr-4 sm:px-6 lg:pl-6 print:hidden">
+    <header className="sticky top-0 z-20 flex min-h-[calc(60px+env(safe-area-inset-top))] items-center gap-3 border-b border-[#C3C6D7]/50 bg-white pl-16 pr-4 pt-[env(safe-area-inset-top)] sm:px-6 lg:pl-6 print:hidden">
       <h1 className="truncate text-base font-bold text-[#191B23] sm:text-lg">{title}</h1>
       <div className="ml-auto flex items-center gap-2">
         {actionLabel && onAction && (
           <button
             type="button"
             onClick={onAction}
-            className="flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-[#1B3F92] px-4 py-2 text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700"
+            className="flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-xl bg-[#1B3F92] px-4 py-2 text-sm font-bold text-white shadow-md shadow-blue-200 transition-colors hover:bg-blue-700"
           >
             {ActionIcon && <ActionIcon size={16} />}
             {actionLabel}
@@ -68,7 +68,7 @@ export default function AdminTopbar({ title, actionLabel, actionIcon: ActionIcon
             onClick={() => setMenuOpen(v => !v)}
             aria-label={`Меню аккаунта: ${fullName}`}
             aria-expanded={menuOpen}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0D1E4A] text-xs font-bold text-white"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0D1E4A] text-xs font-bold text-white"
           >
             {initials}
           </button>
@@ -82,7 +82,7 @@ export default function AdminTopbar({ title, actionLabel, actionIcon: ActionIcon
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-50"
+                className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-50"
               >
                 <LogOut size={15} /> Выйти
               </button>

@@ -37,6 +37,7 @@ export default function PersonalizationSettings() {
   const [avatarUrl, setAvatarUrl] = useState('')
   const [profileColor, setProfileColor] = useState<ProfileColor>('blue')
   const [dailyStudyGoalMinutes, setDailyStudyGoalMinutes] = useState<DailyStudyGoalMinutes>(30)
+  const [communityVisibility, setCommunityVisibility] = useState(true)
   const [loading, setLoading] = useState(true)
   const [loadingError, setLoadingError] = useState(false)
   const [savingAvatar, setSavingAvatar] = useState(false)
@@ -55,6 +56,7 @@ export default function PersonalizationSettings() {
         setAvatarUrl(nextProfile.avatarUrl ?? '')
         setProfileColor(nextProfile.profileColor)
         setDailyStudyGoalMinutes(nextProfile.dailyStudyGoalMinutes)
+        setCommunityVisibility(nextProfile.communityVisibility)
         setLoadingError(false)
       } catch {
         if (active) setLoadingError(true)
@@ -71,6 +73,7 @@ export default function PersonalizationSettings() {
     setAvatarUrl(updated.avatarUrl ?? '')
     setProfileColor(updated.profileColor)
     setDailyStudyGoalMinutes(updated.dailyStudyGoalMinutes)
+    setCommunityVisibility(updated.communityVisibility)
     applyProfileUpdate(updated)
   }
 
@@ -100,7 +103,7 @@ export default function PersonalizationSettings() {
     setError(null)
     setSuccess(null)
     try {
-      const updated = await updatePlatformProfile({ profileColor, dailyStudyGoalMinutes })
+      const updated = await updatePlatformProfile({ profileColor, dailyStudyGoalMinutes, communityVisibility })
       applyUpdatedProfile(updated)
       setSuccess('Оформление и ежедневная цель сохранены.')
     } catch {
@@ -227,6 +230,19 @@ export default function PersonalizationSettings() {
         {DAILY_STUDY_GOAL_MINUTES.map(minutes => <option key={minutes} value={minutes}>{minutes} минут в день</option>)}
       </select>
       <p className="mt-2 text-[11px] leading-4 text-gray-500">Цель появится на главной странице кабинета как ориентир, а не как обещание уже учтённых минут.</p>
+
+      <label className="mt-5 flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
+        <input
+          type="checkbox"
+          checked={communityVisibility}
+          onChange={event => setCommunityVisibility(event.target.checked)}
+          className="mt-0.5 h-5 w-5 rounded border-gray-300 text-[#1B3F92] focus:ring-[#1B3F92]"
+        />
+        <span className="text-xs leading-5 text-gray-600">
+          <span className="block font-bold text-[#191B23]">Участвовать в общем рейтинге</span>
+          Показывать псевдоним, уровень и достижения. Настоящие имя, фото и контакты другим ученикам не видны.
+        </span>
+      </label>
 
       {error && <p role="alert" className="mt-4 text-xs font-semibold text-red-600">{error}</p>}
       {success && <p role="status" className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700"><CheckCircle2 size={15} aria-hidden="true" />{success}</p>}

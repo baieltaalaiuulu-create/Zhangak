@@ -19,7 +19,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/student/online', label: 'Главная', icon: 'home' },
   { href: '/student/online/trainer', label: 'Тренажёр', icon: 'fitness_center' },
   { href: '/student/online/roadmap', label: 'Roadmap', icon: 'alt_route', primary: true },
-  { href: '/student/online/ai', label: 'AI', icon: 'auto_awesome', accent: true },
+  { href: '/student/online/quests', label: 'Квесты', icon: 'task_alt', accent: true },
   { href: '/student/online/profile', label: 'Профиль', icon: 'person' },
 ]
 

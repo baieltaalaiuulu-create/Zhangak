@@ -44,6 +44,7 @@ function publicUser(row) {
     avatarUrl: row.avatar_url,
     profileColor: row.profile_color,
     dailyStudyGoalMinutes: row.daily_study_goal_minutes,
+    communityVisibility: row.community_visibility,
   }
 }
 
@@ -70,7 +71,7 @@ POST('/v1/auth/login', async ({ req, config, ip }) => {
   const result = await query(
     `SELECT u.id, u.email, u.password_hash, u.blocked, u.session_version,
             p.full_name, p.role, p.student_type, p.phone, p.target_score, p.avatar_url,
-            p.profile_color, p.daily_study_goal_minutes
+            p.profile_color, p.daily_study_goal_minutes, p.community_visibility
        FROM users u JOIN profiles p ON p.user_id = u.id
       WHERE u.email = $1`,
     [email],

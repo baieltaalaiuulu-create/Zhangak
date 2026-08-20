@@ -6,6 +6,7 @@ import { RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { logoutZhangak } from '@/lib/zhangak-auth-client'
 import { zhangakApiRequest } from '@/lib/zhangak-api-client'
+import { getGamificationSummary, type GamificationSummary } from '@/lib/platform-community'
 import {
   DEFAULT_TARGET_SCORE,
   getPlatformProfile,
@@ -61,19 +62,22 @@ export default function ProfilePage() {
   const [loadError, setLoadError] = useState(false)
   const [retryNonce, setRetryNonce] = useState(0)
   const [profile, setProfile] = useState<PlatformProfile | null>(null)
+  const [gamification, setGamification] = useState<GamificationSummary | null>(null)
   const [progress, setProgress] = useState<LearningProgress>({ lessonsCompleted: 0, lessonsTotal: 0, testsCompleted: 0, mocksCompleted: 0 })
 
   useEffect(() => {
     let active = true
     const load = async () => {
       try {
-        const [nextProfile, dashboard] = await Promise.all([
+        const [nextProfile, dashboard, game] = await Promise.all([
           getPlatformProfile(),
           zhangakApiRequest<PlatformDashboardResponse>('/v1/platform/dashboard'),
+          getGamificationSummary().catch(() => null),
         ])
         if (!active) return
         setProfile(nextProfile)
         setProgress(progressFromDashboard(dashboard))
+        setGamification(game)
         setLoadError(false)
       } catch {
         if (active) setLoadError(true)
@@ -150,8 +154,8 @@ export default function ProfilePage() {
               profileColor={profile.profileColor}
               studentType={profile.studentType ?? 'online'}
               latestScore={null}
-              streak={0}
-              level={1}
+              streak={gamification?.streak ?? 0}
+              level={gamification?.level ?? 1}
               onSignOut={handleSignOut}
               onNameUpdate={handleNameUpdate}
               onAvatarUpdate={handleAvatarUpdate}
@@ -169,10 +173,11 @@ export default function ProfilePage() {
             />
             <ScoreSparkline history={EMPTY_SCORE_HISTORY} />
             <AchievementsCard
-              streak={0}
-              questionsSolved={0}
+              streak={gamification?.streak ?? 0}
+              questionsSolved={gamification?.activity.trainerMastered ?? 0}
               mocksCompleted={progress.mocksCompleted}
-              lessonsCompleted={progress.lessonsCompleted}
+              lessonsCompleted={gamification?.activity.lessonsCompleted ?? progress.lessonsCompleted}
+              unlocked={gamification?.achievements}
             />
             <NotificationSettings />
           </div>

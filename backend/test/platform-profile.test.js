@@ -16,13 +16,14 @@ function invalidPatch(body, code) {
   )
 }
 
-test('student profile patch accepts only the five safe, typed profile fields', () => {
+test('student profile patch accepts only the six safe, typed profile fields', () => {
   assert.deepEqual(parseProfilePatch({
     fullName: '  Айзада Токтосунова  ',
     avatarUrl: 'https://cdn.zhangak.com/avatars/aizada.png',
     targetScore: 210,
     profileColor: 'violet',
     dailyStudyGoalMinutes: 45,
+    communityVisibility: false,
   }), {
     hasFullName: true,
     fullName: 'Айзада Токтосунова',
@@ -34,6 +35,8 @@ test('student profile patch accepts only the five safe, typed profile fields', (
     profileColor: 'violet',
     hasDailyStudyGoalMinutes: true,
     dailyStudyGoalMinutes: 45,
+    hasCommunityVisibility: true,
+    communityVisibility: false,
   })
 
   assert.deepEqual(parseProfilePatch({ avatarUrl: null }), {
@@ -47,6 +50,8 @@ test('student profile patch accepts only the five safe, typed profile fields', (
     profileColor: null,
     hasDailyStudyGoalMinutes: false,
     dailyStudyGoalMinutes: null,
+    hasCommunityVisibility: false,
+    communityVisibility: null,
   })
 })
 
@@ -67,6 +72,7 @@ test('student profile patch fails closed for privilege fields and invalid values
   invalidPatch({ profileColor: 'blue; background: url(x)' }, 'invalid_profile_color')
   invalidPatch({ dailyStudyGoalMinutes: 20 }, 'invalid_daily_study_goal')
   invalidPatch({ dailyStudyGoalMinutes: 30.5 }, 'invalid_daily_study_goal')
+  invalidPatch({ communityVisibility: 'yes' }, 'invalid_community_visibility')
 })
 
 test('avatar URL normalization permits only a safe HTTPS external URL or clearing', () => {
@@ -90,6 +96,7 @@ test('profile route is registered, student-scoped, and never exposes a deletion 
   assert.match(source, /UPDATE profiles/)
   assert.match(source, /profile_color/)
   assert.match(source, /daily_study_goal_minutes/)
+  assert.match(source, /community_visibility/)
   assert.match(migration, /profile_color IN \('blue', 'violet', 'emerald', 'rose'\)/)
   assert.match(migration, /daily_study_goal_minutes IN \(15, 30, 45, 60, 90\)/)
   assert.match(source, /'update_own_profile'/)

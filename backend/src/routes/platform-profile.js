@@ -24,6 +24,7 @@ function publicProfile(user) {
     avatarUrl: user.avatar_url,
     profileColor: user.profile_color,
     dailyStudyGoalMinutes: user.daily_study_goal_minutes,
+    communityVisibility: user.community_visibility,
   }
 }
 
@@ -66,7 +67,7 @@ export function parseProfilePatch(body) {
     throw new HttpError(400, 'Некорректные данные профиля', 'invalid_profile_patch')
   }
   const keys = Object.keys(body)
-  const allowed = new Set(['fullName', 'avatarUrl', 'targetScore', 'profileColor', 'dailyStudyGoalMinutes'])
+  const allowed = new Set(['fullName', 'avatarUrl', 'targetScore', 'profileColor', 'dailyStudyGoalMinutes', 'communityVisibility'])
   if (keys.length === 0 || keys.some(key => !allowed.has(key))) {
     throw new HttpError(400, 'Некорректные данные профиля', 'invalid_profile_patch')
   }
@@ -82,6 +83,8 @@ export function parseProfilePatch(body) {
     profileColor: null,
     hasDailyStudyGoalMinutes: Object.hasOwn(body, 'dailyStudyGoalMinutes'),
     dailyStudyGoalMinutes: null,
+    hasCommunityVisibility: Object.hasOwn(body, 'communityVisibility'),
+    communityVisibility: null,
   }
 
   if (patch.hasFullName) {
@@ -113,6 +116,10 @@ export function parseProfilePatch(body) {
     }
     patch.dailyStudyGoalMinutes = body.dailyStudyGoalMinutes
   }
+  if (patch.hasCommunityVisibility) {
+    if (typeof body.communityVisibility !== 'boolean') throw new HttpError(400, 'Некорректная настройка сообщества', 'invalid_community_visibility')
+    patch.communityVisibility = body.communityVisibility
+  }
   return patch
 }
 
@@ -130,6 +137,7 @@ PATCH('/v1/platform/profile', async ({ req, config }) => {
     patch.hasTargetScore && 'targetScore',
     patch.hasProfileColor && 'profileColor',
     patch.hasDailyStudyGoalMinutes && 'dailyStudyGoalMinutes',
+    patch.hasCommunityVisibility && 'communityVisibility',
   ].filter(Boolean)
 
   const profile = await transaction(async client => {
@@ -140,10 +148,11 @@ PATCH('/v1/platform/profile', async ({ req, config }) => {
               target_score = CASE WHEN $6::boolean THEN $7::integer ELSE target_score END,
               profile_color = CASE WHEN $8::boolean THEN $9::text ELSE profile_color END,
               daily_study_goal_minutes = CASE WHEN $10::boolean THEN $11::smallint ELSE daily_study_goal_minutes END,
+              community_visibility = CASE WHEN $12::boolean THEN $13::boolean ELSE community_visibility END,
               updated_at = now()
         WHERE user_id = $1
         RETURNING full_name, role, student_type, phone, target_score, avatar_url,
-                  profile_color, daily_study_goal_minutes`,
+                  profile_color, daily_study_goal_minutes, community_visibility`,
       [
         student.id,
         patch.hasFullName,
@@ -156,6 +165,8 @@ PATCH('/v1/platform/profile', async ({ req, config }) => {
         patch.profileColor,
         patch.hasDailyStudyGoalMinutes,
         patch.dailyStudyGoalMinutes,
+        patch.hasCommunityVisibility,
+        patch.communityVisibility,
       ],
     )
     const row = updated.rows[0]

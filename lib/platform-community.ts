@@ -1,0 +1,185 @@
+'use client'
+
+import { zhangakApiJson, zhangakApiRequest } from './zhangak-api-client.ts'
+
+export interface QuestProgress {
+  code: string
+  period: 'daily' | 'weekly'
+  title: string
+  description: string
+  targetCount: number
+  currentCount: number
+  xpReward: number
+  completedAt: string | null
+  periodEnd: string
+}
+
+export interface CommunityAchievement {
+  code: string
+  title: string
+  description: string
+  iconKey: string
+  unlockedAt: string
+}
+
+export interface GamificationSummary {
+  xp: number
+  level: number
+  levelStartXp: number
+  levelEndXp: number
+  streak: number
+  activity: { lessonsCompleted: number; trainerMastered: number; dailyChallenges: number }
+  quests: QuestProgress[]
+  achievements: CommunityAchievement[]
+}
+
+export interface LeaderboardItem {
+  rank: number
+  publicProfileId: string
+  displayName: string
+  xp: number
+  isMe: boolean
+}
+
+export interface LeaderboardResponse {
+  scope: 'overall'
+  items: LeaderboardItem[]
+  me: Omit<LeaderboardItem, 'isMe'> | null
+}
+
+export interface CommunityProfile {
+  publicProfileId: string
+  displayName: string
+  profileColor: 'blue' | 'violet' | 'emerald' | 'rose'
+  xp: number
+  level: number
+  achievements: CommunityAchievement[]
+}
+
+function record(value: unknown, context: string): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`Некорректный ответ: ${context}`)
+  return value as Record<string, unknown>
+}
+
+function nonNegative(value: unknown, context: string): number {
+  if (!Number.isSafeInteger(value) || (value as number) < 0) throw new Error(`Некорректный ответ: ${context}`)
+  return value as number
+}
+
+function positive(value: unknown, context: string): number {
+  const parsed = nonNegative(value, context)
+  if (parsed < 1) throw new Error(`Некорректный ответ: ${context}`)
+  return parsed
+}
+
+function text(value: unknown, context: string): string {
+  if (typeof value !== 'string' || !value.trim()) throw new Error(`Некорректный ответ: ${context}`)
+  return value
+}
+
+function achievement(value: unknown): CommunityAchievement {
+  const source = record(value, 'достижение')
+  if (typeof source.unlockedAt !== 'string') throw new Error('Некорректный ответ: дата достижения')
+  return {
+    code: text(source.code, 'код достижения'),
+    title: text(source.title, 'название достижения'),
+    description: text(source.description, 'описание достижения'),
+    iconKey: text(source.iconKey, 'иконка достижения'),
+    unlockedAt: source.unlockedAt,
+  }
+}
+
+function quest(value: unknown): QuestProgress {
+  const source = record(value, 'квест')
+  if (source.period !== 'daily' && source.period !== 'weekly') throw new Error('Некорректный ответ: период квеста')
+  if (source.completedAt !== null && typeof source.completedAt !== 'string') throw new Error('Некорректный ответ: завершение квеста')
+  return {
+    code: text(source.code, 'код квеста'),
+    period: source.period,
+    title: text(source.title, 'название квеста'),
+    description: text(source.description, 'описание квеста'),
+    targetCount: nonNegative(source.targetCount, 'цель квеста'),
+    currentCount: nonNegative(source.currentCount, 'прогресс квеста'),
+    xpReward: nonNegative(source.xpReward, 'награда квеста'),
+    completedAt: source.completedAt,
+    periodEnd: text(source.periodEnd, 'срок квеста'),
+  }
+}
+
+export function parseGamificationSummary(value: unknown): GamificationSummary {
+  const source = record(value, 'сводка геймификации')
+  if (!Array.isArray(source.quests) || !Array.isArray(source.achievements)) throw new Error('Некорректный ответ: списки геймификации')
+  const activity = record(source.activity, 'активность')
+  const xp = nonNegative(source.xp, 'XP')
+  const level = nonNegative(source.level, 'уровень')
+  const levelStartXp = nonNegative(source.levelStartXp, 'начало уровня')
+  const levelEndXp = nonNegative(source.levelEndXp, 'конец уровня')
+  if (level < 1 || levelEndXp <= levelStartXp || xp < levelStartXp) throw new Error('Некорректный ответ: уровень')
+  return {
+    xp, level, levelStartXp, levelEndXp,
+    streak: nonNegative(source.streak, 'серия'),
+    activity: {
+      lessonsCompleted: nonNegative(activity.lessonsCompleted, 'уроки'),
+      trainerMastered: nonNegative(activity.trainerMastered, 'вопросы тренажёра'),
+      dailyChallenges: nonNegative(activity.dailyChallenges, 'задания дня'),
+    },
+    quests: source.quests.map(quest),
+    achievements: source.achievements.map(achievement),
+  }
+}
+
+function leaderboardItem(value: unknown, allowMe: boolean): LeaderboardItem {
+  const source = record(value, 'участник рейтинга')
+  if (typeof source.isMe !== 'boolean' && allowMe) throw new Error('Некорректный ответ: участник рейтинга')
+  return {
+    rank: positive(source.rank, 'место'),
+    publicProfileId: text(source.publicProfileId, 'публичный профиль'),
+    displayName: text(source.displayName, 'имя участника'),
+    xp: nonNegative(source.xp, 'XP участника'),
+    isMe: allowMe ? source.isMe as boolean : false,
+  }
+}
+
+export function parseLeaderboard(value: unknown): LeaderboardResponse {
+  const source = record(value, 'рейтинг')
+  if (source.scope !== 'overall' || !Array.isArray(source.items)) throw new Error('Некорректный ответ: рейтинг')
+  const me = source.me === null ? null : leaderboardItem(source.me, false)
+  return { scope: 'overall', items: source.items.map(item => leaderboardItem(item, true)), me }
+}
+
+function parseCommunityProfile(value: unknown): CommunityProfile {
+  const source = record(value, 'публичный профиль')
+  const profile = record(source.profile, 'публичный профиль')
+  if (!['blue', 'violet', 'emerald', 'rose'].includes(String(profile.profileColor)) || !Array.isArray(profile.achievements)) throw new Error('Некорректный ответ: публичный профиль')
+  const level = nonNegative(profile.level, 'уровень')
+  if (level < 1) throw new Error('Некорректный ответ: уровень')
+  return {
+    publicProfileId: text(profile.publicProfileId, 'публичный профиль'),
+    displayName: text(profile.displayName, 'имя участника'),
+    profileColor: profile.profileColor as CommunityProfile['profileColor'],
+    xp: nonNegative(profile.xp, 'XP'),
+    level,
+    achievements: profile.achievements.map(achievement),
+  }
+}
+
+export async function getGamificationSummary(): Promise<GamificationSummary> {
+  const source = record(await zhangakApiRequest<unknown>('/v1/platform/gamification/summary'), 'геймификация')
+  return parseGamificationSummary(source.summary)
+}
+
+export async function checkInGamification(): Promise<{ recorded: boolean; summary: GamificationSummary; achievements: string[] }> {
+  const source = record(await zhangakApiJson<unknown>('/v1/platform/gamification/check-in', 'POST', {}), 'чек-ин')
+  if (typeof source.recorded !== 'boolean' || !Array.isArray(source.achievements) || source.achievements.some(value => typeof value !== 'string')) {
+    throw new Error('Некорректный ответ: чек-ин')
+  }
+  return { recorded: source.recorded, summary: parseGamificationSummary(source.summary), achievements: source.achievements as string[] }
+}
+
+export async function getOverallLeaderboard(): Promise<LeaderboardResponse> {
+  return parseLeaderboard(await zhangakApiRequest<unknown>('/v1/platform/leaderboard'))
+}
+
+export async function getCommunityProfile(publicProfileId: string): Promise<CommunityProfile> {
+  return parseCommunityProfile(await zhangakApiRequest<unknown>(`/v1/platform/community/profiles/${encodeURIComponent(publicProfileId)}`))
+}

@@ -30,6 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin/questions', label: 'Вопросы', icon: PenLine, availability: 'ready' },
   { href: '/admin/mock', label: 'Пробный ОРТ', icon: ClipboardList, availability: 'ready' },
   { href: '/admin/daily-challenge', label: 'Задание дня', icon: Zap, availability: 'ready' },
+  { href: '/admin/gamification', label: 'Квесты и достижения', icon: Trophy, availability: 'ready' },
   { href: '/admin/settings', label: 'Настройки', icon: Settings, availability: 'ready' },
   { href: '/admin/prizes', label: 'Рейтинг и призы', icon: Trophy, availability: 'migration' },
   { href: '/admin/knowledge-base', label: 'База знаний AI', icon: Brain, availability: 'migration' },
@@ -41,7 +42,7 @@ const NAV_ITEMS: NavItem[] = [
 ]
 
 const NAV_GROUPS: { label: string; availability: NavAvailability; hrefs: string[] }[] = [
-  { label: 'Рабочие разделы', availability: 'ready', hrefs: ['/admin', '/admin/lessons', '/admin/roadmap', '/admin/groups', '/admin/students', '/admin/applications', '/admin/practice', '/admin/questions', '/admin/mock', '/admin/daily-challenge', '/admin/settings'] },
+  { label: 'Рабочие разделы', availability: 'ready', hrefs: ['/admin', '/admin/lessons', '/admin/roadmap', '/admin/groups', '/admin/students', '/admin/applications', '/admin/practice', '/admin/questions', '/admin/mock', '/admin/daily-challenge', '/admin/gamification', '/admin/settings'] },
   {
     label: 'Перенос на наш backend',
     availability: 'migration',
@@ -68,7 +69,7 @@ export default function AdminSidebar({ role = null }: Props) {
         type="button"
         onClick={() => setMobileOpen(true)}
         aria-label="Открыть меню"
-        className="fixed left-4 top-3 z-30 rounded-lg border border-[#C3C6D7]/50 bg-white p-2 text-gray-500 shadow-sm lg:hidden print:hidden"
+        className="fixed left-4 top-[calc(0.75rem+env(safe-area-inset-top))] z-30 flex h-11 w-11 items-center justify-center rounded-lg border border-[#C3C6D7]/50 bg-white text-gray-500 shadow-sm lg:hidden print:hidden"
       >
         <Menu size={20} />
       </button>
@@ -87,7 +88,7 @@ export default function AdminSidebar({ role = null }: Props) {
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Управление</p>
             </div>
           </div>
-          <button type="button" onClick={() => setMobileOpen(false)} aria-label="Закрыть меню" className="rounded-lg p-1 text-gray-400 hover:bg-gray-50 lg:hidden">
+          <button type="button" onClick={() => setMobileOpen(false)} aria-label="Закрыть меню" className="flex h-11 w-11 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-50 lg:hidden">
             <X size={18} />
           </button>
         </div>
@@ -108,7 +109,7 @@ export default function AdminSidebar({ role = null }: Props) {
                     <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}
                       aria-current={isActive ? 'page' : undefined}
                       aria-label={isMigrating ? `${item.label}: переносится на собственный backend` : item.label}
-                      className={`flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
+                      className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
                         isMigrating
                           ? isActive
                             ? 'bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200'

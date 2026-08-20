@@ -7,7 +7,7 @@ import { DEFAULT_TARGET_SCORE } from '@/lib/student-dashboard-contract'
 import { redirectForRole } from '@/lib/auth-redirect'
 import { PLATFORM_ORIGIN } from '@/lib/site-hosts'
 import { getCurrentZhangakUser, logoutZhangak, type ZhangakSessionUser } from '@/lib/zhangak-auth-client'
-import { zhangakApiRequest } from '@/lib/zhangak-api-client'
+import { checkInGamification } from '@/lib/platform-community'
 import StudentSidebar from './StudentSidebar'
 import StudentTopbar from './StudentTopbar'
 import BottomNav from './BottomNav'
@@ -23,7 +23,7 @@ interface Props {
 // or the /mock listing page) runs full-screen with its own dark header — no
 // sidebar/topbar chrome. AI Mentor keeps its own 3-column chat layout (dark
 // session sidebar, topbar, analytics panel), while retaining BottomNav on
-// mobile because AI is one of the five primary destinations. The daily-challenge
+// mobile because the core navigation remains available. The daily-challenge
 // question flow is full screen with its own progress
 // header — but its /results child stays inside the normal shell (same
 // split as the mock exam vs. mock results).
@@ -88,16 +88,16 @@ export default function StudentLayout({ children }: Props) {
         setAvatarUrl(user.avatarUrl ?? null)
         setAuthChecked(true)
 
-        // Progress metrics arrive with the first-party dashboard endpoint.
-        // Until that learning slice is populated, a valid account must still
-        // reach its workspace without a legacy Supabase request or redirect.
+        // Check-in is server-idempotent for the Bishkek calendar day.  It
+        // gives the shell a compact trusted XP/streak projection instead of
+        // loading the full public leaderboard for one student's totals.
         setStreak(0)
-        void zhangakApiRequest<{ items: Array<{ xp: number; isMe: boolean }> }>('/v1/platform/leaderboard')
+        void checkInGamification()
           .then(result => {
-            const ownXp = result.items.find(item => item.isMe)?.xp ?? 0
             if (!active) return
-            setXp(ownXp)
-            setLevel(Math.max(1, Math.floor(ownXp / 500) + 1))
+            setXp(result.summary.xp)
+            setLevel(result.summary.level)
+            setStreak(result.summary.streak)
           })
           .catch(() => {})
       } catch {
@@ -163,7 +163,7 @@ export default function StudentLayout({ children }: Props) {
 
   if (isImmersivePage) return <StudentSessionProvider user={sessionUser} onProfileUpdated={applyProfileUpdate}>{children}</StudentSessionProvider>
 
-  // AI keeps its focused chat shell, but the five-item mobile navigation
+  // AI keeps its focused chat shell, but the mobile navigation
   // remains available just like it does on the other primary destinations.
   if (isAiPage) {
     return (

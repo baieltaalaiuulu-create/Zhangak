@@ -1,5 +1,6 @@
 import { requireAuth } from '../auth.js'
 import { query, transaction } from '../db.js'
+import { recordGamificationEvent } from '../gamification.js'
 import { GET, HttpError, POST, readJson } from '../http.js'
 import { privateFile, safeFilename } from '../storage.js'
 
@@ -470,6 +471,11 @@ async function completeSelfPacedLesson(client, student, lessonId) {
     [student.id, String(lesson.id), JSON.stringify({ completionMode: 'self' })],
   )
   await awardLessonXp(client, student.id, lesson.course_id, lesson.id)
+  await recordGamificationEvent(client, student.id, {
+    eventKey: `lesson:${lesson.id}`,
+    eventType: 'lesson_completed',
+    metadata: { lessonId: Number(lesson.id), courseId: Number(lesson.course_id) },
+  })
   return {
     ...lesson,
     completion_percent: progress.rows[0].completion_percent,
@@ -788,7 +794,17 @@ async function submitAttempt(client, student, attemptId, input) {
       [student.id, submitted.lesson_id],
     )
     await awardLessonXp(client, student.id, submitted.course_id, submitted.lesson_id)
+    await recordGamificationEvent(client, student.id, {
+      eventKey: `lesson:${submitted.lesson_id}`,
+      eventType: 'lesson_completed',
+      metadata: { lessonId: Number(submitted.lesson_id), courseId: Number(submitted.course_id) },
+    })
   }
+  await recordGamificationEvent(client, student.id, {
+    eventKey: `practice:${submitted.id}`,
+    eventType: 'practice_submitted',
+    metadata: { attemptId: submitted.id, scorePercent: Number(submitted.score_percent) },
+  })
   await client.query(
     `INSERT INTO audit_log (actor_user_id, action, target_type, target_id, metadata)
      VALUES ($1, 'submit_practice_attempt', 'practice_attempt', $2, $3::jsonb)`,

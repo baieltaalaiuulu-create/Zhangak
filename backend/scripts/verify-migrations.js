@@ -53,6 +53,14 @@ const requiredTables = [
   'ai_conversations',
   'ai_messages',
   'push_subscriptions',
+  'student_xp_totals',
+  'gamification_events',
+  'quest_definitions',
+  'quest_definition_revisions',
+  'quest_instances',
+  'student_quest_progress',
+  'achievement_definitions',
+  'student_achievements',
 ]
 
 function fail(message) {
@@ -134,7 +142,7 @@ async function verifySchema(client) {
   const missingTables = requiredTables.filter(table => !presentTables.has(table))
   if (missingTables.length > 0) fail(`required tables are missing: ${missingTables.join(', ')}`)
 
-  const profileColumns = ['profile_color', 'daily_study_goal_minutes']
+  const profileColumns = ['profile_color', 'daily_study_goal_minutes', 'public_profile_id', 'community_visibility']
   const columnResult = await client.query(
     `SELECT column_name
        FROM information_schema.columns

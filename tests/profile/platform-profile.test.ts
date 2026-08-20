@@ -18,6 +18,7 @@ const PROFILE = {
   avatarUrl: null,
   profileColor: 'violet',
   dailyStudyGoalMinutes: 45,
+  communityVisibility: true,
 }
 
 function json(body: unknown, status = 200): Response {
@@ -52,6 +53,7 @@ test('profile client stays in the same-origin first-party BFF namespace', async 
       targetScore: 220,
       profileColor: 'emerald',
       dailyStudyGoalMinutes: 60,
+      communityVisibility: false,
     }), PROFILE)
     assert.deepEqual(calls.map(call => call.input), ['/v1/platform/profile', '/v1/platform/profile'])
     assert.deepEqual(calls.map(call => call.init?.method ?? 'GET'), ['GET', 'PATCH'])
@@ -61,6 +63,7 @@ test('profile client stays in the same-origin first-party BFF namespace', async 
       targetScore: 220,
       profileColor: 'emerald',
       dailyStudyGoalMinutes: 60,
+      communityVisibility: false,
     })
   } finally {
     globalThis.fetch = originalFetch
@@ -87,6 +90,10 @@ test('profile client rejects malformed server projections before rendering them'
   )
   assert.throws(
     () => parsePlatformProfile({ profile: { ...PROFILE, dailyStudyGoalMinutes: 23 } }),
+    /некорректный профиль/,
+  )
+  assert.throws(
+    () => parsePlatformProfile({ profile: { ...PROFILE, communityVisibility: 'yes' } }),
     /некорректный профиль/,
   )
 })

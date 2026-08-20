@@ -25,6 +25,7 @@ export interface PlatformProfile {
   avatarUrl: string | null
   profileColor: ProfileColor
   dailyStudyGoalMinutes: DailyStudyGoalMinutes
+  communityVisibility: boolean
 }
 
 export interface ProfileScorePoint {
@@ -38,6 +39,7 @@ export interface PlatformProfilePatch {
   targetScore?: number
   profileColor?: ProfileColor
   dailyStudyGoalMinutes?: DailyStudyGoalMinutes
+  communityVisibility?: boolean
 }
 
 function invalidResponse(): never {
@@ -64,6 +66,7 @@ export function parsePlatformProfile(value: unknown): PlatformProfile {
   const dailyStudyGoalMinutes = profile.dailyStudyGoalMinutes === undefined
     ? DEFAULT_DAILY_STUDY_GOAL_MINUTES
     : profile.dailyStudyGoalMinutes
+  const communityVisibility = profile.communityVisibility === undefined ? true : profile.communityVisibility
   if (typeof profile.id !== 'string'
     || typeof profile.email !== 'string'
     || typeof profile.fullName !== 'string' || profile.fullName.trim() === ''
@@ -73,6 +76,7 @@ export function parsePlatformProfile(value: unknown): PlatformProfile {
     || avatarUrl === undefined
     || !isProfileColor(profileColor)
     || !isDailyStudyGoalMinutes(dailyStudyGoalMinutes)
+    || typeof communityVisibility !== 'boolean'
     || (targetScore !== null && (typeof targetScore !== 'number'
       || !Number.isSafeInteger(targetScore)
       || targetScore < 0
@@ -90,6 +94,7 @@ export function parsePlatformProfile(value: unknown): PlatformProfile {
     avatarUrl,
     profileColor,
     dailyStudyGoalMinutes,
+    communityVisibility,
   }
 }
 
@@ -99,7 +104,7 @@ export async function getPlatformProfile(): Promise<PlatformProfile> {
 
 export async function updatePlatformProfile(patch: PlatformProfilePatch): Promise<PlatformProfile> {
   const keys = Object.keys(patch)
-  if (keys.length === 0 || keys.some(key => !['fullName', 'avatarUrl', 'targetScore', 'profileColor', 'dailyStudyGoalMinutes'].includes(key))) {
+  if (keys.length === 0 || keys.some(key => !['fullName', 'avatarUrl', 'targetScore', 'profileColor', 'dailyStudyGoalMinutes', 'communityVisibility'].includes(key))) {
     throw new Error('Некорректные данные профиля')
   }
   return parsePlatformProfile(await zhangakApiJson<unknown>('/v1/platform/profile', 'PATCH', patch))

@@ -27,6 +27,50 @@ const SESSION_USER = {
   avatarUrl: null,
   profileColor: 'blue',
   dailyStudyGoalMinutes: 30,
+  communityVisibility: true,
+}
+
+const GAMIFICATION_SUMMARY = {
+  xp: 65,
+  level: 1,
+  levelStartXp: 0,
+  levelEndXp: 500,
+  streak: 2,
+  activity: { lessonsCompleted: 1, trainerMastered: 3, dailyChallenges: 0 },
+  quests: [
+    { code: 'daily_check_in', period: 'daily', title: 'На связи', description: 'Открой платформу сегодня.', targetCount: 1, currentCount: 1, xpReward: 5, completedAt: '2026-08-20T01:00:00Z', periodEnd: '2026-08-21T00:00:00+06:00' },
+    { code: 'daily_trainer_warmup', period: 'daily', title: 'Разминка', description: 'Освой 3 новых вопроса.', targetCount: 3, currentCount: 1, xpReward: 10, completedAt: null, periodEnd: '2026-08-21T00:00:00+06:00' },
+    { code: 'daily_learning_step', period: 'daily', title: 'Шаг вперёд', description: 'Заверши один урок.', targetCount: 1, currentCount: 0, xpReward: 15, completedAt: null, periodEnd: '2026-08-21T00:00:00+06:00' },
+  ],
+  achievements: [],
+}
+
+const OFFLINE_DASHBOARD = {
+  profile: { id: '00000000-0000-4000-8000-000000000002', fullName: 'Тестовый офлайн-ученик', studentType: 'offline', targetScore: 180 },
+  group: { id: 3, name: 'Оффлайн группа 11-А', courseName: 'ОРТ офлайн', teacherName: 'Айжан эже' },
+  lessons: [], homework: [], grades: [], comments: [], announcements: [],
+  progress: { latestOrtScore: null, targetScore: 180 },
+  availability: { exactSchedule: false, materials: false },
+}
+
+const ADMIN_USER = { ...SESSION_USER, role: 'admin', studentType: null }
+const ADMIN_ACCOUNTS = {
+  total: 1,
+  limit: 100,
+  offset: 0,
+  items: [{
+    id: '00000000-0000-4000-8000-000000000003', email: 'learner@example.test', fullName: 'Тестовый ученик',
+    role: 'student', studentType: 'online', phone: '+996555000000', targetScore: 180, avatarUrl: null,
+    blocked: false, createdAt: '2026-08-20T08:00:00.000Z',
+  }],
+}
+
+const ADMIN_GAMIFICATION = {
+  quests: [{
+    id: 1, code: 'daily_check_in', period: 'daily', targetEventType: 'platform_visit', title: 'На связи', description: 'Открой платформу сегодня.', sortOrder: 10,
+    current: { effectiveFrom: '2000-01-01', targetCount: 1, xpReward: 5, isActive: true }, scheduled: null,
+  }],
+  achievements: [{ id: 1, code: 'first_step', title: 'Первый шаг', description: 'Сделай первое действие.', iconKey: 'footprints', sortOrder: 10, isActive: true }],
 }
 
 function lessonPayload(overrides: Record<string, unknown> = {}) {
@@ -90,6 +134,13 @@ async function stubPlatform(page: Page) {
   await page.route(`**/v1/platform/lessons/${LESSON_ID}/video`, route =>
     json(route, { video: { videoId: VIDEO_ID, title: LONG_TITLE, embedHost: 'https://www.youtube-nocookie.com' } }))
   await page.route('**/v1/platform/video-events', route => json(route, { recorded: true, awardedXp: 0 }, 202))
+  await page.route('**/v1/platform/gamification/check-in', route => json(route, { recorded: true, achievements: [], summary: GAMIFICATION_SUMMARY }))
+  await page.route('**/v1/platform/gamification/summary', route => json(route, { summary: GAMIFICATION_SUMMARY }))
+  await page.route('**/v1/platform/leaderboard', route => json(route, {
+    scope: 'overall',
+    items: [{ rank: 1, publicProfileId: '00000000-0000-4000-8000-000000000001', displayName: 'Ученик-ABCDE', xp: 65, isMe: true }],
+    me: { rank: 1, publicProfileId: '00000000-0000-4000-8000-000000000001', displayName: 'Ученик-ABCDE', xp: 65 },
+  }))
   await page.route('**/v1/auth/me', route => json(route, { user: SESSION_USER }))
   await page.route('**/v1/auth/refresh', route => json(route, { user: SESSION_USER }))
   await page.route('https://www.youtube.com/iframe_api', route =>
@@ -151,6 +202,7 @@ const SURFACES = [
   { key: 'settings', path: '/student/online/settings' },
   { key: 'universities', path: '/student/online/universities' },
   { key: 'ai', path: '/student/online/ai' },
+  { key: 'quests', path: '/student/online/quests' },
   { key: 'leaderboard', path: '/student/online/leaderboard' },
 ]
 
@@ -265,5 +317,45 @@ test.describe('touch targets and layout chrome', () => {
     })
     expect(clearance).not.toBeNull()
     expect(clearance!.paddingBottom).toBeGreaterThanOrEqual(clearance!.barHeight - 8)
+  })
+})
+
+test.describe('offline and admin responsive contracts', () => {
+  test('offline cabinet keeps the selected mobile section in the URL without horizontal overflow', async ({ page }) => {
+    await page.route('**/v1/platform/offline-dashboard', route => json(route, OFFLINE_DASHBOARD))
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/student', { waitUntil: 'domcontentloaded' })
+    await expect(page.getByText('Офлайн-кабинет')).toBeVisible()
+    await page.getByRole('button', { name: 'Открыть все разделы' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Все разделы' })
+    await dialog.getByRole('button', { name: 'Материалы' }).click()
+    await expect(page).toHaveURL(/\/student\?section=materials$/)
+    const dimensions = await measureOverflow(page)
+    expect(dimensions.scrollWidth, dimensions.offenders.join(' | ')).toBeLessThanOrEqual(dimensions.clientWidth)
+  })
+
+  test('admin user directory switches from the wide table to action-capable cards on a phone', async ({ page }) => {
+    await page.route('**/v1/auth/me', route => json(route, { user: ADMIN_USER }))
+    await page.route('**/v1/auth/refresh', route => json(route, { user: ADMIN_USER }))
+    await page.route('**/v1/admin/users**', route => json(route, ADMIN_ACCOUNTS))
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/admin/students', { waitUntil: 'domcontentloaded' })
+    await expect(page.getByRole('article').getByText('Тестовый ученик')).toBeVisible()
+    expect(await page.locator('table:visible').count()).toBe(0)
+    await expect(page.getByRole('button', { name: 'Действия для Тестовый ученик' })).toBeVisible()
+    const dimensions = await measureOverflow(page)
+    expect(dimensions.scrollWidth, dimensions.offenders.join(' | ')).toBeLessThanOrEqual(dimensions.clientWidth)
+  })
+
+  test('admin quest settings remain editable without horizontal overflow on a phone', async ({ page }) => {
+    await page.route('**/v1/auth/me', route => json(route, { user: ADMIN_USER }))
+    await page.route('**/v1/auth/refresh', route => json(route, { user: ADMIN_USER }))
+    await page.route('**/v1/admin/gamification/definitions', route => json(route, ADMIN_GAMIFICATION))
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/admin/gamification', { waitUntil: 'domcontentloaded' })
+    await expect(page.getByRole('heading', { name: 'Экономика обучения' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Запланировать' })).toBeVisible()
+    const dimensions = await measureOverflow(page)
+    expect(dimensions.scrollWidth, dimensions.offenders.join(' | ')).toBeLessThanOrEqual(dimensions.clientWidth)
   })
 })

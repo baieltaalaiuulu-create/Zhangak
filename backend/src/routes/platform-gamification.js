@@ -1,5 +1,6 @@
 import { requireAuth } from '../auth.js'
 import { query, transaction } from '../db.js'
+import { loadGamificationSummary, recordGamificationEvent } from '../gamification.js'
 import { GET, HttpError, POST, readJson } from '../http.js'
 
 const STUDENT_ROLES = ['student', 'math_student']
@@ -245,6 +246,11 @@ POST('/v1/platform/daily-challenge/submit', async ({ req, config }) => {
        VALUES ($1, $2, $3, 'daily', $4, $5) ON CONFLICT (student_id, award_key) DO NOTHING`,
       [user.id, challenge.course_id, `daily:${challenge.id}`, String(challenge.id), xpAwarded],
     )
+    await recordGamificationEvent(client, user.id, {
+      eventKey: `daily-challenge:${attempt.id}`,
+      eventType: 'daily_challenge_completed',
+      metadata: { challengeId: Number(challenge.id), starCount, scorePercent: score },
+    })
     await client.query(`INSERT INTO audit_log (actor_user_id, action, target_type, target_id, metadata) VALUES ($1, 'submit_daily_challenge', 'daily_challenge_attempt', $2, $3::jsonb)`, [user.id, attempt.id, JSON.stringify({ correct, score, starCount, xpAwarded })])
     return { attempt: updated.rows[0], review: await dailyReview((text, values) => client.query(text, values), attempt.id) }
   })
@@ -303,7 +309,18 @@ POST('/v1/platform/trainer/answers', async ({ req, config }) => {
        VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9)`,
       [user.id, row.question_id, row.question_text, JSON.stringify(row.options), row.correct_answer, row.explanation, body.answer, isCorrect, idempotencyKey],
     )
-    if (isCorrect) await client.query(`INSERT INTO trainer_question_mastery (student_id, practice_question_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [user.id, row.question_id])
+    const mastery = isCorrect
+      ? await client.query(
+        `INSERT INTO trainer_question_mastery (student_id, practice_question_id)
+         VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING practice_question_id`,
+        [user.id, row.question_id],
+      )
+      : null
+    if (mastery?.rows[0]) await recordGamificationEvent(client, user.id, {
+      eventKey: `trainer:${row.question_id}`,
+      eventType: 'trainer_mastered',
+      metadata: { questionId: Number(row.question_id) },
+    })
     await client.query(`DELETE FROM trainer_question_issues WHERE id = $1`, [issueId])
     return { isCorrect, replay: false }
   })
@@ -324,6 +341,28 @@ GET('/v1/platform/trainer/history', async ({ req, config }) => {
   })) } }
 })
 
+GET('/v1/platform/gamification/summary', async ({ req, config }) => {
+  const user = await student(config, req)
+  const summary = await transaction(client => loadGamificationSummary(client, user.id))
+  return { status: 200, body: { summary } }
+})
+
+POST('/v1/platform/gamification/check-in', async ({ req, config }) => {
+  const user = await student(config, req)
+  exact(await readJson(req, 1_000), [], 'invalid_gamification_check_in')
+  const result = await transaction(async client => {
+    const today = await client.query(`SELECT to_char((now() AT TIME ZONE 'Asia/Bishkek')::date, 'YYYY-MM-DD') AS day`)
+    const event = await recordGamificationEvent(client, user.id, {
+      eventKey: `visit:${today.rows[0].day}`,
+      eventType: 'platform_visit',
+      metadata: {},
+    })
+    const summary = await loadGamificationSummary(client, user.id)
+    return { ...event, summary }
+  })
+  return { status: 200, body: result }
+})
+
 POST('/v1/platform/trainer/reset', async ({ req, config }) => {
   const user = await student(config, req)
   exact(await readJson(req, 1_000), [], 'invalid_trainer_reset')
@@ -340,16 +379,78 @@ POST('/v1/platform/trainer/reset', async ({ req, config }) => {
 GET('/v1/platform/leaderboard', async ({ req, config }) => {
   const user = await student(config, req)
   const result = await query(
-    `WITH scores AS (
-       SELECT a.student_id, sum(a.xp_amount)::int AS xp
-         FROM student_xp_awards a
-        WHERE EXISTS (SELECT 1 FROM course_enrollments ce WHERE ce.student_id = a.student_id AND ce.course_id = a.course_id AND ce.status = 'active')
-        GROUP BY a.student_id
+    `WITH participants AS (
+       SELECT p.user_id, p.public_profile_id, COALESCE(total.xp_total, 0)::int AS xp,
+              ('Ученик-' || upper(substr(replace(p.public_profile_id::text, '-', ''), 1, 5))) AS display_name
+         FROM profiles p
+         JOIN users u ON u.id = p.user_id AND u.blocked = false
+         LEFT JOIN student_xp_totals total ON total.student_id = p.user_id
+        WHERE ((p.role = 'student' AND p.student_type = 'online') OR p.role = 'math_student')
+          AND p.community_visibility = true
+          AND EXISTS (
+            SELECT 1 FROM course_enrollments ce
+            JOIN courses c ON c.id = ce.course_id AND c.is_active = true AND c.delivery_mode = 'online'
+             WHERE ce.student_id = p.user_id AND ce.status = 'active'
+          )
+     ), ranked AS (
+       SELECT *, row_number() OVER (ORDER BY xp DESC, user_id ASC)::int AS rank FROM participants
      )
-     SELECT s.student_id, p.full_name, s.xp, dense_rank() OVER (ORDER BY s.xp DESC, p.full_name ASC)::int AS rank
-       FROM scores s JOIN profiles p ON p.user_id = s.student_id
-      ORDER BY rank, p.full_name LIMIT 100`,
+     SELECT user_id, public_profile_id, display_name, xp, rank
+       FROM ranked
+      ORDER BY rank`,
   )
-  const mine = result.rows.find(row => row.student_id === user.id) ?? null
-  return { status: 200, body: { items: result.rows.map(row => ({ rank: Number(row.rank), displayName: row.full_name, xp: Number(row.xp), isMe: row.student_id === user.id })), myRank: mine ? Number(mine.rank) : null } }
+  const mine = result.rows.find(row => row.user_id === user.id) ?? null
+  return {
+    status: 200,
+    body: {
+      scope: 'overall',
+      items: result.rows.slice(0, 100).map(row => ({
+        rank: Number(row.rank), publicProfileId: row.public_profile_id,
+        displayName: row.display_name, xp: Number(row.xp), isMe: row.user_id === user.id,
+      })),
+      me: mine ? {
+        rank: Number(mine.rank), publicProfileId: mine.public_profile_id,
+        displayName: mine.display_name, xp: Number(mine.xp),
+      } : null,
+    },
+  }
+})
+
+GET('/v1/platform/community/profiles/:publicProfileId', async ({ req, params, config }) => {
+  await student(config, req)
+  const publicProfileId = uuid(params.publicProfileId, 'invalid_public_profile_id')
+  const profile = await query(
+    `SELECT p.public_profile_id, p.profile_color, COALESCE(total.xp_total, 0)::int AS xp,
+            ('Ученик-' || upper(substr(replace(p.public_profile_id::text, '-', ''), 1, 5))) AS display_name
+       FROM profiles p
+       JOIN users u ON u.id = p.user_id AND u.blocked = false
+       LEFT JOIN student_xp_totals total ON total.student_id = p.user_id
+      WHERE p.public_profile_id = $1
+        AND ((p.role = 'student' AND p.student_type = 'online') OR p.role = 'math_student')
+        AND p.community_visibility = true`,
+    [publicProfileId],
+  )
+  const row = profile.rows[0]
+  if (!row) throw new HttpError(404, 'Профиль недоступен', 'community_profile_not_found')
+  const achievements = await query(
+    `SELECT d.code, d.title, d.description, d.icon_key, a.unlocked_at
+       FROM student_achievements a
+       JOIN achievement_definitions d ON d.id = a.achievement_id
+       JOIN profiles p ON p.user_id = a.student_id
+      WHERE p.public_profile_id = $1
+      ORDER BY a.unlocked_at DESC, d.sort_order ASC`,
+    [publicProfileId],
+  )
+  const xp = Number(row.xp)
+  return { status: 200, body: { profile: {
+    publicProfileId: row.public_profile_id,
+    displayName: row.display_name,
+    profileColor: row.profile_color,
+    xp,
+    level: Math.floor(xp / 500) + 1,
+    achievements: achievements.rows.map(item => ({
+      code: item.code, title: item.title, description: item.description,
+      iconKey: item.icon_key, unlockedAt: item.unlocked_at,
+    })),
+  } } }
 })

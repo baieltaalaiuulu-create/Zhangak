@@ -32,7 +32,8 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
     // The production build, not `next dev`: this is the artifact that ships.
-    command: 'npm run start -- --port 3311 --hostname 127.0.0.1',
+    command: 'node scripts/prepare-e2e-standalone.mjs && node .next/standalone/server.js',
+    env: { HOSTNAME: '127.0.0.1', PORT: '3311' },
     url: 'http://127.0.0.1:3311/login',
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

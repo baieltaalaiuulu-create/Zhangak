@@ -52,7 +52,7 @@ export async function requireAuth(config, req) {
   const result = await query(
     `SELECT u.id, u.email, u.blocked, u.session_version,
             p.full_name, p.role, p.student_type, p.phone, p.target_score, p.avatar_url,
-            p.profile_color, p.daily_study_goal_minutes
+            p.profile_color, p.daily_study_goal_minutes, p.community_visibility
        FROM users u
        JOIN profiles p ON p.user_id = u.id
        JOIN auth_sessions s ON s.id = $2 AND s.user_id = u.id
