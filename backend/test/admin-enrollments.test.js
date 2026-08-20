@@ -4,7 +4,7 @@ import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import { parseEnrollmentCreateBody, parseEnrollmentPatchBody } from '../src/routes/admin-enrollments.js'
+import { parseEnrollmentAccessBody, parseEnrollmentCreateBody, parseEnrollmentPatchBody } from '../src/routes/admin-enrollments.js'
 import { HttpError } from '../src/http.js'
 
 const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -16,15 +16,22 @@ function invalid(parser, body, code) {
 
 test('manual enrolment accepts only a student, a course and an explicit lifecycle status', () => {
   assert.deepEqual(parseEnrollmentCreateBody({ studentId: STUDENT_ID, courseId: 4 }), {
-    studentId: STUDENT_ID, courseId: 4, status: 'awaiting_payment',
+    studentId: STUDENT_ID, courseId: 4, status: 'awaiting_payment', accessPlan: 'one_month',
   })
   assert.deepEqual(parseEnrollmentCreateBody({ studentId: STUDENT_ID, courseId: 4, status: 'active' }), {
-    studentId: STUDENT_ID, courseId: 4, status: 'active',
+    studentId: STUDENT_ID, courseId: 4, status: 'active', accessPlan: 'one_month',
   })
+  assert.deepEqual(parseEnrollmentCreateBody({ studentId: STUDENT_ID, courseId: 4, accessPlan: 'one_year' }), {
+    studentId: STUDENT_ID, courseId: 4, status: 'awaiting_payment', accessPlan: 'one_year',
+  })
+  assert.deepEqual(parseEnrollmentAccessBody({ action: 'extend', accessPlan: 'three_months' }), { action: 'extend', accessPlan: 'three_months' })
+  assert.deepEqual(parseEnrollmentAccessBody({ action: 'freeze', reason: 'Каникулы' }), { action: 'freeze', reason: 'Каникулы' })
+  assert.deepEqual(parseEnrollmentAccessBody({ action: 'resume' }), { action: 'resume' })
   assert.deepEqual(parseEnrollmentPatchBody({ status: 'awaiting_confirmation' }), { status: 'awaiting_confirmation' })
   invalid(parseEnrollmentCreateBody, { studentId: STUDENT_ID, courseId: 4, paid: true }, 'invalid_enrollment')
   invalid(parseEnrollmentCreateBody, { studentId: STUDENT_ID, courseId: 4, status: 'approved' }, 'invalid_enrollment_status')
   invalid(parseEnrollmentPatchBody, { status: 'active', studentId: STUDENT_ID }, 'invalid_enrollment')
+  invalid(parseEnrollmentAccessBody, { action: 'extend', accessPlan: 'forever' }, 'invalid_access_plan')
 })
 
 test('enrolment routes are first-party, audited and protect the one-current-course rule', async () => {
@@ -38,6 +45,7 @@ test('enrolment routes are first-party, audited and protect the one-current-cour
   assert.match(route, /GET\('\/v1\/admin\/enrollments'/)
   assert.match(route, /POST\('\/v1\/admin\/enrollments'/)
   assert.match(route, /PATCH\('\/v1\/admin\/enrollments\/:enrollmentId'/)
+  assert.match(route, /PATCH\('\/v1\/admin\/enrollments\/:enrollmentId\/access'/)
   assert.match(route, /requireStudentMatchesCourse/)
   assert.match(route, /FOR UPDATE/)
   assert.match(route, /INSERT INTO audit_log/)

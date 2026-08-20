@@ -408,7 +408,7 @@ async function loadAccessibleLesson(client, studentId, lessonId, { forUpdate = f
       WHERE l.id = $2 AND l.is_published = true
         AND EXISTS (
           SELECT 1
-            FROM course_enrollments ce
+            FROM active_course_enrollments ce
             JOIN courses course_access
               ON course_access.id = ce.course_id
              AND course_access.is_active = true
@@ -501,7 +501,7 @@ async function loadAccessibleTest(client, studentId, testId, forUpdate = false) 
         AND (
           t.course_id IS NULL OR EXISTS (
             SELECT 1
-              FROM course_enrollments ce
+              FROM active_course_enrollments ce
               JOIN courses course_access
                 ON course_access.id = ce.course_id
                AND course_access.is_active = true
@@ -818,7 +818,7 @@ GET('/v1/platform/dashboard', async ({ req, config }) => {
   const [courses, lessons, practice, latest] = await Promise.all([
     query(
       `SELECT count(*)::int AS count
-         FROM course_enrollments ce
+         FROM active_course_enrollments ce
          JOIN courses c ON c.id = ce.course_id
         WHERE ce.student_id = $1
           AND ce.status = 'active'
@@ -834,7 +834,7 @@ GET('/v1/platform/dashboard', async ({ req, config }) => {
         WHERE l.is_published = true
           AND EXISTS (
             SELECT 1
-              FROM course_enrollments ce
+              FROM active_course_enrollments ce
               JOIN courses course_access
                 ON course_access.id = ce.course_id
                AND course_access.is_active = true
@@ -906,7 +906,7 @@ GET('/v1/platform/courses', async ({ req, config }) => {
             count(DISTINCT l.id) FILTER (WHERE l.is_published)::int AS lesson_count,
             count(DISTINCT lp.lesson_id) FILTER (WHERE lp.completed_at IS NOT NULL)::int AS completed_lesson_count
        FROM courses c
-       JOIN course_enrollments ce
+       JOIN active_course_enrollments ce
          ON ce.course_id = c.id
         AND ce.student_id = $1
         AND ce.status = 'active'
@@ -934,7 +934,7 @@ GET('/v1/platform/lessons', async ({ req, config, query: searchParams }) => {
         AND ($2::bigint IS NULL OR l.course_id = $2)
         AND EXISTS (
             SELECT 1
-              FROM course_enrollments ce
+              FROM active_course_enrollments ce
               JOIN courses course_access
                 ON course_access.id = ce.course_id
                AND course_access.is_active = true
@@ -980,7 +980,7 @@ GET('/v1/platform/materials/:id/content', async ({ req, params, config }) => {
       WHERE m.id = $1 AND m.is_published = true AND m.scan_status = 'clean'
         AND m.material_type IN ('document', 'image')
         AND EXISTS (
-          SELECT 1 FROM course_enrollments ce
+          SELECT 1 FROM active_course_enrollments ce
           JOIN courses c ON c.id = ce.course_id AND c.is_active = true AND c.delivery_mode = 'online'
           WHERE ce.student_id = $2 AND ce.course_id = l.course_id AND ce.status = 'active'
         )`,
@@ -1083,7 +1083,7 @@ POST('/v1/platform/materials/:id/video', async ({ req, params, config }) => {
        JOIN lessons l ON l.id = m.lesson_id AND l.is_published = true
       WHERE m.id = $1 AND m.material_type = 'video'
         AND EXISTS (
-          SELECT 1 FROM course_enrollments ce
+          SELECT 1 FROM active_course_enrollments ce
           JOIN courses c ON c.id = ce.course_id AND c.is_active = true AND c.delivery_mode = 'online'
           WHERE ce.student_id = $2 AND ce.course_id = l.course_id AND ce.status = 'active'
         )`,
@@ -1138,7 +1138,7 @@ GET('/v1/platform/practice-tests', async ({ req, config }) => {
         AND (
           t.course_id IS NULL OR EXISTS (
             SELECT 1
-              FROM course_enrollments ce
+              FROM active_course_enrollments ce
               JOIN courses course_access
                 ON course_access.id = ce.course_id
                AND course_access.is_active = true

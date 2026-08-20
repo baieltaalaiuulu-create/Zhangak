@@ -13,7 +13,7 @@ async function student(config, req) {
   }
   const enrollment = await query(
     `SELECT 1
-       FROM course_enrollments ce
+       FROM active_course_enrollments ce
        JOIN courses c ON c.id = ce.course_id
       WHERE ce.student_id = $1
         AND ce.status = 'active'

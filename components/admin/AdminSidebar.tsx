@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Archive, BarChart2, BookOpen, Brain, ClipboardList, GraduationCap, LayoutDashboard, ListChecks, ListTree, Megaphone, Menu, PenLine, ReceiptText,
+  Activity, Archive, BarChart2, BookOpen, Brain, ClipboardList, GraduationCap, LayoutDashboard, ListChecks, ListTree, Megaphone, Menu, PenLine, ReceiptText,
   Settings, ShieldCheck, Trophy, Users, X, Zap,
   type LucideIcon,
 } from 'lucide-react'
@@ -25,6 +25,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin/roadmap', label: 'Дорожная карта', icon: ListTree, availability: 'ready' },
   { href: '/admin/groups', label: 'Группы', icon: Users, availability: 'ready' },
   { href: '/admin/students', label: 'Ученики', icon: Users, availability: 'ready' },
+  { href: '/admin/students/monitoring', label: 'Мониторинг учеников', icon: Activity, availability: 'ready' },
   { href: '/admin/applications', label: 'Заявки и оплаты', icon: ReceiptText, availability: 'ready' },
   { href: '/admin/practice', label: 'Практика', icon: ListChecks, availability: 'ready' },
   { href: '/admin/questions', label: 'Вопросы', icon: PenLine, availability: 'ready' },
@@ -42,7 +43,7 @@ const NAV_ITEMS: NavItem[] = [
 ]
 
 const NAV_GROUPS: { label: string; availability: NavAvailability; hrefs: string[] }[] = [
-  { label: 'Рабочие разделы', availability: 'ready', hrefs: ['/admin', '/admin/lessons', '/admin/roadmap', '/admin/groups', '/admin/students', '/admin/applications', '/admin/practice', '/admin/questions', '/admin/mock', '/admin/daily-challenge', '/admin/gamification', '/admin/settings'] },
+  { label: 'Рабочие разделы', availability: 'ready', hrefs: ['/admin', '/admin/lessons', '/admin/roadmap', '/admin/groups', '/admin/students', '/admin/students/monitoring', '/admin/applications', '/admin/practice', '/admin/questions', '/admin/mock', '/admin/daily-challenge', '/admin/gamification', '/admin/settings'] },
   {
     label: 'Перенос на наш backend',
     availability: 'migration',
@@ -103,7 +104,9 @@ export default function AdminSidebar({ role = null }: Props) {
               <div className="space-y-1">
                 {groupItems.map(item => {
                   const Icon = item.icon
-                  const isActive = item.href === '/admin' ? pathname === item.href : pathname?.startsWith(item.href) ?? false
+                  const isActive = item.href === '/admin' || item.href === '/admin/students'
+                    ? pathname === item.href
+                    : pathname?.startsWith(item.href) ?? false
                   const isMigrating = item.availability === 'migration'
                   return (
                     <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}

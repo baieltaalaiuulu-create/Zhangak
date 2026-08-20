@@ -78,7 +78,7 @@ async function todayChallenge(execute, studentId, { forUpdate = false } = {}) {
       WHERE d.challenge_date = (now() AT TIME ZONE 'Asia/Bishkek')::date
         AND d.is_published = true
         AND EXISTS (
-          SELECT 1 FROM course_enrollments ce
+          SELECT 1 FROM active_course_enrollments ce
            WHERE ce.student_id = $1 AND ce.course_id = d.course_id AND ce.status = 'active'
         )${lock}`,
     [studentId],
@@ -268,7 +268,7 @@ GET('/v1/platform/trainer/question', async ({ req, config, query: search }) => {
           AND t.subject = $2 AND q.section = $3 AND q.difficulty = $4
           AND (t.available_from IS NULL OR t.available_from <= now())
           AND (t.available_until IS NULL OR t.available_until > now())
-          AND (t.course_id IS NULL OR EXISTS (SELECT 1 FROM course_enrollments ce WHERE ce.student_id = $1 AND ce.course_id = t.course_id AND ce.status = 'active'))
+          AND (t.course_id IS NULL OR EXISTS (SELECT 1 FROM active_course_enrollments ce WHERE ce.student_id = $1 AND ce.course_id = t.course_id))
           AND NOT EXISTS (SELECT 1 FROM trainer_question_mastery m WHERE m.student_id = $1 AND m.practice_question_id = q.id)
         ORDER BY random() LIMIT 1 FOR UPDATE SKIP LOCKED`,
       [user.id, filter.subject, filter.section, filter.difficulty],
@@ -299,7 +299,7 @@ GET('/v1/platform/trainer/catalog', async ({ req, config }) => {
         AND (t.available_from IS NULL OR t.available_from <= now())
         AND (t.available_until IS NULL OR t.available_until > now())
         AND (t.course_id IS NULL OR EXISTS (
-          SELECT 1 FROM course_enrollments ce
+          SELECT 1 FROM active_course_enrollments ce
            WHERE ce.student_id = $1 AND ce.course_id = t.course_id AND ce.status = 'active'
         ))
         AND NOT EXISTS (
@@ -423,7 +423,7 @@ GET('/v1/platform/leaderboard', async ({ req, config }) => {
           AND p.community_profile_visibility = 'leaderboard'
           AND p.community_discoverable = true
           AND EXISTS (
-            SELECT 1 FROM course_enrollments ce
+            SELECT 1 FROM active_course_enrollments ce
             JOIN courses c ON c.id = ce.course_id AND c.is_active = true AND c.delivery_mode = 'online'
              WHERE ce.student_id = p.user_id AND ce.status = 'active'
           )

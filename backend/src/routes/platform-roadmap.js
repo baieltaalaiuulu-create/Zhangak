@@ -71,7 +71,7 @@ function publicUnit(row, lessons) {
 async function activeCourse(studentId) {
   const result = await query(
     `SELECT c.id, c.name, c.code, c.subject
-       FROM course_enrollments ce
+       FROM active_course_enrollments ce
        JOIN courses c ON c.id = ce.course_id
       WHERE ce.student_id = $1
         AND ce.status = 'active'

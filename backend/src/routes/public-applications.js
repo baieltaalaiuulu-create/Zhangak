@@ -97,9 +97,11 @@ export function parseApplicationPatchBody(body) {
 }
 
 export function parsePaymentConfirmationBody(body) {
-  if (!exact(body, ['studentId'])) throw new HttpError(400, 'Некорректное подтверждение оплаты', 'invalid_payment_confirmation')
+  if (!exact(body, ['studentId'], ['accessPlan'])) throw new HttpError(400, 'Некорректное подтверждение оплаты', 'invalid_payment_confirmation')
   if (typeof body.studentId !== 'string' || !UUID_PATTERN.test(body.studentId)) throw new HttpError(400, 'Некорректный ученик', 'invalid_student_id')
-  return { studentId: body.studentId }
+  const accessPlan = body.accessPlan ?? 'one_month'
+  if (!['one_month', 'three_months', 'one_year'].includes(accessPlan)) throw new HttpError(400, 'Некорректный срок доступа', 'invalid_access_plan')
+  return { studentId: body.studentId, accessPlan }
 }
 
 function publicCourse(row) {
@@ -274,10 +276,14 @@ POST('/v1/admin/applications/:applicationId/confirm-payment', async ({ req, conf
     let enrollmentId
     try {
       const enrollment = await client.query(
-        `INSERT INTO course_enrollments (student_id, course_id, status, created_by, updated_by, confirmed_at, activated_at)
-         VALUES ($1, $2, 'active', $3, $3, now(), now())
+        `INSERT INTO course_enrollments (student_id, course_id, status, created_by, updated_by, confirmed_at, activated_at,
+                                         access_plan, access_started_at, access_expires_at)
+         VALUES ($1, $2, 'active', $3, $3, now(), now(),
+                 CASE WHEN $4 = 'online' THEN $5 ELSE NULL END,
+                 CASE WHEN $4 = 'online' THEN now() ELSE NULL END,
+                 CASE WHEN $4 = 'online' THEN now() + make_interval(months => $6) ELSE NULL END)
          RETURNING id`,
-        [input.studentId, current.course_id, actor.id],
+        [input.studentId, current.course_id, actor.id, current.delivery_mode, input.accessPlan, input.accessPlan === 'one_month' ? 1 : input.accessPlan === 'three_months' ? 3 : 12],
       )
       enrollmentId = Number(enrollment.rows[0].id)
     } catch (error) {

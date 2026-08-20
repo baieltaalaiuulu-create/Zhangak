@@ -186,6 +186,16 @@ async function verifySchema(client) {
   const presentApplicationColumns = new Set(applicationResult.rows.map(row => row.column_name))
   const missingApplicationColumns = applicationColumns.filter(column => !presentApplicationColumns.has(column))
   if (missingApplicationColumns.length > 0) fail(`public application columns are missing: ${missingApplicationColumns.join(', ')}`)
+
+  const enrollmentColumns = ['access_plan', 'access_started_at', 'access_expires_at', 'frozen_at', 'frozen_seconds_remaining', 'freeze_reason']
+  const enrollmentResult = await client.query(
+    `SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'course_enrollments'
+        AND column_name = ANY($1::text[])`, [enrollmentColumns],
+  )
+  const missingEnrollmentColumns = enrollmentColumns.filter(column => !new Set(enrollmentResult.rows.map(row => row.column_name)).has(column))
+  if (missingEnrollmentColumns.length > 0) fail(`online access columns are missing: ${missingEnrollmentColumns.join(', ')}`)
+
 }
 
 async function main() {

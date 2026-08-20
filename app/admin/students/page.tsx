@@ -3,7 +3,8 @@
 export const dynamic = 'force-dynamic'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus, RefreshCw, Search } from 'lucide-react'
+import Link from 'next/link'
+import { Activity, Plus, RefreshCw, Search } from 'lucide-react'
 import AdminTopbar from '@/components/admin/AdminTopbar'
 import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
 import StudentFormModal from '@/components/admin/students/StudentFormModal'
@@ -152,11 +153,16 @@ export default function AdminStudentsPage() {
             <h2 className="text-lg font-extrabold text-[#191B23]">Учётные записи</h2>
             <p className="mt-1 text-sm text-gray-500">Данные аккаунтов, пароли и блокировка управляются через собственный API Zhangak.</p>
           </div>
-          <button type="button" onClick={reload} disabled={loading}
-            className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-60 sm:self-auto">
-            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
-            Обновить
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/admin/students/monitoring" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-3 text-sm font-bold text-white">
+              <Activity size={16} aria-hidden="true" />Мониторинг и доступ
+            </Link>
+            <button type="button" onClick={reload} disabled={loading}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-60">
+              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
+              Обновить
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

@@ -170,8 +170,8 @@ export async function listApplicationEvents(id: number): Promise<ApplicationEven
   return results as ApplicationEvent[]
 }
 
-export async function confirmApplicationPayment(id: number, studentId: string): Promise<StaffApplication> {
-  const body = await request<{ application?: unknown }>(`/v1/admin/applications/${id}/confirm-payment`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId }) }, 'include')
+export async function confirmApplicationPayment(id: number, studentId: string, accessPlan: 'one_month' | 'three_months' | 'one_year' = 'one_month'): Promise<StaffApplication> {
+  const body = await request<{ application?: unknown }>(`/v1/admin/applications/${id}/confirm-payment`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId, accessPlan }) }, 'include')
   const result = staffApplication(body.application)
   if (!result) throw new PublicApplicationError('Сервис вернул некорректную заявку', 502, 'invalid_response')
   return result
