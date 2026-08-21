@@ -1,8 +1,8 @@
 # Zhangak
 
-Zhangak is an educational platform for students in Kyrgyzstan: ORT preparation,
-practice, mock exams, progress analytics, administration, and separate math and
-offline-school workspaces.
+Zhangak is an educational platform for students in Kyrgyzstan: one unified
+online ORT course with mathematics and Kyrgyz-language subjects, practice,
+mock exams, progress analytics, and a separate offline-school workspace.
 
 The canonical source is this Git repository. Production releases must be built
 from one clean commit and identified by that commit SHA; do not deploy files by
@@ -34,6 +34,7 @@ notes or archived Supabase documents as operating instructions.
 
 ```sh
 npm run typecheck
+npm run lint
 npm run check:security
 npm run test:unit
 npm run check:learning-boundary
@@ -49,8 +50,8 @@ npm run audit:prod
 npm run build
 ```
 
-`npm run lint` currently exposes inherited quality debt and is being reduced in
-stages. CI prevents new security, emoji, and production-dependency regressions.
+For UI changes also run the relevant Playwright suite. CI prevents security,
+architecture, responsive-layout and production-dependency regressions.
 
 ## Production release
 

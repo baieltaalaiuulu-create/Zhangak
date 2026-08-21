@@ -1,4 +1,4 @@
-# Gate C0 — архитектурный preflight YouTube video flow
+# [АРХИВ] Gate C0 — архитектурный preflight YouTube video flow
 
 **Цикл:** review и доведение уже реализованного video vertical.
 **Статус:** preflight выполнен, дефекты подтверждены, реализация выполнена в

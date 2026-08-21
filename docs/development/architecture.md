@@ -35,13 +35,15 @@ Nginx завершает TLS и обслуживает четыре домена
 
 | Подсистема | Миграции | Backend-маршруты | Интерфейс |
 | --- | --- | --- | --- |
-| Auth/RBAC | `001`, `004` | `auth`, `admin-users`, `admin-access` | login, admin accounts/access |
-| Курсы/уроки/практика | `002`, `006`, `008` | `platform-learning`, `admin-learning`, `admin-assessments` | online lessons/practice, admin content |
+| Auth/RBAC/profile | `001`, `004`, `021` | `auth`, `admin-users`, `admin-access`, `platform-profile` | login, access terms, profile |
+| Курсы/уроки/практика | `002`, `006`, `008`, `012`, `013`, `015`, `020` | `platform-learning`, `admin-learning`, `admin-assessments`, roadmap/material/video routes | online ORT course, lessons/practice, admin content |
 | Университеты | `003` | `platform-universities` | student catalog |
 | Офлайн-класс | `007` | `platform-offline`, `platform-offline-classroom` | offline student, teacher journal |
-| XP/daily/trainer | `009` | `platform-gamification`, `admin-gamification` | daily task, trainer |
+| XP/daily/trainer/quests | `009`, `016`, `017`, `022` | `platform-gamification`, `admin-gamification` | daily task, trainer, quests, claims |
 | Заявки/оплата | `010` | `public-applications`, `admin-enrollments` | landing, manager/admin queue |
 | AI-коуч | `011` | `platform-ai`, `ai.js` | online AI chat |
+| Push | `014` | push routes | PWA subscriptions and notifications |
+| Social/profile | `018`, `019` | community/friend routes | public profiles, friends, blocks |
 
 ## Доверенные границы
 

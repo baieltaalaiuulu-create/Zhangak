@@ -74,7 +74,7 @@ curl --fail http://127.0.0.1:3210/v1/ready
 4. Определить retention, владельца, оповещение о неуспешном backup и допустимые RPO/RTO до приема реальных учебных данных.
 5. Минимум раз в квартал выполнять восстановление последней копии в изолированную базу, запускать readiness/checks и фиксировать время/результат. Никогда не проверять restore поверх production.
 
-Исторический [Supabase recovery guide](../database/recovery.md) относится только к архивному источнику. Он не является инструкцией restore собственной PostgreSQL Zhangak и не разрешает вернуть Supabase в production.
+Исторический [Supabase recovery guide](../archive/supabase/schema-recovery-2026-08.md) относится только к архивному источнику. Он не является инструкцией restore собственной PostgreSQL Zhangak и не разрешает вернуть Supabase в production.
 
 ## Наблюдение и инциденты
 

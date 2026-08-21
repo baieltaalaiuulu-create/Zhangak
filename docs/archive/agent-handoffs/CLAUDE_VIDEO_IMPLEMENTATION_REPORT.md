@@ -1,4 +1,4 @@
-# Claude — отчёт по доведению YouTube video vertical
+# [АРХИВ] Claude — отчёт по доведению YouTube video vertical
 
 **Ветка:** `fix/video-release-review`
 **Base SHA:** `8ee374f6ba914e70f10696ec26c626ae6242cd4d`

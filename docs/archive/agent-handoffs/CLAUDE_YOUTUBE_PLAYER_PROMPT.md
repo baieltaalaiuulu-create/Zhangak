@@ -1,4 +1,4 @@
-# Жёсткий prompt для Claude — защищённый YouTube player Zhangak
+# [АРХИВ] Жёсткий prompt для Claude — защищённый YouTube player Zhangak
 
 Скопируйте весь блок ниже в Claude после передачи
 `docs/development/CLAUDE_HANDOFF.md`.

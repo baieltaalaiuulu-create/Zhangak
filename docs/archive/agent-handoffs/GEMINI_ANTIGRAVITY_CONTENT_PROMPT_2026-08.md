@@ -1,4 +1,4 @@
-# Жёсткий prompt для Gemini Antigravity — полный аудит материалов Zhangak
+# [АРХИВ] Жёсткий prompt для Gemini Antigravity — полный аудит материалов Zhangak
 
 ## Рекомендация модели
 

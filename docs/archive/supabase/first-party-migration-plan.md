@@ -1,4 +1,4 @@
-# Migration to the Zhangak backend
+# [ARCHIVE] Migration to the Zhangak backend
 
 > [!NOTE]
 > Это исторический план перехода с Supabase. Номера и статусы slices ниже не

@@ -1,4 +1,4 @@
-# Claude handoff — Zhangak preproduction
+# [АРХИВ] Claude handoff — Zhangak preproduction
 
 **Дата:** 2026-08-19  
 **Канонический репозиторий:** `C:\Users\user\Documents\Zhangak`  

@@ -1,4 +1,4 @@
-# Database contract inferred from the application
+# [ARCHIVE] Legacy Supabase database contract inferred from the application
 
 > [!WARNING]
 > Это исторический снимок старого Supabase-контракта, сохранённый только для

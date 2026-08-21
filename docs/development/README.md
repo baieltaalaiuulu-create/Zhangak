@@ -143,3 +143,14 @@ git diff --check
 
 Production-команды, rollback и backup находятся только в
 [операционном руководстве](../operations/production.md).
+
+## Передача внешнему AI-агенту
+
+Любой агент сначала читает [актуальный handoff](AI_AGENT_HANDOFF.md). Для
+независимого UX/product/growth-аудита используйте
+[строгий Gemini prompt](GEMINI_PRODUCT_GROWTH_AUDIT_PROMPT.md). Demo credentials
+передаются отдельным приватным сообщением и никогда не добавляются в Git.
+
+Завершённые промпты Claude/Gemini и старые preprod-отчёты находятся в
+[`docs/archive/`](../archive/README.md). Они сохраняют историю, но не являются
+актуальным контрактом.

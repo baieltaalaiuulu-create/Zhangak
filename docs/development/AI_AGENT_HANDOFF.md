@@ -1,77 +1,130 @@
-# 🤖 Руководство по передаче проекта ИИ-Агенту (AI Agent Handoff Guide)
+# Актуальный handoff для AI-агентов Zhangak
 
-> **Актуальная передача на 2026-08-19:** для продолжения проекта Claude или
-> другим агентом сначала используйте `docs/development/CLAUDE_HANDOFF.md`.
-> Этот документ сохранён как общий исторический guide и может содержать
-> устаревшие количества миграций или проверок.
+**Актуально на:** 2026-08-21
+**Назначение:** обязательная точка входа для AI-агента, который анализирует или
+изменяет Zhangak. Это не release manifest: перед работой агент обязан сверить
+текущий Git SHA, production health и фактическую схему.
 
-**Статус проекта:** Preprod Release
-**Версия документации:** 2.0
-**Стек:** Node.js API (:3210) + Next.js App Router BFF (:3200) + PostgreSQL 16 (:5433) + Expo React Native (Mobile) + Custom Private Storage
+## 1. Источники истины
 
----
+При расхождении информации используйте следующий приоритет:
 
-## 1. Контекст и архитектурный контракт
+1. применённые `backend/migrations/*.sql` и ledger `schema_migrations`;
+2. backend routes и тесты в `backend/src/` и `backend/test/`;
+3. web/mobile код и контрактные тесты;
+4. текущая документация из `docs/`;
+5. архивные отчёты — только как история решений.
 
-Платформа **Zhangak** — это высоконадежная система подготовки к ОРТ/ЖРТ в Кыргызстане. Проект полностью автономен: **Supabase выведен из эксплуатации и запрещен в runtime**.
+Нельзя объявлять функцию готовой только потому, что она описана в Markdown или
+видна в UI. Проверяйте server-side authorization, реальные данные и тест.
 
-### Главные доменные контуры (Multi-Host Routing через `proxy.ts`):
-1. `zhangak.com` -> Публичный лендинг, прием заявок (`/v1/public/*`).
-2. `platform.zhangak.com` -> Личный кабинет онлайн-ученика (`/v1/platform/*`).
-3. `offline.zhangak.com` -> Офлайн-кабинет для очных групп и журнал преподавателя.
-4. `admin.zhangak.com` -> Административная панель (`/v1/admin/*`).
-5. `mobile/` -> Нативное мобильное приложение на Expo с Bearer-авторизацией (`native-auth.ts`).
+## 2. Текущая архитектура
 
----
+- Next.js App Router/BFF — порт `3200`.
+- Собственный Node.js HTTP API — loopback `127.0.0.1:3210`.
+- PostgreSQL — private/loopback; схема состоит из 22 последовательных миграций
+  `001`–`022` на дату документа.
+- Private storage — `$ZHANGAK_STORAGE_ROOT`; файлы выдаются только через
+  authenticated streaming endpoint.
+- Expo-клиент использует собственную bearer/refresh-сессию.
+- Supabase полностью выведен из runtime. Архив Supabase не является запасным
+  data plane и не разрешает вернуть SDK, Auth, PostgREST или Storage.
 
-## 2. Ключевые файлы и где искать информацию
+Домены и сессии изолированы:
 
-| Сущность / Задача | Локальный путь в проекте | Назначение |
-|---|---|---|
-| **Архитектура и границы** | [`docs/development/architecture.md`](file:///C:/Users/user/Documents/Zhangak/docs/development/architecture.md) | Границы безопасности, порты, сессии, домены |
-| **Инструкция по импорту файлов** | [`docs/development/CONTENT_INGESTION_MANUAL.md`](file:///C:/Users/user/Documents/Zhangak/docs/development/CONTENT_INGESTION_MANUAL.md) | Пошаговый пайплайн загрузки материалов |
-| **Реестр всех 849 материалов** | [`sorted_data/00_documentation_and_indexes/FULL_MATERIAL_AUDIT_REPORT.md`](file:///C:/Users/user/Documents/Zhangak/sorted_data/00_documentation_and_indexes/FULL_MATERIAL_AUDIT_REPORT.md) | Паспорт каждого файла, язык, тема, готовность |
-| **Манифесты папок** | `sorted_data/**/DIRECTORY_MANIFEST.txt` | Текстовые паспорта в каждой из 23 папок |
-| **Web-Preview документов** | `sorted_data_preview/**/index.html` | Готовые HTML/WebP превью страниц для Iframe |
-| **Схема БД (Миграции)** | [`backend/migrations/`](file:///C:/Users/user/Documents/Zhangak/backend/migrations/) | 11 SQL-миграций (`001_core.sql` - `011_ai_conversations.sql`) |
-| **Собственный HTTP API** | [`backend/src/`](file:///C:/Users/user/Documents/Zhangak/backend/src/) | Сервер, роуты, авторизация, RBAC, работа с PostgreSQL |
-| **Приватное хранилище** | [`backend/src/storage.js`](file:///C:/Users/user/Documents/Zhangak/backend/src/storage.js) | Стриминг файлов, MIME sniffing, SHA-256 |
-| **Тестовые и validation скрипты** | [`scripts/`](file:///C:/Users/user/Documents/Zhangak/scripts/) | 18 автоматических quality/security чекеров |
+| Домен | Контур |
+| --- | --- |
+| `zhangak.com` | маркетинг и заявки |
+| `platform.zhangak.com` | самостоятельный online-курс ОРТ |
+| `offline.zhangak.com` | offline-ученики и преподаватели |
+| `admin.zhangak.com` | staff/admin/super-admin |
 
----
+Online-курс единый: математика и кыргызский язык являются предметами одного
+курса ОРТ, а не отдельными взаимоисключающими курсами. Тип ученика — только
+`online` или `offline`; сессии и интерфейсы этих контуров разные.
 
-## 3. Жесткие правила и инварианты (DOs and DONTs)
+## 3. Реализованные домены данных
 
-> [!CAUTION]
-> **Никогда не нарушайте следующие правила:**
+Миграции `001`–`022` покрывают auth/RBAC, learning core, университеты,
+настройки профиля, зачисления и сроки доступа, offline classroom, private
+materials, gamification/trainer/daily challenge, заявки, AI conversations,
+roadmap, push subscriptions, YouTube sources, quests/achievements, социальный
+профиль и друзей, унификацию online-курса и claim наград.
 
-1. **Никакого Supabase в runtime**: Любые обращения к `@supabase/*` в `backend/src` или `app/` запрещены проверкой `scripts/check-own-backend.mjs`.
-2. **Безопасность тестов (Zero-Leak)**: Поля `correct_answer` и `explanation` в `practice_questions` запрещено отдавать клиенту до завершения и фиксации попытки (`practice_attempts.status = 'submitted'`).
-3. **Строгий формат 4 или 5 вариантов (A-D / A-E)**:
-   - В текущей миграции `002_learning_core.sql` варианты валидируются через JSONB констрейнт на 4 ключа `{"a","b","c","d"}`.
-   - Если импортируются тесты с вариантом "Д / E", **сначала** примените SQL-расширение схемы (см. `CONTENT_INGESTION_MANUAL.md`), иначе запрос упадет с ошибкой базы.
-4. **Хранилище файлов**: Файлы сохраняются **только** на локальный диск в `$ZHANGAK_STORAGE_ROOT/lesson/{lessonId}/{uuid}`, а в базу пишется относительный `storage_key`. Прямых публичных ссылок нет.
-5. **Изоляция архивов чатов**: Папка `06_chat_exports_and_history` содержит персональные данные и **заблокирована** для автоимпорта и отправки в AI.
-6. **Immutable Snapshots**: Попытка сдачи теста (`practice_attempts`) делает моментальный снимок вопросов в `practice_attempt_items`. Изменение теста задним числом не ломает историю ученика.
+Это краткая карта, а не замена чтению SQL. Для точного контракта всегда
+открывайте соответствующую миграцию и route.
 
----
+## 4. Неприкосновенные инварианты
 
-## 4. Чек-лист проверки перед коммитом (Verification Suite)
+- `correct_answer` и server explanation не отдаются до завершённой попытки.
+- XP, звёзды, quest progress, leaderboard и lesson completion рассчитывает
+  сервер; клиент не присылает итоговые значения как источник истины.
+- Student видит только собственные приватные данные. Teacher работает только
+  со своими назначенными offline-группами. Admin и super-admin имеют разные
+  capability-границы.
+- Online learning требует активного зачисления и непросроченного доступа.
+- Прямых публичных URL private materials нет.
+- PII/chat exports нельзя отправлять AI или импортировать автоматически.
+- Production secrets и demo credentials нельзя сохранять в Git, screenshots,
+  отчётах или browser storage exports.
+- Старые применённые миграции не редактируются: только новая forward migration.
 
-Перед завершением любой задачи обязательно запустите следующие проверки из корня проекта:
+## 5. Что прочитать по задаче
+
+| Задача | Канонический документ |
+| --- | --- |
+| Архитектура/security | `docs/development/architecture.md` |
+| Разработка | `docs/development/README.md` |
+| Импорт материалов | `docs/development/content-import-pipeline.md` |
+| Формат материалов | `docs/education/material-submission-guide.md` |
+| Production/deploy | `docs/operations/production.md`, `deploy/README.md` |
+| Аккаунты/RBAC | `docs/operations/accounts-and-roles.md` |
+| Online access | `docs/operations/student-access-and-monitoring.md` |
+| Gamification | `docs/product/gamification-quests.md` |
+| Roadmap | `docs/product/roadmap-implementation.md` |
+| Product/growth audit Gemini | `docs/development/GEMINI_PRODUCT_GROWTH_AUDIT_PROMPT.md` |
+
+Архив находится в `docs/archive/`. Архивные документы нельзя использовать как
+актуальную инструкцию без повторной сверки с кодом.
+
+## 6. Обязательный порядок работы агента
+
+1. Зафиксировать `git status`, branch, HEAD и пользовательские изменения.
+2. Прочитать этот handoff, архитектуру и профильный документ.
+3. Проверить реальный route/schema/test, а не полагаться на название файла.
+4. Сформулировать границы задачи, роли, данные, ошибки и rollback.
+5. Делать минимальный логический diff, не трогая чужие изменения.
+6. Проверить mobile/desktop, loading/empty/error и keyboard/focus состояния.
+7. Выполнить тесты и сообщить точные команды, результаты и непроверенные зоны.
+8. Не commit/push/deploy без прямого разрешения пользователя.
+
+## 7. Базовая верификация
 
 ```bash
-# 1. Проверка синтаксиса и безопасности backend
+npm run typecheck
+npm run lint
+npm run test:unit
+npm run check:security
+npm run check:own-backend
+npm --prefix backend run check
 npm --prefix backend test
-node scripts/check-api-security.mjs
-node scripts/check-own-backend.mjs
-
-# 2. Проверка SQL-миграций
-node scripts/check-sql-migrations.mjs
-
-# 3. Проверка обучения и границ доступа
-node scripts/check-learning-boundary.mjs
-
-# 4. Проверка мобильного data plane
-node scripts/check-mobile-first-party-data-plane.mjs
+git diff --check
 ```
+
+Для UI запускайте `npm run test:e2e`; для release — production build,
+standalone smoke и внешний health. Для миграции нужен disposable PostgreSQL и
+двойное применение ledger. Конкретные `check:*` выбирайте по изменённому
+домену из `package.json`.
+
+## 8. Правило отчёта
+
+Отчёт должен отделять:
+
+- подтверждённый факт с маршрутом/файлом/test evidence;
+- вывод или продуктовую гипотезу;
+- блокер, который нельзя проверить без владельца/секрета/реального устройства;
+- выполненное изменение;
+- оставшийся риск и способ его закрытия.
+
+Фразы «всё работает», «готово к production» или «UX хороший» без матрицы
+проверок и доказательств запрещены.

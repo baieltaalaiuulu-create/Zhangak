@@ -1,4 +1,4 @@
-# Supabase schema recovery
+# [ARCHIVE] Supabase schema recovery
 
 ## Current state
 

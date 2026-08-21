@@ -1,4 +1,4 @@
-# Deployment candidate — YouTube video vertical
+# [АРХИВ] Deployment candidate — YouTube video vertical
 
 Это **кандидат**, а не разрешение на деплой. Production actions выполняет
 только основной Codex-инженер.

@@ -1,4 +1,4 @@
-# План выполнения Zhangak через Claude Opus 5 и Gemini 3.7 Flash
+# [АРХИВ] План выполнения Zhangak через Claude Opus 5 и Gemini 3.7 Flash
 
 **Базовый commit:** последний clean commit ветки `p0/reconcile-production`,
 содержащий этот документ; агент обязан записать его полный SHA в preflight.

@@ -10,6 +10,7 @@
 | Кому | Начать здесь | Затем читать |
 | --- | --- | --- |
 | Разработчик | [Руководство разработчика](development/README.md) | [Архитектура и границы](development/architecture.md), [production](operations/production.md) |
+| AI-аудитор / внешний агент | [Актуальный handoff](development/AI_AGENT_HANDOFF.md) | [Gemini product/growth prompt](development/GEMINI_PRODUCT_GROWTH_AUDIT_PROMPT.md) |
 | Контент-импортёр | [Pipeline импорта материалов](development/content-import-pipeline.md) | [Как принимать материалы](education/material-submission-guide.md), [подготовка контента](education/content-authoring.md) |
 | Преподаватель | [Рабочее место преподавателя](education/teacher-guide.md) | [Регламент офлайн-группы](operations/offline-classroom.md) |
 | Методист / автор контента | [Как передавать материалы](education/material-submission-guide.md) | [Подготовка учебного контента](education/content-authoring.md), [регулярные обновления](operations/content-and-data.md) |
@@ -31,7 +32,7 @@
 | Справочники владельцев и частоты обновления | `docs/reference/` | Копии одних и тех же правил из других файлов |
 | Маркетинговые факты и источники | `docs/marketing/` | Непроверенные цифры, фото без согласия |
 | Инфраструктурные команды | `deploy/` | Рабочие ключи, пароли БД, `.env` production |
-| Исторические исследования | `docs/audits/`, `docs/sources/`, quarantine | Инструкции, которые команда должна выполнять сейчас |
+| Исторические исследования | `docs/archive/`, `docs/audits/`, quarantine | Инструкции, которые команда должна выполнять сейчас |
 
 ## Карта системы
 
@@ -58,6 +59,8 @@
 5. Скриншот дополняет текст, но не заменяет последовательность действий.
 6. После релиза оператор проверяет, что инструкция совпадает с production SHA.
 7. Секреты, пароли, данные учеников и полные ответы никогда не попадают в Git.
+8. Завершённые AI-промпты и заменённые инструкции перемещаются в
+   [`docs/archive/`](archive/README.md), а не остаются рядом с active guides.
 
 ## Как предложить изменение
 
