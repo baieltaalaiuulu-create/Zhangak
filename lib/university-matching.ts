@@ -55,11 +55,3 @@ export function rankAdmissionMatches<T extends AdmissionCandidate>(
     })
     .slice(0, Math.max(0, limit))
 }
-
-export function buildAdmissionPlanPrompt(currentScore: number | null, targetScore: number): string {
-  const scoreContext = currentScore == null
-    ? 'У меня пока нет результата пробного ОРТ.'
-    : `Мой последний результат пробного ОРТ — ${currentScore} баллов.`
-
-  return `${scoreContext} Моя цель — ${targetScore} баллов. Составь реалистичный план подготовки к поступлению: какие темы подтянуть, что делать каждую неделю и когда пройти следующий пробный ОРТ. Не придумывай проходные баллы, стоимость или сроки университетов; если данных нет, прямо скажи, что их нужно проверить на официальном сайте.`
-}

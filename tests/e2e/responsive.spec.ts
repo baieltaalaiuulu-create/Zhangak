@@ -217,7 +217,6 @@ const SURFACES = [
   { key: 'profile', path: '/student/online/profile' },
   { key: 'settings', path: '/student/online/settings' },
   { key: 'universities', path: '/student/online/universities' },
-  { key: 'ai', path: '/student/online/ai' },
   { key: 'quests', path: '/student/online/quests' },
   { key: 'leaderboard', path: '/student/online/leaderboard' },
 ]

@@ -50,7 +50,7 @@ async function main() {
   expect(matching.includes("level: 'unknown'"), 'matching must support unknown score or threshold data')
   expect(matching.includes('studentScore == null'), 'matching must reject missing student scores')
   expect(matching.includes('minScore == null'), 'matching must reject missing admission thresholds')
-  expect(matching.includes('Не придумывай проходные баллы, стоимость или сроки'), 'AI admission prompt must forbid fabricated facts')
+  expect(!matching.includes('buildAdmissionPlanPrompt'), 'admission matching must remain deterministic and provider-free')
 
   const universityData = await source('lib/universities-data.ts')
   expect(universityData.includes('favoritesKey(studentId)'), 'favorites must be scoped to the signed-in student')
@@ -66,11 +66,9 @@ async function main() {
   expect(firstPartyRoute.includes('AND s.is_active = true'), 'catalog API must hide inactive specialties')
   expect(!/POST\('\/v1\/platform\/universities/.test(firstPartyRoute), 'student catalog API must remain read-only')
 
-  const aiPage = await source('app/student/online/ai/page.tsx')
-  expect(aiPage.includes('/v1/platform/ai/consent') && aiPage.includes('/v1/platform/ai/messages'), 'AI coach must use its consented first-party route')
   const universityCta = await source('components/student/universities/UniversitiesBottomCTA.tsx')
-  expect(!universityCta.includes('/student/online/ai?prompt='), 'university CTA must not hand study context to the retired AI flow')
-  expect(universityCta.includes('href="/student/online/lessons"'), 'university CTA needs a safe lesson destination while AI is migrating')
+  expect(universityCta.includes('Roadmap'), 'university CTA must offer a deterministic next preparation step')
+  expect(universityCta.includes('href="/student/online/lessons"'), 'university CTA must link to an implemented lesson destination')
 
   const detail = await source('app/student/online/universities/[id]/page.tsx')
   expect(!detail.includes("key: 'reviews'"), 'unimplemented reviews must not appear as a dead tab')

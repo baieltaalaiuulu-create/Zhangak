@@ -7,8 +7,7 @@ import { isSupportedNativeStudent } from '@/lib/native-auth'
 const BRAND_BLUE = '#1B3F92'
 const INACTIVE_GRAY = '#9CA3AF'
 
-// 5 tabs, same set and order as the web bottom nav
-// (components/student/BottomNav.tsx): Главная / Уроки / Тренажёр / ОРТ / AI.
+// Native companion exposes the four implemented learning destinations.
 export default function StudentTabsLayout() {
   const { status, session, error, retrySessionCheck, signOut } = useNativeAuth()
 
@@ -82,13 +81,6 @@ export default function StudentTabsLayout() {
         options={{
           title: 'ОРТ',
           tabBarIcon: ({ color, size }) => <Ionicons name="trophy-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="ai"
-        options={{
-          title: 'AI',
-          tabBarIcon: ({ color, size }) => <Ionicons name="sparkles-outline" size={size} color={color} />,
         }}
       />
     </Tabs>

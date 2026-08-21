@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard, BookOpen, Map, PenLine, ClipboardList, Brain, Trophy, GraduationCap, Settings, X, ListChecks,
+  LayoutDashboard, BookOpen, Map, PenLine, ClipboardList, Trophy, GraduationCap, Settings, X, ListChecks,
   type LucideIcon,
 } from 'lucide-react'
 import { PROFILE_COLOR_OPTIONS, type ProfileColor } from '@/lib/profile-preferences'
@@ -23,7 +23,6 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/student/online/lessons', label: 'Все уроки', icon: BookOpen },
   { href: '/student/online/practice', label: 'Тренажёр', icon: PenLine },
   { href: '/student/online/mock', label: 'Пробный ОРТ', icon: ClipboardList },
-  { href: '/student/online/ai', label: 'AI Коуч', icon: Brain },
   { href: '/student/online/universities', label: 'Университеты', icon: GraduationCap },
   { href: '/student/online/quests', label: 'Квесты', icon: ListChecks },
   { href: '/student/online/leaderboard', label: 'Рейтинг', icon: Trophy },

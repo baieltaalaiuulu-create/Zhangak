@@ -24,8 +24,8 @@ conversion specialist, SEO/growth lead, accessibility auditor и QA engineer.
 - Аудит read-only: не меняй код, БД, аккаунты, курсы и production.
 - Не commit, не push и не deploy.
 - Не публикуй логины, пароли, cookies, токены, email или DevTools dumps.
-- Разрешены login demo-аккаунтом, безопасная навигация, screenshots и один
-  учебный запрос AI-коучу. Не отправляй необратимые тесты без явной пометки.
+- Разрешены login demo-аккаунтом, безопасная навигация и screenshots. Не
+  отправляй необратимые тесты без явной пометки.
 - Недоступную проверку помечай `NOT VERIFIED`; не выдумывай результат.
 - Изменчивые market claims подтверждай прямыми ссылками и датой доступа.
 

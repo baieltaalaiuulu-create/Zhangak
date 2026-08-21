@@ -15,7 +15,6 @@ Zhangak Node API (:3210)
         |
         +---- PostgreSQL (:5433, private)
         +---- private material volume
-        +---- AI provider (server-side, feature flagged)
 ```
 
 Nginx завершает TLS и обслуживает четыре домена. Порты API и PostgreSQL не
@@ -41,7 +40,6 @@ Nginx завершает TLS и обслуживает четыре домена
 | Офлайн-класс | `007` | `platform-offline`, `platform-offline-classroom` | offline student, teacher journal |
 | XP/daily/trainer/quests | `009`, `016`, `017`, `022` | `platform-gamification`, `admin-gamification` | daily task, trainer, quests, claims |
 | Заявки/оплата | `010` | `public-applications`, `admin-enrollments` | landing, manager/admin queue |
-| AI-коуч | `011` | `platform-ai`, `ai.js` | online AI chat |
 | Push | `014` | push routes | PWA subscriptions and notifications |
 | Social/profile | `018`, `019` | community/friend routes | public profiles, friends, blocks |
 
@@ -53,8 +51,8 @@ Nginx завершает TLS и обслуживает четыре домена
 - Ключ ответа хранится в private snapshot и показывается только после scoring.
 - Online-доступ требует active enrollment на active online-курс.
 - Offline teacher пишет только в назначенную активную группу.
-- AI требует согласие, active online enrollment и rate limit; provider key
-  существует только в API runtime.
+- Product runtime не использует LLM-провайдеров. В проекте запрещены AI routes,
+  provider keys и обращения к внешним моделям.
 - Файлы сначала проходят проверку типа/размера/scan-status и не обслуживаются
   Nginx как публичная директория.
 

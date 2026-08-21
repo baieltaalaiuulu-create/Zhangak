@@ -26,7 +26,6 @@ import { useStudentSession } from '@/components/student/StudentSessionContext'
 import UpNextLesson from '@/components/student/UpNextLesson'
 import LessonSidebarList from '@/components/student/LessonSidebarList'
 import LessonVideo from '@/components/student/LessonVideo'
-import MobileAIHelp from '@/components/student/mobile/MobileAIHelp'
 import {
   PLATFORM_LESSON_SUBJECT_META,
   completePlatformLesson,
@@ -97,6 +96,7 @@ export default function LessonDetailPage() {
   const [materialsError, setMaterialsError] = useState<string | null>(null)
   const [completionPending, setCompletionPending] = useState(false)
   const [completionError, setCompletionError] = useState<string | null>(null)
+  const [videoFinished, setVideoFinished] = useState(false)
   const lessonRequestId = useRef(0)
   const materialsRequestId = useRef(0)
 
@@ -128,6 +128,7 @@ export default function LessonDetailPage() {
     setMaterials([])
     setMaterialsError(null)
     setMaterialsLoading(true)
+    setVideoFinished(false)
     try {
       const result = await requestLessonPage(lessonId)
       if (lessonRequestId.current !== requestId) return
@@ -264,6 +265,7 @@ export default function LessonDetailPage() {
   const videoTitle = lesson.video ? lesson.title : videoMaterial?.title ?? lesson.title
   const practiceHref = `/student/online/practice?lesson=${lesson.id}`
   const requiresPractice = lesson.completionMode === 'practice'
+  const canOpenPractice = !requiresPractice || !videoHandle || videoFinished
 
   const extraMaterials = materials.filter(item => item.materialType !== 'video')
 
@@ -273,6 +275,7 @@ export default function LessonDetailPage() {
       lessonId={lesson.apiId}
       materialId={lesson.video ? null : videoMaterial?.id ?? null}
       title={videoTitle}
+      onEnded={() => setVideoFinished(true)}
     />
   ) : lesson.contentUrl ? (
     <div className="flex aspect-video flex-col items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 p-6 text-center">
@@ -394,13 +397,17 @@ export default function LessonDetailPage() {
           </p>
         </div>
       </div>
-      {requiresPractice ? (
+      {requiresPractice && canOpenPractice ? (
         <Link
           href={practiceHref}
           className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white"
         >
-          Открыть практику <ArrowRight size={17} aria-hidden="true" />
+          Перейти к тесту <ArrowRight size={17} aria-hidden="true" />
         </Link>
+      ) : requiresPractice ? (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-xs font-bold leading-5 text-amber-900">
+          Досмотри видео до конца — после этого откроется кнопка «Перейти к тесту».
+        </div>
       ) : (
         <button
           type="button"
@@ -457,7 +464,6 @@ export default function LessonDetailPage() {
           {material}
 
           {materialsSection()}
-          <MobileAIHelp lessonTitle={lesson.title} />
           {practiceCard}
 
           {unlockedUpcoming && (
@@ -559,12 +565,12 @@ export default function LessonDetailPage() {
                 <p className="mt-2 text-xs leading-relaxed text-gray-500">Отправка вопросов появится после подключения чата с преподавателем.</p>
               </div>
 
-              {requiresPractice && (
+              {requiresPractice && canOpenPractice && (
                 <Link
                   href={practiceHref}
                   className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white shadow-md shadow-blue-200"
                 >
-                  Открыть практику <ArrowRight size={17} aria-hidden="true" />
+                  Перейти к тесту <ArrowRight size={17} aria-hidden="true" />
                 </Link>
               )}
 

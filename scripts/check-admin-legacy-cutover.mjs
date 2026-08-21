@@ -13,7 +13,6 @@ const migrationPages = [
   'app/admin/mock/[id]/questions/page.tsx',
   'app/admin/daily-challenge/[id]/page.tsx',
   'app/admin/prizes/page.tsx',
-  'app/admin/knowledge-base/page.tsx',
   'app/admin/universities/page.tsx',
   'app/admin/universities/[id]/specialties/page.tsx',
   'app/admin/archive/page.tsx',

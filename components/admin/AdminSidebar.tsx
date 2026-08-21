@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Activity, Archive, BarChart2, BookOpen, Brain, ClipboardList, GraduationCap, LayoutDashboard, ListChecks, ListTree, Megaphone, Menu, PenLine, ReceiptText,
+  Activity, Archive, BarChart2, BookOpen, ClipboardList, GraduationCap, LayoutDashboard, ListChecks, ListTree, Megaphone, Menu, PanelsTopLeft, PenLine, ReceiptText,
   Settings, ShieldCheck, Trophy, Users, X, Zap,
   type LucideIcon,
 } from 'lucide-react'
@@ -21,6 +21,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/admin', label: 'Обзор', icon: LayoutDashboard, availability: 'ready' },
+  { href: '/admin/content', label: 'Content Studio', icon: PanelsTopLeft, availability: 'ready' },
   { href: '/admin/lessons', label: 'Уроки', icon: BookOpen, availability: 'ready' },
   { href: '/admin/roadmap', label: 'Дорожная карта', icon: ListTree, availability: 'ready' },
   { href: '/admin/groups', label: 'Группы', icon: Users, availability: 'ready' },
@@ -34,7 +35,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin/gamification', label: 'Квесты и достижения', icon: Trophy, availability: 'ready' },
   { href: '/admin/settings', label: 'Настройки', icon: Settings, availability: 'ready' },
   { href: '/admin/prizes', label: 'Рейтинг и призы', icon: Trophy, availability: 'migration' },
-  { href: '/admin/knowledge-base', label: 'База знаний AI', icon: Brain, availability: 'migration' },
   { href: '/admin/universities', label: 'Университеты', icon: GraduationCap, availability: 'migration' },
   { href: '/admin/archive', label: 'Архив', icon: Archive, availability: 'migration' },
   { href: '/admin/analytics', label: 'Аналитика', icon: BarChart2, availability: 'migration' },
@@ -43,12 +43,12 @@ const NAV_ITEMS: NavItem[] = [
 ]
 
 const NAV_GROUPS: { label: string; availability: NavAvailability; hrefs: string[] }[] = [
-  { label: 'Рабочие разделы', availability: 'ready', hrefs: ['/admin', '/admin/lessons', '/admin/roadmap', '/admin/groups', '/admin/students', '/admin/students/monitoring', '/admin/applications', '/admin/practice', '/admin/questions', '/admin/mock', '/admin/daily-challenge', '/admin/gamification', '/admin/settings'] },
+  { label: 'Рабочие разделы', availability: 'ready', hrefs: ['/admin', '/admin/content', '/admin/lessons', '/admin/roadmap', '/admin/groups', '/admin/students', '/admin/students/monitoring', '/admin/applications', '/admin/practice', '/admin/questions', '/admin/mock', '/admin/daily-challenge', '/admin/gamification', '/admin/settings'] },
   {
     label: 'Перенос на наш backend',
     availability: 'migration',
     hrefs: [
-      '/admin/prizes', '/admin/knowledge-base',
+      '/admin/prizes',
       '/admin/universities', '/admin/archive', '/admin/analytics', '/admin/announcements',
     ],
   },
@@ -70,7 +70,8 @@ export default function AdminSidebar({ role = null }: Props) {
         type="button"
         onClick={() => setMobileOpen(true)}
         aria-label="Открыть меню"
-        className="fixed left-4 top-[calc(0.75rem+env(safe-area-inset-top))] z-30 flex h-11 w-11 items-center justify-center rounded-lg border border-[#C3C6D7]/50 bg-white text-gray-500 shadow-sm lg:hidden print:hidden"
+        className="fixed left-4 z-30 flex h-11 w-11 items-center justify-center rounded-lg border border-[#C3C6D7]/50 bg-white text-gray-500 shadow-sm lg:hidden print:hidden"
+        style={{ top: 'calc(0.75rem + env(safe-area-inset-top))' }}
       >
         <Menu size={20} />
       </button>

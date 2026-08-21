@@ -22,8 +22,8 @@
 
 - Next.js App Router/BFF — порт `3200`.
 - Собственный Node.js HTTP API — loopback `127.0.0.1:3210`.
-- PostgreSQL — private/loopback; схема состоит из 22 последовательных миграций
-  `001`–`022` на дату документа.
+- PostgreSQL — private/loopback; схема состоит из 23 последовательных миграций
+  `001`–`023` на дату документа.
 - Private storage — `$ZHANGAK_STORAGE_ROOT`; файлы выдаются только через
   authenticated streaming endpoint.
 - Expo-клиент использует собственную bearer/refresh-сессию.
@@ -47,8 +47,8 @@ Online-курс единый: математика и кыргызский яз�
 
 Миграции `001`–`022` покрывают auth/RBAC, learning core, университеты,
 настройки профиля, зачисления и сроки доступа, offline classroom, private
-materials, gamification/trainer/daily challenge, заявки, AI conversations,
-roadmap, push subscriptions, YouTube sources, quests/achievements, социальный
+materials, gamification/trainer/daily challenge, заявки, roadmap, push
+subscriptions, YouTube sources, quests/achievements, социальный
 профиль и друзей, унификацию online-курса и claim наград.
 
 Это краткая карта, а не замена чтению SQL. Для точного контракта всегда
@@ -64,7 +64,9 @@ roadmap, push subscriptions, YouTube sources, quests/achievements, социал�
   capability-границы.
 - Online learning требует активного зачисления и непросроченного доступа.
 - Прямых публичных URL private materials нет.
-- PII/chat exports нельзя отправлять AI или импортировать автоматически.
+- PII/chat exports нельзя импортировать автоматически.
+- Product runtime AI отсутствует: не добавляйте provider keys, LLM routes или
+  внешние model calls без нового утверждённого архитектурного решения.
 - Production secrets и demo credentials нельзя сохранять в Git, screenshots,
   отчётах или browser storage exports.
 - Старые применённые миграции не редактируются: только новая forward migration.

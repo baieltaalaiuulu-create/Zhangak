@@ -121,6 +121,7 @@ test('retired Supabase API paths fail with a direct 404 on every owned host', as
     request('https://platform.zhangak.com/api/admin/settings', 'POST'),
     request('https://admin.zhangak.com/api/teacher/groups'),
     request('https://zhangak.com/api/ai-mentor', 'POST'),
+    request('https://platform.zhangak.com/v1/platform/ai/messages', 'POST'),
     request('https://platform.zhangak.com/api/delete-own-account', 'DELETE'),
   ]
 
@@ -130,6 +131,13 @@ test('retired Supabase API paths fail with a direct 404 on every owned host', as
     assert.equal(response.headers.get('location'), null)
     assert.deepEqual(await response.json(), { error: 'Not found' })
   }
+})
+
+test('retired product AI bookmarks redirect to the implemented lessons surface', () => {
+  assert.equal(
+    getRedirectUrl(proxy(request('https://platform.zhangak.com/student/online/ai?from=bookmark'))),
+    'https://platform.zhangak.com/student/online/lessons?from=bookmark',
+  )
 })
 
 test('first-party auth is available only on workspace hosts', async () => {

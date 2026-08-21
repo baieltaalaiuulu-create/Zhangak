@@ -21,20 +21,16 @@ interface Props {
 
 // The mock exam screen (/student/online/mock/[id], but not its /results child
 // or the /mock listing page) runs full-screen with its own dark header — no
-// sidebar/topbar chrome. AI Mentor keeps its own 3-column chat layout (dark
-// session sidebar, topbar, analytics panel), while retaining BottomNav on
-// mobile because the core navigation remains available. The daily-challenge
-// question flow is full screen with its own progress
+// sidebar/topbar chrome. The daily-challenge question flow is full screen
+// with its own progress
 // header — but its /results child stays inside the normal shell (same
 // split as the mock exam vs. mock results).
 const EXAM_ROUTE = /^\/student\/online\/mock\/[^/]+$/
-const AI_PAGE_ROUTE = /^\/student\/online\/ai/
 const DAILY_CHALLENGE_ROUTE = /^\/student\/online\/practice\/daily$/
 
 export default function StudentLayout({ children }: Props) {
   const router = useRouter()
   const pathname = usePathname()
-  const isAiPage = AI_PAGE_ROUTE.test(pathname ?? '')
   const isImmersivePage = EXAM_ROUTE.test(pathname ?? '') || DAILY_CHALLENGE_ROUTE.test(pathname ?? '')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [fullName, setFullName] = useState('Студент')
@@ -174,17 +170,6 @@ export default function StudentLayout({ children }: Props) {
 
   if (isImmersivePage) return <StudentSessionProvider user={sessionUser} onProfileUpdated={applyProfileUpdate}>{children}</StudentSessionProvider>
 
-  // AI keeps its focused chat shell, but the mobile navigation
-  // remains available just like it does on the other primary destinations.
-  if (isAiPage) {
-    return (
-      <StudentSessionProvider user={sessionUser} onProfileUpdated={applyProfileUpdate}>
-        {children}
-        <BottomNav pendingQuestRewards={pendingQuestRewards} />
-      </StudentSessionProvider>
-    )
-  }
-
   return (
     <StudentSessionProvider user={sessionUser} onProfileUpdated={applyProfileUpdate}>
       <div className="student-visual min-h-screen bg-[#F1F4FB] md:bg-[#FAF8FF]">
@@ -212,8 +197,8 @@ export default function StudentLayout({ children }: Props) {
         </div>
 
         <BottomNav pendingQuestRewards={pendingQuestRewards} />
-        {/* Announcements and AI are intentionally absent until their own
-            first-party APIs replace the retired Supabase data paths. */}
+        {/* Announcements are intentionally absent until their own
+            first-party API is available. */}
         <PWAInstallBanner ready={Boolean(sessionUser)} />
       </div>
     </StudentSessionProvider>

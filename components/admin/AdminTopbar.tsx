@@ -49,7 +49,10 @@ export default function AdminTopbar({ title, actionLabel, actionIcon: ActionIcon
     .join('') || 'A'
 
   return (
-    <header className="sticky top-0 z-20 flex min-h-[calc(60px+env(safe-area-inset-top))] items-center gap-3 border-b border-[#C3C6D7]/50 bg-white pl-16 pr-4 pt-[env(safe-area-inset-top)] sm:px-6 lg:pl-6 print:hidden">
+    <header
+      className="sticky top-0 z-20 flex items-center gap-3 border-b border-[#C3C6D7]/50 bg-white pl-16 pr-4 sm:px-6 lg:pl-6 print:hidden"
+      style={{ minHeight: 'calc(60px + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
+    >
       <h1 className="truncate text-base font-bold text-[#191B23] sm:text-lg">{title}</h1>
       <div className="ml-auto flex items-center gap-2">
         {actionLabel && onAction && (

@@ -1,6 +1,6 @@
 'use client'
 
-import { Bot, CheckCircle2, Share2, Trophy, XCircle } from 'lucide-react'
+import { BookOpenCheck, CheckCircle2, Share2, Trophy, XCircle } from 'lucide-react'
 
 import { SECTION_LABELS, type SubmittedPracticeReview } from '@/lib/platform-practice'
 
@@ -62,6 +62,7 @@ export default function PracticeResultsScreen({
           {passed ? 'Тест пройден!' : 'Тест завершён'}
         </p>
         <p className="mt-2 text-5xl font-bold leading-none">{score}/{total}</p>
+        <p className="mt-3 text-base font-bold text-blue-100">Результат: {accuracy}%</p>
         {delta !== null && delta > 0 && (
           <span className="mt-3 inline-block rounded-full bg-green-400/20 px-3 py-1 text-sm font-semibold text-green-300">
             ▲ Лучше предыдущего на +{delta}
@@ -93,7 +94,7 @@ export default function PracticeResultsScreen({
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-gray-900">Ошибки ({wrongAnswers.length})</h3>
             <button type="button" onClick={onReview} className="text-xs font-bold text-[#1B3F92] hover:underline">
-              Смотреть разбор →
+              Правильные ответы и объяснения →
             </button>
           </div>
           <ul className="mt-3 space-y-2">
@@ -110,14 +111,14 @@ export default function PracticeResultsScreen({
         </div>
       )}
 
-      {/* AI card */}
+      {/* Deterministic next-step guidance */}
       <div
         className="rounded-2xl p-5 shadow-sm"
         style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e2d4e 100%)' }}
       >
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-blue-300">
-          <Bot size={14} aria-hidden="true" />
-          AI-наставник
+          <BookOpenCheck size={14} aria-hidden="true" />
+          Разбор результата
         </span>
         {weakSection ? (
           <p className="mt-3 text-sm leading-relaxed text-slate-300">

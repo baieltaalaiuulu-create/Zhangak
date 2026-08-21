@@ -49,9 +49,6 @@ const requiredTables = [
   'course_unit_lessons',
   'public_applications',
   'public_application_events',
-  'ai_consents',
-  'ai_conversations',
-  'ai_messages',
   'push_subscriptions',
   'student_xp_totals',
   'gamification_events',
@@ -66,6 +63,8 @@ const requiredTables = [
   'student_featured_achievements',
   'student_social_friendships',
   'student_social_blocks',
+  'lesson_revisions',
+  'lesson_revision_blocks',
 ]
 
 function fail(message) {
@@ -201,6 +200,22 @@ async function verifySchema(client) {
       WHERE table_schema = 'public' AND table_name = 'student_quest_progress' AND column_name = 'ready_at'`,
   )
   if (questResult.rowCount !== 1) fail('quest reward ready_at column is missing')
+
+  const retiredAiResult = await client.query(
+    `SELECT table_name
+       FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name = ANY($1::text[])`,
+    [['ai_consents', 'ai_conversations', 'ai_messages']],
+  )
+  if (retiredAiResult.rowCount !== 0) fail('retired product AI tables still exist')
+
+  const revisionResult = await client.query(
+    `SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'lessons'
+        AND column_name = 'published_revision_id'`,
+  )
+  if (revisionResult.rowCount !== 1) fail('lessons.published_revision_id is missing')
 
 }
 

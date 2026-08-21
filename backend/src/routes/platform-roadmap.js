@@ -43,7 +43,11 @@ export function publicRoadmapLesson(row) {
     durationMinutes: row.duration_minutes == null ? null : number(row.duration_minutes),
     isTest: boolean(row.is_test),
     completionMode: boolean(row.is_test) || boolean(row.has_active_bound_practice_test) ? 'practice' : 'self',
-    completionPercent: completed ? 100 : number(row.completion_percent),
+    // `completed_at` means that a scored lesson test was submitted and the
+    // sequence may move on.  It must never overwrite the earned result: the
+    // roadmap rings and stars are based on the student's best server-scored
+    // percentage (50 / 75 / 90), not on a binary completion flag.
+    completionPercent: number(row.completion_percent),
     completedAt: completed ? new Date(row.completed_at).toISOString() : null,
     isLocked,
     state: completed ? 'done' : isLocked ? 'locked' : 'available',

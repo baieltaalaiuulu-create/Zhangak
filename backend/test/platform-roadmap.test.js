@@ -36,6 +36,17 @@ test('Roadmap lesson projection keeps answer and private material fields server-
   }
 })
 
+test('Roadmap keeps the earned test score after a lesson is completed', () => {
+  const lesson = publicRoadmapLesson({
+    lesson_id: 8, lesson_number: 5, title: 'Проценты: тест', description: null, subject: 'math',
+    section: 'numbers', topic: 'percentages', duration_minutes: 10, is_test: true,
+    completion_percent: 70, completed_at: '2026-08-21T08:00:00.000Z', is_locked: false, has_active_bound_practice_test: true,
+  })
+  assert.equal(lesson.state, 'done')
+  assert.equal(lesson.completionPercent, 70)
+  assert.equal(roadmapStarCount(lesson.completionPercent), 1)
+})
+
 test('Roadmap route is first-party, enrollment-scoped and preserves the global unit lock', async () => {
   const route = await readFile(path.join(backendRoot, 'src', 'routes', 'platform-roadmap.js'), 'utf8')
   const learning = await readFile(path.join(backendRoot, 'src', 'routes', 'platform-learning.js'), 'utf8')
@@ -48,4 +59,10 @@ test('Roadmap route is first-party, enrollment-scoped and preserves the global u
   assert.doesNotMatch(route, /correct_answer|content_url/)
   assert.match(learning, /course_unit_lessons current_item/)
   assert.match(learning, /previous_unit\.unit_number < current_unit\.unit_number/)
+})
+
+test('lesson test scores may be completed below 100 so roadmap stars stay honest', async () => {
+  const migration = await readFile(path.join(backendRoot, 'migrations', '025_lesson_test_score_progress.sql'), 'utf8')
+  assert.match(migration, /DROP CONSTRAINT IF EXISTS lesson_progress_completed/)
+  assert.match(migration, /completed_at IS NULL OR completion_percent BETWEEN 0 AND 100/)
 })

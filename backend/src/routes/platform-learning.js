@@ -782,16 +782,18 @@ async function submitAttempt(client, student, attemptId, input) {
   }
   // Lesson completion is derived from a successfully finalized, lesson-bound
   // server-scored attempt. The browser cannot mark a lesson complete merely
-  // by opening it or posting a fabricated progress percentage.
+  // by opening it or posting a fabricated progress percentage.  The score is
+  // retained as the best scored result so the roadmap's 50/75/90 star bands
+  // remain truthful after a learner repeats a test.
   if (submitted.lesson_id !== null) {
     await client.query(
       `INSERT INTO lesson_progress (student_id, lesson_id, completion_percent, last_viewed_at, completed_at)
-       VALUES ($1, $2, 100, now(), now())
+       VALUES ($1, $2, round($3::numeric)::int, now(), now())
        ON CONFLICT (student_id, lesson_id) DO UPDATE
-          SET completion_percent = 100,
+          SET completion_percent = GREATEST(lesson_progress.completion_percent, EXCLUDED.completion_percent),
               last_viewed_at = now(),
               completed_at = COALESCE(lesson_progress.completed_at, now())`,
-      [student.id, submitted.lesson_id],
+      [student.id, submitted.lesson_id, submitted.score_percent],
     )
     await awardLessonXp(client, student.id, submitted.course_id, submitted.lesson_id)
     await recordGamificationEvent(client, student.id, {

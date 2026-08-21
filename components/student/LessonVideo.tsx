@@ -19,6 +19,8 @@ interface Props {
   materialId: number | null
   /** Lesson or material title. Used as the accessible name of the player. */
   title: string
+  /** Enables the lesson's next step only after YouTube reports a real end. */
+  onEnded?: () => void
 }
 
 // Loaded lazily from YouTube, and only after the student presses play.
@@ -49,15 +51,17 @@ declare global {
  * The embed cannot play without it. Do not describe this player to students
  * as making a video undownloadable.
  */
-export default function LessonVideo({ handle, lessonId, materialId, title }: Props) {
+export default function LessonVideo({ handle, lessonId, materialId, title, onEnded }: Props) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const [config, setConfig] = useState<LessonVideoConfig | null>(null)
   const mountRef = useRef<HTMLDivElement>(null)
   const playerRef = useRef<{ destroy?: () => void, getCurrentTime?: () => number } | null>(null)
+  const onEndedRef = useRef(onEnded)
   // The session request and the API load both outlive a fast unmount, so
   // their completion must not write state into a gone component.
   const aliveRef = useRef(true)
   useEffect(() => () => { aliveRef.current = false }, [])
+  useEffect(() => { onEndedRef.current = onEnded }, [onEnded])
 
   const report = useCallback((event: 'started' | 'ended', positionSeconds: number) => {
     // Analytics only, and never allowed to surface as a student-facing error:
@@ -111,6 +115,7 @@ export default function LessonVideo({ handle, lessonId, materialId, title }: Pro
         onStateChange: (event: { data: number }) => {
           if (window.YT && event.data === window.YT.PlayerState.ENDED) {
             report('ended', Math.round(playerRef.current?.getCurrentTime?.() ?? 0))
+            onEndedRef.current?.()
           }
         },
         onError: () => setStatus('error'),

@@ -1,10 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import {
-  buildAdmissionPlanPrompt,
-  getAdmissionProbability,
-  rankAdmissionMatches,
-} from '../../lib/university-matching.ts'
+import { getAdmissionProbability, rankAdmissionMatches } from '../../lib/university-matching.ts'
 import { parseUniversityCatalog } from '../../lib/universities-data.ts'
 
 test('admission probability stays unknown without a real mock result or published threshold', () => {
@@ -37,12 +33,6 @@ test('recommended universities prioritize reachable thresholds and closest gap',
     rankAdmissionMatches(candidates, 165, 4).map(candidate => candidate.id),
     ['high', 'medium', 'near', 'far'],
   )
-})
-
-test('admission plan prompt forbids fabricated university facts', () => {
-  const prompt = buildAdmissionPlanPrompt(null, 200)
-  assert.match(prompt, /нет результата пробного ОРТ/)
-  assert.match(prompt, /Не придумывай проходные баллы, стоимость или сроки/)
 })
 
 test('an empty first-party catalog is an explicit valid state, not fabricated data', () => {

@@ -24,8 +24,9 @@ import './routes/platform-profile.js'
 import './routes/platform-gamification.js'
 import './routes/platform-social.js'
 import './routes/platform-push.js'
-import './routes/platform-ai.js'
+import './routes/platform-mock-exams.js'
 import './routes/admin-gamification.js'
+import './routes/admin-mock-exams.js'
 import './routes/public-applications.js'
 
 const config = loadConfig()

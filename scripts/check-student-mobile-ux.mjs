@@ -46,9 +46,7 @@ async function main() {
   expect(bottomNav.includes('env(safe-area-inset-bottom)'), 'mobile navigation must respect the device safe area')
 
   const layout = await source('components/student/StudentLayout.tsx')
-  const aiBranchStart = layout.indexOf('if (isAiPage)')
-  const aiBranch = layout.slice(aiBranchStart, layout.indexOf('\n  return (', aiBranchStart))
-  expect(aiBranch.includes('<BottomNav'), 'AI must retain the five-item mobile navigation')
+  expect(!layout.includes('AI_PAGE_ROUTE') && !layout.includes('isAiPage'), 'student shell must not retain a product AI route')
   expect(layout.includes('isImmersivePage'), 'exam and daily question flows must remain intentionally immersive')
 
   const dashboard = await source('app/student/online/page.tsx')
@@ -63,12 +61,6 @@ async function main() {
   expect(mobileDashboard.includes('href="/student/online/roadmap"'), 'mobile home must link directly to the course map')
   expect(mobileDashboard.includes('href="/student/online/trainer"') && mobileDashboard.includes('Выбери раздел и сложность'), 'mobile home needs an honest trainer explanation')
   expect(mobileDashboard.includes('min-h-14'), 'primary Roadmap action must keep a large touch target')
-
-  const mobileAiHelp = await source('components/student/mobile/MobileAIHelp.tsx')
-  expect(mobileAiHelp.includes('AI-помощник обновляется'), 'mobile lesson AI entry must explicitly state its first-party migration status')
-  expect(mobileAiHelp.includes('href="/student/online/practice"'), 'mobile lesson AI entry needs a working practice destination')
-  expect(!mobileAiHelp.includes('askAIMentor'), 'mobile lesson AI entry must not dispatch into the retired AI drawer')
-  expect(!mobileAiHelp.includes('useState'), 'mobile lesson AI entry must not expose dead expandable controls')
 
   const firstPartyStudentFiles = [
     'components/student/StudentLayout.tsx',
@@ -89,22 +81,6 @@ async function main() {
   expect(checklist.includes('min-h-14'), 'daily plan rows must keep large touch targets')
   expect(checklist.includes('challengeAvailable') && checklist.includes('Скоро'), 'unmigrated daily tasks must be disabled instead of linking into a legacy flow')
 
-  const aiPage = await source('app/student/online/ai/page.tsx')
-  expect(aiPage.includes('AI-коуч Zhangak'), 'AI route must identify the first-party AI coach')
-  expect(aiPage.includes('useStudentSession'), 'AI route must stay inside the first-party student session')
-  expect(!aiPage.includes("from '@/lib/supabase'"), 'AI route must not query retired Supabase data')
-  expect(!aiPage.includes('streamMentorMessage'), 'AI route must not send a student context through the retired chat flow')
-  expect(aiPage.includes('/v1/platform/ai/consent'), 'AI route must request explicit first-party consent')
-  expect(aiPage.includes('/v1/platform/ai/messages'), 'AI route must use the first-party AI message route')
-  expect(aiPage.includes('href="/student/online/lessons"'), 'AI unavailable state needs a safe lessons destination')
-  expect(aiPage.includes('href="/student/online/practice"'), 'AI unavailable state needs a safe practice destination')
-  expect(aiPage.includes('100dvh-64px-env(safe-area-inset-bottom)'), 'AI viewport must leave room for mobile navigation')
-  expect(aiPage.includes('href="/student/online"'), 'AI coach needs a direct route back to learning')
-  expect(aiPage.includes('onKeyDown={handleComposerKeyDown}'), 'AI composer must handle its documented keyboard shortcut')
-  expect(aiPage.includes('event.ctrlKey && !event.metaKey') || aiPage.includes('!event.ctrlKey && !event.metaKey'), 'AI composer must require Ctrl or Cmd with Enter before sending')
-  expect(aiPage.includes('Ctrl') && aiPage.includes('Enter') && aiPage.includes('ai-send-shortcut'), 'AI composer must visibly explain the send shortcut')
-  expect(aiPage.includes('QUICK_PROMPTS'), 'AI coach needs quick-start prompts for an empty or stalled conversation')
-
   const leaderboardPage = await source('app/student/online/leaderboard/page.tsx')
   expect(leaderboardPage.includes('useStudentSession'), 'leaderboard must stay inside the first-party student session')
   expect(!leaderboardPage.includes("from '@/lib/supabase'"), 'leaderboard must not query retired Supabase data')
@@ -114,13 +90,13 @@ async function main() {
 
   const roadmapPage = await source('app/student/online/roadmap/page.tsx')
   expect(roadmapPage.includes('min-h-screen bg-white pb-28'), 'roadmap must keep a white surface through the fixed mobile navigation safe area')
-  expect(roadmapPage.includes('Единый курс подготовки к ОРТ'), 'roadmap must present mathematics and Kyrgyz as one ORT course')
+  expect(roadmapPage.includes("lesson.subject === subject"), 'roadmap must isolate the chosen subject before rendering a learning path')
+  expect(roadmapPage.includes('Математика') && roadmapPage.includes('Кыргызский язык'), 'roadmap must offer separate Mathematics and Kyrgyz language directions')
 
   const scanRoots = [
     'app/student/online/lessons',
     'app/student/online/practice',
     'app/student/online/mock',
-    'app/student/online/ai',
     'app/student/online/roadmap',
     'components/student/mobile',
   ]
@@ -145,7 +121,7 @@ async function main() {
     return
   }
 
-  console.log(`Student mobile UX check passed (${scannedFiles.length} source files, five destinations, three daily tasks, consented AI and first-party ranking).`)
+  console.log(`Student mobile UX check passed (${scannedFiles.length} source files, five destinations, three daily tasks and first-party ranking).`)
 }
 
 main().catch((error) => {

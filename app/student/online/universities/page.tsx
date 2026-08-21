@@ -12,7 +12,7 @@ import { rankAdmissionMatches } from '@/lib/university-matching'
 import UniversitiesHero from '@/components/student/universities/UniversitiesHero'
 import UniversitiesStatsRow from '@/components/student/universities/UniversitiesStatsRow'
 import UniversitiesFilters, { DEFAULT_FILTERS, type FilterState } from '@/components/student/universities/UniversitiesFilters'
-import AIRecommendationBar from '@/components/student/universities/AIRecommendationBar'
+import ScoreRecommendationBar from '@/components/student/universities/ScoreRecommendationBar'
 import UniversityCard from '@/components/student/universities/UniversityCard'
 import UniversitiesBottomCTA from '@/components/student/universities/UniversitiesBottomCTA'
 import ComparisonTable from '@/components/student/universities/ComparisonTable'
@@ -176,7 +176,7 @@ export default function UniversitiesPage() {
 
         <UniversitiesStatsRow stats={catalogStats} />
 
-        <AIRecommendationBar studentScore={studentScore} universities={recommended} />
+        <ScoreRecommendationBar studentScore={studentScore} universities={recommended} />
 
         {comparisonList.length > 0 && (
           <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
