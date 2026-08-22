@@ -1,10 +1,14 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Bell, Flame, Search, Star, Target } from 'lucide-react'
 import { PROFILE_COLOR_OPTIONS, type ProfileColor } from '@/lib/profile-preferences'
+import { dayLabel, scoreLabel } from '@/lib/russian-plural'
 import StudentVisualIcon from './StudentVisualIcon'
+
+const LESSONS_PATH = '/student/online/lessons'
 
 interface Props {
   fullName: string
@@ -33,8 +37,17 @@ function Pill({ children, tone = 'gray', className = '' }: { children: ReactNode
 }
 
 export default function StudentTopbar({ fullName, avatarUrl, profileColor, streak, xp, targetScore, level, unreadCount = 0, onLogout }: Props) {
+  const router = useRouter()
   const [notifOpen, setNotifOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const onSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const term = searchTerm.trim()
+    // An empty submit clears the filter rather than searching for nothing.
+    router.push(term === '' ? LESSONS_PATH : `${LESSONS_PATH}?q=${encodeURIComponent(term)}`)
+  }
   const initial = fullName?.[0]?.toUpperCase() ?? '?'
   const accent = PROFILE_COLOR_OPTIONS[profileColor].color
 
@@ -54,25 +67,33 @@ export default function StudentTopbar({ fullName, avatarUrl, profileColor, strea
         </span>
       </div>
 
-      <div className="relative hidden max-w-xs flex-1 md:block">
-        <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      {/* A real search, not a decorative box: submitting navigates to the
+          lessons list with the query applied, which is where the results can
+          actually be shown and cleared. */}
+      <form role="search" onSubmit={onSearchSubmit} className="relative hidden max-w-xs flex-1 md:block">
+        <label htmlFor="student-lesson-search" className="sr-only">Поиск уроков и тем</label>
+        <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
-          type="text"
+          id="student-lesson-search"
+          name="q"
+          type="search"
+          value={searchTerm}
+          onChange={event => setSearchTerm(event.target.value)}
           placeholder="Поиск уроков, тем..."
           className="min-h-11 w-full rounded-full bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3F92]/20"
         />
-      </div>
+      </form>
 
       <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
         {streak > 0 && (
           <Pill tone="orange" className="hidden md:inline-flex">
             <Flame size={14} aria-hidden="true" />
-            {streak} {streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'}
+            {dayLabel(streak)}
           </Pill>
         )}
         <Pill tone="blue" className="hidden md:inline-flex">
           <Target size={14} aria-hidden="true" />
-          {targetScore} балл
+          {scoreLabel(targetScore)}
         </Pill>
         <Pill className="hidden md:inline-flex">
           <Star size={14} aria-hidden="true" />
