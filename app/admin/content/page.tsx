@@ -95,9 +95,20 @@ export default function AdminContentStudioPage() {
     }
   }, [])
 
-  useEffect(() => { void loadCourses() }, [loadCourses])
-  useEffect(() => { if (courseId !== null) void loadCourse(courseId) }, [courseId, loadCourse])
-  useEffect(() => { if (lessonId !== null) void loadLesson(lessonId) }, [lessonId, loadLesson])
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void loadCourses() }, 0)
+    return () => window.clearTimeout(timer)
+  }, [loadCourses])
+  useEffect(() => {
+    if (courseId === null) return
+    const timer = window.setTimeout(() => { void loadCourse(courseId) }, 0)
+    return () => window.clearTimeout(timer)
+  }, [courseId, loadCourse])
+  useEffect(() => {
+    if (lessonId === null) return
+    const timer = window.setTimeout(() => { void loadLesson(lessonId) }, 0)
+    return () => window.clearTimeout(timer)
+  }, [lessonId, loadLesson])
 
   const readiness = selectedLesson
     ? [
