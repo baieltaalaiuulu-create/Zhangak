@@ -19,13 +19,13 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/student/online', label: 'Главная', icon: 'home' },
   { href: '/student/online/trainer', label: 'Тренажёр', icon: 'fitness_center' },
   { href: '/student/online/roadmap', label: 'Roadmap', icon: 'alt_route', primary: true },
-  { href: '/student/online/ai', label: 'AI', icon: 'auto_awesome', accent: true },
+  { href: '/student/online/quests', label: 'Квесты', icon: 'task_alt', accent: true },
   { href: '/student/online/profile', label: 'Профиль', icon: 'person' },
 ]
 
 // Mobile-only replacement for the sidebar (StudentLayout hides this whole
 // component at md and up, where the sidebar takes over navigation).
-export default function BottomNav() {
+export default function BottomNav({ pendingQuestRewards = 0 }: { pendingQuestRewards?: number }) {
   const pathname = usePathname()
 
   return (
@@ -49,7 +49,7 @@ export default function BottomNav() {
             className="relative flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5"
           >
             <span
-              className="flex min-w-[46px] items-center justify-center rounded-full transition-colors"
+              className="relative flex min-w-[46px] items-center justify-center rounded-full transition-colors"
               style={{
                 width: item.primary ? 38 : undefined,
                 height: item.primary ? 38 : 28,
@@ -62,12 +62,13 @@ export default function BottomNav() {
                 name={item.icon}
                 size={23}
                 filled={isActive || item.primary}
-                color={item.primary ? (isActive ? '#FFFFFF' : '#1B3F92') : isActive ? activeColor : '#8A96AC'}
+                color={item.primary ? (isActive ? '#FFFFFF' : '#1B3F92') : isActive ? activeColor : '#5F6B7A'}
               />
+              {item.href.endsWith('/quests') && pendingQuestRewards > 0 && <span aria-label={`${pendingQuestRewards} наград квестов готово`} className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white ring-2 ring-white">{Math.min(9, pendingQuestRewards)}{pendingQuestRewards > 9 ? '+' : ''}</span>}
             </span>
             <span
               className="max-w-full truncate text-[10px] leading-none"
-              style={{ color: isActive ? activeColor : '#8A96AC', fontWeight: isActive || item.primary ? 800 : 600 }}
+              style={{ color: isActive ? activeColor : '#5F6B7A', fontWeight: isActive || item.primary ? 800 : 600 }}
             >
               {item.label}
             </span>

@@ -67,7 +67,7 @@ async function main() {
   for (const section of ['home', 'schedule', 'attendance', 'materials', 'practice', 'progress', 'homework']) {
     expect(cabinet.includes(`id: '${section}'`), `offline cabinet is missing ${section}`)
   }
-  expect(cabinet.includes('Math.abs(distance) >= 70'), 'mobile swipe must have an intentional threshold')
+  expect(cabinet.includes('Math.abs(distanceX) >= 70'), 'mobile swipe must have an intentional threshold')
   expect(cabinet.includes('Онлайн-тренажёр недоступен в офлайн-курсе'), 'offline cabinet must not expose online practice')
   expect(cabinet.includes('Мы не показываем выдуманное расписание'), 'unknown schedule must be explicit')
   expect(cabinet.includes('logoutZhangak'), 'offline logout must use first-party auth')

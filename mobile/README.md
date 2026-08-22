@@ -44,7 +44,7 @@ components/
   app), so most lessons render through a WebView pointed at the YouTube
   iframe embed — `expo-video` is wired up as a fallback path for
   the case a lesson ever points at a direct video file instead.
-- **Scope**: Тренажёр / Пробный ОРТ / AI коуч are intentionally stub
+- **Scope**: Тренажёр / Пробный ОРТ are intentionally stub
   screens (`ScreenPlaceholder`) — only the dashboard and lessons flow are
   wired to real data per the initial scaffold.
 - **Auth**: this app only serves student roles with online learning enabled

@@ -4,7 +4,7 @@ import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import { normalizeAvatarUrl, parseProfilePatch } from '../src/routes/platform-profile.js'
+import { normalizeAvatarUrl, parseCommunitySettingsPatch, parseFeaturedAchievements, parseProfileLoadout, parseProfilePatch } from '../src/routes/platform-profile.js'
 import { HttpError } from '../src/http.js'
 
 const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -16,13 +16,14 @@ function invalidPatch(body, code) {
   )
 }
 
-test('student profile patch accepts only the five safe, typed profile fields', () => {
+test('student profile patch accepts only the six safe, typed profile fields', () => {
   assert.deepEqual(parseProfilePatch({
     fullName: '  Айзада Токтосунова  ',
     avatarUrl: 'https://cdn.zhangak.com/avatars/aizada.png',
     targetScore: 210,
     profileColor: 'violet',
     dailyStudyGoalMinutes: 45,
+    communityVisibility: false,
   }), {
     hasFullName: true,
     fullName: 'Айзада Токтосунова',
@@ -34,6 +35,8 @@ test('student profile patch accepts only the five safe, typed profile fields', (
     profileColor: 'violet',
     hasDailyStudyGoalMinutes: true,
     dailyStudyGoalMinutes: 45,
+    hasCommunityVisibility: true,
+    communityVisibility: false,
   })
 
   assert.deepEqual(parseProfilePatch({ avatarUrl: null }), {
@@ -47,6 +50,8 @@ test('student profile patch accepts only the five safe, typed profile fields', (
     profileColor: null,
     hasDailyStudyGoalMinutes: false,
     dailyStudyGoalMinutes: null,
+    hasCommunityVisibility: false,
+    communityVisibility: null,
   })
 })
 
@@ -67,6 +72,7 @@ test('student profile patch fails closed for privilege fields and invalid values
   invalidPatch({ profileColor: 'blue; background: url(x)' }, 'invalid_profile_color')
   invalidPatch({ dailyStudyGoalMinutes: 20 }, 'invalid_daily_study_goal')
   invalidPatch({ dailyStudyGoalMinutes: 30.5 }, 'invalid_daily_study_goal')
+  invalidPatch({ communityVisibility: 'yes' }, 'invalid_community_visibility')
 })
 
 test('avatar URL normalization permits only a safe HTTPS external URL or clearing', () => {
@@ -74,6 +80,25 @@ test('avatar URL normalization permits only a safe HTTPS external URL or clearin
   assert.equal(normalizeAvatarUrl(null), null)
   assert.equal(normalizeAvatarUrl('data:image/png;base64,abc'), undefined)
   assert.equal(normalizeAvatarUrl('https://user:password@example.org/avatar.png'), undefined)
+})
+
+test('community settings and cosmetic loadout reject arbitrary public fields and styling', () => {
+  assert.deepEqual(parseCommunitySettingsPatch({
+    displayName: '  Алгебра  01 ', visibility: 'community', showXp: false,
+    showAchievements: true, showStreak: false, allowFriendRequests: true, discoverable: true,
+  }), {
+    displayName: 'Алгебра 01', visibility: 'community', showXp: false,
+    showAchievements: true, showStreak: false, allowFriendRequests: true, discoverable: true,
+  })
+  assert.deepEqual(parseProfileLoadout({ frameCode: 'frame_azure', backgroundCode: 'background_sky', titleCode: 'title_steady' }), {
+    frameCode: 'frame_azure', backgroundCode: 'background_sky', titleCode: 'title_steady',
+  })
+  assert.deepEqual(parseFeaturedAchievements({ achievementIds: [1, 2, 3] }), [1, 2, 3])
+  invalidPatch({ communityProfileVisibility: 'leaderboard' }, 'invalid_profile_patch')
+  assert.throws(() => parseCommunitySettingsPatch({ displayName: 'x' }), error => error instanceof HttpError && error.code === 'invalid_community_display_name')
+  assert.throws(() => parseCommunitySettingsPatch({ visibility: 'public' }), error => error instanceof HttpError && error.code === 'invalid_community_visibility')
+  assert.throws(() => parseProfileLoadout({ frameCode: 'frame_azure', backgroundCode: 'url(javascript:alert(1))', titleCode: 'title_steady' }), error => error instanceof HttpError && error.code === 'invalid_profile_loadout')
+  assert.throws(() => parseFeaturedAchievements({ achievementIds: [1, 1] }), error => error instanceof HttpError && error.code === 'invalid_featured_achievements')
 })
 
 test('profile route is registered, student-scoped, and never exposes a deletion path', async () => {
@@ -90,9 +115,17 @@ test('profile route is registered, student-scoped, and never exposes a deletion 
   assert.match(source, /UPDATE profiles/)
   assert.match(source, /profile_color/)
   assert.match(source, /daily_study_goal_minutes/)
+  assert.match(source, /community_visibility/)
+  assert.match(source, /\/v1\/platform\/profile\/customization/)
+  assert.match(source, /\/v1\/platform\/profile\/community/)
+  assert.match(source, /\/v1\/platform\/profile\/loadout/)
+  assert.match(source, /\/v1\/platform\/profile\/featured-achievements/)
   assert.match(migration, /profile_color IN \('blue', 'violet', 'emerald', 'rose'\)/)
   assert.match(migration, /daily_study_goal_minutes IN \(15, 30, 45, 60, 90\)/)
   assert.match(source, /'update_own_profile'/)
+  assert.match(source, /'update_community_profile'/)
+  assert.match(source, /'update_profile_loadout'/)
+  assert.match(source, /'update_featured_achievements'/)
   assert.doesNotMatch(source, /DELETE\('\/v1\/platform\/profile'/)
   assert.doesNotMatch(source, /UPDATE users/)
 })

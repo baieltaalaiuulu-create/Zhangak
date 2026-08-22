@@ -5,6 +5,7 @@ import SettingsNotifications from '@/components/student/settings/SettingsNotific
 import SettingsInstallCard from '@/components/student/settings/SettingsInstallCard'
 import DangerZoneCard from '@/components/student/settings/DangerZoneCard'
 import PersonalizationSettings from '@/components/student/settings/PersonalizationSettings'
+import CommunityProfileSettings from '@/components/student/settings/CommunityProfileSettings'
 import { useStudentSession } from '@/components/student/StudentSessionContext'
 import AccountLogoutCard from '@/components/auth/AccountLogoutCard'
 
@@ -20,6 +21,7 @@ export default function SettingsPage() {
         <div><p className="text-[11px] font-extrabold uppercase tracking-[.12em] text-[var(--student-brand)]">Твой опыт</p><h1 className="mt-1 text-2xl font-black tracking-tight text-[var(--student-ink)]">Настройки</h1></div>
 
         <PersonalizationSettings />
+        <CommunityProfileSettings />
         <SettingsNotifications />
         <SettingsInstallCard />
         <AccountLogoutCard />

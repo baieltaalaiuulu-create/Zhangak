@@ -103,7 +103,11 @@ test('learning routes use locking, immutable snapshots, and server-side scoring 
   assert.match(source, /UPDATE practice_attempt_items item/)
   assert.match(source, /is_correct = \(submitted\.answer = item\.correct_answer\)/)
   assert.match(source, /WHERE item\.attempt_id = \$1/)
-  assert.match(source, /score_percent = round\(\(\$3::numeric \/ question_count\) \* 100, 2\)/)
+  // The same pg parameter is used by an integer column and numeric score
+  // arithmetic. Keep one explicit integer type before converting it to
+  // numeric, otherwise PostgreSQL rejects real submissions with 42P08.
+  assert.match(source, /correct_count = \$3::integer/)
+  assert.match(source, /score_percent = round\(\(\(\$3::integer\)::numeric \/ question_count\) \* 100, 2\)/)
   assert.match(source, /WHERE id = \$1 AND student_id = \$2\s+FOR UPDATE/)
   assert.match(source, /INSERT INTO lesson_progress \(student_id, lesson_id, completion_percent, last_viewed_at, completed_at\)/)
   assert.match(source, /ON CONFLICT \(student_id, lesson_id\) DO UPDATE/)
@@ -111,7 +115,10 @@ test('learning routes use locking, immutable snapshots, and server-side scoring 
   assert.match(source, /parseCompleteLessonBody\(await readJson\(req, 1_000\)\)/)
   assert.match(source, /previous_lesson\.subject IS NOT DISTINCT FROM l\.subject/)
   assert.match(source, /AS is_locked/)
-  assert.match(source, /contentUrl: isLocked \? null : row\.content_url/)
+  // A locked lesson still redacts its content URL, and a YouTube lesson now
+  // redacts it unconditionally: the video reaches the browser only through
+  // the scoped session route. See backend/test/lesson-video.test.js.
+  assert.match(source, /contentUrl: isLocked \|\| row\.video_id \|\| row\.video_quarantined \? null : row\.content_url/)
   assert.match(source, /requireUnlockedLesson\(await loadAccessibleLesson/)
   assert.match(source, /completion_test\.is_published = true/)
   assert.match(source, /completion_question\.is_active = true/)

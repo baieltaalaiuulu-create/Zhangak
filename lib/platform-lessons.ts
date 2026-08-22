@@ -1,3 +1,4 @@
+import { parseLessonVideoHandle, type LessonVideoHandle } from './lesson-video.ts'
 import { zhangakApiRequest } from './zhangak-api-client.ts'
 
 export type PlatformLessonSubject = 'math' | 'kyr' | 'other'
@@ -27,6 +28,8 @@ export interface PlatformLesson extends LessonView {
   topic: string | null
   lessonDate: string | null
   contentUrl: string | null
+  /** Present when the lesson owns a playable video. Never a watch URL. */
+  video: LessonVideoHandle | null
   isTest: boolean
   /** Derived by the own backend; a practice-bound lesson cannot self-complete. */
   completionMode: PlatformLessonCompletionMode
@@ -164,6 +167,7 @@ export function parsePlatformLesson(value: unknown): PlatformLesson {
     durationMinutes: nullablePositiveInteger(source.durationMinutes, 'длительность урока'),
     contentUrl,
     video_url: contentUrl,
+    video: parseLessonVideoHandle(source.video, 'lesson'),
     isTest: boolean(source.isTest, 'тип урока'),
     completionMode: completionMode(source.completionMode),
     isLocked: boolean(source.isLocked, 'доступность урока'),

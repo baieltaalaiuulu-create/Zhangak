@@ -13,7 +13,7 @@ export default function UniversitiesBottomCTA({ currentScore, targetScore }: Pro
     <div className="rounded-2xl p-6 text-white shadow-sm sm:p-8" style={{ background: 'linear-gradient(135deg, #1F1B3A 0%, #0D0D1A 100%)' }}>
       <h3 className="flex items-center gap-2 text-lg font-bold sm:text-xl"><BookOpenCheck size={20} aria-hidden="true" /> Начать подготовку к поступлению</h3>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/70">
-        Начни с опубликованных уроков и серверно проверенных тестов. Персональный план появится, когда AI-коуч будет подключён к проверенному учебному прогрессу.
+        Начни с опубликованных уроков и серверно проверенных тестов. Следующий шаг всегда виден в Roadmap, а результат можно закрепить практикой по темам.
       </p>
 
       <div className="mt-5 flex flex-wrap gap-6">

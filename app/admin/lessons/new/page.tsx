@@ -156,7 +156,7 @@ export default function AdminNewLessonPage() {
                   {courses.map(course => <option key={course.id} value={course.id}>{course.name}{course.isActive ? '' : ' (архив)'}</option>)}
                 </select>
               )}
-              {selectedCourse && <p className="mt-1.5 text-xs text-gray-400">{[selectedCourse.subject, selectedCourse.level].filter(Boolean).join(' · ') || 'Параметры курса не указаны'}</p>}
+              {selectedCourse && <p className="mt-1.5 text-xs text-gray-400">{[selectedCourse.subject === 'ort' ? 'Математика + кыргызский язык' : selectedCourse.subject, selectedCourse.level].filter(Boolean).join(' · ') || 'Параметры курса не указаны'}</p>}
             </div>
 
             <div>

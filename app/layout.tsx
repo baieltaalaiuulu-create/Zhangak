@@ -9,7 +9,7 @@ import ResourceHints from "@/components/ResourceHints";
 import { ADMIN_ORIGIN, MARKETING_ORIGIN, PLATFORM_ORIGIN, siteSurfaceForHost } from "@/lib/site-hosts";
 import "./globals.css";
 
-const description = "Жангак — платформа подготовки к ОРТ (ЖРТ) для школьников Кыргызстана. Курсы по математике, аналогиям, чтению и кыргызскому языку, тренажёры, пробные тесты и персональный AI-наставник."
+const description = "Жангак — платформа подготовки к ОРТ (ЖРТ) для школьников Кыргызстана. Курсы по математике, аналогиям, чтению и кыргызскому языку, тренажёры, пробные тесты и понятный Roadmap подготовки."
 const brandIconVersion = '20260813'
 const brandIcon = (path: string) => `${path}?v=${brandIconVersion}`
 
@@ -61,7 +61,7 @@ export async function generateMetadata(): Promise<Metadata> {
     icons: brandIcons,
     openGraph: {
       title: "Жангак — подготовка к ОРТ (ЖРТ)",
-      description: "Курсы, тренажёры, пробные тесты и AI-наставник для школьников Кыргызстана.",
+      description: "Курсы, тренажёры, пробные тесты и Roadmap подготовки для школьников Кыргызстана.",
       url: MARKETING_ORIGIN,
       siteName: "Жангак",
       locale: "ru_RU",

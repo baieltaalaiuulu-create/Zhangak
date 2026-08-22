@@ -30,7 +30,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "check:auth": "node scripts/check-native-auth.mjs"
+    "check:auth": "node scripts/check-native-auth.mjs",
+    "check:video": "node scripts/check-video-embed.mjs"
   },
   "private": true
 }

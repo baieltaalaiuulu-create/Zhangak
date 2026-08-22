@@ -52,8 +52,22 @@ expect(!/deleteLesson|Trash2|DeleteConfirmModal|questionCount/i.test(contents.li
 expect(contents.create.includes('createAdminLesson') && contents.create.includes('CourseCreateModal'), 'new lesson page must create course-scoped lessons without legacy data clients')
 expect(contents.editModal.includes('updateAdminLesson') && contents.editModal.includes('isPublished'), 'lesson editor must update publication state through the first-party API')
 expect(contents.courseEditModal.includes('updateAdminCourse') && contents.courseEditModal.includes('isActive'), 'course editor must update archival state through the first-party API')
-expect(contents.questions.includes('Редактор заданий переносится'), 'unmigrated question editor must present an explicit migration state')
-expect(!/QuestionImageUploader|fetchQuestionsForTest|ensurePracticeTestForLesson|correct_answer/i.test(contents.questions), 'question migration page must not invoke the legacy answer-key editor')
+// The lesson question entry point is a working editor now, not a migration
+// notice. What matters is that it mounts the one shared workspace scoped to
+// this lesson, so the answer-key boundary, the archive guard and the audit
+// trail cannot drift between two implementations.
+expect(contents.questions.includes('AdminAssessmentWorkspace'), 'lesson question editor must mount the shared assessment workspace')
+expect(/lessonId=\{lessonId\}/.test(contents.questions), 'lesson question editor must open already scoped to its lesson')
+expect(!contents.questions.includes('Редактор заданий переносится'), 'the migration notice must not outlive the working editor')
+expect(!/QuestionImageUploader|fetchQuestionsForTest|ensurePracticeTestForLesson|correct_answer/i.test(contents.questions), 'lesson question editor must not invoke the legacy answer-key editor')
+
+// The workspace itself is the security boundary the entry point relies on.
+const questionWorkspace = await source('components/admin/AdminAssessmentWorkspace.tsx')
+expect(questionWorkspace.includes('listAdminPracticeQuestions'), 'the workspace must read questions through the first-party client')
+expect(questionWorkspace.includes('archiveAdminPracticeQuestion') && questionWorkspace.includes('restoreAdminPracticeQuestion'), 'deletion must be a reversible archive, with an explicit restore')
+expect(!/fetch\s*\(|supabase|\/api\/admin\//i.test(questionWorkspace), 'the workspace must not bypass the first-party client')
+expect(questionWorkspace.includes('QUESTION_PAGE_SIZE'), 'the question bank must be paged rather than loaded whole')
+expect(/status: 'active'|status: 'archived'|AdminQuestionStatusFilter/.test(questionWorkspace), 'the catalogue must offer an active/archived filter')
 expect(contents.roadmap.includes('getAdminCourseRoadmap') && contents.roadmap.includes('createAdminRoadmapUnit'), 'mounted roadmap editor must use the own-backend roadmap client')
 expect(contents.roadmap.includes('placeAdminRoadmapLesson') && contents.roadmap.includes('removeAdminRoadmapLesson'), 'roadmap editor must safely place and remove lessons')
 
@@ -68,5 +82,5 @@ if (failures.length > 0) {
   for (const failure of failures) console.error(`- ${failure}`)
   process.exitCode = 1
 } else {
-  console.log('Admin learning journey check passed (first-party courses and lessons; question editor safely unavailable).')
+  console.log('Admin learning journey check passed (first-party courses, lessons and the shared lesson-scoped question editor).')
 }

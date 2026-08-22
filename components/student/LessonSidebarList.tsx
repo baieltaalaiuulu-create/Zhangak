@@ -27,7 +27,7 @@ export default function LessonSidebarList({ lessons, statuses, activeId }: Props
           const status = statuses[lesson.id]
           const SubjectIcon = SUBJECT_ICON[lesson.subject]
           const isActive = lesson.id === activeId
-          const rowClasses = `flex items-center gap-2.5 rounded-xl px-2.5 py-2 transition-colors ${
+          const rowClasses = `flex min-h-11 items-center gap-2.5 rounded-xl px-2.5 py-2 transition-colors ${
             isActive ? 'bg-blue-50' : status === 'locked' ? 'opacity-50' : 'hover:bg-gray-50'
           }`
 

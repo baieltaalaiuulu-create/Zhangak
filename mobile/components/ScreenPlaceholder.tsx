@@ -8,7 +8,7 @@ interface Props {
 }
 
 // Shared "coming soon" shell for screens this scaffold only stubs out
-// (Тренажёр / Пробный ОРТ / AI коуч) — same basic-structure scope as the
+// (Тренажёр / Пробный ОРТ) — same basic-structure scope as the
 // other screens, ready to be filled in with the real flow later.
 export default function ScreenPlaceholder({ icon, title, description }: Props) {
   return (

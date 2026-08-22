@@ -7,6 +7,7 @@
 export const COOKIE_INFORMATION_DISMISSED_KEY = 'zhangak-cookie-information-v1'
 export const MARKETING_TOUR_DISMISSED_KEY = 'zhangak-marketing-tour-v1'
 export const PLATFORM_ONBOARDING_DISMISSED_KEY = 'zhangak-onboarding-done'
+export const FIRST_VISIT_DISMISSED_EVENT = 'zhangak:first-visit-dismissed'
 
 type BrowserStorage = Pick<Storage, 'getItem' | 'setItem'>
 
@@ -25,4 +26,9 @@ export function markDismissed(storage: BrowserStorage, key: string): void {
     // Private browsing or a storage policy may reject writes. The guide stays
     // optional and the rest of the product must remain fully usable.
   }
+}
+
+export function shouldShowCookieInformation(storage: BrowserStorage): boolean {
+  return wasDismissed(storage, MARKETING_TOUR_DISMISSED_KEY)
+    && !wasDismissed(storage, COOKIE_INFORMATION_DISMISSED_KEY)
 }

@@ -2,8 +2,10 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { russianPlural } from '@/lib/russian-plural'
 import {
   ArrowLeft,
   ArrowRight,
@@ -47,6 +49,7 @@ const SECTION_ICON = {
 } satisfies Record<PlatformLessonSubject, typeof BookOpen>
 
 export default function LessonsPage() {
+  const searchParams = useSearchParams()
   const user = useStudentSession()
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -83,6 +86,16 @@ export default function LessonsPage() {
     setToast(message)
     window.setTimeout(() => setToast(null), TOAST_DURATION_MS)
   }
+
+  // The topbar search hands its term over in the URL, so a result page can be
+  // shared, reloaded and cleared like any other view.
+  const searchTerm = (searchParams.get('q') ?? '').trim()
+  const visibleLessons = useMemo(() => {
+    if (searchTerm === '') return lessons
+    const needle = searchTerm.toLocaleLowerCase('ru-RU')
+    return lessons.filter(lesson => [lesson.title, lesson.topic, lesson.section, lesson.sourceSubject]
+      .some(field => field != null && field.toLocaleLowerCase('ru-RU').includes(needle)))
+  }, [lessons, searchTerm])
 
   if (loadError) {
     return (
@@ -122,6 +135,7 @@ export default function LessonsPage() {
   const completedIds = completedPlatformLessonIds(lessons)
   const statuses = computePlatformLessonStatuses(lessons, completedIds)
   const completedCount = completedIds.size
+
   const total = lessons.length
   const overallPct = total > 0 ? Math.round((completedCount / total) * 100) : 0
   const streak = platformLessonCompletionStreak(lessons)
@@ -135,7 +149,7 @@ export default function LessonsPage() {
   const remainingToday = currentLesson && !completedToday.has(currentLesson.id) ? 1 : 0
 
   const sections = SECTIONS.map(section => {
-    const list = lessons.filter(lesson => lesson.subject === section.subject)
+    const list = visibleLessons.filter(lesson => lesson.subject === section.subject)
     const completed = list.filter(lesson => completedIds.has(lesson.id)).length
     return {
       ...section,
@@ -198,6 +212,18 @@ export default function LessonsPage() {
             )}
           </div>
 
+          {searchTerm !== '' && (
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--student-line)] bg-white px-4 py-3">
+              <p className="min-w-0 text-sm font-semibold text-gray-700" aria-live="polite">
+                {visibleLessons.length === 0
+                  ? <>Ничего не найдено по запросу «<span className="break-words">{searchTerm}</span>»</>
+                  : <>Найдено {visibleLessons.length} {russianPlural(visibleLessons.length, 'урок', 'урока', 'уроков')} по запросу «<span className="break-words">{searchTerm}</span>»</>}
+              </p>
+              <Link href="/student/online/lessons" className="inline-flex min-h-11 items-center rounded-xl border border-[var(--student-line)] px-3 text-sm font-bold text-[#1B3F92]">
+                Сбросить
+              </Link>
+            </div>
+          )}
           {total === 0 ? emptyState : (
             <div className="space-y-3">
               {sections.filter(section => section.list.length > 0).map(section => {
@@ -266,6 +292,18 @@ export default function LessonsPage() {
             </div>
           )}
 
+          {searchTerm !== '' && (
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--student-line)] bg-white px-4 py-3">
+              <p className="min-w-0 text-sm font-semibold text-gray-700" aria-live="polite">
+                {visibleLessons.length === 0
+                  ? <>Ничего не найдено по запросу «<span className="break-words">{searchTerm}</span>»</>
+                  : <>Найдено {visibleLessons.length} {russianPlural(visibleLessons.length, 'урок', 'урока', 'уроков')} по запросу «<span className="break-words">{searchTerm}</span>»</>}
+              </p>
+              <Link href="/student/online/lessons" className="inline-flex min-h-11 items-center rounded-xl border border-[var(--student-line)] px-3 text-sm font-bold text-[#1B3F92]">
+                Сбросить
+              </Link>
+            </div>
+          )}
           {total === 0 ? emptyState : (
             <div className="space-y-10">
               {sections.filter(section => section.list.length > 0).map(section => (

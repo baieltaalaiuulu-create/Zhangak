@@ -61,9 +61,11 @@ const source = {
 test('legacy demo plan imports only validated text content and defers source storage images', () => {
   const plan = buildLegacyDemoPlan(source)
   assert.deepEqual(importPlanSummary(plan), {
-    sourceSystem: 'supabase-demo-v1', courses: 2, lessons: 2, tests: 1, questions: 1, deferred: 1,
+    sourceSystem: 'supabase-demo-v1', courses: 1, lessons: 2, tests: 1, questions: 1, deferred: 1,
   })
-  assert.equal(plan.courses[0].code, 'demo-ort-kyr')
+  assert.equal(plan.courses[0].code, 'demo-ort-2026')
+  assert.equal(plan.courses[0].subject, 'ort')
+  assert.deepEqual(plan.lessons.map(lesson => [lesson.subject, lesson.lessonNumber]), [['math', 1], ['kyr', 2]])
   assert.equal(plan.tests[0].maxAttempts, null)
   assert.equal(plan.tests[0].passScoreRatio, 0.5)
   assert.equal(plan.questions[0].correctAnswer, 'b')

@@ -31,23 +31,6 @@
 ::-webkit-scrollbar-track { background: #0D1E4A; }
 ::-webkit-scrollbar-thumb { background: #2563EB; border-radius: 99px; }
 
-/* AI Mentor — card entrance + typing indicator (components/student/ai/*) */
-@keyframes ai-fade-in-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-ai-fade-in {
-  animation: ai-fade-in-up 0.35s ease-out both;
-}
-
-@keyframes ai-typing-dot {
-  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-  40% { transform: translateY(-4px); opacity: 1; }
-}
-.animate-ai-typing-dot {
-  animation: ai-typing-dot 1.2s ease-in-out infinite;
-}
-
 @media (max-width: 768px) {
   .hero-grid { flex-direction: column !important; }
   .hero-images { display: none !important; }
@@ -78,7 +61,7 @@
   --student-line-strong: #CBD5E6;
   --student-ink: #0F172A;
   --student-ink-2: #475569;
-  --student-ink-3: #8A96AC;
+  --student-ink-3: #5F6B7A;
   --student-brand: #1B3F92;
   --student-brand-dark: #153477;
   --student-brand-50: #E8EDFA;

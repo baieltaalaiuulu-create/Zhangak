@@ -4,6 +4,7 @@ import { DELETE, GET, HttpError, PATCH, POST, readJson } from '../http.js'
 import { requireRole } from '../authorization.js'
 import { receiveMaterialUpload } from '../multipart.js'
 import { removePrivateObject } from '../storage.js'
+import { canonicalYoutubeWatchUrl, normalizeYoutubeVideoId } from '../youtube.js'
 
 // Curriculum publishing is intentionally narrower than user management.  A
 // junior administrator can administer assigned student accounts, but cannot
@@ -44,6 +45,10 @@ const MATERIAL_FIELDS = Object.freeze({
   externalUrl: 'external_url',
   isPublished: 'is_published',
 })
+
+// `hasOnly` validates the keys a client may send; these column maps add the
+// server-derived `video_id`, which a client must never be able to set.
+const LESSON_COLUMNS = Object.freeze({ ...LESSON_FIELDS, videoId: 'video_id', videoQuarantined: 'video_quarantined' })
 
 const ROADMAP_UNIT_FIELDS = Object.freeze({
   unitNumber: 'unit_number',
@@ -197,19 +202,26 @@ export function parseRoadmapPlacementBody(body) {
   }
 }
 
-function youtubeUrl(value) {
-  const url = nullableHttpsUrl(value, 'invalid_material_video_url')
-  if (url === null || !/^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//.test(url)) {
-    throw new HttpError(400, 'Разрешены только ссылки YouTube', 'invalid_material_video_url')
-  }
-  return url
+/**
+ * Every administrator-supplied video reference collapses to one verified id
+ * here. The stored URL is regenerated from that id, so a playlist, a live
+ * stream, a tracking parameter or a lookalike host never reaches the
+ * database and the student route never re-parses operator input.
+ */
+function youtubeVideoSource(value) {
+  const videoId = normalizeYoutubeVideoId(value)
+  return { videoId, externalUrl: canonicalYoutubeWatchUrl(videoId) }
 }
 
 function publicMaterial(row) {
   return {
     id: Number(row.id), lessonId: Number(row.lesson_id), materialType: row.material_type,
     title: row.title, position: Number(row.position), bodyMarkdown: row.body_markdown ?? null,
-    externalUrl: row.external_url ?? null, mimeType: row.mime_type ?? null,
+    externalUrl: row.external_url ?? null, videoId: row.video_id ?? null,
+    // A video row with no verified id is quarantined: preserved and
+    // unpublishable until an administrator re-enters the reference.
+    needsVideoRepair: row.material_type === 'video' && !row.video_id,
+    mimeType: row.mime_type ?? null,
     byteSize: row.byte_size == null ? null : Number(row.byte_size),
     isPublished: row.is_published, scanStatus: row.scan_status,
     originalFilename: row.original_filename ?? null, createdAt: row.created_at,
@@ -229,10 +241,11 @@ export function parseMaterialTextBody(body) {
   }
   if (materialType === 'rich_text') {
     if (keys.some(key => !['materialType', 'title', 'position', 'bodyMarkdown', 'isPublished'].includes(key))) throw new HttpError(400, 'Некорректный текстовый материал', 'invalid_lesson_material')
-    return { materialType, title: requiredText(body.title, 300, 'invalid_material_title'), position: positivePosition(body.position), bodyMarkdown: requiredText(body.bodyMarkdown, 500_000, 'invalid_material_body'), externalUrl: null, isPublished: body.isPublished ?? false }
+    return { materialType, title: requiredText(body.title, 300, 'invalid_material_title'), position: positivePosition(body.position), bodyMarkdown: requiredText(body.bodyMarkdown, 500_000, 'invalid_material_body'), externalUrl: null, videoId: null, isPublished: body.isPublished ?? false }
   }
   if (keys.some(key => !['materialType', 'title', 'position', 'externalUrl', 'isPublished'].includes(key))) throw new HttpError(400, 'Некорректный видео-материал', 'invalid_lesson_material')
-  return { materialType, title: requiredText(body.title, 300, 'invalid_material_title'), position: positivePosition(body.position), bodyMarkdown: null, externalUrl: youtubeUrl(body.externalUrl), isPublished: body.isPublished ?? false }
+  const video = youtubeVideoSource(body.externalUrl)
+  return { materialType, title: requiredText(body.title, 300, 'invalid_material_title'), position: positivePosition(body.position), bodyMarkdown: null, externalUrl: video.externalUrl, videoId: video.videoId, isPublished: body.isPublished ?? false }
 }
 
 function pagination(searchParams) {
@@ -326,14 +339,15 @@ function courseInput(body, { requireName }) {
 /** Strictly validates data accepted when a course is created. */
 export function parseCourseCreateBody(body) {
   const input = courseInput(body, { requireName: true })
+  const deliveryMode = input.deliveryMode ?? 'online'
   return {
     name: input.name,
     code: input.code ?? null,
     level: input.level ?? null,
-    subject: input.subject ?? null,
+    subject: deliveryMode === 'online' ? 'ort' : (input.subject ?? null),
     description: input.description ?? null,
     coverImageUrl: input.coverImageUrl ?? null,
-    deliveryMode: input.deliveryMode ?? 'online',
+    deliveryMode,
     isActive: input.isActive ?? true,
   }
 }
@@ -367,7 +381,19 @@ function lessonInput(body, { requireTitleAndNumber }) {
     }
     input.durationMinutes = body.durationMinutes
   }
-  if (Object.hasOwn(body, 'contentUrl')) input.contentUrl = nullableHttpsUrl(body.contentUrl, 'invalid_lesson_content_url')
+  if (Object.hasOwn(body, 'contentUrl')) {
+    // A lesson may still point at a non-YouTube resource (an external
+    // reading). Only a YouTube value becomes a playable video, and it is
+    // normalized here so `video_id` and `content_url` can never disagree.
+    const raw = nullableHttpsUrl(body.contentUrl, 'invalid_lesson_content_url')
+    const looksLikeYoutube = raw !== null && /^https:\/\/(?:[a-z0-9-]+\.)*(?:youtube\.com|youtu\.be|youtube-nocookie\.com)(?:[/:?]|$)/i.test(raw)
+    const video = looksLikeYoutube ? youtubeVideoSource(raw) : null
+    input.contentUrl = video ? video.externalUrl : raw
+    input.videoId = video ? video.videoId : null
+    // Any accepted write leaves a decodable state, so a legacy quarantine
+    // flag set by migration 015 is cleared here rather than lingering.
+    input.videoQuarantined = false
+  }
   if (Object.hasOwn(body, 'isTest')) {
     if (typeof body.isTest !== 'boolean') throw new HttpError(400, 'Некорректный тип урока', 'invalid_lesson_test')
     input.isTest = body.isTest
@@ -392,6 +418,8 @@ export function parseLessonCreateBody(body) {
     lessonDate: input.lessonDate ?? null,
     durationMinutes: input.durationMinutes ?? null,
     contentUrl: input.contentUrl ?? null,
+    videoId: input.videoId ?? null,
+    videoQuarantined: false,
     isTest: input.isTest ?? false,
     isPublished: input.isPublished ?? false,
   }
@@ -434,12 +462,12 @@ async function insertTextMaterial(client, actor, lessonId, input) {
   await lessonExists((text, values) => client.query(text, values), lessonId)
   const inserted = await client.query(
     `INSERT INTO lesson_materials (
-       lesson_id, material_type, title, position, body_markdown, external_url,
+       lesson_id, material_type, title, position, body_markdown, external_url, video_id,
        is_published, scan_status, scanned_at, scanned_by, created_by
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'clean', now(), $8, $8)
-     RETURNING id, lesson_id, material_type, title, position, body_markdown, external_url,
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'clean', now(), $9, $9)
+     RETURNING id, lesson_id, material_type, title, position, body_markdown, external_url, video_id,
                mime_type, byte_size, is_published, scan_status, original_filename, created_at`,
-    [lessonId, input.materialType, input.title, input.position, input.bodyMarkdown, input.externalUrl, input.isPublished, actor.id],
+    [lessonId, input.materialType, input.title, input.position, input.bodyMarkdown, input.externalUrl, input.videoId, input.isPublished, actor.id],
   )
   const row = inserted.rows[0]
   await audit(client, actor, 'create_lesson_material', 'lesson_material', row.id, [input.materialType, 'text'])
@@ -451,7 +479,7 @@ GET('/v1/admin/lessons/:lessonId/materials', async ({ req, params, config }) => 
   const lessonId = positiveId(params.lessonId, 'lesson_id')
   await lessonExists(dbQuery, lessonId)
   const result = await dbQuery(
-    `SELECT id, lesson_id, material_type, title, position, body_markdown, external_url,
+    `SELECT id, lesson_id, material_type, title, position, body_markdown, external_url, video_id,
             mime_type, byte_size, is_published, scan_status, original_filename, created_at
        FROM lesson_materials WHERE lesson_id = $1 ORDER BY position, id`,
     [lessonId],
@@ -492,7 +520,7 @@ POST('/v1/admin/lessons/:lessonId/materials/upload', async ({ req, params, confi
            lesson_id, material_type, title, position, storage_key, mime_type, byte_size,
            is_published, scan_status, original_filename, content_sha256, created_by
          ) VALUES ($1, $2, $3, $4, $5, $6, $7, false, 'pending', $8, $9, $10)
-         RETURNING id, lesson_id, material_type, title, position, body_markdown, external_url,
+         RETURNING id, lesson_id, material_type, title, position, body_markdown, external_url, video_id,
                    mime_type, byte_size, is_published, scan_status, original_filename, created_at`,
         [lessonId, upload.file.materialType, title, position, upload.key, upload.file.mimeType,
           upload.file.bytes, upload.file.originalFilename, upload.file.sha256, actor.id],
@@ -522,7 +550,7 @@ POST('/v1/admin/materials/:materialId/review', async ({ req, params, config }) =
   if (body.status === 'rejected' && body.publish === true) throw new HttpError(400, 'Отклонённый материал нельзя публиковать', 'invalid_material_review')
   const result = await transaction(async client => {
     const current = await client.query(
-      `SELECT id, lesson_id, material_type, title, position, body_markdown, external_url, storage_key,
+      `SELECT id, lesson_id, material_type, title, position, body_markdown, external_url, video_id, storage_key,
               mime_type, byte_size, is_published, scan_status, original_filename, created_at
          FROM lesson_materials WHERE id = $1 FOR UPDATE`, [materialId],
     )
@@ -536,7 +564,7 @@ POST('/v1/admin/materials/:materialId/review', async ({ req, params, config }) =
       `UPDATE lesson_materials
           SET scan_status = $2, scanned_at = now(), scanned_by = $3, is_published = $4
         WHERE id = $1
-        RETURNING id, lesson_id, material_type, title, position, body_markdown, external_url,
+        RETURNING id, lesson_id, material_type, title, position, body_markdown, external_url, video_id,
                   mime_type, byte_size, is_published, scan_status, original_filename, created_at`,
       [materialId, body.status, actor.id, published],
     )
@@ -545,6 +573,82 @@ POST('/v1/admin/materials/:materialId/review', async ({ req, params, config }) =
   })
   if (body.status === 'rejected') await removePrivateObject(config, result.storageKey).catch(() => {})
   return { status: 200, body: { material: publicMaterial(result.material) } }
+})
+
+/**
+ * Publish or hide a non-file material.
+ *
+ * Rich text and video carry no uploaded object, so there is nothing for an
+ * antivirus/review queue to clear: they are created `clean` but unpublished,
+ * and this is how an administrator makes one visible after checking it.
+ *
+ * Documents and images are deliberately excluded. They must continue to go
+ * through `/review`, which is the step that records who inspected the file.
+ */
+/**
+ * Publish, hide, or repair a non-file material.
+ *
+ * Rich text and video carry no uploaded object, so there is nothing for an
+ * antivirus/review queue to clear: they are created `clean` but unpublished,
+ * and this is how an administrator makes one visible after checking it.
+ *
+ * `externalUrl` is the repair path for a quarantined video — a legacy row
+ * whose reference migration 015 could not decode. The replacement goes
+ * through the same normalizer as a fresh insert, so a repair cannot smuggle
+ * in a playlist or a lookalike host, and a successful repair moves the row
+ * back into the canonical playable state.
+ *
+ * Documents and images are deliberately excluded. They must continue to go
+ * through `/review`, which is the step that records who inspected the file.
+ */
+PATCH('/v1/admin/materials/:materialId', async ({ req, params, config }) => {
+  const actor = await adminContentManager(config, req)
+  const materialId = positiveId(params.materialId, 'material_id')
+  const body = objectBody(await readJson(req, 4_000), 'invalid_material_patch')
+  const keys = hasOnly(body, { isPublished: 'is_published', externalUrl: 'external_url' }, 'invalid_material_patch')
+  if (keys.length === 0) throw new HttpError(400, 'Некорректные данные', 'invalid_material_patch')
+  if (Object.hasOwn(body, 'isPublished') && typeof body.isPublished !== 'boolean') {
+    throw new HttpError(400, 'Некорректный статус публикации', 'invalid_material_publish')
+  }
+  const repair = Object.hasOwn(body, 'externalUrl') ? youtubeVideoSource(body.externalUrl) : null
+
+  const material = await transaction(async client => {
+    const current = await client.query(
+      'SELECT id, material_type, video_id, is_published FROM lesson_materials WHERE id = $1 FOR UPDATE',
+      [materialId],
+    )
+    const row = current.rows[0]
+    if (!row) throw new HttpError(404, 'Материал не найден', 'material_not_found')
+    if (!['rich_text', 'video'].includes(row.material_type)) {
+      throw new HttpError(409, 'Файл публикуется только после проверки', 'material_review_required')
+    }
+    if (repair && row.material_type !== 'video') {
+      throw new HttpError(409, 'Ссылку можно заменить только у видео', 'invalid_material_type')
+    }
+    const videoId = repair ? repair.videoId : row.video_id
+    const isPublished = Object.hasOwn(body, 'isPublished') ? body.isPublished : row.is_published
+    // A video row without a verified id is quarantined; publishing it would
+    // render an empty player. Repairing and publishing in one request is
+    // allowed because the repair supplies the id in the same transaction.
+    if (row.material_type === 'video' && !videoId && isPublished) {
+      throw new HttpError(409, 'Сначала исправьте ссылку на видео', 'material_video_repair_required')
+    }
+    const updated = await client.query(
+      `UPDATE lesson_materials
+          SET is_published = $2,
+              external_url = COALESCE($3, external_url),
+              video_id = COALESCE($4, video_id),
+              updated_at = now()
+        WHERE id = $1
+        RETURNING id, lesson_id, material_type, title, position, body_markdown, external_url, video_id,
+                  mime_type, byte_size, is_published, scan_status, original_filename, created_at`,
+      [materialId, isPublished, repair?.externalUrl ?? null, repair?.videoId ?? null],
+    )
+    const action = repair ? 'repair_lesson_material_video' : (isPublished ? 'publish_lesson_material' : 'hide_lesson_material')
+    await audit(client, actor, action, 'lesson_material', materialId, [row.material_type])
+    return updated.rows[0]
+  })
+  return { status: 200, body: { material: publicMaterial(material) } }
 })
 
 GET('/v1/admin/courses', async ({ req, config, query: searchParams }) => {
@@ -598,12 +702,33 @@ POST('/v1/admin/courses', async ({ req, config }) => {
   }
 })
 
+GET('/v1/admin/courses/:courseId', async ({ req, params, config }) => {
+  await adminContentManager(config, req)
+  const courseId = positiveId(params.courseId, 'course_id')
+  const result = await dbQuery(
+    `SELECT c.id, c.name, c.code, c.level, c.subject, c.description, c.cover_image_url, c.delivery_mode,
+            c.is_active, c.created_at, c.updated_at, count(l.id)::int AS lesson_count
+       FROM courses c
+       LEFT JOIN lessons l ON l.course_id = c.id
+      WHERE c.id = $1
+      GROUP BY c.id`,
+    [courseId],
+  )
+  const course = result.rows[0]
+  if (!course) throw new HttpError(404, 'Курс не найден', 'course_not_found')
+  return { status: 200, body: { course: publicCourse(course) } }
+})
+
 PATCH('/v1/admin/courses/:courseId', async ({ req, params, config }) => {
   const actor = await adminContentManager(config, req)
   const courseId = positiveId(params.courseId, 'course_id')
   const input = parseCoursePatchBody(await readJson(req, 128_000))
   try {
     const course = await transaction(async client => {
+      const current = await client.query('SELECT delivery_mode FROM courses WHERE id = $1 FOR UPDATE', [courseId])
+      if (!current.rows[0]) throw new HttpError(404, 'Курс не найден', 'course_not_found')
+      const nextDeliveryMode = input.deliveryMode ?? current.rows[0].delivery_mode
+      if (nextDeliveryMode === 'online') input.subject = 'ort'
       const statement = updateSql('courses', 'id', courseId, input, COURSE_FIELDS)
       const updated = await client.query(
         `${statement.text}
@@ -659,13 +784,13 @@ POST('/v1/admin/courses/:courseId/lessons', async ({ req, params, config }) => {
       const inserted = await client.query(
         `INSERT INTO lessons (
            course_id, lesson_number, title, description, subject, section, topic, lesson_date,
-           duration_minutes, content_url, is_test, is_published, created_by
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+           duration_minutes, content_url, video_id, video_quarantined, is_test, is_published, created_by
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
          RETURNING id, course_id, lesson_number, title, description, subject, section, topic,
                    lesson_date, duration_minutes, content_url, is_test, is_published, created_at, updated_at`,
         [
           courseId, input.lessonNumber, input.title, input.description, input.subject, input.section,
-          input.topic, input.lessonDate, input.durationMinutes, input.contentUrl, input.isTest,
+          input.topic, input.lessonDate, input.durationMinutes, input.contentUrl, input.videoId, input.videoQuarantined, input.isTest,
           input.isPublished, actor.id,
         ],
       )
@@ -680,13 +805,27 @@ POST('/v1/admin/courses/:courseId/lessons', async ({ req, params, config }) => {
   }
 })
 
+GET('/v1/admin/lessons/:lessonId', async ({ req, params, config }) => {
+  await adminContentManager(config, req)
+  const lessonId = positiveId(params.lessonId, 'lesson_id')
+  const result = await dbQuery(
+    `SELECT id, course_id, lesson_number, title, description, subject, section, topic,
+            lesson_date, duration_minutes, content_url, is_test, is_published, created_at, updated_at
+       FROM lessons WHERE id = $1`,
+    [lessonId],
+  )
+  const lesson = result.rows[0]
+  if (!lesson) throw new HttpError(404, 'Урок не найден', 'lesson_not_found')
+  return { status: 200, body: { lesson: publicLesson(lesson) } }
+})
+
 PATCH('/v1/admin/lessons/:lessonId', async ({ req, params, config }) => {
   const actor = await adminContentManager(config, req)
   const lessonId = positiveId(params.lessonId, 'lesson_id')
   const input = parseLessonPatchBody(await readJson(req, 256_000))
   try {
     const lesson = await transaction(async client => {
-      const statement = updateSql('lessons', 'id', lessonId, input, LESSON_FIELDS)
+      const statement = updateSql('lessons', 'id', lessonId, input, LESSON_COLUMNS)
       const updated = await client.query(
         `${statement.text}
          RETURNING id, course_id, lesson_number, title, description, subject, section, topic,

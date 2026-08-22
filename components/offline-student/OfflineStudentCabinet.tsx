@@ -1,8 +1,8 @@
 'use client'
 
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
-import { useMemo, useState, type TouchEvent } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useCallback, useMemo, useState, type TouchEvent } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -365,40 +365,57 @@ function HomeworkSection({ homework, onSubmitted }: { homework: OfflineHomework[
 }
 
 function useSwipe(onMove: (delta: number) => void) {
-  const [startX, setStartX] = useState<number | null>(null)
+  const [start, setStart] = useState<{ x: number; y: number } | null>(null)
   return {
-    onTouchStart: (event: TouchEvent) => setStartX(event.touches[0]?.clientX ?? null),
+    onTouchStart: (event: TouchEvent) => {
+      const point = event.touches[0]
+      setStart(point ? { x: point.clientX, y: point.clientY } : null)
+    },
     onTouchEnd: (event: TouchEvent) => {
-      if (startX == null) return
-      const endX = event.changedTouches[0]?.clientX ?? startX
-      const distance = endX - startX
-      if (Math.abs(distance) >= 70) onMove(distance < 0 ? 1 : -1)
-      setStartX(null)
+      if (start == null) return
+      const point = event.changedTouches[0]
+      const distanceX = (point?.clientX ?? start.x) - start.x
+      const distanceY = (point?.clientY ?? start.y) - start.y
+      // Only intentional horizontal swipes should switch cabinet sections.
+      // A normal vertical page scroll or diagonal gesture must keep its state.
+      if (Math.abs(distanceX) >= 70 && Math.abs(distanceX) > Math.abs(distanceY) * 1.5) {
+        onMove(distanceX < 0 ? 1 : -1)
+      }
+      setStart(null)
     },
   }
 }
 
 export default function OfflineStudentCabinet({ dashboard, onRefresh }: { dashboard: OfflineStudentDashboard; onRefresh: () => Promise<void> }) {
   const router = useRouter()
-  const [section, setSection] = useState<Section>('home')
+  const searchParams = useSearchParams()
+  const requestedSection = searchParams.get('section')
+  const section: Section = SECTIONS.some(item => item.id === requestedSection) ? requestedSection as Section : 'home'
   const [menuOpen, setMenuOpen] = useState(false)
   const sectionIndex = SECTIONS.findIndex(item => item.id === section)
+  const goTo = useCallback((next: Section) => {
+    setMenuOpen(false)
+    const params = new URLSearchParams(searchParams.toString())
+    if (next === 'home') params.delete('section')
+    else params.set('section', next)
+    router.replace(params.size ? `/student?${params.toString()}` : '/student', { scroll: false })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [router, searchParams])
   const swipe = useSwipe(delta => {
     if (section === 'schedule') return
     const nextIndex = Math.min(SECTIONS.length - 1, Math.max(0, sectionIndex + delta))
-    setSection(SECTIONS[nextIndex].id)
+    goTo(SECTIONS[nextIndex].id)
   })
   const content = useMemo(() => {
-    if (section === 'home') return <HomeSection dashboard={dashboard} goTo={setSection} />
+    if (section === 'home') return <HomeSection dashboard={dashboard} goTo={goTo} />
     if (section === 'schedule') return <ScheduleSection lessons={dashboard.lessons} />
     if (section === 'attendance') return <AttendanceSection lessons={dashboard.lessons} />
     if (section === 'materials') return <MaterialsSection lessons={dashboard.lessons} available={dashboard.availability.materials} />
     if (section === 'practice') return <PracticeSection />
     if (section === 'progress') return <ProgressSection dashboard={dashboard} />
     return <HomeworkSection homework={dashboard.homework} onSubmitted={onRefresh} />
-  }, [dashboard, onRefresh, section])
+  }, [dashboard, goTo, onRefresh, section])
 
-  const goTo = (next: Section) => { setSection(next); setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   const logout = async () => {
     await logoutZhangak().catch(() => {})
     router.replace('/login')
@@ -406,7 +423,7 @@ export default function OfflineStudentCabinet({ dashboard, onRefresh }: { dashbo
 
   return (
     <div className="min-h-screen bg-[#F6F7FB] text-slate-900">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#1B3F92]"><Image src="/images/logo.png" alt="Жангак" width={40} height={40} className="h-full w-full object-cover" /></span><div className="min-w-0"><p className="truncate text-sm font-black text-slate-950">Жангак</p><p className="truncate text-xs text-slate-500">Офлайн-кабинет • {dashboard.group?.name ?? 'без группы'}</p></div></div>
           <div className="flex items-center gap-1"><button type="button" onClick={() => setMenuOpen(true)} aria-label="Открыть все разделы" className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 lg:hidden"><Menu size={21} /></button><button type="button" onClick={() => void logout()} aria-label="Выйти" className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600"><LogOut size={20} /></button></div>

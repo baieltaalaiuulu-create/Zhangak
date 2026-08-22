@@ -19,7 +19,7 @@ export default function CourseEditModal({ course, onClose, onSaved }: Props) {
   const [name, setName] = useState(course.name)
   const [code, setCode] = useState(course.code ?? '')
   const [level, setLevel] = useState(course.level ?? '')
-  const [subject, setSubject] = useState(course.subject ?? '')
+  const [subject, setSubject] = useState(course.deliveryMode === 'online' ? 'ort' : (course.subject ?? ''))
   const [description, setDescription] = useState(course.description ?? '')
   const [isActive, setIsActive] = useState(course.isActive)
   const [saving, setSaving] = useState(false)
@@ -38,7 +38,7 @@ export default function CourseEditModal({ course, onClose, onSaved }: Props) {
         name: name.trim(),
         code: optionalText(code)?.toLowerCase() ?? null,
         level: optionalText(level),
-        subject: optionalText(subject),
+        subject: course.deliveryMode === 'online' ? 'ort' : optionalText(subject),
         description: optionalText(description),
         isActive,
       })
@@ -71,7 +71,7 @@ export default function CourseEditModal({ course, onClose, onSaved }: Props) {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-semibold text-gray-500">Код курса</label>
-              <input value={code} onChange={event => setCode(event.target.value)} placeholder="ort-math-11"
+              <input value={code} onChange={event => setCode(event.target.value)} placeholder="ort-online-11"
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm lowercase outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
             </div>
             <div>
@@ -80,11 +80,14 @@ export default function CourseEditModal({ course, onClose, onSaved }: Props) {
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
             </div>
           </div>
-          <div>
+          {course.deliveryMode === 'online' ? <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+            <p className="text-sm font-bold text-[#1B3F92]">Единый курс ОРТ</p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">Математика и кыргызский язык настраиваются на уровне уроков и разделов.</p>
+          </div> : <div>
             <label className="mb-1 block text-xs font-semibold text-gray-500">Предмет</label>
             <input value={subject} onChange={event => setSubject(event.target.value)} placeholder="Математика"
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
-          </div>
+          </div>}
           <div>
             <label className="mb-1 block text-xs font-semibold text-gray-500">Описание</label>
             <textarea value={description} onChange={event => setDescription(event.target.value)} rows={3}

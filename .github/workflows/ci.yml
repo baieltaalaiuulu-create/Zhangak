@@ -58,6 +58,13 @@ jobs:
       - name: Apply and verify first-party database migrations
         run: npm --prefix backend run verify:migrations
 
+      - name: Run PostgreSQL-backed lesson video integration tests
+        env:
+          # The same ephemeral CI service; the suite refuses any database whose
+          # name does not read as disposable.
+          ZHANGAK_TEST_DATABASE_URL: postgresql://zhangak_ci:zhangak_ci_ephemeral_password@127.0.0.1:5432/zhangak_ci
+        run: npm --prefix backend test
+
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -97,6 +104,9 @@ jobs:
 
       - name: Check student mobile UX invariants
         run: npm run check:student-mobile-ux
+
+      - name: Check lesson video player invariants
+        run: npm run check:lesson-video
 
       - name: Check university journey invariants
         run: npm run check:university-journey
@@ -141,6 +151,7 @@ jobs:
         run: |
           npm ci
           npm run check:auth
+          npm run check:video
           npx tsc --noEmit --pretty false
 
       - name: Check first-party browser authentication
@@ -158,6 +169,16 @@ jobs:
       - name: Build production application
         run: npm run build
 
+      - name: Install Chromium for rendered acceptance tests
+        # GitHub's Ubuntu image already contains the shared browser libraries.
+        # `--with-deps` runs apt update against external mirrors and previously
+        # consumed the entire 30-minute job timeout before any E2E test ran.
+        timeout-minutes: 5
+        run: npx playwright install chromium
+
+      - name: Test rendered lesson video experience
+        run: npm run test:e2e
+
       - name: Scan browser bundles for private secrets
         run: npm run check:client-secrets
 
@@ -172,5 +193,9 @@ jobs:
         with:
           name: zhangak-standalone-${{ github.sha }}
           path: .next/standalone
+          # The standalone runtime requires its nested `.next/static` tree.
+          # upload-artifact excludes dot-prefixed paths unless explicitly told
+          # to preserve them, producing an artifact the activator rejects.
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 7

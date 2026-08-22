@@ -49,10 +49,22 @@ const requiredTables = [
   'course_unit_lessons',
   'public_applications',
   'public_application_events',
-  'ai_consents',
-  'ai_conversations',
-  'ai_messages',
   'push_subscriptions',
+  'student_xp_totals',
+  'gamification_events',
+  'quest_definitions',
+  'quest_definition_revisions',
+  'quest_instances',
+  'student_quest_progress',
+  'achievement_definitions',
+  'student_achievements',
+  'profile_cosmetic_definitions',
+  'student_profile_cosmetics',
+  'student_featured_achievements',
+  'student_social_friendships',
+  'student_social_blocks',
+  'lesson_revisions',
+  'lesson_revision_blocks',
 ]
 
 function fail(message) {
@@ -134,7 +146,12 @@ async function verifySchema(client) {
   const missingTables = requiredTables.filter(table => !presentTables.has(table))
   if (missingTables.length > 0) fail(`required tables are missing: ${missingTables.join(', ')}`)
 
-  const profileColumns = ['profile_color', 'daily_study_goal_minutes']
+  const profileColumns = [
+    'profile_color', 'daily_study_goal_minutes', 'public_profile_id', 'community_visibility',
+    'community_display_name', 'community_profile_visibility', 'community_show_xp',
+    'community_show_achievements', 'community_show_streak', 'community_allow_friend_requests',
+    'community_discoverable', 'profile_frame_code', 'profile_background_code', 'profile_title_code',
+  ]
   const columnResult = await client.query(
     `SELECT column_name
        FROM information_schema.columns
@@ -168,6 +185,38 @@ async function verifySchema(client) {
   const presentApplicationColumns = new Set(applicationResult.rows.map(row => row.column_name))
   const missingApplicationColumns = applicationColumns.filter(column => !presentApplicationColumns.has(column))
   if (missingApplicationColumns.length > 0) fail(`public application columns are missing: ${missingApplicationColumns.join(', ')}`)
+
+  const enrollmentColumns = ['access_plan', 'access_started_at', 'access_expires_at', 'frozen_at', 'frozen_seconds_remaining', 'freeze_reason']
+  const enrollmentResult = await client.query(
+    `SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'course_enrollments'
+        AND column_name = ANY($1::text[])`, [enrollmentColumns],
+  )
+  const missingEnrollmentColumns = enrollmentColumns.filter(column => !new Set(enrollmentResult.rows.map(row => row.column_name)).has(column))
+  if (missingEnrollmentColumns.length > 0) fail(`online access columns are missing: ${missingEnrollmentColumns.join(', ')}`)
+
+  const questResult = await client.query(
+    `SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'student_quest_progress' AND column_name = 'ready_at'`,
+  )
+  if (questResult.rowCount !== 1) fail('quest reward ready_at column is missing')
+
+  const retiredAiResult = await client.query(
+    `SELECT table_name
+       FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name = ANY($1::text[])`,
+    [['ai_consents', 'ai_conversations', 'ai_messages']],
+  )
+  if (retiredAiResult.rowCount !== 0) fail('retired product AI tables still exist')
+
+  const revisionResult = await client.query(
+    `SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'lessons'
+        AND column_name = 'published_revision_id'`,
+  )
+  if (revisionResult.rowCount !== 1) fail('lessons.published_revision_id is missing')
+
 }
 
 async function main() {

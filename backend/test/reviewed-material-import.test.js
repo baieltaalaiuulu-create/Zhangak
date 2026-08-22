@@ -13,7 +13,7 @@ test('reviewed PDF plan is an exact, chat-free allowlist', { skip: !existsSync(s
   const summary = reviewedMaterialSummary(plan)
   assert.equal(summary.materialCount, 34)
   assert.equal(summary.materialCount, REVIEWED_MATERIAL_IMPORT.expectedPdfCount)
-  assert.deepEqual(summary.courses, ['demo-ort-kyr', 'demo-ort-math'])
+  assert.deepEqual(summary.courses, ['demo-ort-2026'])
   assert.ok(summary.totalBytes > 10_000_000)
   assert.ok(plan.materials.every(item => !item.sourceId.includes('06_chat_exports_and_history')))
   assert.ok(plan.materials.every(item => /^[a-f0-9]{64}$/u.test(item.contentSha256)))

@@ -108,6 +108,23 @@ async function assertNoRootSecrets() {
   }
 }
 
+async function stripGeneratedEnvironmentFiles() {
+  // Next's standalone file tracing copies the local root `.env` into the
+  // generated runtime when one exists. Runtime configuration on the VPS is
+  // supplied by systemd, so shipping that build-time file is both unnecessary
+  // and unsafe. Remove only `.env*` files from the generated standalone root;
+  // unexpected key/certificate/credential files still fail closed below.
+  const entries = await readdir(standaloneDirectory, { withFileTypes: true })
+  const generatedEnvFiles = entries
+    .filter((entry) => entry.isFile() && /^\.env(?:\.|$)/i.test(entry.name))
+    .map((entry) => path.join(standaloneDirectory, entry.name))
+
+  for (const target of generatedEnvFiles) {
+    assertDestinationIsGenerated(target)
+    await rm(target, { force: true })
+  }
+}
+
 async function main() {
   assertCleanSource()
 
@@ -123,6 +140,7 @@ async function main() {
     assertReadable(buildIdFile, 'Next.js build ID'),
   ])
 
+  await stripGeneratedEnvironmentFiles()
   await assertNoRootSecrets()
   await replaceDirectory(publicDirectory, path.join(standaloneDirectory, 'public'))
   await replaceDirectory(staticDirectory, path.join(standaloneDirectory, '.next', 'static'))

@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
 import {
   Clock3,
   Flame,
@@ -176,6 +177,7 @@ export default function LandingPage() {
           .s-pad{padding-left:28px!important;padding-right:28px!important}
           .courses-grid{grid-template-columns:1fr!important}
           .results-grid{grid-template-columns:1fr 1fr 1fr!important}
+          .application-cta-grid{grid-template-columns:1fr!important;gap:24px!important}
         }
       `}</style>
 
@@ -192,7 +194,7 @@ export default function LandingPage() {
           {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
             <div style={{ width: '34px', height: '34px', background: '#1B3F92', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
-              <img src="/images/logo.png" alt="Z" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <Image src="/images/logo.png" alt="Zhangak" width={34} height={34} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <span style={{ fontWeight: '900', fontSize: '17px', color: '#0D1E4A' }}>Zhangak</span>
           </div>
@@ -279,7 +281,15 @@ export default function LandingPage() {
           {/* Right — gallery */}
           <div className="hero-right" style={{ flex: '0 0 420px' }}>
             <div style={{ position: 'relative', borderRadius: '22px', overflow: 'hidden', aspectRatio: '3/4', marginBottom: '10px', background: 'linear-gradient(135deg,#050C1F,#0D1E4A,#1B3F92)', boxShadow: '0 20px 56px rgba(27,63,146,0.28)' }}>
-              <img key={activeResult} src={ALL_RESULTS[activeResult].img} alt={ALL_RESULTS[activeResult].name} style={{ width: '100%', height: '100%', objectFit: 'cover', animation: 'fadeScale 0.5s ease both' }} />
+              <Image
+                key={activeResult}
+                src={ALL_RESULTS[activeResult].img}
+                alt={ALL_RESULTS[activeResult].name}
+                fill
+                sizes="420px"
+                fetchPriority="high"
+                style={{ objectFit: 'cover', animation: 'fadeScale 0.5s ease both' }}
+              />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(5,12,31,0.97) 0%,transparent 50%)' }} />
               <div style={{ position: 'absolute', bottom: '18px', left: '18px', right: '18px' }}>
                 <div style={{ fontWeight: '900', fontSize: '44px', color: '#fff', letterSpacing: '-2px', lineHeight: 1 }}>{ALL_RESULTS[activeResult].score}</div>
@@ -289,14 +299,16 @@ export default function LandingPage() {
             </div>
             <div style={{ display: 'flex', gap: '6px' }}>
               {ALL_RESULTS.map((r, i) => (
-                <button key={i} type="button" onClick={() => setActiveResult(i)} aria-label={`${r.name}: ${r.score} балл`} aria-pressed={activeResult === i} className="result-thumb" style={{ flex: 1, aspectRatio: '1', padding: 0, borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', border: activeResult === i ? '2px solid #1B3F92' : '2px solid transparent', transition: 'all 0.2s', opacity: activeResult === i ? 1 : 0.6, background: '#0D1E4A' }}>
-                  <img src={r.img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <button key={i} type="button" onClick={() => setActiveResult(i)} aria-label={`${r.name}: ${r.score} балл`} aria-pressed={activeResult === i} className="result-thumb" style={{ position: 'relative', flex: 1, aspectRatio: '1', padding: 0, borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', border: activeResult === i ? '2px solid #1B3F92' : '2px solid transparent', transition: 'all 0.2s', opacity: activeResult === i ? 1 : 0.6, background: '#0D1E4A' }}>
+                  <Image src={r.img} alt="" fill sizes="56px" style={{ objectFit: 'cover' }} />
                 </button>
               ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '5px', marginTop: '10px' }}>
               {ALL_RESULTS.map((_, i) => (
-                <button key={i} type="button" onClick={() => setActiveResult(i)} aria-label={`Жыйынтык ${i + 1}`} aria-current={activeResult === i ? 'true' : undefined} style={{ width: activeResult === i ? '24px' : '12px', height: '12px', padding: 0, border: 'none', borderRadius: '999px', background: activeResult === i ? '#1B3F92' : '#BFDBFE', cursor: 'pointer', transition: 'all 0.3s' }} />
+                <button key={i} type="button" onClick={() => setActiveResult(i)} aria-label={`Жыйынтык ${i + 1}`} aria-current={activeResult === i ? 'true' : undefined} style={{ width: '44px', height: '44px', padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>
+                  <span aria-hidden="true" style={{ width: activeResult === i ? '24px' : '12px', height: '8px', borderRadius: '999px', background: activeResult === i ? '#1B3F92' : '#BFDBFE', transition: 'all 0.3s' }} />
+                </button>
               ))}
             </div>
           </div>
@@ -445,10 +457,14 @@ export default function LandingPage() {
           <div className="results-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: '12px' }}>
             {ALL_RESULTS.map((r, i) => (
               <Reveal key={i} delay={i * 60}>
-                <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', aspectRatio: '3/4', border: i === 0 ? '2px solid #1B3F92' : '1px solid #E2E8F0', background: '#0D1E4A', transition: 'transform 0.3s ease', cursor: 'pointer' }}
-                  onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.03)')}
-                  onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}>
-                  <img src={r.img} alt={r.name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }} />
+                <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', aspectRatio: '3/4', border: i === 0 ? '2px solid #1B3F92' : '1px solid #E2E8F0', background: '#0D1E4A' }}>
+                  <Image
+                    src={r.img}
+                    alt={r.name}
+                    fill
+                    sizes="(max-width: 700px) 50vw, (max-width: 900px) 33vw, 300px"
+                    style={{ objectFit: 'cover', opacity: 0.9 }}
+                  />
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(5,12,31,1) 0%,transparent 55%)' }} />
                   {i === 0 && <div style={{ position: 'absolute', top: '10px', left: '10px', background: '#1B3F92', color: '#fff', fontSize: '9px', fontWeight: '900', padding: '3px 8px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '4px' }}><Trophy size={10} aria-hidden="true" /> Эң жогорку</div>}
                   <div style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px' }}>

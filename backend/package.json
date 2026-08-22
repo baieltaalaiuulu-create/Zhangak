@@ -18,6 +18,8 @@
     "universities:import": "node scripts/import-university-catalog.mjs --dry-run",
     "push:reminders": "node scripts/send-study-reminders.js",
     "import:legacy-demo": "node scripts/import-supabase-demo-content.js --dry-run",
+    "seed:lesson-assessment-demo": "node scripts/seed-lesson-assessment-demo.js",
+    "seed:demo-student": "node scripts/seed-demo-student.js",
     "package:release": "node scripts/package-release.js",
     "check": "node scripts/check-syntax.js",
     "test": "node --test test/*.test.js"

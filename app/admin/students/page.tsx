@@ -3,7 +3,8 @@
 export const dynamic = 'force-dynamic'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus, RefreshCw, Search } from 'lucide-react'
+import Link from 'next/link'
+import { Activity, Plus, RefreshCw, Search } from 'lucide-react'
 import AdminTopbar from '@/components/admin/AdminTopbar'
 import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
 import StudentFormModal from '@/components/admin/students/StudentFormModal'
@@ -152,11 +153,16 @@ export default function AdminStudentsPage() {
             <h2 className="text-lg font-extrabold text-[#191B23]">Учётные записи</h2>
             <p className="mt-1 text-sm text-gray-500">Данные аккаунтов, пароли и блокировка управляются через собственный API Zhangak.</p>
           </div>
-          <button type="button" onClick={reload} disabled={loading}
-            className="inline-flex min-h-10 items-center justify-center gap-2 self-start rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-60 sm:self-auto">
-            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
-            Обновить
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/admin/students/monitoring" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-3 text-sm font-bold text-white">
+              <Activity size={16} aria-hidden="true" />Мониторинг и доступ
+            </Link>
+            <button type="button" onClick={reload} disabled={loading}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-60">
+              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
+              Обновить
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -183,22 +189,60 @@ export default function AdminStudentsPage() {
           <div className="relative flex-1">
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
             <input value={search} onChange={event => setSearch(event.target.value)} placeholder="Поиск: имя, email или телефон"
-              className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
+              className="min-h-11 w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20" />
           </div>
           <select value={roleFilter} onChange={event => setRoleFilter(event.target.value as 'all' | AccountRole)}
-            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20">
+            className="min-h-11 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20">
             <option value="all">Все роли</option>
             {visibleRoles.map(role => <option key={role} value={role}>{ACCOUNT_ROLE_LABELS[role]}</option>)}
           </select>
           <select value={statusFilter} onChange={event => setStatusFilter(event.target.value as 'all' | 'active' | 'blocked')}
-            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20">
+            className="min-h-11 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1B3F92]/20">
             <option value="all">Все статусы</option>
             <option value="active">Активные</option>
             <option value="blocked">Заблокированные</option>
           </select>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+        <div className="space-y-3 md:hidden">
+          {loading ? (
+            <div className="rounded-xl border border-gray-200 bg-white px-4 py-10 text-center text-sm text-gray-400">Загрузка пользователей...</div>
+          ) : filtered.length === 0 ? (
+            <div className="rounded-xl border border-gray-200 bg-white px-4 py-10 text-center text-sm text-gray-400">Пользователи не найдены</div>
+          ) : filtered.map(account => (
+            <article key={account.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1B3F92] text-sm font-bold text-white">
+                  {account.fullName.slice(0, 1).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-[#191B23]">{account.fullName}</p>
+                  <p className="mt-0.5 truncate text-xs text-gray-400">{account.email}</p>
+                </div>
+                <StudentActionsMenu
+                  blocked={account.blocked}
+                  accountName={account.fullName}
+                  disabled={busyAccountId === account.id || account.id === actorId || account.role === 'super_admin'}
+                  onChangeRole={canManageRoles && account.id !== actorId && account.role !== 'super_admin'
+                    ? () => setRoleTarget(account)
+                    : undefined}
+                  onResetPassword={() => setResetTarget(account)}
+                  onToggleBlock={() => void handleToggleBlock(account)}
+                  onDelete={() => setDeleteTarget(account)}
+                />
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 text-xs">
+                <div><p className="text-gray-400">Роль</p><span className={`mt-1 inline-flex rounded-full px-2.5 py-1 font-bold ${ROLE_BADGE_COLORS[account.role] ?? 'bg-gray-100 text-gray-600'}`}>{ACCOUNT_ROLE_LABELS[account.role]}</span></div>
+                <div><p className="text-gray-400">Статус</p><span className={`mt-1 inline-flex rounded-full px-2.5 py-1 font-bold ${account.blocked ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>{account.blocked ? 'Заблокирован' : 'Активен'}</span></div>
+                <div><p className="text-gray-400">Телефон</p><p className="mt-1 font-semibold text-gray-600">{account.phone || '—'}</p></div>
+                <div><p className="text-gray-400">Создан</p><p className="mt-1 font-semibold text-gray-600">{formatCreatedAt(account.createdAt)}</p></div>
+                {account.role === 'student' && <div className="col-span-2"><p className="text-gray-400">Обучение</p><p className="mt-1 font-semibold text-gray-600">{account.studentType === 'online' ? 'Онлайн' : 'Оффлайн'} · цель {account.targetScore ?? '—'}</p></div>}
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto rounded-xl border border-gray-200 bg-white md:block">
           <table className="w-full min-w-[820px] text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
@@ -247,6 +291,7 @@ export default function AdminStudentsPage() {
                   <td className="px-3 py-3">
                     <StudentActionsMenu
                       blocked={account.blocked}
+                      accountName={account.fullName}
                       disabled={busyAccountId === account.id || account.id === actorId || account.role === 'super_admin'}
                       onChangeRole={canManageRoles && account.id !== actorId && account.role !== 'super_admin'
                         ? () => setRoleTarget(account)

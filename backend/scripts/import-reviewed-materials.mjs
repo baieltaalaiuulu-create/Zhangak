@@ -43,32 +43,32 @@ async function actor(client) {
 }
 
 async function ensureCurriculum(client, actorId) {
-  const courses = await client.query(`SELECT id, code FROM courses WHERE code IN ('demo-ort-kyr', 'demo-ort-math') FOR UPDATE`)
-  if (courses.rowCount !== 2) fail('expected online demo courses are missing')
-  const courseIds = new Map(courses.rows.map(row => [row.code, Number(row.id)]))
-  const kyrCourseId = courseIds.get('demo-ort-kyr')
-  const existing = await client.query('SELECT id FROM lessons WHERE course_id = $1 AND lesson_number = 3 FOR UPDATE', [kyrCourseId])
+  const courses = await client.query(`SELECT id, code FROM courses WHERE code = 'demo-ort-2026' FOR UPDATE`)
+  if (courses.rowCount !== 1) fail('the unified online ORT course is missing')
+  const courseId = Number(courses.rows[0].id)
+  const courseIds = new Map([['demo-ort-2026', courseId]])
+  const existing = await client.query('SELECT id FROM lessons WHERE course_id = $1 AND lesson_number = 6 FOR UPDATE', [courseId])
   if (!existing.rows[0]) {
     await client.query(
       `INSERT INTO lessons (course_id, lesson_number, title, description, subject, section, topic, duration_minutes, is_published, created_by)
-       VALUES ($1, 3, 'Кыргыз тили: грамматика', 'Морфология жана практикалык грамматика боюнча автордук материалдар.', 'kyr', 'grammar', 'practical-grammar', 45, true, $2)`,
-      [kyrCourseId, actorId],
+       VALUES ($1, 6, 'Кыргыз тили: грамматика', 'Морфология жана практикалык грамматика боюнча автордук материалдар.', 'kyr', 'grammar', 'practical-grammar', 45, true, $2)`,
+      [courseId, actorId],
     )
   }
   const lessons = await client.query(
     `SELECT l.id, l.course_id, l.lesson_number, c.code FROM lessons l JOIN courses c ON c.id = l.course_id
-      WHERE c.code IN ('demo-ort-kyr', 'demo-ort-math') AND l.lesson_number BETWEEN 1 AND 3 FOR UPDATE`,
+      WHERE c.code = 'demo-ort-2026' AND l.lesson_number BETWEEN 1 AND 6 FOR UPDATE`,
   )
   const lessonIds = new Map(lessons.rows.map(row => [`${row.code}:${row.lesson_number}`, Number(row.id)]))
-  for (const key of ['demo-ort-kyr:1', 'demo-ort-kyr:2', 'demo-ort-kyr:3', 'demo-ort-math:1', 'demo-ort-math:2', 'demo-ort-math:3']) {
+  for (const key of ['demo-ort-2026:1', 'demo-ort-2026:2', 'demo-ort-2026:3', 'demo-ort-2026:4', 'demo-ort-2026:5', 'demo-ort-2026:6']) {
     if (!lessonIds.has(key)) fail(`required lesson ${key} is missing`)
   }
 
   const units = [
-    ['demo-ort-kyr', 1, 'Аналогиялар', 'Логикалык байланыштарды кадам сайын өздөштүр.', 'green', [1, 2]],
-    ['demo-ort-kyr', 2, 'Кыргыз тили', 'Грамматика жана морфология боюнча материалдар.', 'violet', [3]],
-    ['demo-ort-math', 1, 'Сандар жана алгебра', 'Сандар, бөлчөктөр, пропорциялар жана формулалар.', 'blue', [1, 2]],
-    ['demo-ort-math', 2, 'Геометрия', 'Үч бурчтук жана төрт бурчтуктар боюнча практика.', 'red', [3]],
+    ['demo-ort-2026', 1, 'Сандар жана алгебра', 'Сандар, бөлчөктөр, пропорциялар жана формулалар.', 'blue', [1, 2]],
+    ['demo-ort-2026', 2, 'Геометрия', 'Үч бурчтук жана төрт бурчтуктар боюнча практика.', 'red', [3]],
+    ['demo-ort-2026', 3, 'Аналогиялар', 'Логикалык байланыштарды кадам сайын өздөштүр.', 'green', [4, 5]],
+    ['demo-ort-2026', 4, 'Кыргыз тили', 'Грамматика жана морфология боюнча материалдар.', 'violet', [6]],
   ]
   for (const [code, number, title, description, accent, lessonNumbers] of units) {
     const courseId = courseIds.get(code)
@@ -97,7 +97,7 @@ async function ensureCurriculum(client, actorId) {
       FROM legacy_content_imports i
      WHERE i.source_system = 'sorted_data_docx_v1' AND i.source_entity = 'practice_test'
        AND i.status = 'imported' AND i.target_entity = 'practice_tests' AND i.target_id = t.id::text`,
-    [kyrCourseId],
+    [courseId],
   )
   return { courseIds, lessonIds }
 }

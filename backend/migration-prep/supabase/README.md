@@ -12,7 +12,7 @@ stops with exit code `78` after validation even when `--apply` is present.
 
 | File | Purpose | Must never contain |
 | --- | --- | --- |
-| `source-inventory.template.json` | Read-only source schema/table/storage inventory. Candidate names come from `docs/database/contract.md`; they are not a claim about the live schema. | URLs with credentials, rows, password hashes, tokens, file contents |
+| `source-inventory.template.json` | Read-only source schema/table/storage inventory. Candidate names come from the archived `docs/archive/supabase/legacy-contract.md`; they are not a claim about the live schema. | URLs with credentials, rows, password hashes, tokens, file contents |
 | `mapping-manifest.template.json` | Explicit approved/blocked source-to-target mappings, dependencies, ID policy, and archive-only data. | Secret values or an assumption that a legacy ID is valid in the target |
 | `checksum-ledger.template.json` | Lock file for source schema and offline export checksums/counts. | The exports themselves or encrypted backup keys |
 

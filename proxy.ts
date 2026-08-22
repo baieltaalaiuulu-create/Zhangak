@@ -39,6 +39,7 @@ function routeSurface(pathname: string): RouteSurface {
   if (pathname === '/api/health') return 'shared'
   if (matchesPrefix(pathname, '/v1/public')) return 'marketing'
   if (matchesPrefix(pathname, '/v1/auth')) return 'workspace-auth-api'
+  if (matchesPrefix(pathname, '/v1/platform/ai')) return 'retired-api'
   // First-party product APIs are deliberately namespace-scoped. The Next BFF
   // forwards them only to the loopback Node API, while this host gate prevents
   // an admin endpoint from being called through platform.zhangak.com (and vice
@@ -150,6 +151,14 @@ export function proxy(request: NextRequest): NextResponse {
 
   const { pathname } = request.nextUrl
   if (pathname === '/robots.txt') return robotsResponse(surface)
+
+  // Product AI was deliberately removed. Preserve old student bookmarks as a
+  // safe, idempotent redirect to a real learning surface instead of serving a
+  // stale chat page or leaving a confusing dead end.
+  if (matchesPrefix(pathname, '/student/online/ai')) {
+    if (!['GET', 'HEAD'].includes(request.method)) return wrongApiSurface(surface)
+    return withSurfaceHeaders(redirectTo(request, PLATFORM_HOST, '/student/online/lessons'), surface)
+  }
 
   // Every host owns its root entry: marketing renders the landing page at
   // the canonical apex URL, while both private workspaces start at a login

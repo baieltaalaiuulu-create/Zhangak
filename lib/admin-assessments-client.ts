@@ -86,6 +86,8 @@ export interface AdminPracticeQuestionList {
   total: number
   limit: number
   offset: number
+  /** The lowest free 1-200 slot across the whole test, ignoring filters and paging. `null` means the test is full. */
+  nextAvailablePosition: number | null
 }
 
 const TEST_TYPES = new Set<AdminPracticeTestType>(['practice', 'mock', 'bank', 'diagnostic'])
@@ -261,7 +263,10 @@ export function parseAdminPracticeQuestionList(value: unknown): AdminPracticeQue
   const items = page.items.map(parseAdminPracticeQuestion)
   if (items.some(item => item.practiceTestId !== practiceTestId)) invalidResponse('тест вопроса не совпадает со списком')
   if (new Set(items.map(item => item.id)).size !== items.length) invalidResponse('повторяющиеся вопросы')
-  return { ...page, practiceTestId, items }
+  const nextAvailablePosition = source.nextAvailablePosition === null
+    ? null
+    : positiveInteger(source.nextAvailablePosition, 'свободная позиция вопроса', 200)
+  return { ...page, practiceTestId, items, nextAvailablePosition }
 }
 
 function pageSuffix(options: { limit?: number; offset?: number }): string {
@@ -315,10 +320,57 @@ export async function updateAdminPracticeTest(testId: number, input: Partial<Adm
   return parseAdminPracticeTest(record(response, 'обновлённый тест').practiceTest)
 }
 
-export async function listAdminPracticeQuestions(testId: number, options: { limit?: number; offset?: number } = {}): Promise<AdminPracticeQuestionList> {
+export type AdminQuestionStatusFilter = 'active' | 'archived' | 'all'
+
+export interface AdminQuestionCatalogQuery {
+  limit?: number
+  offset?: number
+  /** Free text matched against question text and topic, server-side. */
+  search?: string
+  status?: AdminQuestionStatusFilter
+  section?: string
+  difficulty?: AdminPracticeQuestionDifficulty
+}
+
+function catalogSuffix(options: AdminQuestionCatalogQuery): string {
+  const params = new URLSearchParams()
+  if (options.limit != null) params.set('limit', String(options.limit))
+  if (options.offset != null) params.set('offset', String(options.offset))
+  // Blank values are omitted rather than sent: an empty `q` must mean "no
+  // search", not a filter that quietly matches everything by accident.
+  if (options.search?.trim()) params.set('q', options.search.trim())
+  if (options.status && options.status !== 'all') params.set('status', options.status)
+  if (options.section?.trim()) params.set('section', options.section.trim())
+  if (options.difficulty) params.set('difficulty', options.difficulty)
+  return params.size > 0 ? `?${params.toString()}` : ''
+}
+
+export async function listAdminPracticeQuestions(testId: number, options: AdminQuestionCatalogQuery = {}): Promise<AdminPracticeQuestionList> {
   return parseAdminPracticeQuestionList(await zhangakApiRequest<unknown>(
-    `/v1/admin/practice-tests/${pathId(testId, 'id теста')}/questions${pageSuffix(options)}`,
+    `/v1/admin/practice-tests/${pathId(testId, 'id теста')}/questions${catalogSuffix(options)}`,
   ))
+}
+
+/**
+ * Loads a complete filtered bank without violating the API's 100-row page
+ * limit.  Screens that genuinely need the whole bank (currently the daily
+ * challenge picker) must use this helper instead of asking the server for an
+ * invalid `limit=200` page.
+ */
+export async function listAllAdminPracticeQuestions(
+  testId: number,
+  options: Omit<AdminQuestionCatalogQuery, 'limit' | 'offset'> = {},
+): Promise<AdminPracticeQuestion[]> {
+  const pageSize = 100
+  const items: AdminPracticeQuestion[] = []
+  let offset = 0
+
+  for (;;) {
+    const page = await listAdminPracticeQuestions(testId, { ...options, limit: pageSize, offset })
+    items.push(...page.items)
+    if (page.items.length === 0 || items.length >= page.total) return items
+    offset += page.items.length
+  }
 }
 
 export async function createAdminPracticeQuestion(testId: number, input: AdminPracticeQuestionInput): Promise<AdminPracticeQuestion> {
@@ -328,6 +380,21 @@ export async function createAdminPracticeQuestion(testId: number, input: AdminPr
     input,
   )
   return parseAdminPracticeQuestion(record(response, 'созданный вопрос').question)
+}
+
+/**
+ * "Delete" in the product means archive.
+ *
+ * A question can be referenced by immutable attempt history, the trainer and
+ * daily challenges, so it is deactivated rather than removed. There is
+ * deliberately no HTTP DELETE to call.
+ */
+export async function archiveAdminPracticeQuestion(questionId: number): Promise<AdminPracticeQuestion> {
+  return updateAdminPracticeQuestion(questionId, { isActive: false })
+}
+
+export async function restoreAdminPracticeQuestion(questionId: number): Promise<AdminPracticeQuestion> {
+  return updateAdminPracticeQuestion(questionId, { isActive: true })
 }
 
 export async function updateAdminPracticeQuestion(questionId: number, input: Partial<AdminPracticeQuestionInput>): Promise<AdminPracticeQuestion> {

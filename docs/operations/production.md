@@ -19,12 +19,11 @@
 | Система | Требуемые параметры | Правило |
 | --- | --- | --- |
 | Web/BFF | `ZHANGAK_API_INTERNAL_URL` | Только loopback URL приватного API. |
-| AI, когда функция реально активирована | `AI_PROVIDER` и ключ выбранного поставщика, например `DEEPSEEK_API_KEY` | Только server-side; модель и лимиты описаны в [AI runbook](../ai-provider.md). |
 | API | `DATABASE_URL`, `JWT_SECRET`, `ALLOWED_ORIGINS` | Обязательны; API отказывается стартовать без них. `JWT_SECRET` — минимум 32 символа и не шаблон. |
 | API runtime | `HOST`, `PORT`, `DATABASE_SSL`, `ACCESS_TOKEN_TTL_SECONDS`, `REFRESH_TOKEN_TTL_DAYS`, `TRUST_PROXY`, `ZHANGAK_API_RELEASE_SHA` | Значения должны соответствовать окружению и HTTPS reverse proxy. |
 | Однократный bootstrap | `ZHANGAK_ADMIN_EMAIL`, `ZHANGAK_ADMIN_PASSWORD`, `ZHANGAK_ADMIN_NAME` | Используются только для создания первого super-admin на сервере; не добавляются в постоянный env-файл и не печатаются. |
 
-Шаблоны содержат **имена**, а не реальные секреты: [web env example](../../deploy/zhangak.env.example), [API env example](../../deploy/api/zhangak-api.env.example). `DEEPSEEK_API_KEY`, пароль БД и JWT secret нужно считать скомпрометированными, если они когда-либо попадали в чат, commit, CI log или браузерный bundle: заменить секрет, перезапустить затронутый сервис и отозвать старое значение.
+Шаблоны содержат **имена**, а не реальные секреты: [web env example](../../deploy/zhangak.env.example), [API env example](../../deploy/api/zhangak-api.env.example). Пароль БД и JWT secret нужно считать скомпрометированными, если они когда-либо попадали в чат, commit, CI log или браузерный bundle: заменить секрет, перезапустить затронутый сервис и отозвать старое значение. Ранее раскрытые ключи LLM-провайдеров нужно отозвать в кабинетах провайдеров; они не должны оставаться на VPS после удаления продуктового ИИ.
 
 ## Перед выпуском
 
@@ -74,7 +73,7 @@ curl --fail http://127.0.0.1:3210/v1/ready
 4. Определить retention, владельца, оповещение о неуспешном backup и допустимые RPO/RTO до приема реальных учебных данных.
 5. Минимум раз в квартал выполнять восстановление последней копии в изолированную базу, запускать readiness/checks и фиксировать время/результат. Никогда не проверять restore поверх production.
 
-Исторический [Supabase recovery guide](../database/recovery.md) относится только к архивному источнику. Он не является инструкцией restore собственной PostgreSQL Zhangak и не разрешает вернуть Supabase в production.
+Исторический [Supabase recovery guide](../archive/supabase/schema-recovery-2026-08.md) относится только к архивному источнику. Он не является инструкцией restore собственной PostgreSQL Zhangak и не разрешает вернуть Supabase в production.
 
 ## Наблюдение и инциденты
 

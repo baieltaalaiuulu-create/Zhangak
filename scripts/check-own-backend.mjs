@@ -87,7 +87,7 @@ const platformProfile = await read('backend/src/routes/platform-profile.js')
 expect(platformProfile.includes("GET('/v1/platform/profile'"), 'student profile read endpoint is required')
 expect(platformProfile.includes("PATCH('/v1/platform/profile'"), 'student profile update endpoint is required')
 expect(platformProfile.includes("new Set(['student', 'math_student'])"), 'student profile endpoint must enforce student roles')
-expect(platformProfile.includes("const allowed = new Set(['fullName', 'avatarUrl', 'targetScore', 'profileColor', 'dailyStudyGoalMinutes'])"), 'student profile fields must be explicitly whitelisted')
+expect(platformProfile.includes("const allowed = new Set(['fullName', 'avatarUrl', 'targetScore', 'profileColor', 'dailyStudyGoalMinutes', 'communityVisibility'])"), 'student profile fields must be explicitly whitelisted')
 expect(!platformProfile.includes("DELETE('/v1/platform/profile'"), 'student profile deletion must remain unavailable until data deletion is transactional')
 
 const platformOffline = await read('backend/src/routes/platform-offline.js')

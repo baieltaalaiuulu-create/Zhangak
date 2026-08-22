@@ -7,7 +7,7 @@ import { DEFAULT_TARGET_SCORE } from '@/lib/student-dashboard-contract'
 import { redirectForRole } from '@/lib/auth-redirect'
 import { PLATFORM_ORIGIN } from '@/lib/site-hosts'
 import { getCurrentZhangakUser, logoutZhangak, type ZhangakSessionUser } from '@/lib/zhangak-auth-client'
-import { zhangakApiRequest } from '@/lib/zhangak-api-client'
+import { checkInGamification } from '@/lib/platform-community'
 import StudentSidebar from './StudentSidebar'
 import StudentTopbar from './StudentTopbar'
 import BottomNav from './BottomNav'
@@ -21,20 +21,16 @@ interface Props {
 
 // The mock exam screen (/student/online/mock/[id], but not its /results child
 // or the /mock listing page) runs full-screen with its own dark header — no
-// sidebar/topbar chrome. AI Mentor keeps its own 3-column chat layout (dark
-// session sidebar, topbar, analytics panel), while retaining BottomNav on
-// mobile because AI is one of the five primary destinations. The daily-challenge
-// question flow is full screen with its own progress
+// sidebar/topbar chrome. The daily-challenge question flow is full screen
+// with its own progress
 // header — but its /results child stays inside the normal shell (same
 // split as the mock exam vs. mock results).
 const EXAM_ROUTE = /^\/student\/online\/mock\/[^/]+$/
-const AI_PAGE_ROUTE = /^\/student\/online\/ai/
 const DAILY_CHALLENGE_ROUTE = /^\/student\/online\/practice\/daily$/
 
 export default function StudentLayout({ children }: Props) {
   const router = useRouter()
   const pathname = usePathname()
-  const isAiPage = AI_PAGE_ROUTE.test(pathname ?? '')
   const isImmersivePage = EXAM_ROUTE.test(pathname ?? '') || DAILY_CHALLENGE_ROUTE.test(pathname ?? '')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [fullName, setFullName] = useState('Студент')
@@ -43,6 +39,7 @@ export default function StudentLayout({ children }: Props) {
   const [streak, setStreak] = useState(0)
   const [xp, setXp] = useState(0)
   const [level, setLevel] = useState(1)
+  const [pendingQuestRewards, setPendingQuestRewards] = useState(0)
   const [sessionUser, setSessionUser] = useState<ZhangakSessionUser | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
   const [authError, setAuthError] = useState(false)
@@ -88,16 +85,17 @@ export default function StudentLayout({ children }: Props) {
         setAvatarUrl(user.avatarUrl ?? null)
         setAuthChecked(true)
 
-        // Progress metrics arrive with the first-party dashboard endpoint.
-        // Until that learning slice is populated, a valid account must still
-        // reach its workspace without a legacy Supabase request or redirect.
+        // Check-in is server-idempotent for the Bishkek calendar day.  It
+        // gives the shell a compact trusted XP/streak projection instead of
+        // loading the full public leaderboard for one student's totals.
         setStreak(0)
-        void zhangakApiRequest<{ items: Array<{ xp: number; isMe: boolean }> }>('/v1/platform/leaderboard')
+        void checkInGamification()
           .then(result => {
-            const ownXp = result.items.find(item => item.isMe)?.xp ?? 0
             if (!active) return
-            setXp(ownXp)
-            setLevel(Math.max(1, Math.floor(ownXp / 500) + 1))
+            setXp(result.summary.xp)
+            setLevel(result.summary.level)
+            setStreak(result.summary.streak)
+            setPendingQuestRewards(result.summary.pendingQuestRewards)
           })
           .catch(() => {})
       } catch {
@@ -107,6 +105,15 @@ export default function StudentLayout({ children }: Props) {
     void load()
     return () => { active = false }
   }, [authAttempt, router])
+
+  useEffect(() => {
+    const update = (event: Event) => {
+      const pending = Number((event as CustomEvent<{ pending?: number }>).detail?.pending)
+      if (Number.isSafeInteger(pending) && pending >= 0) setPendingQuestRewards(pending)
+    }
+    window.addEventListener('zhangak:quest-rewards', update)
+    return () => window.removeEventListener('zhangak:quest-rewards', update)
+  }, [])
 
   const handleLogout = async () => {
     await logoutZhangak().catch(() => {})
@@ -163,23 +170,18 @@ export default function StudentLayout({ children }: Props) {
 
   if (isImmersivePage) return <StudentSessionProvider user={sessionUser} onProfileUpdated={applyProfileUpdate}>{children}</StudentSessionProvider>
 
-  // AI keeps its focused chat shell, but the five-item mobile navigation
-  // remains available just like it does on the other primary destinations.
-  if (isAiPage) {
-    return (
-      <StudentSessionProvider user={sessionUser} onProfileUpdated={applyProfileUpdate}>
-        {children}
-        <BottomNav />
-      </StudentSessionProvider>
-    )
-  }
-
   return (
     <StudentSessionProvider user={sessionUser} onProfileUpdated={applyProfileUpdate}>
       <div className="student-visual min-h-screen bg-[#F1F4FB] md:bg-[#FAF8FF]">
-        <StudentSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} fullName={fullName} avatarUrl={avatarUrl} profileColor={sessionUser.profileColor} />
+        <StudentSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} fullName={fullName} avatarUrl={avatarUrl} profileColor={sessionUser.profileColor} pendingQuestRewards={pendingQuestRewards} />
 
-        <div className="mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden bg-[#F1F4FB] md:ml-64 md:max-w-none md:overflow-visible md:bg-[#FAF8FF]">
+        {/* The sidebar is `fixed w-64`, so from `md` up this column is offset
+            by 16rem. It must therefore be 16rem NARROWER than the viewport:
+            `w-full` here would make the column viewport-wide and push its last
+            16rem off-screen, which the global `overflow-x: clip` then hides
+            instead of revealing. `min-w-0` keeps long unbreakable strings from
+            widening the column back out. */}
+        <div className="mx-auto min-h-screen w-full min-w-0 max-w-[430px] overflow-x-hidden bg-[#F1F4FB] md:ml-64 md:w-[calc(100%-16rem)] md:max-w-none md:overflow-visible md:bg-[#FAF8FF]">
           <StudentTopbar
             fullName={fullName}
             avatarUrl={avatarUrl}
@@ -194,9 +196,9 @@ export default function StudentLayout({ children }: Props) {
           <main className="pb-20 md:pb-0">{children}</main>
         </div>
 
-        <BottomNav />
-        {/* Announcements and AI are intentionally absent until their own
-            first-party APIs replace the retired Supabase data paths. */}
+        <BottomNav pendingQuestRewards={pendingQuestRewards} />
+        {/* Announcements are intentionally absent until their own
+            first-party API is available. */}
         <PWAInstallBanner ready={Boolean(sessionUser)} />
       </div>
     </StudentSessionProvider>

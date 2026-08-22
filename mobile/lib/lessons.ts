@@ -20,7 +20,7 @@ export interface PlatformLesson {
   lessonDate: string | null
   durationMinutes: number | null
   contentUrl: string | null
-  videoUrl: string | null
+  video: LessonVideoHandle | null
   isTest: boolean
   completionPercent: number
   completedAt: string | null
@@ -57,6 +57,21 @@ export interface PlatformDashboard {
   }
 }
 
+/**
+ * A server-issued path that trades for a player configuration. It is not a
+ * video URL and is never cached: the exchange re-checks enrollment and the
+ * lesson lock at the moment the student presses play.
+ */
+export interface LessonVideoHandle {
+  sessionPath: string
+}
+
+export interface LessonVideoConfig {
+  videoId: string
+  title: string
+  embedHost: string
+}
+
 export type LessonMaterialType = 'rich_text' | 'video' | 'document' | 'image'
 
 export interface PlatformLessonMaterial {
@@ -67,8 +82,8 @@ export interface PlatformLessonMaterial {
   position: number
   /** Available offline only for server-sanitized rich text. */
   bodyMarkdown: string | null
-  /** Network-only YouTube URL; never cached. */
-  externalUrl: string | null
+  /** Network-only video handle; never cached, never a watch URL. */
+  video: LessonVideoHandle | null
   mimeType: string | null
   byteSize: number | null
   /** Authenticated private-file endpoint; never cached. */
@@ -190,6 +205,85 @@ function nullableMimeType(value: unknown): string | null {
   return mime
 }
 
+const LESSON_VIDEO_SESSION = /^\/v1\/platform\/lessons\/\d+\/video$/
+const MATERIAL_VIDEO_SESSION = /^\/v1\/platform\/materials\/\d+\/video$/
+const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/
+const YOUTUBE_EMBED_HOST = 'https://www.youtube-nocookie.com'
+
+function nullableVideoHandle(value: unknown, kind: 'lesson' | 'material'): LessonVideoHandle | null {
+  if (value === null || typeof value === 'undefined') return null
+  if (typeof value !== 'object' || Array.isArray(value)) throw new NativeDtoError('видео урока')
+  const source = value as Record<string, unknown>
+  if (source.available !== true) return null
+  const sessionPath = source.sessionPath
+  const pattern = kind === 'lesson' ? LESSON_VIDEO_SESSION : MATERIAL_VIDEO_SESSION
+  if (typeof sessionPath !== 'string' || !pattern.test(sessionPath)) throw new NativeDtoError('путь видео')
+  return { sessionPath }
+}
+
+export function parseLessonVideoConfig(value: unknown): LessonVideoConfig {
+  const source = record(value, 'конфигурация видео')
+  const video = record(source.video, 'конфигурация видео')
+  const videoId = video.videoId
+  const title = video.title
+  if (typeof videoId !== 'string' || !VIDEO_ID_PATTERN.test(videoId)) throw new NativeDtoError('идентификатор видео')
+  if (typeof title !== 'string' || title.trim() === '') throw new NativeDtoError('название видео')
+  if (video.embedHost !== YOUTUBE_EMBED_HOST) throw new NativeDtoError('источник видео')
+  return { videoId, title, embedHost: YOUTUBE_EMBED_HOST }
+}
+
+/**
+ * Origin the companion presents to YouTube.
+ *
+ * A React Native WebView loaded straight from a remote `uri` has no document
+ * of its own, so the embedded player receives no usable Referer and YouTube
+ * can refuse playback with error 153. Rendering a local document under an
+ * explicit `baseUrl` gives the WebView a real origin, which is the supported
+ * way to satisfy the embedded-player identity requirement on both Android and
+ * iOS.
+ */
+export const MOBILE_EMBED_BASE_URL = 'https://platform.zhangak.com'
+
+/**
+ * Builds the bounded local document that hosts the embed.
+ *
+ * Only a video id that already passed the 11-character validator is
+ * interpolated, and nothing else from the server reaches the markup — no
+ * title, no operator string, no server-supplied HTML. That keeps this a
+ * fixed template with one constrained substitution rather than an injection
+ * surface.
+ *
+ * Parameters are the supported ones only: `enablejsapi`, `playsinline`,
+ * `rel`, `origin`. Deprecated `modestbranding`/`showinfo`/`autohide` are not
+ * sent, and the Referer is not suppressed.
+ */
+export function youtubeEmbedDocument(videoId: string): string {
+  if (!VIDEO_ID_PATTERN.test(videoId)) throw new NativeDtoError('идентификатор видео')
+  const src = `${YOUTUBE_EMBED_HOST}/embed/${videoId}`
+    + `?enablejsapi=1&playsinline=1&rel=0&origin=${encodeURIComponent(MOBILE_EMBED_BASE_URL)}`
+  return [
+    '<!DOCTYPE html>',
+    '<html lang="ru"><head><meta charset="utf-8">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
+    // Full-bleed and non-scrolling: the WebView is already sized to a 16:9
+    // box by the native side, so the document must fill it exactly. The dark
+    // background matches the container so a rotation never flashes white bars
+    // while the embed re-lays out.
+    '<style>html,body{margin:0;padding:0;width:100%;height:100%;background:#111827;overflow:hidden}',
+    'iframe{border:0;width:100%;height:100%;display:block}</style></head>',
+    '<body>',
+    `<iframe src="${src}" title="Видео урока" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>`,
+    '</body></html>',
+  ].join('')
+}
+
+export async function requestLessonVideo(handle: LessonVideoHandle): Promise<LessonVideoConfig> {
+  // The server states the path from the API root; the native client already
+  // carries the `/v1` prefix in its configured base URL.
+  const path = handle.sessionPath.replace(/^\/v1/, '')
+  return parseLessonVideoConfig(await nativeApiJson<unknown>(path, { method: 'POST' }))
+}
+
 function nullableViewerPath(value: unknown, materialId: number): string | null {
   const path = nullableText(value, 'путь просмотра материала')
   if (path === null) return null
@@ -226,7 +320,7 @@ export function parsePlatformLesson(value: unknown): PlatformLesson {
     lessonDate: nullableDate(source.lessonDate, 'дата урока'),
     durationMinutes: nullableNonNegativeInteger(source.durationMinutes, 'длительность урока'),
     contentUrl,
-    videoUrl: contentUrl,
+    video: nullableVideoHandle(source.video, 'lesson'),
     isTest: boolean(source.isTest, 'тип урока'),
     completionPercent: percentage(source.completionPercent, 'прогресс урока'),
     completedAt: nullableTimestamp(source.completedAt, 'дата завершения урока'),
@@ -253,12 +347,12 @@ export function parsePlatformLessonMaterial(value: unknown): PlatformLessonMater
   const id = positiveInteger(source.id, 'id материала')
   const kind = materialType(source.materialType)
   const bodyMarkdown = nullableBodyMarkdown(source.bodyMarkdown)
-  const externalUrl = nullableWebUrl(source.externalUrl, 'ссылка на видео')
+  const video = nullableVideoHandle(source.video, 'material')
   const viewerPath = nullableViewerPath(source.viewerPath, id)
 
-  if (kind === 'rich_text' && (bodyMarkdown === null || externalUrl !== null || viewerPath !== null)) throw new NativeDtoError('текстовый материал')
-  if (kind === 'video' && (externalUrl === null || bodyMarkdown !== null || viewerPath !== null)) throw new NativeDtoError('видеоматериал')
-  if (['document', 'image'].includes(kind) && (bodyMarkdown !== null || externalUrl !== null || viewerPath === null)) throw new NativeDtoError('файловый материал')
+  if (kind === 'rich_text' && (bodyMarkdown === null || video !== null || viewerPath !== null)) throw new NativeDtoError('текстовый материал')
+  if (kind === 'video' && (video === null || bodyMarkdown !== null || viewerPath !== null)) throw new NativeDtoError('видеоматериал')
+  if (['document', 'image'].includes(kind) && (bodyMarkdown !== null || video !== null || viewerPath === null)) throw new NativeDtoError('файловый материал')
 
   return {
     id,
@@ -267,7 +361,7 @@ export function parsePlatformLessonMaterial(value: unknown): PlatformLessonMater
     title: nonEmptyString(source.title, 'название материала'),
     position: positiveInteger(source.position, 'позиция материала'),
     bodyMarkdown,
-    externalUrl,
+    video,
     mimeType: nullableMimeType(source.mimeType),
     byteSize: nullableNonNegativeInteger(source.byteSize, 'размер материала'),
     viewerPath,
@@ -359,7 +453,7 @@ function cacheSafeLesson(lesson: PlatformLesson): PlatformLesson {
   // Private files and video URLs are never put in AsyncStorage. An offline
   // lesson can show its already-opened metadata, but protected media still
   // requires a live, authorized request.
-  return { ...lesson, contentUrl: null, videoUrl: null }
+  return { ...lesson, contentUrl: null, video: null }
 }
 
 function cacheSafeLessons(lessons: PlatformLesson[]) {
@@ -372,7 +466,7 @@ function cacheSafeMaterials(materials: PlatformLessonMaterial[]) {
   // require a fresh authenticated request.
   return materials.map(material => ({
     ...material,
-    externalUrl: null,
+    video: null,
     viewerPath: null,
     bodyMarkdown: material.materialType === 'rich_text' ? material.bodyMarkdown : null,
   }))

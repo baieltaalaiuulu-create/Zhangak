@@ -29,17 +29,17 @@ function titleFromFilename(filename) {
 }
 
 function lessonTarget(relativePath) {
-  if (relativePath.startsWith('02_kyrgyz_language/')) return { courseCode: 'demo-ort-kyr', lessonNumber: 3 }
+  if (relativePath.startsWith('02_kyrgyz_language/')) return { courseCode: 'demo-ort-2026', lessonNumber: 6 }
   if (relativePath.startsWith('03_analogies/')) {
     return /2022|Настоящие|ЦООМО/iu.test(relativePath)
-      ? { courseCode: 'demo-ort-kyr', lessonNumber: 1 }
-      : { courseCode: 'demo-ort-kyr', lessonNumber: 2 }
+      ? { courseCode: 'demo-ort-2026', lessonNumber: 4 }
+      : { courseCode: 'demo-ort-2026', lessonNumber: 5 }
   }
   if (/ТРЕУГОЛЬНИК|ПИФАГОР|ПЛОЩАДЬ|ПРЯМОУГОЛЬНИК|КВАДРАТ|ПАРАЛЛЕЛОГРАММ|ТРАПЕЦИЯ/iu.test(relativePath)) {
-    return { courseCode: 'demo-ort-math', lessonNumber: 3 }
+    return { courseCode: 'demo-ort-2026', lessonNumber: 3 }
   }
-  if (/Декартова|Формулы|Степень/iu.test(relativePath)) return { courseCode: 'demo-ort-math', lessonNumber: 2 }
-  return { courseCode: 'demo-ort-math', lessonNumber: 1 }
+  if (/Декартова|Формулы|Степень/iu.test(relativePath)) return { courseCode: 'demo-ort-2026', lessonNumber: 2 }
+  return { courseCode: 'demo-ort-2026', lessonNumber: 1 }
 }
 
 async function filesIn(directory) {

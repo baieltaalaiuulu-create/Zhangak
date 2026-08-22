@@ -3,11 +3,14 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Map, RefreshCw } from 'lucide-react'
+import { ArrowRight, CalendarDays, CheckCircle2, ListChecks, Map, MapPin, RefreshCw, Users } from 'lucide-react'
 import { useStudentSession } from '@/components/student/StudentSessionContext'
 import StudentVisualIcon from '@/components/student/StudentVisualIcon'
 import { DEFAULT_TARGET_SCORE, type StudentDashboardData } from '@/lib/student-dashboard-contract'
 import { zhangakApiRequest } from '@/lib/zhangak-api-client'
+import { getGamificationSummary, getOverallLeaderboard, type GamificationSummary, type LeaderboardResponse } from '@/lib/platform-community'
+import { getDailyChallenge, type DailyAttempt } from '@/lib/platform-gamification'
+import { getUpcomingMockExam, registerForMockExam, type UpcomingMockExam } from '@/lib/platform-mock-exams'
 
 import DashboardHeroCard from '@/components/student/DashboardHeroCard'
 import SubjectsGrid from '@/components/student/SubjectsGrid'
@@ -30,11 +33,6 @@ interface FirstPartyDashboardResponse {
       submittedAt: string | null
     } | null
   }
-}
-
-interface LeaderboardResponse {
-  items: Array<{ rank: number; displayName: string; xp: number; isMe: boolean }>
-  myRank: number | null
 }
 
 const DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
@@ -84,6 +82,12 @@ export default function StudentOnlinePage() {
   const [data, setData] = useState<StudentDashboardData | null>(null)
   const [summary, setSummary] = useState<FirstPartyDashboardResponse['summary'] | null>(null)
   const [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null)
+  const [gamification, setGamification] = useState<GamificationSummary | null>(null)
+  const [dailyAttempt, setDailyAttempt] = useState<DailyAttempt | null>(null)
+  const [dailyAvailable, setDailyAvailable] = useState(false)
+  const [upcomingMock, setUpcomingMock] = useState<UpcomingMockExam | null>(null)
+  const [mockRegistering, setMockRegistering] = useState(false)
+  const [mockRegistrationError, setMockRegistrationError] = useState<string | null>(null)
   const [targetScoreOverride, setTargetScoreOverride] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
@@ -92,13 +96,20 @@ export default function StudentOnlinePage() {
     const loadDashboard = async () => {
       setProfileName(user.fullName)
       try {
-        const [response, ranking] = await Promise.all([
+        const [response, ranking, game, daily, mock] = await Promise.all([
           zhangakApiRequest<FirstPartyDashboardResponse>('/v1/platform/dashboard'),
-          zhangakApiRequest<LeaderboardResponse>('/v1/platform/leaderboard').catch(() => null),
+          getOverallLeaderboard().catch(() => null),
+          getGamificationSummary().catch(() => null),
+          getDailyChallenge().catch(() => null),
+          getUpcomingMockExam().catch(() => null),
         ])
         setData(dashboardFrom(response))
         setSummary(response.summary)
         setLeaderboard(ranking)
+        setGamification(game)
+        setDailyAttempt(daily?.attempt ?? null)
+        setDailyAvailable(daily?.available ?? false)
+        setUpcomingMock(mock)
       } catch {
         setLoadError(true)
       } finally {
@@ -107,6 +118,19 @@ export default function StudentOnlinePage() {
     }
     void loadDashboard()
   }, [user.id, user.fullName])
+
+  const registerForUpcomingMock = async () => {
+    if (!upcomingMock || upcomingMock.isRegistered || mockRegistering) return
+    setMockRegistering(true)
+    setMockRegistrationError(null)
+    try {
+      setUpcomingMock(await registerForMockExam(upcomingMock.id))
+    } catch (error) {
+      setMockRegistrationError(error instanceof Error ? error.message : 'Не удалось зарегистрировать. Попробуй ещё раз.')
+    } finally {
+      setMockRegistering(false)
+    }
+  }
 
   if (loadError) {
     return (
@@ -152,11 +176,15 @@ export default function StudentOnlinePage() {
 
   const firstName = (data.profile?.full_name ?? profileName ?? 'Студент').split(' ')[0]
   const targetScore = targetScoreOverride ?? data.profile?.target_score ?? DEFAULT_TARGET_SCORE
-  const myRanking = leaderboard?.items.find(item => item.isMe) ?? null
-  const xp = myRanking?.xp ?? 0
-  const level = Math.max(1, Math.floor(xp / 500) + 1)
-  const levelProgress = xp % 500
+  const myRanking = leaderboard?.me ?? leaderboard?.items.find(item => item.isMe) ?? null
+  const xp = gamification?.xp ?? 0
+  const level = gamification?.level ?? 1
+  const levelProgress = Math.max(0, xp - (gamification?.levelStartXp ?? 0))
+  const levelSpan = Math.max(1, (gamification?.levelEndXp ?? 500) - (gamification?.levelStartXp ?? 0))
+  const dailyQuests = gamification?.quests.filter(item => item.period === 'daily') ?? []
   const continueHref = summary.courseCount > 0 ? '/student/online/roadmap' : '/student/online/practice'
+  const formatMockDate = (value: string) => new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', timeZone: 'Asia/Bishkek' }).format(new Date(value))
+  const formatMockTime = (value: string) => new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bishkek' }).format(new Date(value))
   const subjects = [
     { key: 'math' as const, label: 'Дорожная карта', topicLabel: summary.courseCount > 0 ? 'Продолжай программу курса по шагам' : 'Курс появится после назначения группы', color: '#1B3F92', completed: summary.lessons.completed, total: summary.lessons.total, hoursRemaining: 0, href: '/student/online/roadmap' },
     { key: 'kyr' as const, label: 'Тренажёр', topicLabel: 'Выбери предмет, раздел и сложность — правильные вопросы не повторяются', color: '#14B8A6', completed: summary.practice.passed, total: summary.practice.attempts, hoursRemaining: 0, href: '/student/online/trainer' },
@@ -181,7 +209,7 @@ export default function StudentOnlinePage() {
               <span>{levelProgress} / 500 XP</span>
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/20">
-              <div className="h-full rounded-full bg-white transition-all duration-700" style={{ width: `${Math.round(levelProgress / 5)}%` }} />
+              <div className="h-full rounded-full bg-white transition-all duration-700 motion-reduce:transition-none" style={{ width: `${Math.min(100, Math.round((levelProgress / levelSpan) * 100))}%` }} />
             </div>
           </header>
 
@@ -215,11 +243,41 @@ export default function StudentOnlinePage() {
             </section>
 
             <section className="rounded-[20px] border border-[#E2E8F0] bg-white p-4">
-              <div className="flex items-center gap-2"><StudentVisualIcon name="local_fire_department" size={20} color="#D97706" /><span className="min-w-0 flex-1 text-sm font-extrabold">Серия начнётся сегодня</span><span className="text-xs font-semibold text-[#8A96AC]">цель — заниматься регулярно</span></div>
+              <div className="flex items-center gap-2"><StudentVisualIcon name="local_fire_department" size={20} color="#D97706" /><span className="min-w-0 flex-1 text-sm font-extrabold">{gamification?.streak ? `Серия: ${gamification.streak} дн.` : 'Серия начнётся сегодня'}</span><span className="text-xs font-semibold text-[#8A96AC]">цель — заниматься регулярно</span></div>
               <div className="mt-3 flex gap-1.5">
                 {DAYS.map((day, index) => <div key={day} className="flex min-w-0 flex-1 flex-col items-center gap-1.5"><span className={`flex h-[34px] w-[34px] items-center justify-center rounded-full ${index === 0 ? 'bg-[#D97706]' : 'bg-[#F5F7FC]'}`}><StudentVisualIcon name={index === 0 ? 'local_fire_department' : 'lock'} size={index === 0 ? 19 : 15} color={index === 0 ? '#FFFFFF' : '#8A96AC'} /></span><span className={`text-[10px] font-semibold ${index === 0 ? 'text-[#D97706]' : 'text-[#8A96AC]'}`}>{day}</span></div>)}
               </div>
             </section>
+
+            {upcomingMock && (
+              <section className="overflow-hidden rounded-[20px] border border-[#2563EB]/30 bg-white shadow-[0_6px_18px_rgba(37,99,235,0.10)]">
+                <div className="bg-[#1B3F92] p-4 text-white"><div className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15"><CalendarDays size={23} aria-hidden="true" /></span><div className="min-w-0"><p className="text-[11px] font-extrabold uppercase tracking-[0.1em] text-blue-100">Пробный ОРТ</p><h2 className="mt-0.5 text-[18px] font-black leading-tight">{upcomingMock.title}</h2><p className="mt-1 text-xs text-blue-100">Регистрация {upcomingMock.isRegistered ? 'подтверждена' : 'открыта'}</p></div></div></div>
+                <div className="space-y-2.5 p-4 text-[13px] font-semibold text-[#334155]"><p className="flex items-center gap-2"><CalendarDays size={17} className="text-[#1B3F92]" aria-hidden="true" />{formatMockDate(upcomingMock.startsAt)} · {formatMockTime(upcomingMock.startsAt)}</p><p className="flex items-center gap-2"><MapPin size={17} className="text-[#1B3F92]" aria-hidden="true" />{upcomingMock.city}, {upcomingMock.venue}</p>{upcomingMock.capacity !== null && <p className="flex items-center gap-2 text-[#64748B]"><Users size={17} aria-hidden="true" />{upcomingMock.registeredCount} из {upcomingMock.capacity} мест занято</p>}{mockRegistrationError && <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-700">{mockRegistrationError}</p>}<button type="button" disabled={upcomingMock.isRegistered || mockRegistering} onClick={() => void registerForUpcomingMock()} className={`mt-1 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-extrabold ${upcomingMock.isRegistered ? 'bg-[#E8F7EE] text-[#15803D]' : 'bg-[#1B3F92] text-white shadow-[0_3px_0_#102C69] active:translate-y-0.5 active:shadow-none disabled:opacity-70'}`}>{upcomingMock.isRegistered ? <><CheckCircle2 size={18} aria-hidden="true" />Вы зарегистрированы</> : mockRegistering ? 'Регистрируем…' : 'Зарегистрироваться'}</button></div>
+              </section>
+            )}
+
+            <section className="rounded-[20px] border border-violet-100 bg-white p-4 shadow-[0_6px_18px_rgba(15,23,42,0.05)]">
+              <div className="flex items-center gap-2"><StudentVisualIcon name="task_alt" size={20} color="#6C3DE0" /><h2 className="min-w-0 flex-1 text-sm font-extrabold">Квесты сегодня</h2><Link href="/student/online/quests" className="min-h-11 rounded-xl px-2.5 py-2 text-xs font-bold text-[#6C3DE0]">Все</Link></div>
+              <div className="mt-3 space-y-2">
+                {dailyQuests.length ? dailyQuests.map(quest => {
+                  const progress = Math.min(100, Math.round((quest.currentCount / Math.max(1, quest.targetCount)) * 100))
+                  return <div key={quest.code} className="rounded-xl bg-[#F8F7FF] px-3 py-2.5"><div className="flex items-center gap-2 text-xs font-bold"><span className="min-w-0 flex-1 truncate">{quest.title}</span><span className="shrink-0 text-[#6C3DE0]">{quest.currentCount}/{quest.targetCount} · +{quest.xpReward} XP</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-violet-100"><div className="h-full rounded-full bg-[#6C3DE0] transition-all duration-300 motion-reduce:transition-none" style={{ width: `${progress}%` }} /></div></div>
+                }) : <p className="text-xs leading-5 text-[#64748B]">Квесты появятся после первого синхронизированного входа.</p>}
+              </div>
+            </section>
+
+            {dailyAvailable && (
+              <section className="overflow-hidden rounded-[20px] border border-amber-200 bg-white shadow-[0_6px_18px_rgba(180,83,9,0.08)]">
+                <div className="flex items-start gap-3 bg-[#FFF7E8] p-4">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F59E0B] text-white"><ListChecks size={25} aria-hidden="true" /></span>
+                  <div className="min-w-0"><p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#A35B00]">Задание дня</p><h2 className="mt-0.5 text-[17px] font-black text-[#0F172A]">15 вопросов для уверенного темпа</h2><p className="mt-1 text-[12px] leading-5 text-[#6B5A3C]">Одна попытка до полуночи по Бишкеку. Результат и разбор сохранятся в профиле.</p></div>
+                </div>
+                <div className="p-4">
+                  <div className="flex items-center justify-between text-xs font-bold text-[#596579]"><span>{dailyAttempt?.status === 'submitted' ? `${dailyAttempt.correctCount}/15 выполнено` : dailyAttempt?.status === 'started' ? 'В процессе' : '0/15 выполнено'}</span><span className="text-[#B56600]">+ до 100 XP</span></div>
+                  <Link href="/student/online/practice/daily" className="mt-3 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#F59E0B] px-4 text-sm font-extrabold text-white shadow-[0_3px_0_#B45309] active:translate-y-0.5 active:shadow-none">{dailyAttempt?.status === 'submitted' ? 'Посмотреть разбор' : dailyAttempt?.status === 'started' ? 'Продолжить' : 'Начать задание'} <ArrowRight size={17} aria-hidden="true" /></Link>
+                </div>
+              </section>
+            )}
 
             <div>
               <p className="px-0.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#8A96AC]">Тренируй по одному направлению</p>
@@ -258,6 +316,20 @@ export default function StudentOnlinePage() {
               <p className="mt-4 text-sm leading-6 text-gray-500">ОРТ-балл появится после первого полного пробного экзамена. Короткие тренировки не будут искусственно превращаться в балл ОРТ.</p>
             </section>
           </div>
+          <section className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-extrabold uppercase tracking-[.12em] text-violet-700">Геймификация</p><h2 className="mt-1 text-lg font-black text-[#191B23]">Квесты дня</h2></div><Link href="/student/online/quests" className="inline-flex min-h-11 items-center rounded-xl bg-violet-50 px-4 text-sm font-bold text-violet-700">Открыть квесты</Link></div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">{dailyQuests.length ? dailyQuests.map(quest => <div key={quest.code} className="rounded-xl bg-[#F8F7FF] p-4"><p className="font-bold text-[#191B23]">{quest.title}</p><p className="mt-1 text-xs leading-5 text-slate-500">{quest.description}</p><p className="mt-3 text-sm font-black text-violet-700">{quest.currentCount}/{quest.targetCount} · +{quest.xpReward} XP</p></div>) : <p className="text-sm text-slate-500">Квесты загружаются после синхронизации игрового профиля.</p>}</div>
+          </section>
+          {upcomingMock && (
+            <section className="rounded-2xl border border-[#2563EB]/30 bg-gradient-to-r from-[#EDF3FF] to-white p-5 shadow-sm">
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div className="flex items-start gap-3"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1B3F92] text-white"><CalendarDays size={24} aria-hidden="true" /></span><div><p className="text-xs font-extrabold uppercase tracking-[.12em] text-[#1B3F92]">Пробный ОРТ</p><h2 className="mt-1 text-lg font-black text-[#191B23]">{upcomingMock.title}</h2><p className="mt-1 text-sm text-[#475569]">{formatMockDate(upcomingMock.startsAt)} · {formatMockTime(upcomingMock.startsAt)} · {upcomingMock.city}, {upcomingMock.venue}</p>{upcomingMock.capacity !== null && <p className="mt-1 text-xs font-semibold text-[#64748B]">{upcomingMock.registeredCount} из {upcomingMock.capacity} мест занято</p>}{mockRegistrationError && <p role="alert" className="mt-2 text-xs font-bold text-red-700">{mockRegistrationError}</p>}</div></div><button type="button" disabled={upcomingMock.isRegistered || mockRegistering} onClick={() => void registerForUpcomingMock()} className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold ${upcomingMock.isRegistered ? 'bg-[#E8F7EE] text-[#15803D]' : 'bg-[#1B3F92] text-white shadow-[0_3px_0_#102C69] disabled:opacity-70'}`}>{upcomingMock.isRegistered ? <><CheckCircle2 size={17} aria-hidden="true" />Вы зарегистрированы</> : mockRegistering ? 'Регистрируем…' : 'Зарегистрироваться'}</button></div>
+            </section>
+          )}
+          {dailyAvailable && (
+            <section className="rounded-2xl border border-amber-200 bg-gradient-to-r from-[#FFF7E8] to-white p-5 shadow-sm">
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div className="flex items-start gap-3"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F59E0B] text-white"><ListChecks size={24} aria-hidden="true" /></span><div><p className="text-xs font-extrabold uppercase tracking-[.12em] text-[#A35B00]">Задание дня</p><h2 className="mt-1 text-lg font-black text-[#191B23]">15 вопросов · до 100 XP</h2><p className="mt-1 text-sm text-[#6B5A3C]">{dailyAttempt?.status === 'submitted' ? `Выполнено: ${dailyAttempt.correctCount}/15. Открой разбор.` : dailyAttempt?.status === 'started' ? 'Попытка начата — продолжи с того же места.' : 'Одна попытка доступна до следующего дня по Бишкеку.'}</p></div></div><Link href="/student/online/practice/daily" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#F59E0B] px-4 text-sm font-bold text-white shadow-[0_3px_0_#B45309]">{dailyAttempt?.status === 'submitted' ? 'Посмотреть' : 'Продолжить'} <ArrowRight size={16} aria-hidden="true" /></Link></div>
+            </section>
+          )}
         </div>
 
       </div>

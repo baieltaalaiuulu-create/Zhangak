@@ -21,7 +21,8 @@ test('public application intake accepts exactly contact and course fields', () =
   assert.throws(() => parsePublicApplicationBody({ name: 'A', phone: '555', city: 'Бишкек', courseId: 7 }), error => error instanceof HttpError && error.code === 'invalid_application_name')
   assert.throws(() => parsePublicApplicationBody({ name: 'Айдана', phone: '+996555123456', city: 'Бишкек', courseId: 7, paid: true }), error => error instanceof HttpError && error.code === 'invalid_application')
   assert.deepEqual(parseApplicationPatchBody({ status: 'awaiting_confirmation', note: 'Оплата ожидает сверки' }), { status: 'awaiting_confirmation', note: 'Оплата ожидает сверки', assignedTo: null, hasAssignedTo: false })
-  assert.deepEqual(parsePaymentConfirmationBody({ studentId: STUDENT_ID }), { studentId: STUDENT_ID })
+  assert.deepEqual(parsePaymentConfirmationBody({ studentId: STUDENT_ID }), { studentId: STUDENT_ID, accessPlan: 'one_month' })
+  assert.deepEqual(parsePaymentConfirmationBody({ studentId: STUDENT_ID, accessPlan: 'one_year' }), { studentId: STUDENT_ID, accessPlan: 'one_year' })
 })
 
 test('application route separates public intake, staff queue and payment activation', async () => {

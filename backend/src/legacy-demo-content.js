@@ -4,17 +4,13 @@ const SOURCE_PROJECT_HOST = 'olqikkvjeutdgewmhnub.supabase.co'
 const SOURCE_SYSTEM = 'supabase-demo-v1'
 const MAX_SOURCE_ROWS = 5_000
 const MAX_TEXT_LENGTH = 10_000
-const SUBJECTS = Object.freeze({
-  math: {
-    code: 'demo-ort-math',
-    name: 'Демо: ОРТ Математика',
-    description: 'Импортированный демонстрационный контент из прежней учебной базы.',
-  },
-  kyr: {
-    code: 'demo-ort-kyr',
-    name: 'Демо: Кыргыз тили',
-    description: 'Импортированный демонстрационный контент из прежней учебной базы.',
-  },
+const SUBJECTS = new Set(['math', 'kyr'])
+const SUBJECT_ORDER = Object.freeze({ math: 0, kyr: 1 })
+const ONLINE_ORT_COURSE = Object.freeze({
+  subject: 'ort',
+  code: 'demo-ort-2026',
+  name: 'Подготовка к ОРТ',
+  description: 'Единый онлайн-курс подготовки к ОРТ: математика и кыргызский язык.',
 })
 const ANSWERS = new Set(['a', 'b', 'c', 'd'])
 const DIFFICULTIES = new Set(['easy', 'medium', 'hard'])
@@ -70,7 +66,7 @@ function digest(value) {
 }
 
 function sourceSubject(value, field) {
-  if (typeof value !== 'string' || !Object.hasOwn(SUBJECTS, value)) {
+  if (typeof value !== 'string' || !SUBJECTS.has(value)) {
     fail(`${field} must be one of the importable subjects`)
   }
   return value
@@ -109,10 +105,6 @@ function assertSourceRows(rows, label) {
   return rows
 }
 
-function courseForSubject(subject) {
-  return { subject, ...SUBJECTS[subject] }
-}
-
 function deferredQuestion({ sourceId: id, sourceTestId, subject = null, reason }) {
   return {
     sourceId: id,
@@ -137,7 +129,8 @@ export function buildLegacyDemoPlan({ practiceLessons, practiceTests, questions 
   const lessonBySourceId = new Map()
   const subjectOrders = new Map()
   for (const row of sortedRows(sourceLessons, (left, right) => (
-    String(left.subject).localeCompare(String(right.subject)) || Number(left.order_number) - Number(right.order_number)
+    (SUBJECT_ORDER[left.subject] ?? 99) - (SUBJECT_ORDER[right.subject] ?? 99)
+      || Number(left.order_number) - Number(right.order_number)
   ))) {
     const id = uuid(row.id, 'practice_lesson.id')
     const subject = sourceSubject(row.subject, 'practice_lesson.subject')
@@ -148,8 +141,8 @@ export function buildLegacyDemoPlan({ practiceLessons, practiceTests, questions 
     const lesson = {
       sourceId: id,
       subject,
-      courseCode: SUBJECTS[subject].code,
-      lessonNumber: requestedOrder,
+      courseCode: ONLINE_ORT_COURSE.code,
+      lessonNumber: lessons.length + 1,
       title: requiredText(row.title, 'practice_lesson.title', 300),
       description: nullableText(row.description, 'practice_lesson.description', 50_000),
       contentUrl: httpsUrl(row.video_url, 'practice_lesson.video_url'),
@@ -231,7 +224,7 @@ export function buildLegacyDemoPlan({ practiceLessons, practiceTests, questions 
     const test = {
       sourceId: sourceTestId,
       subject,
-      courseCode: SUBJECTS[subject].code,
+      courseCode: ONLINE_ORT_COURSE.code,
       sourceLessonId,
       title: requiredText(row.title, 'practice_test.title', 500),
       testType: type,
@@ -250,11 +243,8 @@ export function buildLegacyDemoPlan({ practiceLessons, practiceTests, questions 
     importedTestIds.add(sourceTestId)
   }
 
-  const importableSubjects = [...new Set(lessons.map(lesson => lesson.subject))]
-  const courses = importableSubjects.sort().map(courseForSubject).map(course => ({
-    ...course,
-    fingerprint: digest(course),
-  }))
+  const course = { ...ONLINE_ORT_COURSE }
+  const courses = lessons.length === 0 ? [] : [{ ...course, fingerprint: digest(course) }]
 
   return {
     sourceSystem: SOURCE_SYSTEM,

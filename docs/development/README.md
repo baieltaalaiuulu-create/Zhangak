@@ -26,7 +26,7 @@ env-файлы по шаблонам; реальные production-значени
 | `app/` | Next.js App Router: страницы, BFF `/v1`, health |
 | `components/` | UI-компоненты по доменам и ролям |
 | `lib/` | Browser/server клиенты, строгие DTO и чистые вычисления |
-| `backend/src/` | Собственный HTTP API, auth, RBAC, PostgreSQL и AI gateway |
+| `backend/src/` | Собственный HTTP API, auth, RBAC, PostgreSQL и приватное хранилище |
 | `backend/migrations/` | Последовательные immutable SQL-миграции |
 | `backend/test/` | Контрактные и security-тесты API/схемы |
 | `tests/` | Web-контракты, DTO, host-routing и пользовательские инварианты |
@@ -138,8 +138,27 @@ git diff --check
 | 401 | сессия отсутствует/отозвана/истекла; не обходить auth в UI |
 | 403 | роль, active enrollment, назначение группы, Origin |
 | 409 | бизнес-инвариант: переход статуса, одна запись на курс, повторная попытка |
-| 503 | API/DB/AI feature flag или внешний провайдер; проверить readiness и journal |
+| 503 | API/DB/storage недоступны; проверить readiness, volume и journal |
 | Миграция не стартует | checksum ledger, порядок номеров, чистая PostgreSQL, точный env |
 
 Production-команды, rollback и backup находятся только в
 [операционном руководстве](../operations/production.md).
+
+## Передача внешнему AI-агенту
+
+Любой агент сначала читает [актуальный handoff](AI_AGENT_HANDOFF.md). Для
+независимого UX/product/growth-аудита используйте
+[строгий Gemini prompt](GEMINI_PRODUCT_GROWTH_AUDIT_PROMPT.md). Demo credentials
+передаются отдельным приватным сообщением и никогда не добавляются в Git.
+
+Для реализации оставшихся задач Claude используйте только
+[короткий контекст](CLAUDE_PROJECT_FINISH_CONTEXT.md) и
+[готовый рабочий prompt](CLAUDE_PROJECT_FINISH_PROMPT.md). Этот пакет специально
+фиксирует уже реализованные части, чтобы агент не перечитывал весь репозиторий.
+Если работа уже начата в dirty worktree на HEAD `37104ac`, новый chat должен
+начать с [точки продолжения](CLAUDE_PROJECT_CONTINUATION.md), а не повторять
+исходный план.
+
+Завершённые промпты Claude/Gemini и старые preprod-отчёты находятся в
+[`docs/archive/`](../archive/README.md). Они сохраняют историю, но не являются
+актуальным контрактом.

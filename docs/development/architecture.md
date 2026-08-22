@@ -15,7 +15,6 @@ Zhangak Node API (:3210)
         |
         +---- PostgreSQL (:5433, private)
         +---- private material volume
-        +---- AI provider (server-side, feature flagged)
 ```
 
 Nginx завершает TLS и обслуживает четыре домена. Порты API и PostgreSQL не
@@ -35,13 +34,37 @@ Nginx завершает TLS и обслуживает четыре домена
 
 | Подсистема | Миграции | Backend-маршруты | Интерфейс |
 | --- | --- | --- | --- |
-| Auth/RBAC | `001`, `004` | `auth`, `admin-users`, `admin-access` | login, admin accounts/access |
-| Курсы/уроки/практика | `002`, `006`, `008` | `platform-learning`, `admin-learning`, `admin-assessments` | online lessons/practice, admin content |
+| Auth/RBAC/profile | `001`, `004`, `021` | `auth`, `admin-users`, `admin-access`, `platform-profile` | login, access terms, profile |
+| Курсы/уроки/практика | `002`, `006`, `008`, `012`, `013`, `015`, `020`, `024`, `025` | `platform-learning`, `admin-learning`, `admin-assessments`, roadmap/material/video routes | online ORT course, lessons/practice, Content Studio |
 | Университеты | `003` | `platform-universities` | student catalog |
 | Офлайн-класс | `007` | `platform-offline`, `platform-offline-classroom` | offline student, teacher journal |
-| XP/daily/trainer | `009` | `platform-gamification`, `admin-gamification` | daily task, trainer |
+| XP/daily/trainer/quests | `009`, `016`, `017`, `022` | `platform-gamification`, `admin-gamification` | daily task, trainer, quests, claims |
 | Заявки/оплата | `010` | `public-applications`, `admin-enrollments` | landing, manager/admin queue |
-| AI-коуч | `011` | `platform-ai`, `ai.js` | online AI chat |
+| Push | `014` | push routes | PWA subscriptions and notifications |
+| Social/profile | `018`, `019` | community/friend routes | public profiles, friends, blocks |
+| Пробный ОРТ | `026` | `platform-mock-exams`, `admin-mock-exams` | расписание и регистрация |
+| Удалённый product AI | `011`, `023` | отсутствуют | runtime AI запрещён |
+
+### `mock_exam_sessions` — это не `practice_tests`
+
+Два разных объекта делят слово «Пробный ОРТ», и их нельзя связывать по
+догадке:
+
+- `mock_exam_sessions` (миграция `026`, маршруты `platform-mock-exams` /
+  `admin-mock-exams`) — это **расписание** очного пробного экзамена: дата,
+  место, вместимость, запись ученика. У сессии нет собственных вопросов.
+- `practice_tests` с `test_type = 'mock'` (миграция `002`, маршруты
+  `admin-assessments`, редактируется в `/admin/mock` через
+  `AdminAssessmentWorkspace`) — это **содержимое**: тест из заданий с ключами
+  ответов, который ученик проходит самостоятельно на платформе.
+
+Ничто в коде не связывает `mock_exam_sessions.id` с `practice_tests.id`; такой
+связи в схеме не существует. Экран `app/admin/mock/[id]/questions/page.tsx`
+предполагал эту связь без контракта и был удалён вместе с этой задачей, а не
+мигрирован — оставлять вводящую в заблуждение ссылку на несуществующий
+контракт хуже, чем не иметь экрана. Если экран, редактирующий вопросы
+конкретной сессии, понадобится, для него нужен отдельный явный FK или
+lookup-таблица, а не совпадение по `id`.
 
 ## Доверенные границы
 
@@ -51,8 +74,8 @@ Nginx завершает TLS и обслуживает четыре домена
 - Ключ ответа хранится в private snapshot и показывается только после scoring.
 - Online-доступ требует active enrollment на active online-курс.
 - Offline teacher пишет только в назначенную активную группу.
-- AI требует согласие, active online enrollment и rate limit; provider key
-  существует только в API runtime.
+- Product runtime не использует LLM-провайдеров. В проекте запрещены AI routes,
+  provider keys и обращения к внешним моделям.
 - Файлы сначала проходят проверку типа/размера/scan-status и не обслуживаются
   Nginx как публичная директория.
 

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import {
   ArrowRight,
   BookOpenCheck,
-  BrainCircuit,
+  Map,
   ChevronLeft,
   Trophy,
   type LucideIcon,
@@ -34,10 +34,10 @@ const slides: Slide[] = [
     Icon: Trophy,
   },
   {
-    eyebrow: 'AI-насаатчы',
-    title: 'Түшүнбөгөн темаңа жардам ал',
-    description: 'Суроо бер, каталарыңды талда жана өзүңө ылайык даярдык планын ал.',
-    Icon: BrainCircuit,
+    eyebrow: 'Roadmap',
+    title: 'Кийинки кадамың дайыма көрүнүп турат',
+    description: 'Сабактарды ырааттуу өт, тесттен упай ал жана максатыңа жакында.',
+    Icon: Map,
   },
 ]
 

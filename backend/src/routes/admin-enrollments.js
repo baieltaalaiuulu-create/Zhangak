@@ -7,6 +7,12 @@ import { requireRole } from '../authorization.js'
 // workflow. Curriculum, roles and audit visibility remain admin/super-admin
 // responsibilities.
 const ENROLLMENT_MANAGER_ROLES = ['manager', 'admin', 'super_admin']
+const ACCESS_MANAGER_ROLES = ['admin', 'super_admin']
+const ACCESS_PLAN_MONTHS = new Map([
+  ['one_month', 1],
+  ['three_months', 3],
+  ['one_year', 12],
+])
 const CURRENT_STATUSES = new Set(['awaiting_payment', 'awaiting_confirmation', 'active', 'suspended'])
 const STATUSES = new Set([...CURRENT_STATUSES, 'completed', 'cancelled'])
 const TRANSITIONS = new Map([
@@ -46,16 +52,40 @@ function exact(body, required, optional = []) {
 }
 
 export function parseEnrollmentCreateBody(body) {
-  if (!exact(body, ['studentId', 'courseId'], ['status'])) throw new HttpError(400, 'Некорректные данные зачисления', 'invalid_enrollment')
+  if (!exact(body, ['studentId', 'courseId'], ['status', 'accessPlan'])) throw new HttpError(400, 'Некорректные данные зачисления', 'invalid_enrollment')
   const status = body.status ?? 'awaiting_payment'
+  const accessPlan = body.accessPlan ?? 'one_month'
   if (!STATUSES.has(status)) throw new HttpError(400, 'Некорректный статус зачисления', 'invalid_enrollment_status')
-  return { studentId: studentId(body.studentId), courseId: positiveId(body.courseId, 'course_id'), status }
+  if (!ACCESS_PLAN_MONTHS.has(accessPlan)) throw new HttpError(400, 'Некорректный срок доступа', 'invalid_access_plan')
+  return { studentId: studentId(body.studentId), courseId: positiveId(body.courseId, 'course_id'), status, accessPlan }
 }
 
 export function parseEnrollmentPatchBody(body) {
   if (!exact(body, ['status'])) throw new HttpError(400, 'Некорректные данные зачисления', 'invalid_enrollment')
   if (!STATUSES.has(body.status)) throw new HttpError(400, 'Некорректный статус зачисления', 'invalid_enrollment_status')
   return { status: body.status }
+}
+
+export function parseEnrollmentAccessBody(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body) || typeof body.action !== 'string') {
+    throw new HttpError(400, 'Некорректные данные доступа', 'invalid_access_action')
+  }
+  if (body.action === 'extend') {
+    if (!exact(body, ['action', 'accessPlan'])) throw new HttpError(400, 'Некорректные данные продления', 'invalid_access_action')
+    if (!ACCESS_PLAN_MONTHS.has(body.accessPlan)) throw new HttpError(400, 'Некорректный срок доступа', 'invalid_access_plan')
+    return { action: body.action, accessPlan: body.accessPlan }
+  }
+  if (body.action === 'freeze') {
+    if (!exact(body, ['action'], ['reason'])) throw new HttpError(400, 'Некорректные данные заморозки', 'invalid_access_action')
+    const reason = body.reason == null ? null : String(body.reason).trim()
+    if (reason != null && (reason.length < 1 || reason.length > 300)) throw new HttpError(400, 'Причина должна быть короче 300 символов', 'invalid_freeze_reason')
+    return { action: body.action, reason }
+  }
+  if (body.action === 'resume') {
+    if (!exact(body, ['action'])) throw new HttpError(400, 'Некорректные данные возобновления', 'invalid_access_action')
+    return { action: body.action }
+  }
+  throw new HttpError(400, 'Некорректное действие с доступом', 'invalid_access_action')
 }
 
 function publicEnrollment(row) {
@@ -69,6 +99,14 @@ function publicEnrollment(row) {
     student: { id: row.student_id, fullName: row.student_name, email: row.student_email, studentType: row.student_type },
     course: { id: courseId, name: row.course_name, code: row.course_code, deliveryMode: row.delivery_mode },
     status: row.status,
+    access: {
+      plan: row.access_plan,
+      startedAt: row.access_started_at,
+      expiresAt: row.access_expires_at,
+      frozenAt: row.frozen_at,
+      frozenSecondsRemaining: row.frozen_seconds_remaining == null ? null : Number(row.frozen_seconds_remaining),
+      freezeReason: row.freeze_reason,
+    },
     requestedAt: row.requested_at,
     confirmedAt: row.confirmed_at,
     activatedAt: row.activated_at,
@@ -81,7 +119,8 @@ function publicEnrollment(row) {
 
 const ENROLLMENT_SELECT = `SELECT e.id, e.student_id, e.course_id, e.status, e.requested_at,
                                   e.confirmed_at, e.activated_at, e.suspended_at, e.completed_at,
-                                  e.cancelled_at, e.updated_at,
+                                  e.cancelled_at, e.updated_at, e.access_plan, e.access_started_at,
+                                  e.access_expires_at, e.frozen_at, e.frozen_seconds_remaining, e.freeze_reason,
                                   p.full_name AS student_name, u.email AS student_email, p.student_type,
                                   c.name AS course_name, c.code AS course_code, c.delivery_mode
                              FROM course_enrollments e
@@ -125,10 +164,13 @@ function requireStudentMatchesCourse(student, course) {
   }
 }
 
-function transitionUpdate(status) {
+function transitionUpdate(status, deliveryMode) {
   const fields = ['status = $2', 'updated_by = $3', 'updated_at = now()']
   if (status === 'awaiting_confirmation') fields.push('confirmed_at = COALESCE(confirmed_at, now())')
-  if (status === 'active') fields.push('activated_at = COALESCE(activated_at, now())', 'suspended_at = NULL')
+  if (status === 'active') {
+    fields.push('activated_at = COALESCE(activated_at, now())', 'suspended_at = NULL')
+    if (deliveryMode === 'online') fields.push("access_started_at = COALESCE(access_started_at, now())", "access_expires_at = COALESCE(access_expires_at, now() + interval '1 month')")
+  }
   if (status === 'suspended') fields.push('suspended_at = COALESCE(suspended_at, now())')
   if (status === 'completed') fields.push('completed_at = COALESCE(completed_at, now())')
   if (status === 'cancelled') fields.push('cancelled_at = COALESCE(cancelled_at, now())')
@@ -166,12 +208,16 @@ POST('/v1/admin/enrollments', async ({ req, config }) => {
       const course = await lockedCourse(client, input.courseId)
       requireStudentMatchesCourse(student, course)
       const inserted = await client.query(
-        `INSERT INTO course_enrollments (student_id, course_id, status, created_by, updated_by, confirmed_at, activated_at)
+        `INSERT INTO course_enrollments (student_id, course_id, status, created_by, updated_by, confirmed_at, activated_at,
+                                         access_plan, access_started_at, access_expires_at)
          VALUES ($1, $2, $3, $4, $4,
                  CASE WHEN $3 IN ('awaiting_confirmation', 'active') THEN now() ELSE NULL END,
-                 CASE WHEN $3 = 'active' THEN now() ELSE NULL END)
+                 CASE WHEN $3 = 'active' THEN now() ELSE NULL END,
+                 CASE WHEN $6 = 'online' THEN $5 ELSE NULL END,
+                 CASE WHEN $3 = 'active' AND $6 = 'online' THEN now() ELSE NULL END,
+                 CASE WHEN $3 = 'active' AND $6 = 'online' THEN now() + make_interval(months => $7) ELSE NULL END)
          RETURNING id`,
-        [input.studentId, input.courseId, input.status, actor.id],
+        [input.studentId, input.courseId, input.status, actor.id, input.accessPlan, course.delivery_mode, ACCESS_PLAN_MONTHS.get(input.accessPlan)],
       )
       const id = Number(inserted.rows[0].id)
       await audit(client, actor, 'create_course_enrollment', id, { courseId: input.courseId, studentId: input.studentId, status: input.status })
@@ -197,11 +243,72 @@ PATCH('/v1/admin/enrollments/:enrollmentId', async ({ req, params, config }) => 
       throw new HttpError(409, 'Недопустимый переход статуса', 'enrollment_transition_forbidden')
     }
     const updated = await client.query(
-      `UPDATE course_enrollments SET ${transitionUpdate(input.status)} WHERE id = $1 RETURNING id`,
+      `UPDATE course_enrollments SET ${transitionUpdate(input.status, row.delivery_mode)} WHERE id = $1 RETURNING id`,
       [enrollmentId, input.status, actor.id],
     )
     await audit(client, actor, 'update_course_enrollment_status', enrollmentId, { from: row.status, to: input.status })
     const loaded = await client.query(`${ENROLLMENT_SELECT} WHERE e.id = $1`, [updated.rows[0].id])
+    return publicEnrollment(loaded.rows[0])
+  })
+  return { status: 200, body: { enrollment } }
+})
+
+PATCH('/v1/admin/enrollments/:enrollmentId/access', async ({ req, params, config }) => {
+  const actor = requireRole(await requireAuth(config, req), ACCESS_MANAGER_ROLES)
+  const enrollmentId = routeId(params.enrollmentId, 'enrollment_id')
+  const input = parseEnrollmentAccessBody(await readJson(req, 3_000))
+  const enrollment = await transaction(async client => {
+    const current = await client.query(`${ENROLLMENT_SELECT} WHERE e.id = $1 FOR UPDATE OF e, u, p, c`, [enrollmentId])
+    const row = current.rows[0]
+    if (!row) throw new HttpError(404, 'Зачисление не найдено', 'enrollment_not_found')
+    if (row.delivery_mode !== 'online') throw new HttpError(409, 'Срок доступа применяется только к онлайн-курсам', 'online_access_only')
+
+    if (input.action === 'extend') {
+      const months = ACCESS_PLAN_MONTHS.get(input.accessPlan)
+      await client.query(
+        `UPDATE course_enrollments
+            SET access_plan = $2,
+                access_started_at = COALESCE(access_started_at, now()),
+                access_expires_at = GREATEST(COALESCE(access_expires_at, now()), now()) + make_interval(months => $3),
+                frozen_seconds_remaining = CASE WHEN frozen_at IS NULL THEN NULL ELSE EXTRACT(EPOCH FROM (GREATEST(COALESCE(access_expires_at, now()), now()) + make_interval(months => $3) - now()))::bigint END,
+                updated_by = $4,
+                updated_at = now()
+          WHERE id = $1`,
+        [enrollmentId, input.accessPlan, months, actor.id],
+      )
+      await audit(client, actor, 'extend_online_course_access', enrollmentId, { accessPlan: input.accessPlan, months })
+    } else if (input.action === 'freeze') {
+      if (row.status !== 'active') throw new HttpError(409, 'Заморозить можно только активный курс', 'access_not_active')
+      if (!row.access_expires_at || new Date(row.access_expires_at).getTime() <= Date.now()) throw new HttpError(409, 'Истёкший доступ нужно сначала продлить', 'access_expired')
+      if (row.frozen_at) throw new HttpError(409, 'Доступ уже заморожен', 'access_already_frozen')
+      await client.query(
+        `UPDATE course_enrollments
+            SET frozen_at = now(),
+                frozen_seconds_remaining = GREATEST(0, EXTRACT(EPOCH FROM (access_expires_at - now())))::bigint,
+                freeze_reason = $2,
+                updated_by = $3,
+                updated_at = now()
+          WHERE id = $1`,
+        [enrollmentId, input.reason, actor.id],
+      )
+      await audit(client, actor, 'freeze_online_course_access', enrollmentId, { reason: input.reason })
+    } else {
+      if (!row.frozen_at) throw new HttpError(409, 'Доступ не заморожен', 'access_not_frozen')
+      await client.query(
+        `UPDATE course_enrollments
+            SET access_expires_at = now() + make_interval(secs => GREATEST(0, COALESCE(frozen_seconds_remaining, 0))::double precision),
+                frozen_at = NULL,
+                frozen_seconds_remaining = NULL,
+                freeze_reason = NULL,
+                updated_by = $2,
+                updated_at = now()
+          WHERE id = $1`,
+        [enrollmentId, actor.id],
+      )
+      await audit(client, actor, 'resume_online_course_access', enrollmentId, {})
+    }
+
+    const loaded = await client.query(`${ENROLLMENT_SELECT} WHERE e.id = $1`, [enrollmentId])
     return publicEnrollment(loaded.rows[0])
   })
   return { status: 200, body: { enrollment } }
