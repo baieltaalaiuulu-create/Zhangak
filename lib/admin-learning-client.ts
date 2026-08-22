@@ -339,6 +339,16 @@ export async function listAdminCourses(options: { query?: string; limit?: number
   return parseAdminCourseList(await zhangakApiRequest<unknown>(`/v1/admin/courses${suffix}`))
 }
 
+export async function getAdminCourse(courseId: number): Promise<AdminCourse> {
+  const result = await zhangakApiRequest<unknown>(`/v1/admin/courses/${coursePath(courseId)}`)
+  return parseAdminCourse(record(result, 'курс').course)
+}
+
+export async function getAdminLesson(lessonId: number): Promise<AdminLesson> {
+  const result = await zhangakApiRequest<unknown>(`/v1/admin/lessons/${lessonPath(lessonId)}`)
+  return parseAdminLesson(record(result, 'урок').lesson)
+}
+
 export async function getAdminCourseRoadmap(courseId: number): Promise<AdminCourseRoadmap> {
   return parseAdminCourseRoadmap(await zhangakApiRequest<unknown>(`/v1/admin/courses/${coursePath(courseId)}/roadmap`))
 }

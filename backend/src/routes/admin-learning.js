@@ -702,6 +702,23 @@ POST('/v1/admin/courses', async ({ req, config }) => {
   }
 })
 
+GET('/v1/admin/courses/:courseId', async ({ req, params, config }) => {
+  await adminContentManager(config, req)
+  const courseId = positiveId(params.courseId, 'course_id')
+  const result = await dbQuery(
+    `SELECT c.id, c.name, c.code, c.level, c.subject, c.description, c.cover_image_url, c.delivery_mode,
+            c.is_active, c.created_at, c.updated_at, count(l.id)::int AS lesson_count
+       FROM courses c
+       LEFT JOIN lessons l ON l.course_id = c.id
+      WHERE c.id = $1
+      GROUP BY c.id`,
+    [courseId],
+  )
+  const course = result.rows[0]
+  if (!course) throw new HttpError(404, 'Курс не найден', 'course_not_found')
+  return { status: 200, body: { course: publicCourse(course) } }
+})
+
 PATCH('/v1/admin/courses/:courseId', async ({ req, params, config }) => {
   const actor = await adminContentManager(config, req)
   const courseId = positiveId(params.courseId, 'course_id')
@@ -786,6 +803,20 @@ POST('/v1/admin/courses/:courseId/lessons', async ({ req, params, config }) => {
     if (error?.code === '23505') throw new HttpError(409, 'Номер урока уже используется в этом курсе', 'lesson_number_conflict')
     throw error
   }
+})
+
+GET('/v1/admin/lessons/:lessonId', async ({ req, params, config }) => {
+  await adminContentManager(config, req)
+  const lessonId = positiveId(params.lessonId, 'lesson_id')
+  const result = await dbQuery(
+    `SELECT id, course_id, lesson_number, title, description, subject, section, topic,
+            lesson_date, duration_minutes, content_url, is_test, is_published, created_at, updated_at
+       FROM lessons WHERE id = $1`,
+    [lessonId],
+  )
+  const lesson = result.rows[0]
+  if (!lesson) throw new HttpError(404, 'Урок не найден', 'lesson_not_found')
+  return { status: 200, body: { lesson: publicLesson(lesson) } }
 })
 
 PATCH('/v1/admin/lessons/:lessonId', async ({ req, params, config }) => {

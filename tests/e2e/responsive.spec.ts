@@ -245,7 +245,10 @@ test.describe('roadmap lesson detail is anchored to its circle', () => {
     test(`lesson popover at ${viewport.width}px`, async ({ page }) => {
       await stubPlatform(page)
       await page.setViewportSize(viewport)
-      await page.goto('/student/online/roadmap', { waitUntil: 'domcontentloaded' })
+      // The route lands on subject selection without `?subject=`; the lesson
+      // trail (and this popover's anchor) only renders once a subject is
+      // chosen, so the URL picks one directly instead of clicking through.
+      await page.goto('/student/online/roadmap?subject=math', { waitUntil: 'domcontentloaded' })
       const lesson = page.getByRole('button', { name: /Подробнее: урок 2/ })
       const lessonBox = await lesson.boundingBox()
       await lesson.click()

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 import {
   parsePracticeQuestionCreateBody,
+  parseQuestionCatalogQuery,
   parsePracticeQuestionPatchBody,
   parsePracticeTestCreateBody,
   parsePracticeTestPatchBody,
@@ -135,4 +136,78 @@ test('assessment routes are first-party, role-gated, audited, and keep key reads
   assert.doesNotMatch(route, /DELETE\('/)
   assert.match(studentRoute, /publicAttemptQuestion/)
   assert.match(studentRoute, /correct_answer, explanation, selected_answer, is_correct,/)
+})
+
+// --- Question catalogue: server-side search, filters and pagination --------
+
+test('question catalogue filters are validated, never silently ignored', () => {
+  const params = value => new URLSearchParams(value)
+
+  assert.deepEqual(parseQuestionCatalogQuery(params('')), {
+    status: 'all', difficulty: null, search: null, section: null,
+  })
+  assert.deepEqual(parseQuestionCatalogQuery(params('status=archived&difficulty=hard&section=algebra&q=%20дроби%20')), {
+    status: 'archived', difficulty: 'hard', section: 'algebra', search: 'дроби',
+  })
+  // Blank values mean "no filter" rather than a filter that matches nothing.
+  assert.deepEqual(parseQuestionCatalogQuery(params('q=%20%20&section=&difficulty=')), {
+    status: 'all', difficulty: null, search: null, section: null,
+  })
+
+  const rejected = [
+    ['status=deleted', 'invalid_question_status_filter'],
+    ['status=Active', 'invalid_question_status_filter'],
+    ['difficulty=impossible', 'invalid_question_difficulty_filter'],
+    [`q=${'x'.repeat(201)}`, 'invalid_question_search'],
+    [`section=${'y'.repeat(65)}`, 'invalid_question_section_filter'],
+  ]
+  for (const [queryString, code] of rejected) {
+    assert.throws(
+      () => parseQuestionCatalogQuery(params(queryString)),
+      error => error instanceof HttpError && error.status === 400 && error.code === code,
+      `should reject ${queryString}`,
+    )
+  }
+})
+
+test('the question list is filtered and ordered deterministically in SQL', async () => {
+  const source = await readFile(path.join(backendRoot, 'src', 'routes', 'admin-assessments.js'), 'utf8')
+  const start = source.indexOf("GET('/v1/admin/practice-tests/:testId/questions'")
+  const route = source.slice(start, source.indexOf("POST('/v1/admin/practice-tests/:testId/questions'"))
+  assert.ok(route.includes('parseQuestionCatalogQuery(searchParams)'), 'the list must apply validated filters')
+  // `position, id` keeps a page boundary stable, so paging cannot duplicate or
+  // drop a row between two requests.
+  assert.ok(route.includes('ORDER BY position ASC, id ASC'), 'ordering must be deterministic')
+  assert.ok(route.includes('LIMIT $6 OFFSET $7'), 'the bank must be paged in SQL, not in the browser')
+  // Total is its own scalar query rather than `count(*) OVER()`: a window
+  // function only survives in the result when a row makes it past
+  // LIMIT/OFFSET, so a page requested past the last row (right after an
+  // archive shrinks the filtered set) would otherwise report a false
+  // `total: 0` instead of the real count.
+  assert.ok(!route.includes('count(*) OVER()::int AS total'), 'total must not depend on a row surviving LIMIT/OFFSET')
+  assert.ok(/SELECT count\(\*\)::int AS total\s+FROM practice_questions/.test(route), 'total must be computed independently of the page')
+  // The free position ignores the current filter/page and looks at the whole
+  // test: a filtered first page must never suggest a position that is only
+  // free-looking because another row scrolled out of view.
+  assert.ok(route.includes('nextAvailablePosition'), 'the DTO must expose the next free position')
+  assert.ok(route.includes('generate_series(1, $2) AS candidate'), 'the free position must scan the whole 1..200 range, not just the current page')
+})
+
+test('archive and restore are distinguishable in the audit trail', async () => {
+  const source = await readFile(path.join(backendRoot, 'src', 'routes', 'admin-assessments.js'), 'utf8')
+  const start = source.indexOf("PATCH('/v1/admin/practice-questions/:questionId'")
+  const route = source.slice(start)
+  assert.ok(route.includes("'archive_practice_question'"), 'archiving needs its own audit action')
+  assert.ok(route.includes("'restore_practice_question'"), 'restoring needs its own audit action')
+  assert.ok(route.includes("'update_practice_question'"), 'ordinary edits stay distinct')
+  // Field names only: an audit row must never carry question or answer text.
+  // The metadata object literal passed to audit() is checked directly rather
+  // than scanning the whole route, which legitimately mentions `options` in
+  // its RETURNING clause.
+  const metadata = route.slice(route.indexOf("await audit(client, actor, action, 'practice_question', row.id, {"))
+  const literal = metadata.slice(0, metadata.indexOf('})') + 2)
+  assert.ok(literal.includes('fields,'), 'audit metadata records field names')
+  for (const forbidden of ['questionText', 'correctAnswer', 'options', 'explanation']) {
+    assert.ok(!literal.includes(forbidden), `audit metadata must not carry ${forbidden}`)
+  }
 })

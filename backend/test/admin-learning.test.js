@@ -151,6 +151,11 @@ test('admin learning routes are first-party, role-gated, and audited', async () 
   assert.match(route, /CONTENT_MANAGER_ROLES = \['admin', 'super_admin'\]/)
   assert.match(route, /GET\('\/v1\/admin\/courses'/)
   assert.match(route, /POST\('\/v1\/admin\/courses'/)
+  // Single-resource reads back a course or lesson directly by id: the
+  // lesson-scoped question editor needs this to resolve its own course
+  // context without guessing at the relationship from a list response.
+  assert.match(route, /GET\('\/v1\/admin\/courses\/:courseId',/)
+  assert.match(route, /GET\('\/v1\/admin\/lessons\/:lessonId',/)
   assert.match(route, /PATCH\('\/v1\/admin\/courses\/:courseId'/)
   assert.match(route, /GET\('\/v1\/admin\/courses\/:courseId\/lessons'/)
   assert.match(route, /POST\('\/v1\/admin\/courses\/:courseId\/lessons'/)

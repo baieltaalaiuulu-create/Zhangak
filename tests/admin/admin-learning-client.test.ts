@@ -5,7 +5,9 @@ import {
   createAdminCourse,
   createAdminLesson,
   createAdminRoadmapUnit,
+  getAdminCourse,
   getAdminCourseRoadmap,
+  getAdminLesson,
   listAdminCourses,
   listAdminLessons,
   parseAdminCourseList,
@@ -98,6 +100,8 @@ test('admin learning operations stay inside the cookie-authenticated BFF namespa
     calls.push({ input: path, init })
     if (path === '/v1/admin/courses?limit=25') return json({ items: [COURSE], total: 1, limit: 25, offset: 0 })
     if (path === '/v1/admin/courses/4/lessons?limit=50') return json({ courseId: 4, items: [LESSON], total: 1, limit: 50, offset: 0 })
+    if (path === '/v1/admin/courses/4' && !init?.method) return json({ course: COURSE })
+    if (path === '/v1/admin/lessons/9' && !init?.method) return json({ lesson: LESSON })
     if (path === '/v1/admin/courses' && init?.method === 'POST') return json({ course: COURSE }, 201)
     if (path === '/v1/admin/courses/4' && init?.method === 'PATCH') return json({ course: COURSE })
     if (path === '/v1/admin/courses/4/lessons' && init?.method === 'POST') return json({ lesson: LESSON }, 201)
@@ -112,6 +116,8 @@ test('admin learning operations stay inside the cookie-authenticated BFF namespa
   try {
     await listAdminCourses({ limit: 25 })
     await listAdminLessons(4, { limit: 50 })
+    await getAdminCourse(4)
+    await getAdminLesson(9)
     await createAdminCourse({ name: COURSE.name, code: COURSE.code, isActive: true })
     await updateAdminCourse(4, { isActive: false })
     await createAdminLesson(4, { lessonNumber: 1, title: LESSON.title, isPublished: false })
@@ -124,6 +130,8 @@ test('admin learning operations stay inside the cookie-authenticated BFF namespa
     assert.deepEqual(calls.map(call => call.input), [
       '/v1/admin/courses?limit=25',
       '/v1/admin/courses/4/lessons?limit=50',
+      '/v1/admin/courses/4',
+      '/v1/admin/lessons/9',
       '/v1/admin/courses',
       '/v1/admin/courses/4',
       '/v1/admin/courses/4/lessons',
@@ -133,9 +141,9 @@ test('admin learning operations stay inside the cookie-authenticated BFF namespa
       '/v1/admin/roadmap/units/7/lessons',
       '/v1/admin/roadmap/units/7/lessons/9',
     ])
-    assert.deepEqual(calls.map(call => call.init?.method ?? 'GET'), ['GET', 'GET', 'POST', 'PATCH', 'POST', 'PATCH', 'GET', 'POST', 'POST', 'DELETE'])
+    assert.deepEqual(calls.map(call => call.init?.method ?? 'GET'), ['GET', 'GET', 'GET', 'GET', 'POST', 'PATCH', 'POST', 'PATCH', 'GET', 'POST', 'POST', 'DELETE'])
     assert.ok(calls.every(call => call.init?.credentials === 'include'))
-    assert.deepEqual(JSON.parse(String(calls[4].init?.body)), { lessonNumber: 1, title: LESSON.title, isPublished: false })
+    assert.deepEqual(JSON.parse(String(calls[6].init?.body)), { lessonNumber: 1, title: LESSON.title, isPublished: false })
   } finally {
     globalThis.fetch = originalFetch
     restoreWindow()

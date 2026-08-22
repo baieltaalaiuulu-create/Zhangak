@@ -9,8 +9,12 @@ const read = file => readFile(path.join(root, file), 'utf8')
 const expect = (condition, message) => { if (!condition) failures.push(message) }
 const pictograph = /\p{Extended_Pictographic}/u
 
+// `app/admin/mock/[id]/questions/page.tsx` was removed rather than migrated.
+// Nothing linked to it, and a mock exam SESSION (`mock_exam_sessions`) is not
+// the same entity as assessment CONTENT (`practice_tests`); wiring the two by
+// assumption would have invented a contract. The boundary is documented in
+// docs/development/architecture.md instead.
 const migrationPages = [
-  'app/admin/mock/[id]/questions/page.tsx',
   'app/admin/daily-challenge/[id]/page.tsx',
   'app/admin/prizes/page.tsx',
   'app/admin/universities/page.tsx',

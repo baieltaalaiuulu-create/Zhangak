@@ -185,6 +185,36 @@ function pagination(searchParams) {
   return { limit: parse('limit', 50, 1, 100), offset: parse('offset', 0, 0, 100_000) }
 }
 
+const QUESTION_STATUSES = new Set(['active', 'archived', 'all'])
+const QUESTION_DIFFICULTIES = new Set(['easy', 'medium', 'hard'])
+
+/**
+ * Server-side catalogue filters for the question bank.
+ *
+ * A 200-question bank cannot be managed by shipping the whole bank to the
+ * browser, so search, status, section and difficulty are all resolved here.
+ * Every value is validated: an unknown status or an over-long term is a 400,
+ * never a silently ignored parameter that would show the operator a filtered
+ * list they did not ask for.
+ */
+export function parseQuestionCatalogQuery(searchParams) {
+  const raw = key => {
+    const value = searchParams.get(key)
+    return value == null || value.trim() === '' ? null : value.trim()
+  }
+  const status = raw('status') ?? 'all'
+  if (!QUESTION_STATUSES.has(status)) throw new HttpError(400, 'Некорректный фильтр статуса', 'invalid_question_status_filter')
+  const difficulty = raw('difficulty')
+  if (difficulty !== null && !QUESTION_DIFFICULTIES.has(difficulty)) {
+    throw new HttpError(400, 'Некорректный фильтр сложности', 'invalid_question_difficulty_filter')
+  }
+  const search = raw('q')
+  if (search !== null && search.length > 200) throw new HttpError(400, 'Слишком длинный поиск', 'invalid_question_search')
+  const section = raw('section')
+  if (section !== null && section.length > 64) throw new HttpError(400, 'Некорректный раздел', 'invalid_question_section_filter')
+  return { status, difficulty, search, section }
+}
+
 function dateValue(value) {
   if (value == null) return null
   const date = value instanceof Date ? value : new Date(value)
@@ -567,29 +597,69 @@ PATCH('/v1/admin/practice-tests/:testId', async ({ req, params, config }) => {
   return { status: 200, body: { practiceTest: publicPracticeTest(test) } }
 })
 
+// The highest position a test may hold. Kept as a query-time constant so it
+// stays in lockstep with the `position <= 200` bound enforced on write.
+const MAX_QUESTION_POSITION = 200
+
 GET('/v1/admin/practice-tests/:testId/questions', async ({ req, params, config, query: searchParams }) => {
   await adminContentManager(config, req)
   const testId = positiveId(params.testId, 'practice_test_id')
   const { limit, offset } = pagination(searchParams)
+  const filters = parseQuestionCatalogQuery(searchParams)
   await loadPracticeTest(dbQuery, testId)
-  const result = await dbQuery(
-    `SELECT id, practice_test_id, question_text, options, correct_answer,
-            explanation, section, topic, difficulty, image_url, position, is_active,
-            created_at, updated_at, count(*) OVER()::int AS total
-       FROM practice_questions
-      WHERE practice_test_id = $1
-      ORDER BY position ASC, id ASC
-      LIMIT $2 OFFSET $3`,
-    [testId, limit, offset],
-  )
+  // Total is computed as its own scalar query rather than a `count(*) OVER()`
+  // window: a window function only survives in the result when at least one
+  // row makes it past LIMIT/OFFSET, so a page requested past the last row
+  // (the state right after an archive shrinks the filtered set) would
+  // otherwise report a false `total: 0` instead of the real count.
+  const [pageResult, totalResult, nextPositionResult] = await Promise.all([
+    dbQuery(
+      `SELECT id, practice_test_id, question_text, options, correct_answer,
+              explanation, section, topic, difficulty, image_url, position, is_active,
+              created_at, updated_at
+         FROM practice_questions
+        WHERE practice_test_id = $1
+          AND ($2::text = 'all' OR ($2 = 'active') = is_active)
+          AND ($3::text IS NULL OR difficulty = $3)
+          AND ($4::text IS NULL OR section = $4)
+          AND ($5::text IS NULL OR question_text ILIKE '%' || $5 || '%' OR coalesce(topic, '') ILIKE '%' || $5 || '%')
+        ORDER BY position ASC, id ASC
+        LIMIT $6 OFFSET $7`,
+      [testId, filters.status, filters.difficulty, filters.section, filters.search, limit, offset],
+    ),
+    dbQuery(
+      `SELECT count(*)::int AS total
+         FROM practice_questions
+        WHERE practice_test_id = $1
+          AND ($2::text = 'all' OR ($2 = 'active') = is_active)
+          AND ($3::text IS NULL OR difficulty = $3)
+          AND ($4::text IS NULL OR section = $4)
+          AND ($5::text IS NULL OR question_text ILIKE '%' || $5 || '%' OR coalesce(topic, '') ILIKE '%' || $5 || '%')`,
+      [testId, filters.status, filters.difficulty, filters.section, filters.search],
+    ),
+    // The next free position ignores every filter and the current page: a
+    // 200-question bank with the first page shown must never suggest a
+    // position that is only free-looking because row 26 scrolled out of view.
+    dbQuery(
+      `SELECT min(candidate)::int AS next_position
+         FROM generate_series(1, $2) AS candidate
+        WHERE NOT EXISTS (
+          SELECT 1 FROM practice_questions WHERE practice_test_id = $1 AND position = candidate
+        )`,
+      [testId, MAX_QUESTION_POSITION],
+    ),
+  ])
   return {
     status: 200,
     body: {
       practiceTestId: testId,
-      items: result.rows.map(adminPracticeQuestion),
-      total: Number(result.rows[0]?.total ?? 0),
+      items: pageResult.rows.map(adminPracticeQuestion),
+      total: Number(totalResult.rows[0]?.total ?? 0),
       limit,
       offset,
+      nextAvailablePosition: nextPositionResult.rows[0]?.next_position == null
+        ? null
+        : Number(nextPositionResult.rows[0].next_position),
     },
   }
 })
@@ -658,8 +728,17 @@ PATCH('/v1/admin/practice-questions/:questionId', async ({ req, params, config }
         id: current.practice_test_id,
         is_published: current.is_published,
       })
-      await audit(client, actor, 'update_practice_question', 'practice_question', row.id, {
-        fields: Object.keys(input),
+      // Archive and restore are their own auditable events: reviewing a
+      // content incident should not require diffing rows to find out whether
+      // a question was edited or pulled from circulation. `fields` are names
+      // only — no question text, no option text and never the answer key.
+      const fields = Object.keys(input)
+      const onlyActivity = fields.length === 1 && fields[0] === 'isActive'
+      const action = onlyActivity
+        ? (input.isActive ? 'restore_practice_question' : 'archive_practice_question')
+        : 'update_practice_question'
+      await audit(client, actor, action, 'practice_question', row.id, {
+        fields,
         practiceTestId: Number(row.practice_test_id),
       })
       return row

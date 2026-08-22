@@ -19,6 +19,17 @@ interface NavItem {
   superAdminOnly?: boolean
 }
 
+/**
+ * Release navigation shows working sections only.
+ *
+ * Five destinations still render a migration notice rather than a feature.
+ * A "Скоро" chip in primary navigation reads as a promise the release does not
+ * keep, so they are hidden here instead. The routes themselves stay mounted
+ * and reachable by direct URL, so nothing is lost and this flips back with one
+ * flag once those sections actually do something.
+ */
+const SHOW_MIGRATION_SECTIONS = false
+
 const NAV_ITEMS: NavItem[] = [
   { href: '/admin', label: 'Обзор', icon: LayoutDashboard, availability: 'ready' },
   { href: '/admin/content', label: 'Content Studio', icon: PanelsTopLeft, availability: 'ready' },
@@ -62,7 +73,9 @@ interface Props {
 export default function AdminSidebar({ role = null }: Props) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const visibleItems = NAV_ITEMS.filter(item => !item.superAdminOnly || role === 'super_admin')
+  const visibleItems = NAV_ITEMS
+    .filter(item => !item.superAdminOnly || role === 'super_admin')
+    .filter(item => SHOW_MIGRATION_SECTIONS || item.availability !== 'migration')
 
   return (
     <>
@@ -96,7 +109,7 @@ export default function AdminSidebar({ role = null }: Props) {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 pb-3" aria-label="Административные разделы">
-          {NAV_GROUPS.map(group => {
+          {NAV_GROUPS.filter(group => SHOW_MIGRATION_SECTIONS || group.availability !== 'migration').map(group => {
             const groupItems = visibleItems.filter(item => group.hrefs.includes(item.href))
             if (groupItems.length === 0) return null
             return (
