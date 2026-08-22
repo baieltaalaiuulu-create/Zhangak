@@ -1,6 +1,7 @@
 import { requireAuth } from '../auth.js'
 import { query } from '../db.js'
 import { GET, HttpError } from '../http.js'
+import { canonicalLearningSubject } from '../learning-subject.js'
 
 const STUDENT_ROLES = ['student', 'math_student']
 
@@ -52,7 +53,7 @@ export function publicRoadmapLesson(row) {
     lessonNumber: number(row.lesson_number),
     title: row.title,
     description: isLocked ? null : optionalText(row.description),
-    subject: optionalText(row.subject),
+    subject: canonicalLearningSubject(row.subject),
     section: optionalText(row.section),
     topic: optionalText(row.topic),
     durationMinutes: row.duration_minutes == null ? null : number(row.duration_minutes),

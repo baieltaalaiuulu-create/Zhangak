@@ -2,6 +2,7 @@ import { requireAuth } from '../auth.js'
 import { query, transaction } from '../db.js'
 import { recordGamificationEvent } from '../gamification.js'
 import { GET, HttpError, POST, readJson } from '../http.js'
+import { canonicalLearningSubject } from '../learning-subject.js'
 import { privateFile, safeFilename } from '../storage.js'
 
 const STUDENT_ROLES = ['student', 'math_student']
@@ -89,7 +90,7 @@ function publicCourse(row) {
     name: row.name,
     code: row.code,
     level: row.level,
-    subject: row.subject,
+    subject: canonicalLearningSubject(row.subject),
     description: row.description,
     coverImageUrl: row.cover_image_url,
     lessonCount: Number(row.lesson_count ?? 0),
@@ -108,7 +109,7 @@ export function publicLesson(row) {
     // sequence, but it must not leak a direct material URL that bypasses the
     // detail-route lock. The full metadata is released once it is unlocked.
     description: isLocked ? null : row.description,
-    subject: row.subject,
+    subject: canonicalLearningSubject(row.subject),
     section: row.section,
     topic: row.topic,
     lessonDate: row.lesson_date ?? null,
@@ -146,7 +147,7 @@ function publicPracticeTest(row) {
     courseId: nullableNumber(row.course_id),
     lessonId: nullableNumber(row.lesson_id),
     title: row.title,
-    subject: row.subject,
+    subject: canonicalLearningSubject(row.subject),
     testType: row.test_type,
     description: row.description,
     timeLimitSeconds: nullableNumber(row.time_limit_seconds),

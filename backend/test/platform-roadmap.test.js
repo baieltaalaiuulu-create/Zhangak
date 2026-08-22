@@ -47,6 +47,21 @@ test('Roadmap keeps the earned test score after a lesson is completed', () => {
   assert.equal(roadmapStarCount(lesson.completionPercent), 1)
 })
 
+test('Roadmap exposes legacy display labels through canonical subject paths', () => {
+  const math = publicRoadmapLesson({
+    lesson_id: 9, lesson_number: 2, title: 'Алгебра', description: null, subject: 'Математика',
+    section: null, topic: null, duration_minutes: 10, is_test: false,
+    completion_percent: 0, completed_at: null, is_locked: false, has_active_bound_practice_test: false,
+  })
+  const kyr = publicRoadmapLesson({
+    lesson_id: 10, lesson_number: 1, title: 'Грамматика', description: null, subject: 'Кыргыз тил',
+    section: null, topic: null, duration_minutes: 10, is_test: false,
+    completion_percent: 0, completed_at: null, is_locked: false, has_active_bound_practice_test: false,
+  })
+  assert.equal(math.subject, 'math')
+  assert.equal(kyr.subject, 'kyr')
+})
+
 test('Roadmap route is first-party, enrollment-scoped and preserves the global unit lock', async () => {
   const route = await readFile(path.join(backendRoot, 'src', 'routes', 'platform-roadmap.js'), 'utf8')
   const learning = await readFile(path.join(backendRoot, 'src', 'routes', 'platform-learning.js'), 'utf8')
