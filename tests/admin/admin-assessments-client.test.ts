@@ -7,6 +7,7 @@ import {
   createAdminLessonPracticeTest,
   createAdminPracticeQuestion,
   getAdminPracticeTest,
+  listAllAdminPracticeQuestions,
   listAdminCoursePracticeTests,
   listAdminLessonPracticeTests,
   listAdminPracticeQuestions,
@@ -174,6 +175,37 @@ test('the question catalogue sends only the filters the operator actually set', 
     assert.equal(requested[0], '/v1/admin/practice-tests/18/questions?limit=25&offset=50')
     assert.equal(requested[1], '/v1/admin/practice-tests/18/questions?limit=25&q=%D0%B4%D1%80%D0%BE%D0%B1%D0%B8&status=archived&section=algebra&difficulty=hard')
     assert.equal(requested[2], '/v1/admin/practice-tests/18/questions?limit=25')
+  } finally {
+    globalThis.fetch = originalFetch
+    restoreWindow()
+  }
+})
+
+test('a complete question bank is fetched in API-safe 100-row pages', async () => {
+  const restoreWindow = installBrowserWindow()
+  const originalFetch = globalThis.fetch
+  const requested: string[] = []
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const path = String(input)
+    requested.push(path)
+    const url = new URL(path, 'https://admin.zhangak.test')
+    const offset = Number(url.searchParams.get('offset') ?? 0)
+    const count = offset === 0 ? 100 : 50
+    const items = Array.from({ length: count }, (_, index) => ({
+      ...QUESTION,
+      id: offset + index + 1,
+      position: offset + index + 1,
+    }))
+    return json({ practiceTestId: 18, items, total: 150, limit: 100, offset, nextAvailablePosition: 151 })
+  }) as typeof fetch
+  try {
+    const result = await listAllAdminPracticeQuestions(18, { status: 'active' })
+    assert.equal(result.length, 150)
+    assert.deepEqual(requested, [
+      '/v1/admin/practice-tests/18/questions?limit=100&offset=0&status=active',
+      '/v1/admin/practice-tests/18/questions?limit=100&offset=100&status=active',
+    ])
+    assert.ok(requested.every(path => !path.includes('limit=200')))
   } finally {
     globalThis.fetch = originalFetch
     restoreWindow()

@@ -116,6 +116,17 @@ test.describe('admin question catalogue', () => {
     expect(listCalls.every(call => call.url.includes('limit=25')), 'the bank must be requested one page at a time').toBe(true)
   })
 
+  test('a full bank explains why another question cannot be added', async ({ page }) => {
+    const recorded: Recorded[] = []
+    await stubAdmin(page, recorded)
+    await page.setViewportSize({ width: 390, height: 844 })
+    await openWorkspace(page)
+
+    await expect(page.getByText('Банк заполнен: заняты все 200 позиций.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Вопрос', exact: true })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Новый банк' })).toBeEnabled()
+  })
+
   test('search and status are resolved on the server, not in the browser', async ({ page }) => {
     const recorded: Recorded[] = []
     await stubAdmin(page, recorded)

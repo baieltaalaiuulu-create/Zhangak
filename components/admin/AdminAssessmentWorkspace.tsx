@@ -521,6 +521,7 @@ export default function AdminAssessmentWorkspace({ kind, lessonId }: AdminAssess
   const [testsLoading, setTestsLoading] = useState(false)
   const [questionsLoading, setQuestionsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [testForm, setTestForm] = useState<TestFormState | null>(null)
   const [questionForm, setQuestionForm] = useState<AdminPracticeQuestion | null | 'create'>(null)
   // The bank can hold hundreds of questions, so the catalogue is resolved on
@@ -833,11 +834,24 @@ export default function AdminAssessmentWorkspace({ kind, lessonId }: AdminAssess
         ? test.activeQuestionCount + Number(saved.isActive) - Number(previous.isActive)
         : test.activeQuestionCount + Number(saved.isActive),
     } : test))
-    // Refetched rather than spliced locally: an edit can move a question out
-    // of the active search/status/section/difficulty filter, and the page
-    // must never grow past QUESTION_PAGE_SIZE just because a save happened
-    // while it was open.
-    if (selectedTestId !== null) void loadQuestions(selectedTestId, questionFilters, questionOffset)
+    // A newly created row must be visible immediately. Keeping a stale search
+    // or section filter here made a successful save look like data loss to an
+    // operator, because the modal closed while the new row stayed filtered
+    // out. Edits keep the current catalogue context; creates open the page
+    // that contains their server-assigned position.
+    const created = previous === undefined
+    const targetFilters = created ? EMPTY_QUESTION_FILTERS : questionFilters
+    const targetOffset = created
+      ? Math.floor((saved.position - 1) / QUESTION_PAGE_SIZE) * QUESTION_PAGE_SIZE
+      : questionOffset
+    if (created) {
+      setSearchDraft('')
+      setSectionDraft('')
+      setQuestionFilters(EMPTY_QUESTION_FILTERS)
+      setQuestionOffset(targetOffset)
+    }
+    setSuccess(created ? 'Вопрос сохранён и открыт в списке.' : 'Изменения вопроса сохранены.')
+    if (selectedTestId !== null) void loadQuestions(selectedTestId, targetFilters, targetOffset)
   }
 
   const retry = () => {
@@ -860,6 +874,7 @@ export default function AdminAssessmentWorkspace({ kind, lessonId }: AdminAssess
         </section>
 
         {error && <section role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"><span>{error}</span><button type="button" onClick={retry} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-bold text-red-700 hover:bg-red-100"><RefreshCw size={14} aria-hidden="true" />Повторить</button></section>}
+        {success && <section role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800"><span>{success}</span><button type="button" onClick={() => setSuccess('')} aria-label="Закрыть уведомление" className="flex min-h-9 min-w-9 items-center justify-center rounded-lg bg-white/80 text-emerald-700 hover:bg-white"><X size={15} aria-hidden="true" /></button></section>}
 
         {lessonId == null && (
         <section className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:p-5" aria-label="Выбор учебного контекста">
@@ -886,6 +901,12 @@ export default function AdminAssessmentWorkspace({ kind, lessonId }: AdminAssess
 
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="assessment-questions-title">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-5"><div><h2 id="assessment-questions-title" className="text-base font-black text-[#191B23]">Задания</h2><p className="mt-0.5 text-sm text-slate-400">{selectedTest ? `Тест: ${selectedTest.title}` : 'Сначала выберите тест.'}</p></div><button type="button" disabled={!selectedTest || nextAvailablePosition === null} onClick={() => { if (nextAvailablePosition !== null) setQuestionForm('create') }} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#1B3F92]/20 bg-white px-3.5 text-sm font-bold text-[#1B3F92] hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"><Plus size={16} aria-hidden="true" />Вопрос</button></div>
+            {selectedTest !== null && nextAvailablePosition === null && !questionsLoading && (
+              <div role="status" className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:px-5">
+                <div><p className="font-black">Банк заполнен: заняты все 200 позиций.</p><p className="mt-0.5 text-xs font-medium leading-5 text-amber-800">Вопросы сохранены. Создайте следующий тест-банк для продолжения — один тест ограничен 200 заданиями.</p></div>
+                <button type="button" onClick={() => selectedCourse && setTestForm({ kind: 'create' })} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-3.5 text-xs font-bold text-amber-900 shadow-sm hover:bg-amber-100"><Plus size={15} aria-hidden="true" />Новый банк</button>
+              </div>
+            )}
             {selectedTest !== null && (
               <div className="flex flex-wrap items-end gap-2 border-b border-slate-100 bg-slate-50/60 px-4 py-3 sm:px-5">
                 <label className="min-w-0 flex-1 basis-56">

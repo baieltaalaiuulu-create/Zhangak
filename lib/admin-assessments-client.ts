@@ -351,6 +351,28 @@ export async function listAdminPracticeQuestions(testId: number, options: AdminQ
   ))
 }
 
+/**
+ * Loads a complete filtered bank without violating the API's 100-row page
+ * limit.  Screens that genuinely need the whole bank (currently the daily
+ * challenge picker) must use this helper instead of asking the server for an
+ * invalid `limit=200` page.
+ */
+export async function listAllAdminPracticeQuestions(
+  testId: number,
+  options: Omit<AdminQuestionCatalogQuery, 'limit' | 'offset'> = {},
+): Promise<AdminPracticeQuestion[]> {
+  const pageSize = 100
+  const items: AdminPracticeQuestion[] = []
+  let offset = 0
+
+  for (;;) {
+    const page = await listAdminPracticeQuestions(testId, { ...options, limit: pageSize, offset })
+    items.push(...page.items)
+    if (page.items.length === 0 || items.length >= page.total) return items
+    offset += page.items.length
+  }
+}
+
 export async function createAdminPracticeQuestion(testId: number, input: AdminPracticeQuestionInput): Promise<AdminPracticeQuestion> {
   const response = await zhangakApiJson<unknown>(
     `/v1/admin/practice-tests/${pathId(testId, 'id теста')}/questions`,

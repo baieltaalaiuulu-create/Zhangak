@@ -28,6 +28,7 @@ export default function AdminLessonMaterialsPage({ params }: { params: Promise<{
   const [items, setItems] = useState<AdminLessonMaterial[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [kind, setKind] = useState<'rich_text' | 'video' | 'document' | 'image'>('rich_text')
   const [title, setTitle] = useState('')
@@ -58,7 +59,7 @@ export default function AdminLessonMaterialsPage({ params }: { params: Promise<{
     if (!lessonId || saving) return
     const ordinal = Number(position)
     if (!Number.isSafeInteger(ordinal) || ordinal < 1) { setError('Укажите позицию материала (целое число от 1).'); return }
-    setSaving(true); setError(null)
+    setSaving(true); setError(null); setNotice(null)
     try {
       if (kind === 'rich_text') await createAdminTextMaterial(lessonId, { materialType: kind, title, position: ordinal, bodyMarkdown: body, isPublished: false })
       else if (kind === 'video') await createAdminTextMaterial(lessonId, { materialType: kind, title, position: ordinal, externalUrl: url, isPublished: false })
@@ -66,6 +67,9 @@ export default function AdminLessonMaterialsPage({ params }: { params: Promise<{
         if (!file) throw new Error('Выберите файл')
         await uploadAdminLessonMaterial(lessonId, { materialType: kind, title, position: ordinal }, file)
       }
+      setNotice(kind === 'document' || kind === 'image'
+        ? 'Файл загружен, но пока скрыт от ученика. Нажмите «Подтвердить и опубликовать» в списке ниже.'
+        : 'Материал сохранён как черновик. Нажмите «Опубликовать» в списке ниже, чтобы показать его ученику.')
       setTitle(''); setBody(''); setUrl(''); setFile(null)
       await load(lessonId)
     } catch (cause) { setError(message(cause)) } finally { setSaving(false) }
@@ -75,8 +79,8 @@ export default function AdminLessonMaterialsPage({ params }: { params: Promise<{
   // rather than through the file-review queue.
   const setPublished = async (material: AdminLessonMaterial, isPublished: boolean) => {
     if (saving || !lessonId) return
-    setSaving(true); setError(null)
-    try { await setAdminMaterialPublished(material.id, isPublished); await load(lessonId) } catch (cause) { setError(message(cause)) } finally { setSaving(false) }
+    setSaving(true); setError(null); setNotice(null)
+    try { await setAdminMaterialPublished(material.id, isPublished); setNotice(isPublished ? 'Материал опубликован и доступен ученику в этом уроке.' : 'Материал скрыт от ученика.'); await load(lessonId) } catch (cause) { setError(message(cause)) } finally { setSaving(false) }
   }
 
   // A quarantined video keeps its original reference but cannot publish. The
@@ -85,14 +89,14 @@ export default function AdminLessonMaterialsPage({ params }: { params: Promise<{
     if (saving || !lessonId) return
     const replacement = window.prompt('Новая ссылка YouTube для этого видео', material.externalUrl ?? '')
     if (replacement === null || replacement.trim() === '') return
-    setSaving(true); setError(null)
+    setSaving(true); setError(null); setNotice(null)
     try { await repairAdminMaterialVideo(material.id, replacement.trim()); await load(lessonId) } catch (cause) { setError(message(cause)) } finally { setSaving(false) }
   }
 
   const review = async (material: AdminLessonMaterial, status: 'clean' | 'rejected') => {
     if (saving || !lessonId) return
-    setSaving(true); setError(null)
-    try { await reviewAdminLessonMaterial(material.id, status, status === 'clean'); await load(lessonId) } catch (cause) { setError(message(cause)) } finally { setSaving(false) }
+    setSaving(true); setError(null); setNotice(null)
+    try { await reviewAdminLessonMaterial(material.id, status, status === 'clean'); setNotice(status === 'clean' ? 'Файл подтверждён, опубликован и доступен ученику в этом уроке.' : 'Файл отклонён и остаётся скрытым от ученика.'); await load(lessonId) } catch (cause) { setError(message(cause)) } finally { setSaving(false) }
   }
 
   return (
@@ -113,6 +117,7 @@ export default function AdminLessonMaterialsPage({ params }: { params: Promise<{
             <button disabled={saving} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#1B3F92] px-4 text-sm font-bold text-white disabled:opacity-60 sm:col-span-2">{saving ? <LoaderCircle className="animate-spin" size={17} /> : <Upload size={17} />}{saving ? 'Сохраняем…' : 'Сохранить материал'}</button>
           </form>
           {error && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>}
+          {notice && <p role="status" className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold leading-6 text-emerald-800">{notice}</p>}
         </section>
         <section className="mt-5 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6"><h2 className="text-base font-black text-[#191B23]">Материалы</h2>{loading ? <p className="mt-4 flex items-center gap-2 text-sm text-gray-500"><LoaderCircle className="animate-spin" size={17} />Загружаем…</p> : items.length === 0 ? <p className="mt-4 text-sm text-gray-500">Материалов пока нет.</p> : <div className="mt-4 space-y-3">{items.map(item => <article key={item.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-gray-50 p-4"><span className="rounded-lg bg-white p-2 text-[#1B3F92]">{item.materialType === 'video' ? <Video size={18} /> : <FileText size={18} />}</span><div className="min-w-0 flex-1"><p className="font-bold text-gray-800">{item.position}. {item.title}</p><p className="mt-1 text-xs text-gray-500">{statusLabel(item.scanStatus)} · {item.isPublished ? 'опубликован' : 'скрыт'}</p>{item.needsVideoRepair && <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-amber-700"><AlertTriangle size={13} aria-hidden="true" />Ссылка не распознана — замените её, чтобы опубликовать</p>}</div>{item.needsVideoRepair && <button onClick={() => void repair(item)} disabled={saving} className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-800"><Wrench size={15} />Исправить ссылку</button>}{['rich_text', 'video'].includes(item.materialType) && !item.needsVideoRepair && <button onClick={() => void setPublished(item, !item.isPublished)} disabled={saving} className={`inline-flex min-h-10 items-center gap-1 rounded-lg px-3 text-xs font-bold ${item.isPublished ? 'border border-gray-200 text-gray-700' : 'bg-emerald-600 text-white'}`}>{item.isPublished ? <><EyeOff size={15} />Скрыть</> : <><Eye size={15} />Опубликовать</>}</button>}{item.scanStatus === 'pending' && <div className="flex gap-2"><button onClick={() => void review(item, 'clean')} disabled={saving} className="inline-flex min-h-10 items-center gap-1 rounded-lg bg-emerald-600 px-3 text-xs font-bold text-white"><CheckCircle2 size={15} />Подтвердить и опубликовать</button><button onClick={() => void review(item, 'rejected')} disabled={saving} className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-red-200 px-3 text-xs font-bold text-red-700"><XCircle size={15} />Отклонить</button></div>}</article>)}</div>}</section>
       </main>
