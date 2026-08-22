@@ -1,6 +1,6 @@
 # Zhangak release-candidate ledger для Claude
 
-**Снимок:** 2026-08-22. Это краткий handoff о завершённой локальной работе, а
+**Снимок:** 2026-08-23. Это краткий handoff о завершённой локальной работе, а
 не незавершённый prompt и не доказательство production-ready состояния.
 
 ## Всегда начинайте с фактического Git
@@ -20,28 +20,60 @@ git diff --stat
 
 ## Завершённая серия commits
 
-На момент снимка branch `fix/video-release-review` содержит следующую
-последовательность:
+На момент снимка branch `fix/video-release-review` содержит (в порядке):
 
-- `37104ac` — строгий Roadmap DTO: пустые legacy descriptions нормализуются,
-  завершённый урок не помечается одновременно `done` и `locked`, student
-  payload не раскрывает answer key;
-- `13f07fd` — безопасное управление банком вопросов: create/edit,
-  archive/restore без физического `DELETE`, server-side filters и pagination,
-  lesson-scoped workspace, корректная свободная позиция, RBAC/audit guards и
-  regression coverage;
-- `796994a` — lesson search и assessment UX polish, включая настоящий поиск и
-  русские склонения;
-- `fc31d3d` — release/handoff documentation для этой серии.
+- `37104ac` — строгий Roadmap DTO;
+- `13f07fd` — безопасное управление банком вопросов (create/edit,
+  archive/restore, server-side фильтры/пагинация, lesson-scoped workspace);
+- `796994a` — lesson search и assessment UX polish;
+- `fc31d3d` — release/handoff документация той серии;
+- `fd113ca` — Content Studio: defer loading effects (Codex);
+- `755c4dd` — стабилизация теста position conflict recovery (Codex);
+- `3cdd571` — refresh release candidate handoff (Codex);
+- `8ecb019` — полный банк вопросов на странице задания дня (был жёсткий
+  `limit=200` при максимуме API 100), видимость нового вопроса при активных
+  фильтрах, честный статус "банк заполнен 200/200", статусы публикации
+  материалов (Codex);
+- `7ef2335` — **`backend/scripts/seed-lesson-assessment-demo.js`** и
+  **`seed-demo-student.js`**: закрывают главный продуктовый разрыв — до этого
+  почти ни один урок не имел lesson-scoped `practice_tests`, поэтому цепочка
+  «Видео → Тест → Результат → Следующий урок» почти нигде не срабатывала
+  (`has_active_bound_practice_test` в `platform-learning.js` /
+  `platform-roadmap.js` требует привязанный опубликованный тест с активным
+  вопросом). Скрипт идемпотентен, `--dry-run` по умолчанию, не трогает
+  существующие курсовые банки, не угадывает связь вопрос↔урок по совпадению
+  `topic`/`section`, авторские вопросы только для `math` (арифметика,
+  ответы проверены вручную и независимо переверены в тесте). `--subject kyr`
+  **намеренно отклоняется** — это открытый блокер, не выполненная задача:
+  проверка правильного кыргызского ответа требует лингвиста/методиста.
 
-Функциональный объём question catalogue завершён: ровно четыре варианта
-`a/b/c/d`, явный правильный ответ, explanation, фильтры, пагинация,
-course/lesson scope, создание, редактирование, архивирование и восстановление.
-История попыток не удаляется. Уроки доступны через реальный поиск, а старый
-неподтверждённый mock-route не входит в release navigation.
+Функциональный объём question catalogue завершён, включая честные состояния
+"сохранено/черновик/опубликовано/скрыто/ошибка" и полную загрузку банка мимо
+лимита API в 100 строк на странице. История попыток не удаляется.
 
-Это описание реализованного diff, но не утверждение, что свежий checkout уже
-прошёл release gate или развёрнут в production.
+## Известный блокер этой сессии: нет доступного PostgreSQL
+
+В этой рабочей копии нет `.env`, ничего не слушает `127.0.0.1:5433/:3210`, и
+Docker Desktop (установлен) не поднял backend в разумное время — `docker ps`
+не отвечал even after launching Docker Desktop.exe и ожидания. Поэтому:
+
+- `seed-lesson-assessment-demo.js` и `seed-demo-student.js` **не запускались
+  с `--apply` против реальной базы** в этой сессии — только верифицированы
+  code review'ом против CHECK-constraints `002_learning_core.sql` и
+  unit-тестами их чистой логики (`backend/test/seed-*.test.js`), которые не
+  требуют подключения к БД;
+- полный ручной проход всех demo-сценариев ученика/админа в браузере против
+  живого backend **не выполнялся** — вместо этого пройден статический код
+  review каждого маршрута (freeze/extend доступа, друзья/блокировки, quest
+  claim идемпотентность, trainer-изоляция lesson-scoped тестов через
+  `test_type='practice' <> 'bank'`) и полный прогон `npm run test:e2e`
+  (mocked `/v1/**`, реальный production build и React-код) — 135/135 pass.
+
+Следующему агенту/Codex: перед release нужно поднять реальный/disposable
+PostgreSQL, применить 26 миграций, запустить оба seed-скрипта с `--apply` и
+пройти сценарии из ЭТАП 2/3 пользовательского запроса руками против реального
+API. Это не «доказательство», что seed-скрипты сломаны — это честная граница
+того, что можно было проверить без базы данных.
 
 ## Обязательный release gate
 
@@ -60,16 +92,17 @@ npm run check:admin-legacy-cutover
 npm run check:own-backend
 npm run check:no-product-ai
 npm run check:migrations
+npm run check:mobile-data-plane
 npm --prefix backend run check
 npm --prefix backend test
 npm run build
 npm run test:e2e
 ```
 
-Для изменённого UI дополнительно проверяются реальные viewports `390x844`,
-`768x1024` и `1440x900`; для release — standalone smoke, API readiness,
-миграционный ledger и внешние health checks. Старые отчёты и screenshots не
-заменяют свежую проверку artifact.
+Для release нужно ДОПОЛНИТЕЛЬНО: disposable/staging PostgreSQL с применёнными
+миграциями, `seed-lesson-assessment-demo.js --apply` и `seed-demo-student.js
+--apply` против него, ручной проход ключевых сценариев (Stage 2/3 в исходном
+запросе) в браузере, standalone smoke, API readiness и внешние health checks.
 
 ## Границы ответственности
 
