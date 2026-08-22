@@ -231,17 +231,17 @@ test.describe('admin question catalogue', () => {
     const recorded: Recorded[] = []
     await stubAdmin(page, recorded)
     const smallBank = Array.from({ length: 5 }, (_, i) => question(i + 1))
-    let questionReads = 0
     let createAttempts = 0
+    let conflictOccurred = false
     // A five-question test overrides the 200-question stub from stubAdmin so
-    // the free slot (6) is obvious. The second read — triggered by the
-    // conflict recovery, not by the operator — reports 7: another admin took
-    // position 6 between page load and this submit.
+    // the free slot (6) is obvious. Once the create request conflicts, every
+    // subsequent read reports 7: another admin took position 6 between page
+    // load and submit. Keying the transition to the mutation rather than a
+    // GET count keeps the scenario deterministic when React refetches.
     await page.route('**/v1/admin/practice-tests/1/questions**', route => {
       const request = route.request()
       if (request.method() === 'GET') {
-        questionReads += 1
-        const nextAvailablePosition = questionReads === 1 ? 6 : 7
+        const nextAvailablePosition = conflictOccurred ? 7 : 6
         return json(route, { practiceTestId: 1, items: smallBank, total: smallBank.length, limit: 25, offset: 0, nextAvailablePosition })
       }
       if (request.method() === 'POST') {
@@ -249,6 +249,7 @@ test.describe('admin question catalogue', () => {
         const body = request.postDataJSON()
         recorded.push({ url: request.url(), method: 'POST', body })
         if (createAttempts === 1) {
+          conflictOccurred = true
           return route.fulfill({
             status: 409,
             contentType: 'application/json',
