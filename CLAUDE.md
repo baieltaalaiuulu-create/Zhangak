@@ -1,12 +1,12 @@
 @AGENTS.md
 
-@docs/development/CLAUDE_PROJECT_FINISH_CONTEXT.md
-
 @docs/development/CLAUDE_PROJECT_CONTINUATION.md
 
-For the current Zhangak release-candidate task, use the imported continuation
-file as the current progress ledger and the finish context for unchanged
-invariants. Do not use `PROMPT_FOR_NEXT_AGENT.md`,
+Use the imported continuation file only as a completed-work ledger. Determine
+the current task from the user's latest request and verify the live Git state
+before acting. `CLAUDE_PROJECT_FINISH_CONTEXT.md` and
+`CLAUDE_PROJECT_FINISH_PROMPT.md` are historical references, not an active task
+queue. Do not use `PROMPT_FOR_NEXT_AGENT.md`,
 `docs/product/pre-final-delivery-plan.md`, or `docs/archive/` as current
-implementation instructions. Read additional files only when a direct code
-dependency or a failing test requires them.
+implementation instructions. Push, SSH, migrations, and VPS deployment remain
+Codex responsibilities.

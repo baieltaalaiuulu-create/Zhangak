@@ -1,7 +1,8 @@
 # Актуальный handoff для AI-агентов Zhangak
 
 **Актуально на:** 2026-08-22
-**Проверенный baseline:** `0824881` (`feat: complete first-party learning experience`).
+**Последний зафиксированный handoff baseline:** `fc31d3d` (`docs: record
+Zhangak release candidate verification`).
 Это ориентир, а не замена командам `git status`, `git branch --show-current` и
 `git rev-parse HEAD` перед началом работы.
 **Назначение:** обязательная точка входа для AI-агента, который анализирует или
@@ -65,11 +66,14 @@ subscriptions, YouTube sources, quests/achievements, социальный
 - `026_mock_exam_registrations.sql` добавляет расписание и регистрацию на
   очный пробный ОРТ.
 
-Редактор вопросов уже умеет создавать и изменять задания с ровно четырьмя
-вариантами `a/b/c/d`, явным правильным ответом и объяснением. Актуальный остаток
-по CRUD описан в `CLAUDE_PROJECT_FINISH_CONTEXT.md`: безопасное архивирование и
-восстановление, фильтры, пагинация, UX и тесты — без физического удаления
-истории попыток.
+Редактор вопросов завершает безопасный CRUD-контур без физического удаления:
+создание и изменение заданий с ровно четырьмя вариантами `a/b/c/d`, явным
+правильным ответом и объяснением, archive/restore, server-side фильтры и
+пагинация, lesson-scoped workspace и корректная свободная позиция. История
+попыток остаётся неизменяемой. Серия реализации зафиксирована commits
+`13f07fd` и `796994a`; `37104ac` отдельно закрывает строгий Roadmap DTO.
+Актуальный Git и release gate всё равно проверяются заново перед выводом о
+готовности.
 
 Это краткая карта, а не замена чтению SQL. Для точного контракта всегда
 открывайте соответствующую миграцию и route.
@@ -105,7 +109,8 @@ subscriptions, YouTube sources, quests/achievements, социальный
 | Gamification | `docs/product/gamification-quests.md` |
 | Roadmap | `docs/product/roadmap-implementation.md` |
 | Product/growth audit Gemini | `docs/development/GEMINI_PRODUCT_GROWTH_AUDIT_PROMPT.md` |
-| Завершение проекта Claude | `docs/development/CLAUDE_PROJECT_FINISH_CONTEXT.md`, `docs/development/CLAUDE_PROJECT_FINISH_PROMPT.md` |
+| Текущий release ledger | `docs/development/CLAUDE_PROJECT_CONTINUATION.md` |
+| История предыдущей Claude-итерации | `docs/development/CLAUDE_PROJECT_FINISH_CONTEXT.md`, `docs/development/CLAUDE_PROJECT_FINISH_PROMPT.md` |
 
 Архив находится в `docs/archive/`. Архивные документы нельзя использовать как
 актуальную инструкцию без повторной сверки с кодом.
