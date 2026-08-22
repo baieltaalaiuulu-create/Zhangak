@@ -761,9 +761,9 @@ async function submitAttempt(client, student, attemptId, input) {
     `UPDATE practice_attempts
         SET status = 'submitted',
             submit_idempotency_key = $2,
-            correct_count = $3,
-            score_percent = round(($3::numeric / question_count) * 100, 2),
-            passed = round(($3::numeric / question_count) * 100, 2) >= pass_score_ratio * 100,
+            correct_count = $3::integer,
+            score_percent = round((($3::integer)::numeric / question_count) * 100, 2),
+            passed = round((($3::integer)::numeric / question_count) * 100, 2) >= pass_score_ratio * 100,
             elapsed_seconds = LEAST(
               86400,
               GREATEST(0, floor(extract(epoch FROM now() - started_at))::int)
