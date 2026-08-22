@@ -1,6 +1,9 @@
 # Актуальный handoff для AI-агентов Zhangak
 
-**Актуально на:** 2026-08-21
+**Актуально на:** 2026-08-22
+**Проверенный baseline:** `0824881` (`feat: complete first-party learning experience`).
+Это ориентир, а не замена командам `git status`, `git branch --show-current` и
+`git rev-parse HEAD` перед началом работы.
 **Назначение:** обязательная точка входа для AI-агента, который анализирует или
 изменяет Zhangak. Это не release manifest: перед работой агент обязан сверить
 текущий Git SHA, production health и фактическую схему.
@@ -22,8 +25,8 @@
 
 - Next.js App Router/BFF — порт `3200`.
 - Собственный Node.js HTTP API — loopback `127.0.0.1:3210`.
-- PostgreSQL — private/loopback; схема состоит из 23 последовательных миграций
-  `001`–`023` на дату документа.
+- PostgreSQL — private/loopback; схема состоит из 26 последовательных миграций
+  `001`–`026` на дату документа.
 - Private storage — `$ZHANGAK_STORAGE_ROOT`; файлы выдаются только через
   authenticated streaming endpoint.
 - Expo-клиент использует собственную bearer/refresh-сессию.
@@ -39,9 +42,11 @@
 | `offline.zhangak.com` | offline-ученики и преподаватели |
 | `admin.zhangak.com` | staff/admin/super-admin |
 
-Online-курс единый: математика и кыргызский язык являются предметами одного
-курса ОРТ, а не отдельными взаимоисключающими курсами. Тип ученика — только
-`online` или `offline`; сессии и интерфейсы этих контуров разные.
+Online-доступ и зачисление относятся к одному общему курсу ОРТ. В интерфейсе
+Roadmap внутри него показаны **два самостоятельных направления** — математика
+и кыргызский язык — со своими последовательностями уроков и прогрессом. Это не
+два взаимоисключающих тарифа. Тип ученика — только `online` или `offline`;
+сессии и интерфейсы этих контуров разные.
 
 ## 3. Реализованные домены данных
 
@@ -50,6 +55,21 @@ Online-курс единый: математика и кыргызский яз�
 materials, gamification/trainer/daily challenge, заявки, roadmap, push
 subscriptions, YouTube sources, quests/achievements, социальный
 профиль и друзей, унификацию online-курса и claim наград.
+
+Последние изменения:
+
+- `023_remove_product_ai.sql` удаляет product AI из runtime и схемы;
+- `024_content_studio_revisions.sql` добавляет основу ревизий Content Studio;
+- `025_lesson_test_score_progress.sql` хранит честный результат теста урока,
+  проценты и звёзды;
+- `026_mock_exam_registrations.sql` добавляет расписание и регистрацию на
+  очный пробный ОРТ.
+
+Редактор вопросов уже умеет создавать и изменять задания с ровно четырьмя
+вариантами `a/b/c/d`, явным правильным ответом и объяснением. Актуальный остаток
+по CRUD описан в `CLAUDE_PROJECT_FINISH_CONTEXT.md`: безопасное архивирование и
+восстановление, фильтры, пагинация, UX и тесты — без физического удаления
+истории попыток.
 
 Это краткая карта, а не замена чтению SQL. Для точного контракта всегда
 открывайте соответствующую миграцию и route.
@@ -85,6 +105,7 @@ subscriptions, YouTube sources, quests/achievements, социальный
 | Gamification | `docs/product/gamification-quests.md` |
 | Roadmap | `docs/product/roadmap-implementation.md` |
 | Product/growth audit Gemini | `docs/development/GEMINI_PRODUCT_GROWTH_AUDIT_PROMPT.md` |
+| Завершение проекта Claude | `docs/development/CLAUDE_PROJECT_FINISH_CONTEXT.md`, `docs/development/CLAUDE_PROJECT_FINISH_PROMPT.md` |
 
 Архив находится в `docs/archive/`. Архивные документы нельзя использовать как
 актуальную инструкцию без повторной сверки с кодом.

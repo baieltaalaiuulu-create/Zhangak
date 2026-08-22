@@ -91,7 +91,8 @@ manifest are exposed only by the platform surface.
 - API authorization reads the current role from the first-party PostgreSQL
   `profiles` row.
 - Role permissions are capability-specific and deny by default.
-- PostgreSQL and AI credentials are runtime-only environment variables.
+- PostgreSQL, session and private-storage credentials are runtime-only
+  environment variables. Product AI providers are not part of the runtime.
 - Student practice is server-scored from immutable attempt snapshots. Answer
   keys are returned only by the admin API and never to student screens.
 - The retired `/api/*` namespace is deny-listed and responds with `404`; all

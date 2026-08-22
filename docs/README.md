@@ -10,7 +10,7 @@
 | Кому | Начать здесь | Затем читать |
 | --- | --- | --- |
 | Разработчик | [Руководство разработчика](development/README.md) | [Архитектура и границы](development/architecture.md), [production](operations/production.md) |
-| AI-аудитор / внешний агент | [Актуальный handoff](development/AI_AGENT_HANDOFF.md) | [Gemini product/growth prompt](development/GEMINI_PRODUCT_GROWTH_AUDIT_PROMPT.md) |
+| AI-аудитор / внешний агент | [Актуальный handoff](development/AI_AGENT_HANDOFF.md) | [Claude continuation](development/CLAUDE_PROJECT_CONTINUATION.md), [Claude finish pack](development/CLAUDE_PROJECT_FINISH_CONTEXT.md), [Gemini product/growth prompt](development/GEMINI_PRODUCT_GROWTH_AUDIT_PROMPT.md) |
 | Контент-импортёр | [Pipeline импорта материалов](development/content-import-pipeline.md) | [Как принимать материалы](education/material-submission-guide.md), [подготовка контента](education/content-authoring.md) |
 | Преподаватель | [Рабочее место преподавателя](education/teacher-guide.md) | [Регламент офлайн-группы](operations/offline-classroom.md) |
 | Методист / автор контента | [Как передавать материалы](education/material-submission-guide.md) | [Подготовка учебного контента](education/content-authoring.md), [регулярные обновления](operations/content-and-data.md) |
@@ -18,7 +18,7 @@
 | Manager | [Публичные заявки и оплата](operations/public-applications.md) | [Аккаунты и роли](operations/accounts-and-roles.md) |
 | DevOps / технический оператор | [Production и восстановление](operations/production.md) | [Web deploy](../deploy/README.md), [API deploy](../deploy/api/README.md), [backup](../deploy/backup/README.md) |
 | Ответственный за видео | [Видео уроков](operations/lesson-video.md) | [Приватные материалы](operations/private-material-storage.md) |
-| Владелец продукта | [Пре-финальный план](product/pre-final-delivery-plan.md) | [Матрица данных и ответственности](reference/data-and-ownership.md) |
+| Владелец продукта | [Актуальный handoff](development/AI_AGENT_HANDOFF.md) | [Матрица данных и ответственности](reference/data-and-ownership.md), [Roadmap](product/roadmap-implementation.md) |
 
 ## Где должна храниться информация
 
