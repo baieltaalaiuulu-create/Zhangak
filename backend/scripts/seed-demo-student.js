@@ -6,9 +6,10 @@
  *
  * Mirrors create-super-admin.js's safety rules: credentials come from
  * environment variables only, never from a flag, a default, or this file.
- * Re-running is a no-op once the account and enrollment exist — it never
- * resets a password or duplicates an enrollment, and it never touches an
- * account it did not create.
+ * Re-running is a no-op once a compatible online-student account and its
+ * target enrollment exist. It never resets a password, never treats an
+ * existing staff/offline account as a demo student, and never duplicates an
+ * enrollment.
  *
  *   ZHANGAK_DEMO_STUDENT_EMAIL=demo.student@zhangak.test \
  *   ZHANGAK_DEMO_STUDENT_PASSWORD=... \
@@ -57,8 +58,20 @@ async function findOnlineCourse(client) {
 }
 
 async function ensureAccount(client, { email, password, fullName }) {
-  const existing = await client.query('SELECT id FROM users WHERE email = $1', [email])
-  if (existing.rowCount === 1) return { id: existing.rows[0].id, created: false }
+  const existing = await client.query(
+    `SELECT u.id, p.role, p.student_type
+       FROM users u
+       LEFT JOIN profiles p ON p.user_id = u.id
+      WHERE u.email = $1`,
+    [email],
+  )
+  if (existing.rowCount === 1) {
+    const account = existing.rows[0]
+    if (account.role !== 'student' || account.student_type !== 'online') {
+      fail(`email ${email} already belongs to a non-online-student account; refusing to reuse it`)
+    }
+    return { id: account.id, created: false }
+  }
   const passwordHash = await hashPassword(password)
   const inserted = await client.query(
     'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id',
@@ -80,13 +93,23 @@ async function ensureAccount(client, { email, password, fullName }) {
 
 async function ensureEnrollment(client, studentId, courseId) {
   const existing = await client.query(
-    `SELECT id, status FROM course_enrollments
+    `SELECT id, course_id, status FROM course_enrollments
       WHERE student_id = $1
         AND status IN ('awaiting_payment', 'awaiting_confirmation', 'active', 'suspended')
+      ORDER BY id ASC
       FOR UPDATE`,
     [studentId],
   )
-  if (existing.rowCount === 1) return { id: Number(existing.rows[0].id), created: false, status: existing.rows[0].status }
+  const target = existing.rows.find(row => Number(row.course_id) === courseId)
+  if (target) {
+    if (target.status !== 'active') {
+      fail(`the target course enrollment already exists with status ${target.status}; activate it through the admin workflow`)
+    }
+    return { id: Number(target.id), created: false, status: target.status }
+  }
+  if (existing.rowCount > 0) {
+    fail('the account already has a current enrollment on another course; refusing to violate the one-current-course rule')
+  }
   const inserted = await client.query(
     `INSERT INTO course_enrollments (
        student_id, course_id, status, confirmed_at, activated_at,
@@ -107,8 +130,20 @@ async function ensureEnrollment(client, studentId, courseId) {
 export async function planOrApply(client, credentials, apply) {
   const courseId = await findOnlineCourse(client)
   if (!apply) {
-    const existing = await client.query('SELECT id FROM users WHERE email = $1', [credentials.email])
-    return { status: 'dry-run', accountExists: existing.rowCount === 1, courseId }
+    const existing = await client.query(
+      `SELECT u.id, p.role, p.student_type
+         FROM users u
+         LEFT JOIN profiles p ON p.user_id = u.id
+        WHERE u.email = $1`,
+      [credentials.email],
+    )
+    const account = existing.rows[0] ?? null
+    return {
+      status: 'dry-run',
+      accountExists: account !== null,
+      accountCompatible: account === null || (account.role === 'student' && account.student_type === 'online'),
+      courseId,
+    }
   }
   const account = await ensureAccount(client, credentials)
   const enrollment = await ensureEnrollment(client, account.id, courseId)

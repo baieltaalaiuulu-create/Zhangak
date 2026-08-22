@@ -129,15 +129,20 @@ async function findTargetLesson(client, courseId, subject) {
   return result.rows[0] ?? null
 }
 
-async function findExistingSeededTest(client, lessonId) {
+async function findExistingSeededTest(client, courseId, subject) {
   const result = await client.query(
-    `SELECT id, is_published,
-            (SELECT count(*)::int FROM practice_questions q WHERE q.practice_test_id = practice_tests.id AND q.is_active = true) AS active_question_count
-       FROM practice_tests
-      WHERE lesson_id = $1 AND description LIKE '%' || $2 || '%'
-      FOR UPDATE`,
-    [lessonId, MARKER],
+    `SELECT t.id, t.lesson_id, l.lesson_number, t.is_published,
+            (SELECT count(*)::int FROM practice_questions q WHERE q.practice_test_id = t.id AND q.is_active = true) AS active_question_count
+       FROM practice_tests t
+       JOIN lessons l ON l.id = t.lesson_id
+      WHERE t.course_id = $1
+        AND t.subject = $2
+        AND t.description LIKE '%' || $3 || '%'
+      ORDER BY t.id ASC
+      FOR UPDATE OF t`,
+    [courseId, subject, MARKER],
   )
+  if (result.rowCount > 1) fail(`multiple ${MARKER} tests exist for course ${courseId} and subject ${subject}; manual review required`)
   return result.rows[0] ?? null
 }
 
@@ -178,6 +183,25 @@ async function createLessonTest(client, { courseId, lessonId, lessonTitle, subje
 
 export async function planSeed(client, subject) {
   const course = await findOnlineCourse(client)
+  // Check the marker before choosing an empty lesson. Checking only the
+  // target lesson is not idempotent: after the first run that lesson is no
+  // longer empty, so a second run would advance to another lesson and create
+  // a second seed. The marker is unique per course/subject instead.
+  const existing = await findExistingSeededTest(client, course.id, subject)
+  if (existing) {
+    const complete = existing.is_published === true && Number(existing.active_question_count) === DEMO_QUESTION_SETS[subject].length
+    return {
+      status: complete ? 'already_seeded' : 'seed_requires_review',
+      subject,
+      courseId: Number(course.id),
+      lessonId: Number(existing.lesson_id),
+      lessonNumber: Number(existing.lesson_number),
+      testId: Number(existing.id),
+      isPublished: existing.is_published === true,
+      activeQuestionCount: Number(existing.active_question_count),
+      ...(complete ? {} : { reason: 'an existing marked seed is incomplete; refusing to duplicate or silently repair it' }),
+    }
+  }
   const lesson = await findTargetLesson(client, course.id, subject)
   if (!lesson) {
     return {
@@ -186,18 +210,6 @@ export async function planSeed(client, subject) {
       courseId: Number(course.id),
       reason: `every published "${subject}" lesson in "${course.name}" already has a bound practice test, `
         + 'or no published lesson exists for this subject yet',
-    }
-  }
-  const existing = await findExistingSeededTest(client, lesson.id)
-  if (existing) {
-    return {
-      status: 'already_seeded',
-      subject,
-      courseId: Number(course.id),
-      lessonId: Number(lesson.id),
-      lessonNumber: lesson.lesson_number,
-      testId: Number(existing.id),
-      activeQuestionCount: existing.active_question_count,
     }
   }
   return {

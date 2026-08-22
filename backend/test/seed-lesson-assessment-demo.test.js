@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { MATH_DEMO_QUESTIONS, parseArgs, validateDemoQuestions } from '../scripts/seed-lesson-assessment-demo.js'
+import { MATH_DEMO_QUESTIONS, parseArgs, planSeed, validateDemoQuestions } from '../scripts/seed-lesson-assessment-demo.js'
 
 const ANSWER_INDEX = { a: 0, b: 1, c: 2, d: 3 }
 
@@ -49,4 +49,45 @@ test('no two options within one question collide, so a duplicate string cannot s
   for (const question of MATH_DEMO_QUESTIONS) {
     assert.equal(new Set(question.options).size, 4, `question "${question.text}" must have four distinct options`)
   }
+})
+
+test('a second run finds the course marker before looking for another empty lesson', async () => {
+  const queries = []
+  const client = {
+    async query(sql) {
+      queries.push(sql)
+      if (sql.includes("FROM courses WHERE delivery_mode = 'online'")) {
+        return { rowCount: 1, rows: [{ id: 2, name: 'Подготовка к ОРТ' }] }
+      }
+      if (sql.includes("t.description LIKE")) {
+        return {
+          rowCount: 1,
+          rows: [{ id: 91, lesson_id: 3, lesson_number: 1, is_published: true, active_question_count: 15 }],
+        }
+      }
+      throw new Error(`Unexpected query: ${sql}`)
+    },
+  }
+
+  const result = await planSeed(client, 'math')
+  assert.equal(result.status, 'already_seeded')
+  assert.equal(result.testId, 91)
+  assert.equal(queries.length, 2, 'an idempotent rerun must not search for the next empty lesson')
+})
+
+test('an incomplete marked seed blocks duplication and asks for review', async () => {
+  const client = {
+    async query(sql) {
+      if (sql.includes("FROM courses WHERE delivery_mode = 'online'")) {
+        return { rowCount: 1, rows: [{ id: 2, name: 'Подготовка к ОРТ' }] }
+      }
+      return {
+        rowCount: 1,
+        rows: [{ id: 91, lesson_id: 3, lesson_number: 1, is_published: false, active_question_count: 7 }],
+      }
+    },
+  }
+  const result = await planSeed(client, 'math')
+  assert.equal(result.status, 'seed_requires_review')
+  assert.match(result.reason, /refusing to duplicate/)
 })

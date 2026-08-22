@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { parseArgs, readCredentials } from '../scripts/seed-demo-student.js'
+import { parseArgs, planOrApply, readCredentials } from '../scripts/seed-demo-student.js'
 
 test('command line parsing defaults to dry-run and rejects unknown flags', () => {
   assert.deepEqual(parseArgs([]), { apply: false })
@@ -28,4 +28,35 @@ test('credentials are read only from environment variables, never defaulted', ()
     }),
     { email: 'demo.student@zhangak.test', password: 'a-safe-long-password', fullName: 'Demo Student' },
   )
+})
+
+const CREDENTIALS = {
+  email: 'demo.student@zhangak.test',
+  password: 'a-safe-long-password',
+  fullName: 'Demo Student',
+}
+
+test('an existing staff or offline account is never reused as the demo student', async () => {
+  let call = 0
+  const client = {
+    async query() {
+      call += 1
+      if (call === 1) return { rowCount: 1, rows: [{ id: 2 }] }
+      return { rowCount: 1, rows: [{ id: 'staff-id', role: 'admin', student_type: null }] }
+    },
+  }
+  await assert.rejects(() => planOrApply(client, CREDENTIALS, true), /non-online-student account/)
+})
+
+test('an existing enrollment on another current course blocks an unsafe second enrollment', async () => {
+  let call = 0
+  const client = {
+    async query() {
+      call += 1
+      if (call === 1) return { rowCount: 1, rows: [{ id: 2 }] }
+      if (call === 2) return { rowCount: 1, rows: [{ id: 'student-id', role: 'student', student_type: 'online' }] }
+      return { rowCount: 1, rows: [{ id: 44, course_id: 8, status: 'active' }] }
+    },
+  }
+  await assert.rejects(() => planOrApply(client, CREDENTIALS, true), /one-current-course rule/)
 })
