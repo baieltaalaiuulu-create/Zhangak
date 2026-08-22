@@ -21,6 +21,21 @@ function number(value) {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
+/**
+ * Optional text is either meaningful or absent — never an empty string.
+ *
+ * Legacy curriculum rows carry `''` in `description` because the column only
+ * constrains length, not emptiness (unlike `section`/`topic`/`subject`, which
+ * the schema guards with a `btrim(...) >= 1` check). Passing `''` straight
+ * through produced a DTO the strict client parser rejects, and one blank
+ * description was enough to blank the whole roadmap.
+ */
+function optionalText(value) {
+  if (value == null) return null
+  const text = String(value).trim()
+  return text === '' ? null : text
+}
+
 export function roadmapStarCount(completionPercent) {
   if (completionPercent >= 90) return 3
   if (completionPercent >= 75) return 2
@@ -30,19 +45,25 @@ export function roadmapStarCount(completionPercent) {
 
 /** The client receives no private material URL or assessment answer fields. */
 export function publicRoadmapLesson(row) {
-  const isLocked = boolean(row.is_locked)
-  const completed = row.completed_at !== null
+  const completed = row.completed_at != null
+  const isLocked = !completed && boolean(row.is_locked)
   return {
     id: number(row.lesson_id),
     lessonNumber: number(row.lesson_number),
     title: row.title,
-    description: isLocked ? null : row.description ?? null,
-    subject: row.subject ?? null,
-    section: row.section ?? null,
-    topic: row.topic ?? null,
+    description: isLocked ? null : optionalText(row.description),
+    subject: optionalText(row.subject),
+    section: optionalText(row.section),
+    topic: optionalText(row.topic),
     durationMinutes: row.duration_minutes == null ? null : number(row.duration_minutes),
     isTest: boolean(row.is_test),
     completionMode: boolean(row.is_test) || boolean(row.has_active_bound_practice_test) ? 'practice' : 'self',
+    // A finished lesson is never reported as locked. `is_locked` is derived
+    // purely from unfinished predecessors, so an out-of-order completion —
+    // which an admin reordering units or an earlier sequence leaves behind —
+    // produced `state: 'done'` together with `isLocked: true`. That pair is
+    // self-contradictory and the client rejects it, so the server resolves it
+    // here rather than shipping an impossible state.
     // `completed_at` means that a scored lesson test was submitted and the
     // sequence may move on.  It must never overwrite the earned result: the
     // roadmap rings and stars are based on the student's best server-scored
@@ -62,7 +83,7 @@ function publicUnit(row, lessons) {
     id: number(row.unit_id),
     unitNumber: number(row.unit_number),
     title: row.unit_title,
-    description: row.unit_description ?? null,
+    description: optionalText(row.unit_description),
     accentColor: row.accent_color,
     completedLessons,
     lessonCount: lessons.length,
@@ -167,7 +188,7 @@ GET('/v1/platform/roadmap', async ({ req, config }) => {
   return {
     status: 200,
     body: {
-      course: { id: number(course.id), name: course.name, code: course.code ?? null, subject: course.subject ?? null },
+      course: { id: number(course.id), name: course.name, code: optionalText(course.code), subject: optionalText(course.subject) },
       direction: 'bottom_to_top',
       units,
       summary: {
